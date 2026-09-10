@@ -112,14 +112,14 @@ STYLE_NAMES = ("classic", "modern", "minimal")
 # 카드 레이아웃 — y 좌표와 옵션을 스타일별로 정리합니다.
 LAYOUT = {
     "classic": dict(chip=True, deco=True, card=False, word_y=560, ipa_y=790, ipa_pill=True,
-                     pron_dy=34, line_y=1120, mean_y=1170, label_y=1330, en_y=1395, en_dy=72,
-                     tr_max_y=1610, tr_dy=58, unit_y=None),
+                     pron_dy=34, line_y=1120, mean_y=1170, label_y=1330, en_y=1395, en_dy=70,
+                     tr_max_y=1560, tr_dy=54, unit_y=None),
     "modern":  dict(chip=True, deco=False, card=True, word_y=340, ipa_y=580, ipa_pill=True,
                      pron_dy=30, line_y=840, mean_y=900, label_y=1070, en_y=1135, en_dy=66,
                      tr_max_y=1500, tr_dy=54, unit_y=None),
     "minimal": dict(chip=False, deco=False, card=False, word_y=560, ipa_y=780, ipa_pill=False,
-                     pron_dy=34, line_y=1120, mean_y=1170, label_y=1330, en_y=1395, en_dy=72,
-                     tr_max_y=1610, tr_dy=58, unit_y=130),
+                     pron_dy=34, line_y=1120, mean_y=1170, label_y=1330, en_y=1395, en_dy=70,
+                     tr_max_y=1560, tr_dy=54, unit_y=130),
 }
 
 
@@ -167,6 +167,80 @@ def load_emoji_font(size: int):
             return ImageFont.truetype(p, size)
         except OSError:
             return None
+
+
+# ---------------------------------------------------------------- glyph fallback ----
+# 시스템 한글 폰트에 IPA(ˈ, ʌ 등)나 특수문자가 없으면 □로 표시됩니다.
+# 글리프별로 폴백 폰트(영문 IPA 커버 폰트)를 골라 그려 네모를 막습니다.
+FALLBACK_FONT_CANDIDATES = [
+    "C:/Windows/Fonts/arial.ttf",
+    "C:/Windows/Fonts/segoeui.ttf",
+    "/System/Library/Fonts/Supplemental/Arial.ttf",
+    "/Library/Fonts/Arial Unicode.ttf",
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+]
+
+_glyph_cache: dict[tuple[int, str], bool] = {}
+_fallback_cache: dict[tuple[int, bool], object] = {}
+
+
+def font_has_glyph(font, ch: str) -> bool:
+    """폰트에 해당 문자의 실제 글리프가 있는지 확인합니다. (미할당 문자와 비교)"""
+    key = (id(font), ch)
+    if key in _glyph_cache:
+        return _glyph_cache[key]
+    try:
+        m1 = font.getmask(ch, mode="L")
+        m2 = font.getmask("\u0378", mode="L")  # 미할당 코드포인트 → .notdef
+        b1, b2 = m1.getbbox(), m2.getbbox()
+        ok = b1 is not None and (b1 != b2 or m1.tobytes() != m2.tobytes())
+    except Exception:
+        ok = True
+    _glyph_cache[key] = ok
+    return ok
+
+
+def load_fallback_font(size: int):
+    """IPA·특수문자를 커버하는 폴백 폰트를 로드합니다. 없으면 None."""
+    key = (size, True)
+    if key in _fallback_cache:
+        return _fallback_cache[key]
+    font = None
+    for c in FALLBACK_FONT_CANDIDATES:
+        if Path(c).exists():
+            try:
+                font = ImageFont.truetype(c, size)
+                break
+            except OSError:
+                continue
+    _fallback_cache[key] = font
+    return font
+
+
+def draw_text_rich(draw, text: str, font, fill, *, y: float, x: float | None = None) -> None:
+    """주 폰트에 없는 글리프는 폴백 폰트로 대체해 그립니다. x=None이면 가운데 정렬."""
+    fallback = load_fallback_font(font.size)
+    runs: list[tuple[str, object]] = []
+    cur_chars: list[str] = []
+    cur_font = font
+    for ch in text:
+        f = font
+        if not font_has_glyph(font, ch) and fallback is not None and font_has_glyph(fallback, ch):
+            f = fallback
+        if f is not cur_font:
+            if cur_chars:
+                runs.append(("".join(cur_chars), cur_font))
+            cur_chars, cur_font = [], f
+        cur_chars.append(ch)
+    if cur_chars:
+        runs.append(("".join(cur_chars), cur_font))
+    if x is None:
+        total = sum(text_width(draw, t, f) for t, f in runs)
+        x = (W - total) / 2
+    for t, f in runs:
+        draw.text((x, y), t, font=f, fill=fill)
+        x += text_width(draw, t, f)
 
 
 # ---------------------------------------------------------------- utils ----
@@ -225,7 +299,7 @@ def draw_pill(draw, cx, y, text, font, fg, bg, pad_x=28, pad_y=14, radius=None) 
     x0, y0 = cx - tw // 2, y
     r = radius if radius is not None else th // 2
     draw.rounded_rectangle([x0, y0, x0 + tw, y0 + th], radius=r, fill=bg)
-    draw.text((cx - w / 2, y0 + pad_y - 2), text, font=font, fill=fg)
+    draw_text_rich(draw, text, font, fg, y=y0 + pad_y - 2, x=cx - w / 2)
     return y + th
 
 
@@ -272,15 +346,23 @@ def render_slide(idx: int, total: int, unit_no: int, unit_info: dict, wd: list,
     if ly["chip"]:
         chip = (255, 255, 255, 36)  # rgba(255,255,255,0.14)
         tw = text_width(draw, title, title_font)
-        chip_w = int(tw + 96)
+        icon_text = unit_info.get("icon", "📚")
+        icon_w = 0
+        if icon_font is not None and font_has_glyph(icon_font, icon_text):
+            icon_w = text_width(draw, icon_text, icon_font)
+        else:
+            icon_font = None  # 아이콘 글리프가 없으면 그리지 않음 (네모 방지)
+        left_pad = 40 if icon_font else 36
+        gap = 26
+        chip_w = int(left_pad + icon_w + gap + tw + 44)
         cx0 = W // 2 - chip_w // 2
         draw.rounded_rectangle([cx0, 96, cx0 + chip_w, 174], radius=39, fill=chip)
         if icon_font:
-            draw.text((cx0 + 30, 102), unit_info.get("icon", "📚"), font=icon_font)
-        draw.text((cx0 + 86, 113), title, font=title_font, fill=(255, 255, 255))
+            draw.text((cx0 + 26, 100), icon_text, font=icon_font)
+        draw_text_rich(draw, title, title_font, (255, 255, 255), y=113,
+                       x=cx0 + left_pad + icon_w + gap)
     elif ly["unit_y"]:
-        tw = text_width(draw, title, title_font)
-        draw.text((W / 2 - tw / 2, ly["unit_y"]), title, font=title_font, fill=(255, 255, 255, 190))
+        draw_text_rich(draw, title, title_font, (255, 255, 255, 190), y=ly["unit_y"])
 
     # ── modern: 글래스 카드 + 좌측 액센트 바 ──
     if ly["card"]:
@@ -293,7 +375,7 @@ def render_slide(idx: int, total: int, unit_no: int, unit_info: dict, wd: list,
     while word_w > W - 140 and word_font.size > 60:
         word_font = load_font(font_path, word_font.size - 12, bold=True)
         word_w = text_width(draw, word, word_font)
-    draw.text((W / 2 - word_w / 2, ly["word_y"]), word, font=word_font, fill=(255, 255, 255))
+    draw_text_rich(draw, word, word_font, (255, 255, 255), y=ly["word_y"])
 
     # ── IPA + 한글 발음 ──
     ipa_font = load_font(font_path, 54, bold=False)
@@ -301,14 +383,11 @@ def render_slide(idx: int, total: int, unit_no: int, unit_info: dict, wd: list,
     if ly["ipa_pill"]:
         y = draw_pill(draw, W // 2, y, ipa, ipa_font, (235, 240, 255), (0, 0, 0, 70))
     else:
-        iw = text_width(draw, ipa, ipa_font)
-        draw.text((W / 2 - iw / 2, y), ipa, font=ipa_font, fill=(215, 225, 250))
+        draw_text_rich(draw, ipa, ipa_font, (215, 225, 250), y=y)
         y += 80
     pron_font = load_font(font_path, 46, bold=False)
     if kor_pron:
-        ptext = f"발음: {kor_pron}"
-        pw = text_width(draw, ptext, pron_font)
-        draw.text((W / 2 - pw / 2, y + ly["pron_dy"]), ptext, font=pron_font, fill=(215, 225, 250))
+        draw_text_rich(draw, f"발음: {kor_pron}", pron_font, (215, 225, 250), y=y + ly["pron_dy"])
 
     # ── 구분선 ──
     draw.line([200, ly["line_y"], W - 200, ly["line_y"]], fill=(255, 255, 255, 70), width=3)
@@ -319,12 +398,12 @@ def render_slide(idx: int, total: int, unit_no: int, unit_info: dict, wd: list,
     while mw > W - 160 and mean_font.size > 44:
         mean_font = load_font(font_path, mean_font.size - 8, bold=True)
         mw = text_width(draw, meaning, mean_font)
-    draw.text((W / 2 - mw / 2, ly["mean_y"]), meaning, font=mean_font, fill=ACCENT_THEME)
+    draw_text_rich(draw, meaning, mean_font, ACCENT_THEME, y=ly["mean_y"])
 
     # ── 예문 ──
     label_font = load_font(font_path, 34, bold=True)
     lbl = "TOEIC 예문"
-    draw.text((120, ly["label_y"]), lbl, font=label_font, fill=(255, 255, 255, 190))
+    draw_text_rich(draw, lbl, label_font, (255, 255, 255, 190), y=ly["label_y"], x=120)
     en_font = load_font(font_path, 50, bold=False)
     en_lines = wrap_text(en_ex, en_font, W - 240, draw)
     while len(en_lines) > 5 and en_font.size > 30:
@@ -332,7 +411,7 @@ def render_slide(idx: int, total: int, unit_no: int, unit_info: dict, wd: list,
         en_lines = wrap_text(en_ex, en_font, W - 240, draw)
     y = ly["en_y"]
     for line in en_lines[:5]:
-        draw.text((120, y), line, font=en_font, fill=(255, 255, 255))
+        draw_text_rich(draw, line, en_font, (255, 255, 255), y=y, x=120)
         y += ly["en_dy"]
 
     # ── 해석 ──
@@ -343,14 +422,13 @@ def render_slide(idx: int, total: int, unit_no: int, unit_info: dict, wd: list,
         tr_lines = wrap_text(kr_tr, tr_font, W - 240, draw)
     y = min(y + 30, ly["tr_max_y"])
     for line in tr_lines[:3]:
-        draw.text((120, y), line, font=tr_font, fill=(200, 210, 235))
+        draw_text_rich(draw, line, tr_font, (200, 210, 235), y=y, x=120)
         y += ly["tr_dy"]
 
     # ── 푸터 ──
     foot_font = load_font(font_path, 44, bold=True)
     ft = "toeic.monster"
-    fw = text_width(draw, ft, foot_font)
-    draw.text((W / 2 - fw / 2, 1745), ft, font=foot_font, fill=(255, 255, 255))
+    draw_text_rich(draw, ft, foot_font, (255, 255, 255), y=1745)
     draw_dots(draw, total, idx)
     return img
 
@@ -440,6 +518,24 @@ def mix_final(silent: Path, tts_wav: Path | None, music: Path | None,
                        "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-shortest", str(out)])
 
 
+def build_ambient(dur: float, tmp: Path) -> Path | None:
+    """부드러운 화음(ffmpeg lavfi)으로 영상이 무음이 되지 않도록 하는 배경 사운드를 만듭니다."""
+    out = tmp / "ambient.wav"
+    fade_out = max(1.5, dur - 2.0)
+    fc = (f"[0:a][1:a][2:a]amix=inputs=3,lowpass=f=900,volume=0.8,"
+          f"afade=t=in:st=0:d=1.5,afade=t=out:st={fade_out:.2f}:d=2[a]")
+    r = subprocess.run([_FFMPEG, "-y", "-hide_banner", "-loglevel", "error",
+                        "-f", "lavfi", "-i", f"sine=frequency=220:duration={dur}",
+                        "-f", "lavfi", "-i", f"sine=frequency=277.18:duration={dur}",
+                        "-f", "lavfi", "-i", f"sine=frequency=329.63:duration={dur}",
+                        "-filter_complex", fc, "-map", "[a]", "-ar", "44100", "-ac", "2",
+                        str(out)], capture_output=True, text=True)
+    if r.returncode != 0:
+        warn(f"앰비언트 사운드 생성 실패(무음으로 진행): {r.stderr.strip()[-200:]}")
+        return None
+    return out
+
+
 # ---------------------------------------------------------------- main ----
 def main() -> None:
     ap = argparse.ArgumentParser(description="toeic.monster 단어 카드 쇼츠 영상 생성기 (1080x1920, 9:16)")
@@ -456,6 +552,8 @@ def main() -> None:
     ap.add_argument("--voice", default="en-US-JennyNeural", help="TTS 목소리 (기본 en-US-JennyNeural)")
     ap.add_argument("--music", help="배경음악 오디오 파일(mp3/wav) 경로 (선택)")
     ap.add_argument("--music-volume", type=float, default=0.15, help="배경음악 볼륨 0~1 (기본 0.15)")
+    ap.add_argument("--no-ambient", action="store_true",
+                    help="기본 배경 사운드(앰비언트) 끄기 — --tts/--music 없이는 무음 영상이 됩니다")
     ap.add_argument("--dry-run", action="store_true", help="계획만 출력하고 종료")
     args = ap.parse_args()
 
@@ -502,6 +600,8 @@ def main() -> None:
     log(f"음성  : {'edge-tts (' + args.voice + ')' if args.tts else '없음 (--tts 로 추가)'}")
     if music:
         log(f"배경음악: {music} (볼륨 {args.music_volume:g})")
+    elif not args.tts and not args.no_ambient:
+        log("배경음악: 기본 앰비언트 사운드 (--no-ambient 로 끄기)")
     if args.dry_run:
         log("\n실제 생성하려면 --dry-run 을 빼고 실행하세요.")
         return
@@ -546,7 +646,7 @@ def main() -> None:
                            "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(silent)]):
             return
 
-        # ── TTS·배경음악 병합 ──
+        # ── TTS·배경음악·앰비언트 병합 ──
         tts_wav = None
         if args.tts:
             audio_files = [tmp / f"audio_{i}.wav" for i in range(len(picked))]
@@ -557,8 +657,18 @@ def main() -> None:
             if not run_ffmpeg(["-f", "concat", "-safe", "0", "-i", str(concat_list),
                                "-c", "copy", str(tts_wav)]):
                 return
-        if not mix_final(silent, tts_wav, music, args.music_volume, out):
-            return
+        if tts_wav is None and music is None and not args.no_ambient:
+            ambient = build_ambient(total_dur, tmp)
+            if ambient is not None:
+                if not run_ffmpeg(["-i", str(silent), "-i", str(ambient),
+                                   "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
+                                   "-shortest", str(out)]):
+                    return
+            elif not mix_final(silent, tts_wav, music, args.music_volume, out):
+                return
+        else:
+            if not mix_final(silent, tts_wav, music, args.music_volume, out):
+                return
 
         size_mb = out.stat().st_size / (1024 * 1024)
         ok(f"생성 완료: {out} ({size_mb:.1f}MB, {W}x{H})")
