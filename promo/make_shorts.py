@@ -51,16 +51,34 @@ ZOOM = 0.06          # 슬라이드 시작→끝 6% 줌인
 FADE_FRAMES = 12     # 크로스페이드 프레임 수 (0.4초)
 
 # ---------------------------------------------------------------- fonts ----
-FONT_CANDIDATES = [
-    "C:/Windows/Fonts/malgunbd.ttf",      # Windows 맑은 고딕 Bold
-    "C:/Windows/Fonts/malgun.ttf",        # Windows 맑은 고딕
-    "/System/Library/Fonts/AppleSDGothicNeo-Bold.ttf",   # macOS
+# 한국어·IPA를 모두 포함하는 폰트를 우선 사용합니다. 시스템에 한글 폰트가
+# 없을 때 Pillow 기본 폰트로 내려가면 한글이 □로 렌더링되므로, 후보를 넉넉히 둡니다.
+FONT_CANDIDATES_BOLD = [
+    "C:/Windows/Fonts/malgunbd.ttf",                         # Windows 맑은 고딕 Bold
+    "C:/Windows/Fonts/NotoSansKR-Bold.otf",
+    "/System/Library/Fonts/AppleSDGothicNeo-Bold.ttf",        # macOS
     "/Library/Fonts/NanumGothicBold.ttf",
-    "/usr/share/fonts/truetype/nanum/NanumGothicBold.ttf",  # Linux
+    "/usr/share/fonts/truetype/nanum/NanumGothicBold.ttf",    # Linux
     "/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc",
+    "/usr/share/fonts/opentype/noto/NotoSansCJKkr-Bold.otf",
+    "/usr/share/fonts/truetype/noto/NotoSansCJK-Bold.ttc",
 ]
+FONT_CANDIDATES_REGULAR = [
+    "C:/Windows/Fonts/malgun.ttf",                           # Windows 맑은 고딕
+    "C:/Windows/Fonts/NotoSansKR-Regular.otf",
+    "/System/Library/Fonts/AppleSDGothicNeo-Regular.ttf",    # macOS
+    "/Library/Fonts/NanumGothic.ttf",
+    "/usr/share/fonts/truetype/nanum/NanumGothic.ttf",        # Linux
+    "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+    "/usr/share/fonts/opentype/noto/NotoSansCJKkr-Regular.otf",
+    "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
+]
+# 이모지는 컬러 폰트의 플랫폼별 지원 편차가 크므로, 발견하지 못하면
+# 아이콘을 아예 그리지 않습니다. 기본 폰트로 그려 □가 생기는 것을 막습니다.
 EMOJI_FONT_CANDIDATES = [
-    "C:/Windows/Fonts/seguiemj.ttf",      # Windows Segoe UI Emoji
+    "C:/Windows/Fonts/seguiemj.ttf",                          # Windows Segoe UI Emoji
+    "/System/Library/Fonts/Apple Color Emoji.ttc",            # macOS
+    "/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf",       # Linux
 ]
 
 # ---------------------------------------------------------------- themes ----
@@ -90,20 +108,42 @@ def find_font(candidates: list[str]) -> str | None:
 
 
 def load_font(path: str | None, size: int, bold: bool = True):
-    p = path or find_font(FONT_CANDIDATES)
+    """한글/IPA 지원 폰트를 로드합니다.
+
+    --font를 지정하면 그 폰트를 우선 사용하고, 지정하지 않았거나 파일이
+    없으면 운영체제별 CJK 폰트를 탐색합니다. 기본 폰트로 조용히 폴백하면
+    한글이 □로 출력되므로, 실제 렌더링 때는 명확한 오류를 냅니다.
+    """
+    candidates = FONT_CANDIDATES_BOLD if bold else FONT_CANDIDATES_REGULAR
+    p = path if path and Path(path).exists() else find_font(candidates)
     if p:
-        return ImageFont.truetype(p, size)
-    return ImageFont.load_default()
+        try:
+            return ImageFont.truetype(p, size)
+        except OSError as exc:
+            raise RuntimeError(f"폰트를 열 수 없습니다: {p} ({exc})") from exc
+    raise RuntimeError(
+        "한글 폰트를 찾지 못했습니다. --font로 CJK 폰트(.ttf/.ttc/.otf)를 "
+        "지정하거나 Windows 맑은 고딕/나눔고딕을 설치하세요."
+    )
 
 
 def load_emoji_font(size: int):
+    """지원되는 이모지 폰트만 반환하고, 없으면 None을 반환합니다.
+
+    Pillow의 기본 폰트로 이모지를 그리면 □가 출력될 수 있으므로 절대
+    기본 폰트로 대체하지 않습니다. render_slide는 None일 때 아이콘을
+    생략해 영상에 네모 문자가 남지 않게 합니다.
+    """
     p = find_font(EMOJI_FONT_CANDIDATES)
-    if p:
+    if not p:
+        return None
+    try:
+        return ImageFont.truetype(p, size, layout_engine=ImageFont.Layout.RAQM)
+    except (TypeError, AttributeError, OSError):
         try:
-            return ImageFont.truetype(p, size, layout_engine=ImageFont.Layout.RAQM)
-        except (TypeError, AttributeError):
             return ImageFont.truetype(p, size)
-    return None
+        except OSError:
+            return None
 
 
 # ---------------------------------------------------------------- utils ----
@@ -121,13 +161,14 @@ def vertical_gradient(size, top, bottom) -> Image.Image:
     return img
 
 
-def wrap_text(text: str, font, max_width: int) -> list[str]:
+def wrap_text(text: str, font, max_width: int, draw=None) -> list[str]:
     lines = []
+    measure = (lambda value: text_width(draw, value, font)) if draw is not None else (lambda value: font.getlength(value))
     for para in text.split("\n"):
         cur = ""
         for ch in para:
             test = cur + ch
-            if font.getlength(test) > max_width and cur:
+            if measure(test) > max_width and cur:
                 lines.append(cur)
                 cur = ch
             else:
@@ -137,10 +178,27 @@ def wrap_text(text: str, font, max_width: int) -> list[str]:
     return lines
 
 
+def text_width(draw, text: str, font) -> float:
+    """Pillow 버전/폰트에 관계없이 텍스트 폭을 구합니다."""
+    try:
+        return draw.textlength(text, font=font)
+    except (AttributeError, TypeError):
+        try:
+            return font.getlength(text)
+        except AttributeError:
+            box = draw.textbbox((0, 0), text, font=font)
+            return box[2] - box[0]
+
+
 def draw_pill(draw, cx, y, text, font, fg, bg, pad_x=28, pad_y=14, radius=None) -> int:
-    w = font.getlength(text)
+    w = text_width(draw, text, font)
     tw = int(w + pad_x * 2)
-    th = font.size + pad_y * 2
+    try:
+        bbox = draw.textbbox((0, 0), text, font=font)
+        text_h = bbox[3] - bbox[1]
+    except (AttributeError, TypeError):
+        text_h = getattr(font, "size", 24)
+    th = text_h + pad_y * 2
     x0, y0 = cx - tw // 2, y
     r = radius if radius is not None else th // 2
     draw.rounded_rectangle([x0, y0, x0 + tw, y0 + th], radius=r, fill=bg)
@@ -186,7 +244,7 @@ def render_slide(idx: int, total: int, unit_no: int, unit_info: dict, wd: list, 
     title_font = load_font(font_path, 40, bold=True)
     title = f"UNIT {unit_no} · {unit_info.get('title', '')}"
     chip = (255, 255, 255, 36)  # rgba(255,255,255,0.14)
-    tw = title_font.getlength(title)
+    tw = text_width(draw, title, title_font)
     chip_w = int(tw + 96)
     chip_h = 78
     cx0 = W // 2 - chip_w // 2
@@ -197,10 +255,10 @@ def render_slide(idx: int, total: int, unit_no: int, unit_info: dict, wd: list, 
 
     # ── 단어 ──
     word_font = load_font(font_path, 148, bold=True)
-    word_w = word_font.getlength(word)
+    word_w = text_width(draw, word, word_font)
     while word_w > W - 140 and word_font.size > 60:
         word_font = load_font(font_path, word_font.size - 12, bold=True)
-        word_w = word_font.getlength(word)
+        word_w = text_width(draw, word, word_font)
     draw.text((W / 2 - word_w / 2, 560), word, font=word_font, fill=(255, 255, 255))
 
     # ── IPA + 한글 발음 ──
@@ -211,7 +269,7 @@ def render_slide(idx: int, total: int, unit_no: int, unit_info: dict, wd: list, 
     pron_font = load_font(font_path, 46, bold=False)
     if kor_pron:
         ptext = f"발음: {kor_pron}"
-        pw = pron_font.getlength(ptext)
+        pw = text_width(draw, ptext, pron_font)
         draw.text((W / 2 - pw / 2, y + 34), ptext, font=pron_font, fill=(215, 225, 250))
 
     # ── 구분선 ──
@@ -219,10 +277,10 @@ def render_slide(idx: int, total: int, unit_no: int, unit_info: dict, wd: list, 
 
     # ── 뜻 ──
     mean_font = load_font(font_path, 88, bold=True)
-    mw = mean_font.getlength(meaning)
+    mw = text_width(draw, meaning, mean_font)
     while mw > W - 160 and mean_font.size > 44:
         mean_font = load_font(font_path, mean_font.size - 8, bold=True)
-        mw = mean_font.getlength(meaning)
+        mw = text_width(draw, meaning, mean_font)
     draw.text((W / 2 - mw / 2, 1170), meaning, font=mean_font, fill=ACCENT_THEME)
 
     # ── 예문 ──
@@ -230,10 +288,10 @@ def render_slide(idx: int, total: int, unit_no: int, unit_info: dict, wd: list, 
     lbl = "TOEIC 예문"
     draw.text((120, 1330), lbl, font=label_font, fill=(255, 255, 255, 190))
     en_font = load_font(font_path, 50, bold=False)
-    en_lines = wrap_text(en_ex, en_font, W - 240)
+    en_lines = wrap_text(en_ex, en_font, W - 240, draw)
     while len(en_lines) > 5 and en_font.size > 30:
         en_font = load_font(font_path, en_font.size - 4, bold=False)
-        en_lines = wrap_text(en_ex, en_font, W - 240)
+        en_lines = wrap_text(en_ex, en_font, W - 240, draw)
     y = 1395
     for line in en_lines[:5]:
         draw.text((120, y), line, font=en_font, fill=(255, 255, 255))
@@ -241,10 +299,10 @@ def render_slide(idx: int, total: int, unit_no: int, unit_info: dict, wd: list, 
 
     # ── 해석 ──
     tr_font = load_font(font_path, 40, bold=False)
-    tr_lines = wrap_text(kr_tr, tr_font, W - 240)
+    tr_lines = wrap_text(kr_tr, tr_font, W - 240, draw)
     while len(tr_lines) > 3 and tr_font.size > 26:
         tr_font = load_font(font_path, tr_font.size - 4, bold=False)
-        tr_lines = wrap_text(kr_tr, tr_font, W - 240)
+        tr_lines = wrap_text(kr_tr, tr_font, W - 240, draw)
     y = min(y + 30, 1610)
     for line in tr_lines[:3]:
         draw.text((120, y), line, font=tr_font, fill=(200, 210, 235))
@@ -253,7 +311,7 @@ def render_slide(idx: int, total: int, unit_no: int, unit_info: dict, wd: list, 
     # ── 푸터 ──
     foot_font = load_font(font_path, 44, bold=True)
     ft = "toeic.monster"
-    fw = foot_font.getlength(ft)
+    fw = text_width(draw, ft, foot_font)
     draw.text((W / 2 - fw / 2, 1745), ft, font=foot_font, fill=(255, 255, 255))
     draw_dots(draw, total, idx)
     return img
@@ -348,9 +406,9 @@ def main() -> None:
 
     rng = random.Random(args.seed)
     if args.index is not None:
-        picked = [words[args.index]]
-        if args.index >= len(words):
+        if args.index < 0 or args.index >= len(words):
             sys.exit(f"인덱스 {args.index} 는 범위 밖 (0~{len(words)-1}).")
+        picked = [words[args.index]]
     else:
         n = min(args.words, len(words))
         picked = rng.sample(words, n)
@@ -375,8 +433,12 @@ def main() -> None:
     tmp = Path(tempfile.mkdtemp(prefix="toeic_shorts_"))
     try:
         # ── 슬라이드 렌더링 + 프레임 출력 ──
-        slides = [render_slide(i, len(picked), unit_no, unit_info, w, args.bg, args.font)
-                  for i, w in enumerate(picked)]
+        try:
+            slides = [render_slide(i, len(picked), unit_no, unit_info, w, args.bg, args.font)
+                      for i, w in enumerate(picked)]
+        except RuntimeError as exc:
+            fail(str(exc))
+            sys.exit(2)
         log("슬라이드 렌더링 완료 — 프레임 생성 중...")
 
         frame_files: list[Path] = []

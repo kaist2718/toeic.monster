@@ -2,9 +2,14 @@
 promo/config.json
 promo/.secrets/
 
+# 예약 게시·게시 이력 (개인 운영 데이터)
+promo/scheduled_posts.json
+promo/publish_history.csv
+
 # Python 캐시
 __pycache__/
-*.pyc
-
-# 생성된 쇼츠 영상 (make_shorts.py 산출물 — 재생성 가능)
+*.pyc# 생성된 쇼츠 영상 (make_shorts.py 산출물 — 재생성 가능)
 promo/assets/
+
+# Windows 실행 부산물
+promo/*.log

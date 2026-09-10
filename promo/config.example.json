@@ -3,10 +3,20 @@
   "default_title": "TOEIC 필수 어휘 | toeic.monster",
   "default_description": "발음·예문으로 외우는 TOEIC 보카 1,000 → https://toeic.monster/",
   "hashtags": ["toeic", "토익", "토익단어", "영어공부", "toeicmonster", "vocabulary", "토익보카", "토익공부"],
+  "promo": {
+    "default_unit": 1,
+    "default_words": 5,
+    "default_theme": "blue",
+    "default_voice": "en-US-JennyNeural",
+    "default_tts": false,
+    "default_privacy": "unlisted",
+    "confirm_real_upload": true,
+    "history_limit": 20
+  },
 
   "youtube": {
     "enabled": true,
-    "privacy": "public",
+    "privacy": "unlisted",
     "category_id": "27",
     "include_shorts_tag": true,
     "tags": ["TOEIC", "토익", "영어단어", "영어공부"],
@@ -15,7 +25,7 @@
   },
 
   "instagram": {
-    "enabled": true,
+    "enabled": false,
     "username": "YOUR_INSTAGRAM_USERNAME",
     "password": "YOUR_INSTAGRAM_PASSWORD",
     "session_file": "ig_session.json"
