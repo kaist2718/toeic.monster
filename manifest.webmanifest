@@ -1,0 +1,27 @@
+{
+  "name": "toeic.monster - TOEIC 보카 1000",
+  "short_name": "toeic.monster",
+  "description": "TOEIC 필수 어휘 1,000개를 발음·예문으로 외우는 무료 학습 사이트. 암기 카드, 퀴즈, 실전 시험 모드, 오답노트까지.",
+  "lang": "ko",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f6f7fb",
+  "theme_color": "#3b5bdb",
+  "categories": ["education", "productivity"],
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}
