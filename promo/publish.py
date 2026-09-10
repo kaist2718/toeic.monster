@@ -1336,6 +1336,8 @@ def interactive_menu() -> None:
                        "--words", words, "--bg", theme, "--style", style]
             if ask_yes_no("영어 TTS를 추가할까요?", default_tts):
                 command.append("--tts")
+            else:
+                command.append("--no-tts")
             if ask_yes_no("배경음악을 추가할까요?(파일 경로 필요)", False):
                 music_path = ask_menu("배경음악 파일(mp3/wav) 경로")
                 if music_path:

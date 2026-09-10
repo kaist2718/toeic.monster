@@ -12,6 +12,8 @@ instagrapi>=2.0.0
 # 쇼츠 영상 생성 (make_shorts.py)
 Pillow>=10.0.0
 imageio-ffmpeg>=0.4.9
+# 글리프 존재 확인용 (IPA 네모 방지 폴백)
+fonttools>=4.40.0
 
 # 쇼츠 TTS 음성 (make_shorts.py --tts, 인터넷 필요, 무료)
 edge-tts>=6.1.0

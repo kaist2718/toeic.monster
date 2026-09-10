@@ -141,7 +141,9 @@ def load_font(path: str | None, size: int, bold: bool = True):
     p = path if path and Path(path).exists() else find_font(candidates)
     if p:
         try:
-            return ImageFont.truetype(p, size)
+            font = ImageFont.truetype(p, size)
+            _font_paths[id(font)] = p
+            return font
         except OSError as exc:
             raise RuntimeError(f"폰트를 열 수 없습니다: {p} ({exc})") from exc
     raise RuntimeError(
@@ -172,6 +174,8 @@ def load_emoji_font(size: int):
 # ---------------------------------------------------------------- glyph fallback ----
 # 시스템 한글 폰트에 IPA(ˈ, ʌ 등)나 특수문자가 없으면 □로 표시됩니다.
 # 글리프별로 폴백 폰트(영문 IPA 커버 폰트)를 골라 그려 네모를 막습니다.
+# 글리프 존재는 fontTools cmap으로 확인합니다 — 비트맵 비교는 .notdef 상자를
+# 실제 글리프로 오인해 IPA □가 그대로 남는 원인이었습니다.
 FALLBACK_FONT_CANDIDATES = [
     "C:/Windows/Fonts/arial.ttf",
     "C:/Windows/Fonts/segoeui.ttf",
@@ -181,22 +185,52 @@ FALLBACK_FONT_CANDIDATES = [
     "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
 ]
 
+try:
+    from fontTools.ttLib import TTFont
+    _FONTTOOLS_OK = True
+except ImportError:
+    _FONTTOOLS_OK = False
+
+_cmap_cache: dict[str, dict] = {}
+_font_paths: dict[int, str] = {}  # id(font) -> 폰트 파일 경로
 _glyph_cache: dict[tuple[int, str], bool] = {}
 _fallback_cache: dict[tuple[int, bool], object] = {}
 
 
+def _get_cmap(path: str) -> dict | None:
+    """폰트의 문자→글리프 매핑(cmap)을 캐시하며 가져옵니다. 실패 시 None."""
+    if path in _cmap_cache:
+        return _cmap_cache[path]
+    cmap = None
+    try:
+        try:
+            cmap = TTFont(path).getBestCmap()
+        except Exception:
+            cmap = TTFont(path, fontNumber=0).getBestCmap()  # .ttc 대응
+    except Exception:
+        cmap = None
+    _cmap_cache[path] = cmap
+    return cmap
+
+
 def font_has_glyph(font, ch: str) -> bool:
-    """폰트에 해당 문자의 실제 글리프가 있는지 확인합니다. (미할당 문자와 비교)"""
+    """폰트에 해당 문자의 실제 글리프가 있는지 확인합니다."""
     key = (id(font), ch)
     if key in _glyph_cache:
         return _glyph_cache[key]
-    try:
-        m1 = font.getmask(ch, mode="L")
-        m2 = font.getmask("\u0378", mode="L")  # 미할당 코드포인트 → .notdef
-        b1, b2 = m1.getbbox(), m2.getbbox()
-        ok = b1 is not None and (b1 != b2 or m1.tobytes() != m2.tobytes())
-    except Exception:
-        ok = True
+    path = _font_paths.get(id(font))
+    if _FONTTOOLS_OK and path:
+        cmap = _get_cmap(path)
+        ok = cmap is None or ord(ch) in cmap
+    else:
+        # fontTools 미설치 시 비트맵 비교 폴백 (정확도 낮음)
+        try:
+            m1 = font.getmask(ch, mode="L")
+            m2 = font.getmask("\u0378", mode="L")
+            b1, b2 = m1.getbbox(), m2.getbbox()
+            ok = b1 is not None and (b1 != b2 or m1.tobytes() != m2.tobytes())
+        except Exception:
+            ok = True
     _glyph_cache[key] = ok
     return ok
 
@@ -211,6 +245,7 @@ def load_fallback_font(size: int):
         if Path(c).exists():
             try:
                 font = ImageFont.truetype(c, size)
+                _font_paths[id(font)] = c
                 break
             except OSError:
                 continue
@@ -545,7 +580,9 @@ def main() -> None:
     ap.add_argument("--font", help="한국어 폰트 ttf/ttc 경로 (기본: 시스템 자동 탐색)")
     ap.add_argument("--seed", type=int, help="단어 선택 시드 (재현용)")
     ap.add_argument("--index", type=int, help="특정 단어 인덱스만 사용 (0부터, 테스트용)")
-    ap.add_argument("--tts", action="store_true", help="영어 TTS 음성 추가 (edge-tts, 인터넷 필요)")
+    ap.add_argument("--tts", dest="tts", action="store_true", default=True,
+                    help="영어 TTS 음성(기본 켜짐 — edge-tts, 인터넷 필요)")
+    ap.add_argument("--no-tts", dest="tts", action="store_false", help="영어 TTS 끄기")
     ap.add_argument("--voice", default="en-US-JennyNeural", help="TTS 목소리 (기본 en-US-JennyNeural)")
     ap.add_argument("--music", help="배경음악 오디오 파일(mp3/wav) 경로 (선택)")
     ap.add_argument("--music-volume", type=float, default=0.15, help="배경음악 볼륨 0~1 (기본 0.15)")
@@ -594,7 +631,7 @@ def main() -> None:
     log(f"길이  : 약 {total_dur:.0f}초 ({len(picked)}장 × {args.slide_sec:g}초), {FPS}fps")
     log(f"출력  : {out} ({W}x{H}, 9:16 세로)")
     log(f"스타일: {args.style}")
-    log(f"음성  : {'edge-tts (' + args.voice + ')' if args.tts else '없음 (--tts 로 추가)'}")
+    log(f"음성  : {'edge-tts (' + args.voice + ')' if args.tts else '없음 (--no-tts 로 끔)'}")
     if music:
         log(f"배경음악: {music} (볼륨 {args.music_volume:g})")
     elif not args.tts and not args.no_ambient:

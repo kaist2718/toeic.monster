@@ -9,7 +9,7 @@
     "default_theme": "blue",
     "default_style": "classic",
     "default_voice": "en-US-JennyNeural",
-    "default_tts": false,
+    "default_tts": true,
     "default_privacy": "unlisted",
     "confirm_real_upload": true,
     "history_limit": 20

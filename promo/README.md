@@ -151,8 +151,9 @@ python make_shorts.py --unit 1 --music assets/music/calm.mp3 --music-volume 0.2
 
 `9:16 / 1080×1920 / 30fps` 영상을 만들며, 한글·IPA 폰트를 자동 탐색합니다. 생성 전 `--dry-run`으로 계획을 확인할 수 있습니다.
 
-- **무음 방지**: `--tts`/`--music`이 없어도 부드러운 앰비언트 사운드가 기본으로 들어갑니다. `--no-ambient`로 끌 수 있습니다.
-- **네모(□) 방지**: 주 폰트에 없는 글리프(IPA 등)는 자동으로 폴백 폰트로 대체합니다. 이모지 아이콘이 없으면 아이콘을 생략합니다.
+- **영어 음성 기본**: 단어·예문을 읽어 주는 TTS(edge-tts, 무료·인터넷 필요)가 기본 켜짐입니다. `--no-tts`로 끄면 앰비언트 사운드로 대체됩니다.
+- **무음 방지**: TTS·음악이 실패하거나 없어도 부드러운 앰비언트 사운드가 들어갑니다. `--no-ambient`로 끌 수 있습니다.
+- **네모(□) 방지**: fontTools cmap으로 글리프 존재를 확인해, 한글 폰트에 없는 IPA 기호 등은 자동으로 IPA 커버 폰트(Arial 등)로 대체합니다.
 
 | 옵션 | 설명 |
 |---|---|
@@ -160,6 +161,7 @@ python make_shorts.py --unit 1 --music assets/music/calm.mp3 --music-volume 0.2
 | `--style` | 카드 스타일: `classic`(기본) / `modern`(글래스 카드) / `minimal`(심플) |
 | `--music` | 배경음악 mp3/wav 경로 (선택) |
 | `--music-volume` | 배경음악 볼륨 0~1 (기본 0.15) |
+| `--tts` / `--no-tts` | 영어 TTS 켜기(기본) / 끄기 |
 | `--no-ambient` | 기본 앰비언트 사운드 끄기 (무음 영상) |
 
 ## 7-1. 게시 성과 추적
