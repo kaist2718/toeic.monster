@@ -8,3 +8,10 @@ instagrapi>=2.0.0
 
 # TikTok 업로드 (선택 — 공식 API 승인 대체용, 불안정)
 # TikTokApi>=6.2.0
+
+# 쇼츠 영상 생성 (make_shorts.py)
+Pillow>=10.0.0
+imageio-ffmpeg>=0.4.9
+
+# 쇼츠 TTS 음성 (make_shorts.py --tts, 인터넷 필요, 무료)
+edge-tts>=6.1.0

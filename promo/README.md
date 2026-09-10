@@ -97,7 +97,39 @@ promo/config.json
 promo/.secrets/
 ```
 
-## 6. 배포 전 체크리스트
+## 6. 쇼츠 영상 자동 생성 (make_shorts.py)
+
+`data/unitNN.js`의 단어 카드를 9:16 세로 쇼츠(1080×1920) 영상으로 자동 렌더링합니다.
+단어·IPA·한글 발음·뜻·예문·해석 + toeic.monster 푸터, Ken Burns 줌 + 크로스페이드 효과.
+
+```bash
+# UNIT 1 단어 5개로 영상 생성 → assets/shorts/unit01_shorts.mp4
+python make_shorts.py --unit 1
+
+# 7개 + 영어 TTS 음성 (먼저 pip install edge-tts)
+python make_shorts.py --unit 3 --words 7 --tts
+
+# 테마·시드·특정 단어 지정
+python make_shorts.py --unit 5 --bg purple --seed 42
+python make_shorts.py --unit 2 --index 0 --slide-sec 4   # 첫 단어만 빠르게 테스트
+```
+
+| 옵션 | 설명 |
+|---|---|
+| `--unit N` | 유닛 번호 (1~30, 필수) |
+| `--words K` | 영상 단어 수 (기본 5) |
+| `--slide-sec` | 슬라이드당 초 (기본 6) |
+| `--bg` | 배경 테마: blue/purple/green/orange/pink/navy |
+| `--tts`, `--voice` | 영어 TTS 음성 추가 (edge-tts) |
+| `--seed`, `--index` | 단어 선택 고정/특정 단어 |
+| `--dry-run` | 계획만 출력 |
+
+생성 후 바로 배포: `python publish.py --video assets/shorts/unit01_shorts.mp4 --unit 1 --dry-run`
+
+> 한국어 폰트는 자동 탐색(Windows 맑은 고딕, macOS/Linux 나눔고딕).
+> 다른 폰트를 쓰려면 `--font C:/path/font.ttf` 로 지정하세요.
+
+## 7. 배포 전 체크리스트
 - [ ] 쇼츠 영상은 **9:16 세로**, 60초 이내, 해상도 1080×1920 권장
 - [ ] 영상 마지막에 로고/사이트 주소 노출 → 트래픽 유입 효과
 - [ ] `--dry-run`으로 제목·설명·플랫폼 확인 후 실제 업로드
