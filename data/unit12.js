@@ -1,0 +1,38 @@
+window.VOCAB_UNITS = window.VOCAB_UNITS || {};
+// UNIT 12. 생산과 공급 (33 words)
+// 형식: [단어, IPA 발음기호, 한글발음, 뜻, 토익 예문, 예문 해석, 예문 한글 발음]
+window.VOCAB_UNITS[12] = [
+  ["produce", "/prəˈduːs/", "프러-두스", "생산하다, 만들다", "The factory produces car parts for export.", "그 공장은 수출용 자동차 부품을 생산한다.", "더 팩-터-리 프러-두-시즈 카 파츠 포 엑스-포트"],
+  ["production", "/prəˈdʌkʃn/", "프러-덕-션", "생산, 제조", "Production will stop for maintenance next week.", "다음 주에 유지 보수를 위해 생산이 중단될 것이다.", "프러-덕-션 윌 스탑 포 메인-터-넌스 넥스트 위크"],
+  ["manufacture", "/ˌmænjuˈfæktʃər/", "매-뉴-팩-처", "제조하다, 제조", "The company manufactures electronic devices.", "그 회사는 전자 기기를 제조한다.", "더 컴-퍼-니 매-뉴-팩-처즈 일-렉-트라-닉 디-바이-시즈"],
+  ["manufacturer", "/ˌmænjuˈfæktʃərər/", "매-뉴-팩-처-러", "제조업체, 제조자", "The manufacturer is responsible for the defects.", "제조업체가 결함에 대한 책임이 있다.", "더 매-뉴-팩-처-러 이즈 리-스판-서-블 포 더 디-펙츠"],
+  ["factory", "/ˈfæktəri/", "팩-터-리", "공장", "The factory employs over five hundred workers.", "그 공장은 500명이 넘는 노동자를 고용한다.", "더 팩-터-리 임-플로이즈 오우-버 파이브 헌-드레드 워-커즈"],
+  ["plant", "/plænt/", "플랜트", "공장, 시설", "They built a new plant near the harbor.", "그들은 항구 근처에 새 공장을 지었다.", "데이 빌트 어 누 플랜트 니어 더 하-버"],
+  ["facility", "/fəˈsɪləti/", "퍼-시-러-티", "시설, 설비", "The sports facility is open to all employees.", "그 체육 시설은 모든 직원에게 개방되어 있다.", "더 스포츠 퍼-시-러-티 이즈 오우-픈 투 올 임-플로이-이즈"],
+  ["machine", "/məˈʃiːn/", "머-신", "기계", "This machine can pack a hundred boxes an hour.", "이 기계는 시간당 상자 100개를 포장할 수 있다.", "디스 머-신 캔 팩 어 헌-드레드 박-시즈 언 아워"],
+  ["machinery", "/məˈʃiːnəri/", "머-시-너-리", "기계류, 기계 설비", "The factory purchased new machinery last year.", "그 공장은 작년에 새 기계 설비를 구입했다.", "더 팩-터-리 퍼-체-스트 누 머-시-너-리 래스트 이어"],
+  ["assemble", "/əˈsembl/", "어-셈-블", "조립하다, 모으다", "Workers assemble the parts on the assembly line.", "작업자들은 조립 라인에서 부품을 조립한다.", "워-커즈 어-셈-블 더 파츠 온 디 어-셈-블리 라인"],
+  ["assembly", "/əˈsembli/", "어-셈-블리", "조립, 조립 라인", "The assembly of the product takes two hours.", "그 제품의 조립에는 2시간이 걸린다.", "디 어-셈-블리 오브 더 프라-덕트 테이크스 투 아워즈"],
+  ["process", "/ˈprɑːses/", "프라-세스", "과정, 공정", "The production process has been improved.", "생산 공정이 개선되었다.", "더 프러-덕-션 프라-세스 해즈 빈 임-프루브드"],
+  ["procedure", "/prəˈsiːdʒər/", "프러-시-저", "절차, 수순", "Follow the safety procedure at all times.", "항상 안전 절차를 따르세요.", "팔-로우 더 세이프-티 프러-시-저 앳 올 타임즈"],
+  ["operation", "/ˌɑːpəˈreɪʃn/", "아-퍼-레이-션", "운영, 작동", "The new system is now in operation.", "새 시스템이 이제 가동 중이다.", "더 누 시스-텀 이즈 나우 인 아-퍼-레이-션"],
+  ["operate", "/ˈɑːpəreɪt/", "아-퍼-레이트", "작동하다, 운영하다", "Only trained staff may operate this equipment.", "훈련받은 직원만 이 장비를 작동할 수 있다.", "온-리 트레인드 스태프 메이 아-퍼-레이트 디스 이-퀴프-먼트"],
+  ["inspect", "/ɪnˈspekt/", "인-스펙트", "검사하다, 점검하다", "The quality team inspects every product.", "품질 팀은 모든 제품을 검사한다.", "더 콸-러-티 팀 인-스펙츠 에-브리 프라-덕트"],
+  ["inspection", "/ɪnˈspekʃn/", "인-스펙-션", "검사, 점검", "The inspection found no serious problems.", "그 검사에서는 심각한 문제가 발견되지 않았다.", "디 인-스펙-션 파운드 노우 시-리-어스 프라-블럼즈"],
+  ["raw material", "/ˌrɔː məˈtɪriəl/", "로우 머-티-리-얼", "원자재, 원료", "The price of raw materials has risen sharply.", "원자재 가격이 급격히 상승했다.", "더 프라이스 오브 로우 머-티-리-얼즈 해즈 리-즌 샤-플리"],
+  ["material", "/məˈtɪriəl/", "머-티-리-얼", "재료, 자재", "The chairs are made of high-quality material.", "그 의자들은 고품질 재료로 만들어진다.", "더 체어즈 아 메이드 오브 하이-콸-러-티 머-티-리-얼"],
+  ["component", "/kəmˈpoʊnənt/", "컴-포우-넌트", "부품, 구성 요소", "The components are produced in China.", "그 부품들은 중국에서 생산된다.", "더 컴-포우-넌츠 아 프러-두-스트 인 차이-너"],
+  ["supplier", "/səˈplaɪər/", "서-플라이-어", "공급업체", "We are looking for a new parts supplier.", "우리는 새로운 부품 공급업체를 찾고 있다.", "위 아 루-킹 포 어 누 파츠 서-플라이-어"],
+  ["inventory", "/ˈɪnvəntɔːri/", "인-벤-토-리", "재고, 재고 목록", "We need to check the inventory before ordering.", "주문하기 전에 재고를 확인해야 한다.", "위 니드 투 체크 디 인-벤-토-리 비-포 오-더-링"],
+  ["stock", "/stɑːk/", "스탁", "재고, 주식", "The warehouse keeps a large stock of goods.", "그 창고에는 많은 양의 상품 재고가 있다.", "더 웨어-하우스 킵스 어 라지 스탁 오브 구즈"],
+  ["warehouse", "/ˈwerhaʊs/", "웨어-하우스", "창고, 물류 센터", "The goods are stored in a large warehouse.", "상품들은 대형 창고에 보관된다.", "더 구즈 아 스토어드 인 어 라지 웨어-하우스"],
+  ["storage", "/ˈstɔːrɪdʒ/", "스토-리지", "보관, 저장", "The basement is used for storage.", "지하실은 보관용으로 사용된다.", "더 베이스-먼트 이즈 유즈드 포 스토-리지"],
+  ["distribute", "/dɪˈstrɪbjuːt/", "디-스트리-뷰트", "배포하다, 유통하다", "The company distributes products nationwide.", "그 회사는 전국에 제품을 유통한다.", "더 컴-퍼-니 디-스트리-뷰츠 프라-덕츠 내-션-와이드"],
+  ["distribution", "/ˌdɪstrɪˈbjuːʃn/", "디-스트리-뷰-션", "유통, 배급", "The distribution network covers the whole country.", "유통망이 전국을 망라한다.", "더 디-스트리-뷰-션 네트-워크 커-버즈 더 홀 컨-트리"],
+  ["shipment", "/ˈʃɪpmənt/", "십-먼트", "선적, 배송 화물", "The shipment will arrive on Tuesday.", "선적 화물이 화요일에 도착할 것이다.", "더 십-먼트 윌 어-라이브 온 튜즈-데이"],
+  ["freight", "/freɪt/", "프레이트", "화물, 운임", "The freight was delayed at the border.", "화물이 국경에서 지연되었다.", "더 프레이트 워즈 디-레이드 앳 더 보-더"],
+  ["transport", "/trænsˈpɔːrt/", "트랜스-포트", "운송하다, 수송", "The goods will be transported by truck.", "상품은 트럭으로 운송될 것이다.", "더 구즈 윌 비 트랜스-포-티드 바이 트럭"],
+  ["transportation", "/ˌtrænspərˈteɪʃn/", "트랜스-퍼-테이-션", "운송, 교통", "Transportation costs are included in the price.", "운송비는 가격에 포함되어 있다.", "트랜스-퍼-테이-션 코스트 아 인-클루-디드 인 더 프라이스"],
+  ["export", "/ˈekspɔːrt/", "엑스-포트", "수출, 수출하다", "The country exports electronics to Europe.", "그 나라는 전자 제품을 유럽에 수출한다.", "더 컨-트리 엑스-포츠 일-렉-트라-닉스 투 유-럽"],
+  ["import", "/ˈɪmpɔːrt/", "임-포트", "수입, 수입하다", "The store imports coffee from South America.", "그 가게는 남미에서 커피를 수입한다.", "더 스토어 임-포츠 커-피 프럼 사우스 어-메-리-카"]
+];

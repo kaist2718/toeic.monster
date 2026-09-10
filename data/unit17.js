@@ -1,0 +1,38 @@
+window.VOCAB_UNITS = window.VOCAB_UNITS || {};
+// UNIT 17. 건강과 병원 (33 words)
+// 형식: [단어, IPA 발음기호, 한글발음, 뜻, 토익 예문, 예문 해석, 예문 한글 발음]
+window.VOCAB_UNITS[17] = [
+  ["doctor", "/ˈdɑːktər/", "닥-터", "의사", "You should see a doctor about that cough.", "그 기침 때문에 의사를 만나 보세요.", "유 슈드 시 어 닥-터 어-바웃 댓 코프"],
+  ["nurse", "/nɜːrs/", "너스", "간호사", "The nurse checked my blood pressure.", "간호사가 내 혈압을 재었다.", "더 너스 체크트 마이 블러드 프레-셔"],
+  ["patient", "/ˈpeɪʃnt/", "페이-션트", "환자", "The patient is recovering well after surgery.", "환자는 수술 후 잘 회복되고 있다.", "더 페이-션트 이즈 리-커-버-링 웰 애프-터 서-저-리"],
+  ["hospital", "/ˈhɑːspɪtl/", "하-스-피-털", "병원", "He was taken to the hospital by ambulance.", "그는 구급차로 병원에 실려 갔다.", "히 워즈 테이-큰 투 더 하-스-피-털 바이 앰-뷸-런스"],
+  ["clinic", "/ˈklɪnɪk/", "클리-닉", "진료소, 클리닉", "The clinic is open from nine to five.", "그 진료소는 9시부터 5시까지 문을 연다.", "더 클리-닉 이즈 오우-픈 프럼 나인 투 파이브"],
+  ["medicine", "/ˈmedɪsn/", "메-디-슨", "약, 의학", "Take this medicine three times a day.", "이 약을 하루 세 번 드세요.", "테이크 디스 메-디-슨 쓰리 타임즈 어 데이"],
+  ["medication", "/ˌmedɪˈkeɪʃn/", "메-디-케이-션", "약물, 투약", "He is on medication for high blood pressure.", "그는 고혈압으로 약을 복용 중이다.", "히 이즈 온 메-디-케이-션 포 하이 블러드 프레-셔"],
+  ["prescription", "/prɪˈskrɪpʃn/", "프리-스크립-션", "처방전", "The doctor gave me a prescription for antibiotics.", "의사가 항생제 처방전을 내주었다.", "더 닥-터 게이브 미 어 프리-스크립-션 포 앤-티-바이-아-틱스"],
+  ["symptom", "/ˈsɪmptəm/", "심-프텀", "증상", "Tell the doctor about any symptoms you have.", "당신에게 있는 어떤 증상이든 의사에게 말하세요.", "텔 더 닥-터 어-바웃 에-니 심-프텀즈 유 해브"],
+  ["fever", "/ˈfiːvər/", "피-버", "열, 발열", "She has a high fever and a sore throat.", "그녀는 고열과 목이 아프다.", "시 해즈 어 하이 피-버 앤드 어 소어 스로우트"],
+  ["headache", "/ˈhedeɪk/", "헤드-에이크", "두통", "I have a terrible headache this morning.", "오늘 아침 두통이 심하다.", "아이 해브 어 테-러-블 헤드-에이크 디스 모-닝"],
+  ["pain", "/peɪn/", "페인", "통증, 아픔", "Do you feel any pain in your back?", "등에 통증이 느껴지나요?", "두 유 필 에-니 페인 인 유어 백"],
+  ["injury", "/ˈɪndʒəri/", "인-저-리", "부상", "He suffered a knee injury during the game.", "그는 경기 중 무릎 부상을 입었다.", "히 서-퍼드 어 니 인-저-리 두-링 더 게임"],
+  ["wound", "/wuːnd/", "운드", "상처", "Clean the wound with soap and water.", "상처를 비누와 물로 씻으세요.", "클린 더 운드 위드 소우프 앤드 워-터"],
+  ["treatment", "/ˈtriːtmənt/", "트리트-먼트", "치료, 처우", "The treatment will take about two weeks.", "그 치료는 약 2주가 걸릴 것이다.", "더 트리트-먼트 윌 테이크 어-바웃 투 위크스"],
+  ["cure", "/kjʊr/", "큐어", "치료하다, 치료법", "There is no cure for the common cold.", "감기를 치료하는 방법은 없다.", "데어 이즈 노우 큐어 포 더 카-먼 콜드"],
+  ["examine", "/ɪɡˈzæmɪn/", "이그-잼-민", "진찰하다, 검사하다", "The doctor will examine your eyes.", "의사가 당신의 눈을 검사할 것이다.", "더 닥-터 윌 이그-잼-민 유어 아이즈"],
+  ["diagnosis", "/ˌdaɪəɡˈnoʊsɪs/", "다이-어그-노우-시스", "진단", "The diagnosis was made after several tests.", "여러 검사 후에 진단이 내려졌다.", "더 다이-어그-노우-시스 워즈 메이드 애프-터 세-버-럴 테스츠"],
+  ["surgery", "/ˈsɜːrdʒəri/", "서-저-리", "수술", "The surgery was successful and painless.", "수술은 성공적이었고 통증이 없었다.", "더 서-저-리 워즈 석-세스-풀 앤드 페인-러스"],
+  ["checkup", "/ˈtʃekʌp/", "체크-업", "건강 검진", "It is important to have a regular checkup.", "정기 건강 검진을 받는 것이 중요하다.", "잇 이즈 임-포-턴트 투 해브 어 레-규-러 체크-업"],
+  ["dentist", "/ˈdentɪst/", "덴-티스트", "치과의사", "The dentist cleaned my teeth thoroughly.", "치과의사가 내 치아를 꼼꼼히 청소했다.", "더 덴-티스트 클린드 마이 티스 서-로-리"],
+  ["pharmacy", "/ˈfɑːrməsi/", "파-머-시", "약국", "You can buy the medicine at the pharmacy.", "약국에서 그 약을 살 수 있다.", "유 캔 바이 더 메-디-슨 앳 더 파-머-시"],
+  ["drug", "/drʌɡ/", "드러그", "약, 마약", "The new drug has few side effects.", "새 약은 부작용이 거의 없다.", "더 누 드러그 해즈 퓨 사이드 이-펙츠"],
+  ["dose", "/doʊs/", "도우스", "용량, 복용량", "Take one dose of the syrup at night.", "밤에 시럽 한 번 분량을 드세요.", "테이크 원 도우스 오브 더 시-럽 앳 나이트"],
+  ["recover", "/rɪˈkʌvər/", "리-커-버", "회복하다, 되찾다", "She is recovering from the flu.", "그녀는 독감에서 회복 중이다.", "시 이즈 리-커-버-링 프럼 더 플루"],
+  ["recovery", "/rɪˈkʌvəri/", "리-커-버-리", "회복, 쾌유", "His recovery will take several months.", "그의 회복에는 몇 달이 걸릴 것이다.", "히즈 리-커-버-리 윌 테이크 세-버-럴 먼스"],
+  ["rest", "/rest/", "레스트", "휴식, 쉬다", "You need plenty of rest after the operation.", "수술 후에는 충분한 휴식이 필요하다.", "유 니드 플렌-티 오브 레스트 애프-터 디 아-퍼-레이-션"],
+  ["sick", "/sɪk/", "식크", "아픈, 병든", "Two employees are sick with the flu.", "직원 두 명이 독감으로 아프다.", "투 임-플로이-이즈 아 식크 위드 더 플루"],
+  ["disease", "/dɪˈziːz/", "디-지즈", "질병", "Heart disease is a leading cause of death.", "심장병은 주요 사망 원인이다.", "하트 디-지즈 이즈 어 리-딩 코즈 오브 데스"],
+  ["virus", "/ˈvaɪrəs/", "바이-러스", "바이러스", "The virus spreads quickly in crowded places.", "바이러스는 사람이 많은 곳에서 빠르게 퍼진다.", "더 바이-러스 스프레즈 퀵-리 인 크라우-디드 플레이-시즈"],
+  ["vaccine", "/vækˈsiːn/", "백-신", "백신", "The new vaccine is now available to the public.", "새 백신이 이제 대중에게 제공된다.", "더 누 백-신 이즈 나우 어-베이-러-블 투 더 퍼-블릭"],
+  ["emergency", "/ɪˈmɜːrdʒənsi/", "이-머-전-시", "비상 사태, 응급", "Call the emergency number if you are injured.", "다치면 응급 번호로 전화하세요.", "콜 디 이-머-전-시 넘-버 이프 유 아 인-저드"],
+  ["appetite", "/ˈæpɪtaɪt/", "애-피-타이트", "식욕", "The medicine may reduce your appetite.", "그 약이 식욕을 떨어뜨릴 수 있다.", "더 메-디-슨 메이 리-두스 유어 애-피-타이트"]
+];

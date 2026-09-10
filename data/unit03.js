@@ -1,0 +1,38 @@
+window.VOCAB_UNITS = window.VOCAB_UNITS || {};
+// UNIT 3. 프레젠테이션과 발표 (33 words)
+// 형식: [단어, IPA 발음기호, 한글발음, 뜻, 토익 예문, 예문 해석, 예문 한글 발음]
+window.VOCAB_UNITS[3] = [
+  ["present", "/ˈpreznt/", "프레-전트", "발표하다, 제시하다", "She will present the new product to the clients.", "그녀는 신제품을 고객들에게 발표할 것이다.", "시 윌 프레-전트 더 누 프라-덕트 투 더 클라-이언츠"],
+  ["presentation", "/ˌpreznˈteɪʃn/", "프레-전-테이-션", "발표, 프레젠테이션", "His presentation was clear and well organized.", "그의 발표는 명확하고 잘 구성되어 있었다.", "히즈 프레-전-테이-션 워즈 클리어 앤드 웰 오-거-나이즈드"],
+  ["introduce", "/ˌɪntrəˈduːs/", "인-트로-두스", "소개하다", "Let me introduce our new team leader.", "새 팀장님을 소개하겠습니다.", "렛 미 인-트로-두스 아워 누 팀 리-더"],
+  ["introduction", "/ˌɪntrəˈdʌkʃn/", "인-트로-덕-션", "소개, 서론", "The introduction of the speech was very impressive.", "연설의 도입부는 매우 인상적이었다.", "디 인-트로-덕-션 오브 더 스피치 워즈 베-리 임-프레-시브"],
+  ["audience", "/ˈɔːdiəns/", "오-디-언스", "청중, 관객", "The audience listened carefully to the speaker.", "청중은 연사에게 주의 깊게 귀를 기울였다.", "디 오-디-언스 리-슨드 케어-풀-리 투 더 스피-커"],
+  ["slide", "/slaɪd/", "슬라이드", "슬라이드, 화면", "Please look at the chart on the next slide.", "다음 슬라이드의 차트를 봐 주세요.", "플리즈 룩 앳 더 차트 온 더 넥스트 슬라이드"],
+  ["chart", "/tʃɑːrt/", "차트", "도표, 차트", "The chart shows the sales figures for last year.", "그 차트는 작년 매출 수치를 보여준다.", "더 차트 쇼우즈 더 세일즈 피-겨즈 포 래스트 이어"],
+  ["graph", "/ɡræf/", "그래프", "그래프", "According to this graph, sales increased steadily.", "이 그래프에 따르면 매출이 꾸준히 증가했다.", "어-코-딩 투 디스 그래프 세일즈 인-크리스트 스테-디-리"],
+  ["data", "/ˈdeɪtə/", "데이-터", "데이터, 자료", "The data was collected from three different regions.", "그 데이터는 세 개의 다른 지역에서 수집되었다.", "더 데이-터 워즈 컬-렉-티드 프럼 쓰리 디-퍼-런트 리-전즈"],
+  ["figure", "/ˈfɪɡjər/", "피-겨", "수치, 숫자", "The exact figures will be available next week.", "정확한 수치는 다음 주에 확인할 수 있다.", "디 익-젝트 피-겨즈 윌 비 어-베이-러-블 넥스트 위크"],
+  ["statistics", "/stəˈtɪstɪks/", "스터-티스-틱스", "통계, 통계 자료", "The statistics show a ten percent increase in sales.", "통계는 매출이 10% 증가했음을 보여준다.", "더 스터-티스-틱스 쇼우 어 텐 퍼-센트 인-크리스 인 세일즈"],
+  ["explain", "/ɪkˈspleɪn/", "익-스플레인", "설명하다", "Could you explain how this machine works?", "이 기계가 어떻게 작동하는지 설명해 주시겠습니까?", "쿠드 유 익-스플레인 하우 디스 머-신 워크스"],
+  ["explanation", "/ˌekspləˈneɪʃn/", "엑스-플러-네이-션", "설명", "He gave a detailed explanation of the new policy.", "그는 새 정책에 대해 자세한 설명을 했다.", "히 게이브 어 디-테일드 익-스플러-네이-션 오브 더 누 팔-러-시"],
+  ["demonstrate", "/ˈdemənstreɪt/", "데-먼-스트레이트", "실증하다, 시연하다", "The technician demonstrated how to use the equipment.", "기술자가 장비 사용법을 시연했다.", "더 텍-니-션 데-먼-스트레이-티드 하우 투 유즈 디 이-퀴프-먼트"],
+  ["demonstration", "/ˌdemənˈstreɪʃn/", "데-먼-스트레이-션", "시연, 실연", "There will be a product demonstration at the trade fair.", "박람회에서 제품 시연회가 있을 것이다.", "데어 윌 비 어 프라-덕트 데-먼-스트레이-션 앳 더 트레이드 페어"],
+  ["example", "/ɪɡˈzæmpl/", "이그-잼-플", "예, 예시", "Let me give you an example of how it works.", "그것이 어떻게 작동하는지 예를 하나 들겠습니다.", "렛 미 기브 유 언 이그-잼-플 오브 하우 잇 워크스"],
+  ["describe", "/dɪˈskraɪb/", "디-스크라이브", "묘사하다, 설명하다", "The report describes the results of the survey.", "그 보고서는 설문조사 결과를 설명한다.", "더 리-포-트 디-스크라이브즈 더 리-절츠 오브 더 서-베이"],
+  ["description", "/dɪˈskrɪpʃn/", "디-스크립-션", "설명, 기술", "Please read the job description before applying.", "지원 전에 직무 설명을 읽어 주세요.", "플리즈 리드 더 잡 디-스크립-션 비-포 어-플라이-잉"],
+  ["summarize", "/ˈsʌməraɪz/", "서-머-라이즈", "요약하다", "To summarize, the project is on schedule.", "요약하자면 프로젝트는 일정대로 진행 중이다.", "투 서-머-라이즈 더 프라-젝트 이즈 온 스케-줄"],
+  ["summary", "/ˈsʌməri/", "서-머-리", "요약, 개요", "Please send a summary of the meeting to all staff.", "회의 요약본을 모든 직원에게 보내 주세요.", "플리즈 센드 어 서-머-리 오브 더 미-팅 투 올 스태프"],
+  ["conclude", "/kənˈkluːd/", "컨-클루드", "결론을 내리다, 끝맺다", "The researchers concluded that the new method works well.", "연구자들은 새로운 방법이 효과적이라고 결론지었다.", "더 리-서-처즈 컨-클루-디드 댓 더 누 메-써드 워크스 웰"],
+  ["conclusion", "/kənˈkluːʒn/", "컨-클루-전", "결론", "In conclusion, we recommend investing in new technology.", "결론적으로 우리는 신기술에 투자할 것을 권장한다.", "인 컨-클루-전 위 레-커-멘드 인-베스-팅 인 누 텍-날-러-지"],
+  ["report", "/rɪˈpɔːrt/", "리-포-트", "보고서, 보고하다", "The annual report will be published in March.", "연례 보고서는 3월에 발간될 것이다.", "디 애-뉴-얼 리-포-트 윌 비 퍼-블리시트 인 마치"],
+  ["speaker", "/ˈspiːkər/", "스피-커", "연사, 발표자", "The main speaker talked about global marketing trends.", "주요 연사가 글로벌 마케팅 동향에 대해 이야기했다.", "더 메인 스피-커 톡트 어-바웃 글로우-블 마-키-팅 트렌즈"],
+  ["speech", "/spiːtʃ/", "스피치", "연설", "The CEO gave a short speech at the opening ceremony.", "CEO가 개막식에서 짧은 연설을 했다.", "더 시-이-오우 게이브 어 쇼트 스피치 앳 디 오우-프닝 세-러-모-니"],
+  ["visual", "/ˈvɪʒuəl/", "비-주-얼", "시각 자료의, 시각적인", "Visual aids make the presentation easier to understand.", "시각 자료는 발표를 이해하기 쉽게 만든다.", "비-주-얼 에이즈 메이크 더 프레-전-테이-션 이-지-어 투 언-더-스탠드"],
+  ["handout", "/ˈhændaʊt/", "핸드-아웃", "유인물", "Copies of the slides are included in the handout.", "슬라이드 사본이 유인물에 포함되어 있다.", "카-피즈 오브 더 슬라이즈 아 인-클루-디드 인 더 핸드-아웃"],
+  ["question", "/ˈkwestʃən/", "퀘스-천", "질문, 의문", "There will be time for questions after the speech.", "연설 후 질문 시간이 있을 것이다.", "데어 윌 비 타임 포 퀘스-천즈 애프-터 더 스피치"],
+  ["answer", "/ˈænsər/", "앤-서", "답변, 대답하다", "She answered all the questions confidently.", "그녀는 모든 질문에 자신 있게 대답했다.", "시 앤-서드 올 더 퀘스-천즈 칸-피-던트-리"],
+  ["feedback", "/ˈfiːdbæk/", "피드-백", "피드백, 반응", "We received positive feedback from the participants.", "우리는 참가자들로부터 긍정적인 피드백을 받았다.", "위 리-시브드 파-지-티브 피드-백 프럼 더 파-티-시-펀츠"],
+  ["applaud", "/əˈplɔːd/", "어-플로드", "박수갈채하다", "The audience applauded after the presentation ended.", "발표가 끝난 후 청중은 박수를 보냈다.", "디 오-디-언스 어-플로-디드 애프-터 더 프레-전-테이-션 엔-디드"],
+  ["applause", "/əˈplɔːz/", "어-플로즈", "박수", "The speaker was greeted with loud applause.", "연사는 큰 박수로 맞이받았다.", "더 스피-커 워즈 그리-티드 위드 라우드 어-플로즈"],
+  ["outline", "/ˈaʊtlaɪn/", "아웃-라인", "개요, 요지", "Here is an outline of today's presentation.", "오늘 발표의 개요는 다음과 같습니다.", "히어 이즈 언 아웃-라인 오브 투-데이즈 프레-전-테이-션"]
+];

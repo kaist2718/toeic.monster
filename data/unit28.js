@@ -1,0 +1,38 @@
+window.VOCAB_UNITS = window.VOCAB_UNITS || {};
+// UNIT 28. 시간과 일정 (33 words)
+// 형식: [단어, IPA 발음기호, 한글발음, 뜻, 토익 예문, 예문 해석, 예문 한글 발음]
+window.VOCAB_UNITS[28] = [
+  ["time", "/taɪm/", "타임", "시간, 때", "The meeting will start on time.", "회의는 제시간에 시작될 것이다.", "더 미-팅 윌 스타트 온 타임"],
+  ["moment", "/ˈmoʊmənt/", "모우-먼트", "순간, 잠깐", "Please wait a moment while I check.", "확인하는 동안 잠시 기다려 주세요.", "플리즈 웨이트 어 모우-먼트 와일 아이 체크"],
+  ["minute", "/ˈmɪnɪt/", "미-닛", "분, 순간", "The bus leaves in ten minutes.", "버스가 10분 후에 출발한다.", "더 버스 리브즈 인 텐 미-닛츠"],
+  ["hour", "/ˈaʊər/", "아워", "시간", "The store opens in an hour.", "가게가 한 시간 후에 문을 연다.", "더 스토어 오우-픈즈 인 언 아워"],
+  ["second", "/ˈsekənd/", "세-컨드", "초, 두 번째", "The system responds within a second.", "그 시스템은 1초 안에 응답한다.", "더 시스-텀 리-스판즈 위드-인 어 세-컨드"],
+  ["date", "/deɪt/", "데이트", "날짜", "Please confirm the delivery date.", "배송 날짜를 확인해 주세요.", "플리즈 컨-펌 더 디-리-버-리 데이트"],
+  ["day", "/deɪ/", "데이", "날, 하루", "We need three days to finish the work.", "우리는 그 일을 끝내는 데 3일이 필요하다.", "위 니드 쓰리 데이즈 투 피-니시 더 워크"],
+  ["week", "/wiːk/", "위크", "주", "The report is due at the end of the week.", "보고서는 주말까지 제출해야 한다.", "더 리-포-트 이즈 두 앳 디 엔드 오브 더 위크"],
+  ["month", "/mʌnθ/", "먼스", "달, 월", "The rent is paid at the beginning of each month.", "임대료는 매달 초에 납부된다.", "더 렌트 이즈 페이드 앳 더 비-긴-닝 오브 이치 먼스"],
+  ["year", "/jɪr/", "이어", "해, 년", "The project will last two years.", "그 프로젝트는 2년간 지속될 것이다.", "더 프라-젝트 윌 래스트 투 이어즈"],
+  ["today", "/təˈdeɪ/", "투-데이", "오늘", "The store is closed today for maintenance.", "그 가게는 유지 보수로 오늘 문을 닫는다.", "더 스토어 이즈 클로우즈드 투-데이 포 메인-터-넌스"],
+  ["tomorrow", "/təˈmɑːroʊ/", "투-마-로우", "내일", "The shipment will arrive tomorrow morning.", "선적물이 내일 아침에 도착할 것이다.", "더 십-먼트 윌 어-라이브 투-마-로우 모-닝"],
+  ["yesterday", "/ˈjestərdeɪ/", "예스-터-데이", "어제", "The meeting was postponed yesterday.", "그 회의는 어제 연기되었다.", "더 미-팅 워즈 포우-스포운드 예스-터-데이"],
+  ["now", "/naʊ/", "나우", "지금", "Please call me back right now.", "지금 바로 전화해 주세요.", "플리즈 콜 미 백 라이트 나우"],
+  ["then", "/ðen/", "덴", "그때, 그다음에", "We will discuss the budget, then the schedule.", "우리는 예산을 논의한 다음 일정을 논의할 것이다.", "위 윌 디-스커스 더 버-짓 덴 더 스케-줄"],
+  ["early", "/ˈɜːrli/", "얼-리", "일찍, 이른", "She arrives at the office early every day.", "그녀는 매일 사무실에 일찍 도착한다.", "시 어-라이브즈 앳 디 오-피스 얼-리 에-브리 데이"],
+  ["late", "/leɪt/", "레이트", "늦은, 늦게", "He was late for the morning meeting.", "그는 아침 회의에 늦었다.", "히 워즈 레이트 포 더 모-닝 미-팅"],
+  ["soon", "/suːn/", "순", "곧, 빨리", "The manager will be back soon.", "매니저가 곧 돌아올 것이다.", "더 매-니-저 윌 비 백 순"],
+  ["immediately", "/ɪˈmiːdiətli/", "이-미-디-엇-리", "즉시, 곧바로", "Please contact the office immediately.", "즉시 사무실에 연락하세요.", "플리즈 칸-택트 디 오-피스 이-미-디-엇-리"],
+  ["immediate", "/ɪˈmiːdiət/", "이-미-디-엇", "즉각적인", "The problem needs immediate action.", "그 문제는 즉각적인 조치가 필요하다.", "더 프라-블럼 니즈 이-미-디-엇 액-션"],
+  ["meanwhile", "/ˈmiːnwaɪl/", "민-와일", "그 사이에, 한편", "Meanwhile, the sales team kept working.", "그 사이 영업팀은 계속 일했다.", "민-와일 더 세일즈 팀 켑트 워-킹"],
+  ["during", "/ˈdʊrɪŋ/", "두-링", "~하는 동안", "Please remain seated during the flight.", "비행 중에는 좌석에 앉아 있어 주세요.", "플리즈 리-메인 시-티드 두-링 더 플라이트"],
+  ["until", "/ənˈtɪl/", "언-틸", "~까지", "The library is open until midnight.", "도서관은 자정까지 문을 연다.", "더 라이-브레-리 이즈 오우-픈 언-틸 미드-나이트"],
+  ["timetable", "/ˈtaɪmteɪbl/", "타임-테이-블", "시간표", "Please check the train timetable before leaving.", "출발 전에 기차 시간표를 확인하세요.", "플리즈 체크 더 트레인 타임-테이-블 비-포 리-빙"],
+  ["duration", "/duˈreɪʃn/", "두-레이-션", "지속 기간", "The duration of the course is six weeks.", "그 과정의 기간은 6주이다.", "더 두-레이-션 오브 더 코스 이즈 식스 위크스"],
+  ["annual", "/ˈænjuəl/", "애-뉴-얼", "연례의, 연간의", "The annual meeting will be held in June.", "연례 회의가 6월에 열릴 것이다.", "디 애-뉴-얼 미-팅 윌 비 헬드 인 준"],
+  ["quarterly", "/ˈkwɔːrtərli/", "콰-터-리", "분기별의", "The company publishes quarterly reports.", "그 회사는 분기별 보고서를 발행한다.", "더 컴-퍼-니 퍼-블리-시즈 콰-터-리 리-포-츠"],
+  ["monthly", "/ˈmʌnθli/", "먼스-리", "매월의, 월간의", "The magazine is published monthly.", "그 잡지는 매월 발행된다.", "더 매-거-진 이즈 퍼-블리시트 먼스-리"],
+  ["weekly", "/ˈwiːkli/", "위크-리", "매주의, 주간의", "We have a weekly team meeting.", "우리는 매주 팀 회의를 한다.", "위 해브 어 위크-리 팀 미-팅"],
+  ["daily", "/ˈdeɪli/", "데이-리", "매일의, 일일의", "The daily specials are posted on the board.", "오늘의 특선 요리가 게시판에 게시되어 있다.", "더 데이-리 스페-셜즈 아 포우-스-티드 온 더 보드"],
+  ["period", "/ˈpɪriəd/", "피-리-어드", "기간, 시기", "Sales increased during the holiday period.", "휴가 기간 동안 매출이 증가했다.", "세일즈 인-크리스트 두-링 더 할-리-데이 피-리-어드"],
+  ["century", "/ˈsentʃəri/", "센-처-리", "세기, 100년", "The building dates back to the last century.", "그 건물은 지난 세기로 거슬러 올라간다.", "더 빌-딩 데이츠 백 투 더 래스트 센-처-리"],
+  ["decade", "/ˈdekeɪd/", "데-케이드", "10년, 십 년", "The company has grown steadily over the past decade.", "그 회사는 지난 10년간 꾸준히 성장해 왔다.", "더 컴-퍼-니 해즈 그로운 스테-디-리 오우-버 더 패스트 데-케이드"]
+];

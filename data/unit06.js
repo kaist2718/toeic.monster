@@ -1,0 +1,38 @@
+window.VOCAB_UNITS = window.VOCAB_UNITS || {};
+// UNIT 6. 인사와 채용 (33 words)
+// 형식: [단어, IPA 발음기호, 한글발음, 뜻, 토익 예문, 예문 해석, 예문 한글 발음]
+window.VOCAB_UNITS[6] = [
+  ["apply", "/əˈplaɪ/", "어-플라이", "지원하다, 신청하다", "More than two hundred people applied for the job.", "200명이 넘는 사람들이 그 일자리에 지원했다.", "모어 댄 투 헌-드레드 피-플 어-플라이드 포 더 잡"],
+  ["application", "/ˌæplɪˈkeɪʃn/", "애-플리-케이-션", "지원서, 신청", "Please fill out the application form carefully.", "지원서를 주의 깊게 작성해 주세요.", "플리즈 필 아웃 디 애-플리-케이-션 폼 케어-풀-리"],
+  ["applicant", "/ˈæplɪkənt/", "애-플리-컨트", "지원자", "The applicants must have at least two years of experience.", "지원자는 최소 2년의 경력이 있어야 한다.", "디 애-플리-컨츠 머스트 해브 앳 리스트 투 이어즈 오브 익-스피-리-언스"],
+  ["recruit", "/rɪˈkruːt/", "리-크루트", "모집하다, 채용하다", "The company is recruiting new graduates this spring.", "그 회사는 올봄 신입 졸업생을 채용하고 있다.", "더 컴-퍼-니 이즈 리-크루-팅 누 그래-주-에이츠 디스 스프링"],
+  ["recruitment", "/rɪˈkruːtmənt/", "리-크루트-먼트", "채용, 모집", "The recruitment process takes about a month.", "채용 과정은 약 한 달이 걸린다.", "더 리-크루트-먼트 프라-세스 테이크스 어-바웃 어 먼스"],
+  ["candidate", "/ˈkændɪdət/", "캔-디-뎃", "후보자, 지원자", "We interviewed five candidates for the position.", "우리는 그 직위에 지원한 후보자 다섯 명을 면접했다.", "위 인-터-뷰드 파이브 캔-디-데이츠 포 더 퍼-지-션"],
+  ["qualification", "/ˌkwɑːlɪfɪˈkeɪʃn/", "콸-리-피-케이-션", "자격, 자격 조건", "A degree in business is a required qualification.", "경영학 학위는 필수 자격 조건이다.", "어 디-그리 인 비즈-니스 이즈 어 리-콰이어드 콸-리-피-케이-션"],
+  ["qualify", "/ˈkwɑːlɪfaɪ/", "콸-리-파이", "자격을 갖추다", "Only members qualify for the special discount.", "회원만 특별 할인을 받을 자격이 있다.", "온-리 멤-버즈 콸-리-파이 포 더 스페-셜 디스-카운트"],
+  ["require", "/rɪˈkwaɪər/", "리-콰이-어", "요구하다, 필요로 하다", "The job requires strong computer skills.", "그 일자리는 뛰어난 컴퓨터 실력을 요구한다.", "더 잡 리-콰이어즈 스트롱 컴-퓨-터 스킬즈"],
+  ["requirement", "/rɪˈkwaɪərmənt/", "리-콰이-어-먼트", "요구 사항, 필요 조건", "English proficiency is a basic requirement for this job.", "영어 능력은 이 직업의 기본 요구 사항이다.", "잉-글리시 프러-피-션-시 이즈 어 베이-식 리-콰이-어-먼트 포 디스 잡"],
+  ["reference", "/ˈrefrəns/", "레-프런스", "추천서, 참고 자료", "Please include two references with your application.", "지원서에 추천인 두 명을 포함해 주세요.", "플리즈 인-클루드 투 레-프런-시즈 위드 유어 애-플리-케이-션"],
+  ["background", "/ˈbækɡraʊnd/", "백-그라운드", "배경, 경력", "She has a background in finance.", "그녀는 금융 분야 경력이 있다.", "시 해즈 어 백-그라운드 인 파이-낸스"],
+  ["degree", "/dɪˈɡriː/", "디-그리", "학위", "He has a master's degree in economics.", "그는 경제학 석사 학위를 가지고 있다.", "히 해즈 어 매스-터즈 디-그리 인 이-카-너-믹스"],
+  ["graduate", "/ˈɡrædʒuət/", "그래-주-엇", "졸업생, 졸업하다", "She graduated from Seoul National University.", "그녀는 서울대학교를 졸업했다.", "시 그래-주-에이-티드 프럼 설 내-셔-널 유-니-버-시-티"],
+  ["certificate", "/sərˈtɪfɪkət/", "서-티-피-킷", "증명서, 자격증", "You need a certificate to operate this machine.", "이 기계를 작동하려면 자격증이 필요하다.", "유 니드 어 서-티-피-킷 투 아-퍼-레이트 디스 머-신"],
+  ["license", "/ˈlaɪsns/", "라이-선스", "면허, 허가증", "He holds a valid driver's license.", "그는 유효한 운전면허를 소지하고 있다.", "히 홀즈 어 밸-리드 드라이-버즈 라이-선스"],
+  ["transfer", "/trænsˈfɜːr/", "트랜스-퍼", "전근하다, 옮기다", "She was transferred to the Tokyo office.", "그녀는 도쿄 사무소로 전근 갔다.", "시 워즈 트랜스-퍼드 투 더 토우-키-오 오-피스"],
+  ["resign", "/rɪˈzaɪn/", "리-자인", "사임하다, 사직하다", "He resigned from his position last week.", "그는 지난주에 직위에서 사임했다.", "히 리-자인드 프럼 히즈 퍼-지-션 래스트 위크"],
+  ["quit", "/kwɪt/", "퀴트", "그만두다, 퇴사하다", "She quit her job to start her own business.", "그녀는 자신의 사업을 시작하려고 일을 그만두었다.", "시 퀴트 허 잡 투 스타트 허 오운 비즈-니스"],
+  ["lay off", "/leɪ ɔːf/", "레이 오프", "해고하다, 정리하다", "The company laid off fifty workers in March.", "그 회사는 3월에 직원 50명을 해고했다.", "더 컴-퍼-니 레이드 오프 피프-티 워-커즈 인 마치"],
+  ["layoff", "/ˈleɪɔːf/", "레이-오프", "해고, 정리 해고", "There were massive layoffs in the auto industry.", "자동차 업계에 대규모 정리 해고가 있었다.", "데어 워 매-시브 레이-오프스 인 디 오-토우 인-더-스트리"],
+  ["dismiss", "/dɪsˈmɪs/", "디스-미스", "해임하다, 묵살하다", "The manager dismissed the employee for breaking the rules.", "매니저는 규칙을 어긴 직원을 해임했다.", "더 매-니-저 디스-미스트 디 임-플로이-이 포 브레이-킹 더 룰즈"],
+  ["raise", "/reɪz/", "레이즈", "급여 인상, 인상하다", "Employees asked for a raise in their salaries.", "직원들은 급여 인상을 요구했다.", "임-플로이-이즈 애스크트 포 어 레이즈 인 데어 샐-러-리즈"],
+  ["career", "/kəˈrɪr/", "커-리어", "경력, 직업", "She has had a successful career in marketing.", "그녀는 마케팅 분야에서 성공적인 경력을 쌓아왔다.", "시 해즈 해드 어 석-세스-풀 커-리어 인 마-키-팅"],
+  ["occupation", "/ˌɑːkjuˈpeɪʃn/", "아-큐-페이-션", "직업, 직종", "Please write your occupation on the form.", "양식에 직업을 적어 주세요.", "플리즈 라이트 유어 아-큐-페이-션 온 더 폼"],
+  ["profession", "/prəˈfeʃn/", "프러-페-션", "전문 직업", "Teaching is a respected profession.", "교직은 존경받는 전문 직업이다.", "티-칭 이즈 어 리-스펙-티드 프러-페-션"],
+  ["professional", "/prəˈfeʃənl/", "프러-페-셔-널", "전문가의, 전문적인", "The presentation looked very professional.", "그 발표는 매우 전문적으로 보였다.", "더 프레-전-테이-션 룩트 베-리 프러-페-셔-널"],
+  ["part-time", "/ˌpɑːrt ˈtaɪm/", "파트-타임", "시간제의, 파트타임의", "She works part-time at a bookstore.", "그녀는 서점에서 시간제로 일한다.", "시 워크스 파트-타임 앳 어 북-스토어"],
+  ["full-time", "/ˌfʊl ˈtaɪm/", "풀-타임", "전일제의, 정규직의", "He is looking for a full-time position.", "그는 정규직 일자리를 찾고 있다.", "히 이즈 루-킹 포 어 풀-타임 퍼-지-션"],
+  ["temporary", "/ˈtempəreri/", "템-퍼-레-리", "임시의, 일시적인", "She took a temporary job at the hospital.", "그녀는 병원에서 임시직으로 일했다.", "시 툭 어 템-퍼-레-리 잡 앳 더 하-스-피-털"],
+  ["permanent", "/ˈpɜːrmənənt/", "퍼-머-넌트", "영구적인, 상설의", "He was offered a permanent position after six months.", "그는 6개월 후에 정규직으로 채용 제안을 받았다.", "히 워즈 오-퍼드 어 퍼-머-넌트 퍼-지-션 애프-터 식스 먼스"],
+  ["probation", "/proʊˈbeɪʃn/", "프로우-베이-션", "수습 기간", "New employees have a three-month probation period.", "신입 직원은 3개월의 수습 기간이 있다.", "누 임-플로이-이즈 해브 어 쓰리-먼스 프로우-베이-션 피-리-어드"],
+  ["orientation", "/ˌɔːriənˈteɪʃn/", "오-리-언-테이-션", "오리엔테이션, 신입 교육", "The orientation for new employees starts on Monday.", "신입 직원 오리엔테이션이 월요일에 시작한다.", "디 오-리-언-테이-션 포 누 임-플로이-이즈 스타츠 온 먼-데이"]
+];

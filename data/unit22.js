@@ -1,0 +1,38 @@
+window.VOCAB_UNITS = window.VOCAB_UNITS || {};
+// UNIT 22. 도시와 생활 (33 words)
+// 형식: [단어, IPA 발음기호, 한글발음, 뜻, 토익 예문, 예문 해석, 예문 한글 발음]
+window.VOCAB_UNITS[22] = [
+  ["city", "/ˈsɪti/", "시-티", "도시", "The city is famous for its nightlife.", "그 도시는 유흥으로 유명하다.", "더 시-티 이즈 페이-머스 포 이츠 나이트-라이프"],
+  ["town", "/taʊn/", "타운", "마을, 읍", "The company has a branch in a small town.", "그 회사는 작은 마을에 지점을 두고 있다.", "더 컴-퍼-니 해즈 어 브랜치 인 어 스몰 타운"],
+  ["village", "/ˈvɪlɪdʒ/", "빌-리지", "마을, 촌락", "The village is surrounded by mountains.", "그 마을은 산으로 둘러싸여 있다.", "더 빌-리지 이즈 서-라운-디드 바이 마운-틴즈"],
+  ["street", "/striːt/", "스트리트", "거리", "The hotel is located on a busy street.", "그 호텔은 번화한 거리에 있다.", "더 호우-텔 이즈 로우-케이-티드 온 어 비-지 스트리트"],
+  ["road", "/roʊd/", "로우드", "길, 도로", "The road to the airport was under repair.", "공항으로 가는 도로가 수리 중이었다.", "더 로우드 투 디 에어-포트 워즈 언-더 리-페어"],
+  ["avenue", "/ˈævənuː/", "애-버-누", "대로, 가로", "There are many shops on the main avenue.", "중앙 대로에는 가게가 많다.", "데어 아 메-니 샵스 온 더 메인 애-버-누"],
+  ["highway", "/ˈhaɪweɪ/", "하이-웨이", "고속도로", "The highway connects the two cities.", "그 고속도로는 두 도시를 연결한다.", "더 하이-웨이 커-넥츠 더 투 시-티즈"],
+  ["bridge", "/brɪdʒ/", "브리지", "다리", "The bridge was closed for safety reasons.", "그 다리는 안전상의 이유로 폐쇄되었다.", "더 브리지 워즈 클로우즈드 포 세이프-티 리-즌즈"],
+  ["park", "/pɑːrk/", "파크", "공원", "The office workers eat lunch in the park.", "사무직 직원들은 공원에서 점심을 먹는다.", "디 오-피스 워-커즈 이트 런치 인 더 파크"],
+  ["museum", "/mjuˈziːəm/", "뮤-지-엄", "박물관", "The museum is free on the first Sunday.", "그 박물관은 첫 번째 일요일에 무료이다.", "더 뮤-지-엄 이즈 프리 온 더 퍼스트 선-데이"],
+  ["theater", "/ˈθiːətər/", "시-어-터", "극장, 영화관", "We watched a play at the theater.", "우리는 극장에서 연극을 봤다.", "위 와치트 어 플레이 앳 더 시-어-터"],
+  ["cinema", "/ˈsɪnəmə/", "시-너-머", "영화관", "The cinema shows two movies a day.", "그 영화관은 하루에 영화 두 편을 상영한다.", "더 시-너-머 쇼우즈 투 무-비즈 어 데이"],
+  ["gallery", "/ˈɡæləri/", "갤-러-리", "갤러리, 화랑", "The gallery displays modern paintings.", "그 화랑은 현대 회화를 전시한다.", "더 갤-러-리 디-스플레이즈 마-던 페인-팅즈"],
+  ["stadium", "/ˈsteɪdiəm/", "스테이-디-엄", "경기장", "The stadium holds fifty thousand spectators.", "그 경기장은 5만 명의 관중을 수용한다.", "더 스테이-디-엄 홀즈 피프-티 사우-전드 스펙-테이-터즈"],
+  ["gym", "/dʒɪm/", "짐", "체육관", "The hotel has a gym and a swimming pool.", "그 호텔에는 체육관과 수영장이 있다.", "더 호우-텔 해즈 어 짐 앤드 어 스위-밍 풀"],
+  ["pool", "/puːl/", "풀", "수영장", "The pool is open from six in the morning.", "수영장은 아침 6시부터 문을 연다.", "더 풀 이즈 오우-픈 프럼 식스 인 더 모-닝"],
+  ["post office", "/ˈpoʊst ɔːfɪs/", "포우스트 오-피스", "우체국", "The post office is next to the bank.", "우체국은 은행 옆에 있다.", "더 포우스트 오-피스 이즈 넥스트 투 더 뱅크"],
+  ["police station", "/pəˈliːs steɪʃn/", "퍼-리스 스테이-션", "경찰서", "The police station is on the corner.", "경찰서는 모퉁이에 있다.", "더 퍼-리스 스테이-션 이즈 온 더 코-너"],
+  ["fire station", "/ˈfaɪər steɪʃn/", "파이-어 스테이-션", "소방서", "The fire station opened a new branch in the district.", "소방서가 그 지역에 새 지서를 열었다.", "더 파이-어 스테이-션 오우-픈드 어 누 브랜치 인 더 디스-트릭트"],
+  ["station", "/ˈsteɪʃn/", "스테이-션", "역, 정거장", "The taxi dropped us at the station.", "택시가 우리를 역에 내려주었다.", "더 택-시 드랍트 어스 앳 더 스테이-션"],
+  ["subway", "/ˈsʌbweɪ/", "서브-웨이", "지하철", "Taking the subway is faster than driving.", "지하철을 타는 것이 운전보다 빠르다.", "테이-킹 더 서브-웨이 이즈 패스-터 댄 드라이-빙"],
+  ["bus", "/bʌs/", "버스", "버스", "The bus arrives every fifteen minutes.", "버스는 15분마다 온다.", "더 버스 어-라이브즈 에-브리 피프-틴 미-닛츠"],
+  ["taxi", "/ˈtæksi/", "택-시", "택시", "We took a taxi to the convention center.", "우리는 컨벤션 센터까지 택시를 탔다.", "위 툭 어 택-시 투 더 컨-벤-션 센-터"],
+  ["car", "/kɑːr/", "카", "자동차", "He parks his car in the underground lot.", "그는 지하 주차장에 차를 주차한다.", "히 파크스 히즈 카 인 디 언-더-그라운드 랏"],
+  ["bicycle", "/ˈbaɪsɪkl/", "바이-시-클", "자전거", "You can rent a bicycle at the entrance.", "입구에서 자전거를 빌릴 수 있다.", "유 캔 렌트 어 바이-시-클 앳 디 엔-트런스"],
+  ["pedestrian", "/pəˈdestriən/", "퍼-데스-트리-언", "보행자", "Pedestrians should use the crosswalk.", "보행자는 횡단보도를 이용해야 한다.", "퍼-데스-트리-언즈 슈드 유즈 더 크로스-워크"],
+  ["traffic light", "/ˈtræfɪk laɪt/", "트래-픽 라이트", "신호등", "Turn left at the second traffic light.", "두 번째 신호등에서 좌회전하세요.", "턴 레프트 앳 더 세-컨드 트래-픽 라이트"],
+  ["intersection", "/ˌɪntərˈsekʃn/", "인-터-섹-션", "교차로, 사거리", "The accident happened at the intersection.", "그 사고는 교차로에서 발생했다.", "디 액-시-던트 해-픈드 앳 디 인-터-섹-션"],
+  ["sidewalk", "/ˈsaɪdwɔːk/", "사이드-워크", "보도, 인도", "The sidewalk is crowded with shoppers.", "보도가 쇼핑객으로 붐빈다.", "더 사이드-워크 이즈 크라우-디드 위드 샤-퍼즈"],
+  ["landmark", "/ˈlændmɑːrk/", "랜드-마크", "랜드마크, 명소", "The tower is a famous landmark in the city.", "그 탑은 그 도시의 유명한 랜드마크이다.", "더 타우-어 이즈 어 페이-머스 랜드-마크 인 더 시-티"],
+  ["sightseeing", "/ˈsaɪtsiːɪŋ/", "사이트-시-잉", "관광", "We went sightseeing around the harbor.", "우리는 항구 주변을 관광했다.", "위 웬트 사이트-시-잉 어-라운드 더 하-버"],
+  ["attraction", "/əˈtrækʃn/", "어-트랙-션", "명소, 볼거리", "The theme park is a major tourist attraction.", "그 테마파크는 주요 관광 명소이다.", "더 씸 파크 이즈 어 메이-저 투-리스트 어-트랙-션"],
+  ["festival", "/ˈfestɪvl/", "페스-티-벌", "축제", "The city holds a music festival every summer.", "그 도시는 매년 여름 음악 축제를 연다.", "더 시-티 홀즈 어 뮤-직 페스-티-벌 에-브리 서-머"]
+];

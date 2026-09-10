@@ -1,0 +1,38 @@
+window.VOCAB_UNITS = window.VOCAB_UNITS || {};
+// UNIT 2. 회의와 협상 (33 words)
+// 형식: [단어, IPA 발음기호, 한글발음, 뜻, 토익 예문, 예문 해석, 예문 한글 발음]
+window.VOCAB_UNITS[2] = [
+  ["meeting", "/ˈmiːtɪŋ/", "미-팅", "회의, 모임", "The weekly staff meeting starts at ten o'clock.", "주간 직원 회의는 10시에 시작한다.", "더 위크-리 스태프 미-팅 스타츠 앳 텐 어-클락"],
+  ["agenda", "/əˈdʒendə/", "어-젠-다", "의제, 안건", "Please add the budget issue to the agenda.", "예산 문제를 의제에 추가해 주세요.", "플리즈 애드 더 버-짓 이슈 투 디 어-젠-다"],
+  ["attend", "/əˈtend/", "어-텐드", "참석하다", "All managers are expected to attend the meeting.", "모든 관리자는 회의에 참석할 것으로 예상된다.", "올 매-니-저즈 아 익-스펙-티드 투 어-텐드 더 미-팅"],
+  ["attendance", "/əˈtendəns/", "어-텐-던스", "출석, 참석", "Attendance at the seminar was higher than expected.", "세미나 참석률은 예상보다 높았다.", "어-텐-던스 앳 더 세-미-나 워즈 하이-어 댄 익-스펙-티드"],
+  ["participant", "/pɑːrˈtɪsɪpənt/", "파-티-시-펀트", "참가자", "Each participant received a copy of the report.", "각 참가자는 보고서 사본을 받았다.", "이치 파-티-시-펀트 리-시브드 어 카-피 오브 더 리-포-트"],
+  ["discuss", "/dɪˈskʌs/", "디-스커스", "논의하다, 토론하다", "We will discuss the proposal at tomorrow's meeting.", "우리는 내일 회의에서 그 제안을 논의할 것이다.", "위 윌 디-스커스 더 프러-포우-즐 앳 투-모-로우즈 미-팅"],
+  ["discussion", "/dɪˈskʌʃn/", "디-스커-션", "논의, 토론", "The discussion lasted for over two hours.", "그 논의는 2시간 넘게 이어졌다.", "더 디-스커-션 래스-티드 포 오우-버 투 아워즈"],
+  ["agree", "/əˈɡriː/", "어-그리", "동의하다", "Both sides agreed on the final price.", "양측은 최종 가격에 동의했다.", "보우스 사이즈 어-그리드 온 더 파이-널 프라이스"],
+  ["agreement", "/əˈɡriːmənt/", "어-그리-먼트", "합의, 동의", "They reached an agreement after a long negotiation.", "그들은 긴 협상 끝에 합의에 도달했다.", "데이 리치트 언 어-그리-먼트 애프-터 어 롱 니-고우-시-에이-션"],
+  ["disagree", "/ˌdɪsəˈɡriː/", "디-서-그리", "의견이 다르다, 반대하다", "The two managers disagree about the new policy.", "두 관리자는 새 정책에 대해 의견이 다르다.", "더 투 매-니-저즈 디-서-그리 어-바웃 더 누 팔-러-시"],
+  ["decision", "/dɪˈsɪʒn/", "디-시-전", "결정", "The board will make a final decision next week.", "이사회는 다음 주에 최종 결정을 내릴 것이다.", "더 보드 윌 메이크 어 파이-널 디-시-전 넥스트 위크"],
+  ["decide", "/dɪˈsaɪd/", "디-사이드", "결정하다", "We decided to postpone the launch date.", "우리는 출시 날짜를 연기하기로 결정했다.", "위 디-사이-디드 투 포우-스포운 더 론치 데이트"],
+  ["propose", "/prəˈpoʊz/", "프러-포우즈", "제안하다", "She proposed a new plan to reduce costs.", "그녀는 비용을 줄이는 새로운 계획을 제안했다.", "시 프러-포우즈드 어 누 플랜 투 리-두스 코스트"],
+  ["proposal", "/prəˈpoʊzl/", "프러-포우-즐", "제안, 안", "The proposal was rejected by the committee.", "그 제안은 위원회에서 거부되었다.", "더 프러-포우-즐 워즈 리-젝-티드 바이 더 커-미-티"],
+  ["suggest", "/səˈdʒest/", "서-제스트", "제안하다, 시사하다", "I suggest that we meet again next Monday.", "다음 주 월요일에 다시 만날 것을 제안합니다.", "아이 서-제스트 댓 위 미트 어-겐 넥스트 먼-데이"],
+  ["suggestion", "/səˈdʒestʃən/", "서-제스-천", "제안, 의견", "Thank you for your helpful suggestion.", "도움이 되는 제안에 감사드립니다.", "땡크 유 포 유어 헬프-풀 서-제스-천"],
+  ["opinion", "/əˈpɪnjən/", "어-핀-년", "의견", "In my opinion, the plan is too expensive.", "내 의견으로는 그 계획은 너무 비용이 많이 든다.", "인 마이 어-핀-년 더 플랜 이즈 투 익-스펜-시브"],
+  ["view", "/vjuː/", "뷰", "견해, 의견", "From my point of view, we need more data.", "내 견해로는 우리는 데이터가 더 필요하다.", "프럼 마이 포인트 오브 뷰 위 니드 모어 데이-터"],
+  ["point", "/pɔɪnt/", "포인트", "요점, 의견", "That is a very good point.", "그것은 아주 좋은 지적이다.", "댓 이즈 어 베-리 구드 포인트"],
+  ["topic", "/ˈtɑːpɪk/", "타-픽", "주제, 화제", "The main topic of the meeting was employee benefits.", "회의의 주요 주제는 직원 복지였다.", "더 메인 타-픽 오브 더 미-팅 워즈 임-플로이-이 베-너-핏츠"],
+  ["postpone", "/poʊˈspoʊn/", "포우-스포운", "연기하다, 미루다", "The conference was postponed until next month.", "컨퍼런스는 다음 달로 연기되었다.", "더 칸-퍼-런스 워즈 포우-스포운드 언-틸 넥스트 먼스"],
+  ["delay", "/dɪˈleɪ/", "디-레이", "지연, 늦추다", "The flight was delayed due to bad weather.", "비행기가 악천후로 연착되었다.", "더 플라이트 워즈 디-레이드 두 투 배드 웨-더"],
+  ["cancel", "/ˈkænsl/", "캔-슬", "취소하다", "The manager canceled the afternoon meeting.", "매니저는 오후 회의를 취소했다.", "더 매-니-저 캔-슬드 디 애프-터-눈 미-팅"],
+  ["cancellation", "/ˌkænsəˈleɪʃn/", "캔-서-레이-션", "취소", "Please note that cancellations must be made in writing.", "취소는 서면으로 해야 합니다.", "플리즈 노우트 댓 캔-서-레이-션즈 머스트 비 메이드 인 라이-팅"],
+  ["arrange", "/əˈreɪndʒ/", "어-레인지", "주선하다, 준비하다", "I will arrange a meeting with the supplier.", "공급업체와의 회의를 주선하겠습니다.", "아이 윌 어-레인지 어 미-팅 위드 더 서-플라이-어"],
+  ["arrangement", "/əˈreɪndʒmənt/", "어-레인지-먼트", "준비, 배치", "All travel arrangements have been made.", "모든 출장 준비가 끝났다.", "올 트래-블 어-레인지-먼츠 해브 빈 메이드"],
+  ["negotiate", "/nɪˈɡoʊʃieɪt/", "니-고우-시-에이트", "협상하다", "We need to negotiate the delivery date with the supplier.", "우리는 공급업체와 납품 날짜를 협상해야 한다.", "위 니드 투 니-고우-시-에이트 더 디-리-버-리 데이트 위드 더 서-플라이-어"],
+  ["negotiation", "/nɪˌɡoʊʃiˈeɪʃn/", "니-고우-시-에이-션", "협상, 교섭", "The negotiations lasted for three days.", "협상은 3일 동안 계속되었다.", "더 니-고우-시-에이-션즈 래스-티드 포 쓰리 데이즈"],
+  ["compromise", "/ˈkɑːmprəmaɪz/", "컴-프러-마이즈", "타협, 절충", "Both parties made a compromise to close the deal.", "양측은 거래를 성사시키기 위해 타협했다.", "보우스 파-티즈 메이드 어 컴-프러-마이즈 투 클로우즈 더 딜"],
+  ["offer", "/ˈɔːfər/", "오-퍼", "제안하다, 제공하다 / 제안", "The company offered him a better salary.", "회사는 그에게 더 나은 급여를 제안했다.", "더 컴-퍼-니 오-퍼드 힘 어 베-터 샐-러-리"],
+  ["accept", "/əkˈsept/", "억-셉트", "수락하다, 받아들이다", "She accepted the job offer without hesitation.", "그녀는 망설임 없이 채용 제안을 수락했다.", "시 억-셉-티드 더 잡 오-퍼 위드-아웃 헤-지-테이-션"],
+  ["reject", "/rɪˈdʒekt/", "리-젝트", "거절하다, 거부하다", "The board rejected the proposed budget cut.", "이사회는 제안된 예산 삭감안을 거부했다.", "더 보드 리-젝-티드 더 프러-포우즈드 버-짓 컷"],
+  ["resolution", "/ˌrezəˈluːʃn/", "레-저-루-션", "결의, 해결", "The committee passed a resolution to support the project.", "위원회는 프로젝트를 지원하는 결의안을 통과시켰다.", "더 커-미-티 패스트 어 레-저-루-션 투 서-포트 더 프라-젝트"]
+];

@@ -1,0 +1,38 @@
+window.VOCAB_UNITS = window.VOCAB_UNITS || {};
+// UNIT 10. 사무실과 문서 (33 words)
+// 형식: [단어, IPA 발음기호, 한글발음, 뜻, 토익 예문, 예문 해석, 예문 한글 발음]
+window.VOCAB_UNITS[10] = [
+  ["desk", "/desk/", "데스크", "책상, 사무용 책상", "The documents are on my desk.", "서류는 내 책상 위에 있다.", "더 다-큐-먼츠 아 온 마이 데스크"],
+  ["document", "/ˈdɑːkjumənt/", "다-큐-먼트", "문서, 서류", "Please sign the document at the bottom.", "문서 맨 아래에 서명해 주세요.", "플리즈 사인 더 다-큐-먼트 앳 더 바-텀"],
+  ["file", "/faɪl/", "파일", "서류철, 파일, 정리하다", "Keep a file of all important contracts.", "중요한 계약서를 모두 파일로 보관하세요.", "킵 어 파일 오브 올 임-포-턴트 칸-트랙츠"],
+  ["folder", "/ˈfoʊldər/", "폴우-더", "폴더, 서류철", "The report is in the blue folder.", "그 보고서는 파란 폴더에 있다.", "더 리-포-트 이즈 인 더 블루 폴우-더"],
+  ["paper", "/ˈpeɪpər/", "페이-퍼", "종이, 서류", "Print the contract on white paper.", "계약서를 흰 종이에 인쇄하세요.", "프린트 더 칸-트랙트 온 와이트 페이-퍼"],
+  ["envelope", "/ˈenvəloʊp/", "엔-버-로우프", "봉투", "Put the invoice in an envelope and mail it.", "청구서를 봉투에 넣어 우편으로 보내세요.", "풋 디 인-보이스 인 언 엔-버-로우프 앤드 메일 잇"],
+  ["stationery", "/ˈsteɪʃəneri/", "스테이-셔-네-리", "문구류, 사무 용품", "The office orders stationery every month.", "사무실은 매달 문구류를 주문한다.", "디 오-피스 오-더즈 스테이-셔-네-리 에-브리 먼스"],
+  ["memo", "/ˈmemoʊ/", "메-모우", "메모, 각서", "The manager sent a memo about the new policy.", "매니저는 새 정책에 대한 메모를 보냈다.", "더 매-니-저 센트 어 메-모우 어-바웃 더 누 팔-러-시"],
+  ["notice", "/ˈnoʊtɪs/", "노우-티스", "공지, 통지", "The notice about the meeting was posted on the board.", "회의 공지가 게시판에 게시되었다.", "더 노우-티스 어-바웃 더 미-팅 워즈 포우-스-티드 온 더 보드"],
+  ["announcement", "/əˈnaʊnsmənt/", "어-나운스-먼트", "발표, 공고", "The announcement about the merger surprised everyone.", "합병 발표는 모두를 놀라게 했다.", "디 어-나운스-먼트 어-바웃 더 머-저 서-프라이즈드 에-브리-원"],
+  ["bulletin board", "/ˈbʊlətɪn bɔːrd/", "불-러-틴 보드", "게시판", "The schedule is posted on the bulletin board.", "일정표가 게시판에 게시되어 있다.", "더 스케-줄 이즈 포우-스-티드 온 더 불-러-틴 보드"],
+  ["form", "/fɔːrm/", "폼", "양식, 서식", "Please complete this application form.", "이 지원 양식을 작성해 주세요.", "플리즈 컴-플리트 디스 애-플리-케이-션 폼"],
+  ["fill out", "/fɪl aʊt/", "필 아웃", "(서식에) 기입하다, 작성하다", "Please fill out the form in black ink.", "양식을 검정 잉크로 작성해 주세요.", "플리즈 필 아웃 더 폼 인 블랙 잉크"],
+  ["sign", "/saɪn/", "사인", "서명하다, 서명", "Both parties must sign the agreement.", "양측 모두 계약서에 서명해야 한다.", "보우스 파-티즈 머스트 사인 디 어-그리-먼트"],
+  ["signature", "/ˈsɪɡnətʃər/", "시그-너-처", "서명", "Your signature is required on the first page.", "첫 페이지에 당신의 서명이 필요합니다.", "유어 시그-너-처 이즈 리-콰이어드 온 더 퍼스트 페이지"],
+  ["attach", "/əˈtætʃ/", "어-태치", "첨부하다, 부착하다", "Please attach your resume to the email.", "이메일에 이력서를 첨부해 주세요.", "플리즈 어-태치 유어 레-저-메이 투 디 이-메일"],
+  ["attachment", "/əˈtætʃmənt/", "어-태치-먼트", "첨부 파일", "I sent the report as an attachment.", "보고서를 첨부 파일로 보냈다.", "아이 센트 더 리-포-트 애즈 언 어-태치-먼트"],
+  ["email", "/ˈiːmeɪl/", "이-메일", "이메일, 이메일을 보내다", "Please email me the updated price list.", "업데이트된 가격표를 이메일로 보내 주세요.", "플리즈 이-메일 미 디 업-데이-티드 프라이스 리스트"],
+  ["message", "/ˈmesɪdʒ/", "메-시지", "메시지, 전언", "I left a message for the manager.", "나는 매니저에게 메시지를 남겼다.", "아이 레프트 어 메-시지 포 더 매-니-저"],
+  ["phone", "/foʊn/", "폰", "전화, 전화하다", "The phone has been ringing all morning.", "전화가 아침 내내 울리고 있다.", "더 폰 해즈 빈 링-잉 올 모-닝"],
+  ["conference room", "/ˈkɑːnfərəns ruːm/", "칸-퍼-런스 룸", "회의실", "The meeting will be held in conference room B.", "회의는 B 회의실에서 열릴 것이다.", "더 미-팅 윌 비 헬드 인 칸-퍼-런스 룸 비"],
+  ["reception", "/rɪˈsepʃn/", "리-셉-션", "접수처, 리셉션", "Please leave your business card at the reception.", "명함을 접수처에 맡겨 주세요.", "플리즈 리브 유어 비즈-니스 카드 앳 더 리-셉-션"],
+  ["receptionist", "/rɪˈsepʃənɪst/", "리-셉-셔-니스트", "접수원, 리셉셔니스트", "The receptionist greeted the visitors warmly.", "접수원이 방문객들을 따뜻하게 맞이했다.", "더 리-셉-셔-니스트 그리-티드 더 비-지-터즈 웜-리"],
+  ["visitor", "/ˈvɪzɪtər/", "비-지-터", "방문객, 방문자", "All visitors must wear an ID badge.", "모든 방문객은 신분증 배지를 착용해야 한다.", "올 비-지-터즈 머스트 웨어 언 아이-디 배지"],
+  ["guest", "/ɡest/", "게스트", "손님, 투숙객", "Our guests will arrive at three o'clock.", "우리 손님들은 3시에 도착할 것이다.", "아워 게스츠 윌 어-라이브 앳 쓰리 어-클락"],
+  ["appointment", "/əˈpɔɪntmənt/", "어-포인트-먼트", "약속, 예약", "I have an appointment with the dentist at four.", "나는 4시에 치과 예약이 있다.", "아이 해브 언 어-포인트-먼트 위드 더 덴-티스트 앳 포"],
+  ["printer", "/ˈprɪntər/", "프린-터", "프린터, 인쇄기", "The printer is out of ink.", "프린터 잉크가 떨어졌다.", "더 프린-터 이즈 아웃 오브 잉크"],
+  ["copier", "/ˈkɑːpiər/", "카-피-어", "복사기", "The copier makes fifty copies per minute.", "그 복사기는 분당 50장을 복사한다.", "더 카-피-어 메이크스 피프-티 카-피즈 퍼 미-닛"],
+  ["fax", "/fæks/", "팩스", "팩스, 팩스를 보내다", "Please fax the contract to the head office.", "계약서를 본사로 팩스 보내 주세요.", "플리즈 팩스 더 칸-트랙트 투 더 헤드 오-피스"],
+  ["scanner", "/ˈskænər/", "스캐-너", "스캐너", "Use the scanner to digitize the documents.", "스캐너로 문서를 디지털화하세요.", "유즈 더 스캐-너 투 디-지-타이즈 더 다-큐-먼츠"],
+  ["copy", "/ˈkɑːpi/", "카-피", "사본, 복사하다", "Make three copies of the contract.", "계약서를 세 부 복사하세요.", "메이크 쓰리 카-피즈 오브 더 칸-트랙트"],
+  ["equipment", "/ɪˈkwɪpmənt/", "이-퀴프-먼트", "장비, 설비", "The laboratory has modern equipment.", "그 실험실은 현대적인 장비를 갖추고 있다.", "더 래-버-러-토-리 해즈 마-던 이-퀴프-먼트"],
+  ["furniture", "/ˈfɜːrntʃər/", "퍼-니-처", "가구", "New office furniture was delivered yesterday.", "새 사무용 가구가 어제 배송되었다.", "누 오-피스 퍼-니-처 워즈 디-리-버드 예스-터-데이"]
+];

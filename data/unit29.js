@@ -1,0 +1,38 @@
+window.VOCAB_UNITS = window.VOCAB_UNITS || {};
+// UNIT 29. 감정과 태도 (33 words)
+// 형식: [단어, IPA 발음기호, 한글발음, 뜻, 토익 예문, 예문 해석, 예문 한글 발음]
+window.VOCAB_UNITS[29] = [
+  ["happy", "/ˈhæpi/", "해-피", "행복한, 기쁜", "The staff were happy with the new schedule.", "직원들은 새 일정에 만족했다.", "더 스태프 워 해-피 위드 더 누 스케-줄"],
+  ["happiness", "/ˈhæpinəs/", "해-피-니스", "행복", "The survey measured employee happiness.", "그 설문조사는 직원의 행복도를 측정했다.", "더 서-베이 메-저드 임-플로이-이 해-피-니스"],
+  ["glad", "/ɡlæd/", "글래드", "기쁜, 반가운", "We are glad to announce the new partnership.", "우리는 새 파트너십을 발표하게 되어 기쁩니다.", "위 아 글래드 투 어-나운스 더 누 파-트-너-십"],
+  ["pleased", "/pliːzd/", "플리즈드", "기뻐하는, 만족한", "The client was pleased with the final design.", "고객은 최종 디자인에 만족했다.", "더 클라-이언트 워즈 플리즈드 위드 더 파이-널 디-자인"],
+  ["proud", "/praʊd/", "프라우드", "자랑스러운", "She is proud of her team's achievement.", "그녀는 팀의 성취를 자랑스러워한다.", "시 이즈 프라우드 오브 허 팀즈 어-치브-먼트"],
+  ["excited", "/ɪkˈsaɪtɪd/", "익-사이-티드", "신난, 흥분한", "Everyone was excited about the new product.", "모두 신제품에 대해 기대에 차 있었다.", "에-브리-원 워즈 익-사이-티드 어-바웃 더 누 프라-덕트"],
+  ["nervous", "/ˈnɜːrvəs/", "너-버스", "긴장한, 불안한", "She felt nervous before the interview.", "그녀는 면접 전에 긴장했다.", "시 펠트 너-버스 비-포 디 인-터-뷰"],
+  ["anxious", "/ˈæŋkʃəs/", "앵크-셔스", "불안한, 걱정하는", "He was anxious about the test results.", "그는 시험 결과가 걱정되었다.", "히 워즈 앵크-셔스 어-바웃 더 테스트 리-절츠"],
+  ["worried", "/ˈwɜːrid/", "워-리드", "걱정하는", "Customers are worried about the price increase.", "고객들은 가격 인상을 걱정한다.", "커스-터-머즈 아 워-리드 어-바웃 더 프라이스 인-크리스"],
+  ["afraid", "/əˈfreɪd/", "어-프레이드", "두려워하는, 걱정하는", "Do not be afraid to ask questions.", "질문하는 것을 두려워하지 마세요.", "두 낫 비 어-프레이드 투 애스크 퀘스-천즈"],
+  ["scared", "/skerd/", "스케어드", "겁먹은, 무서워하는", "The puppy was scared of the loud noise.", "강아지가 큰 소리에 겁을 먹었다.", "더 퍼-피 워즈 스케어드 오브 더 라우드 노이즈"],
+  ["angry", "/ˈæŋɡri/", "앵-그리", "화난", "The manager was angry about the mistake.", "매니저는 그 실수에 화가 났다.", "더 매-니-저 워즈 앵-그리 어-바웃 더 미-스테이크"],
+  ["upset", "/ʌpˈset/", "업-셋", "속상한, 화난", "She was upset by the negative feedback.", "그녀는 부정적인 피드백에 속상했다.", "시 워즈 업-셋 바이 더 네-거-티브 피드-백"],
+  ["annoyed", "/əˈnɔɪd/", "어-노이드", "짜증난", "The passengers were annoyed by the delay.", "승객들은 지연 때문에 짜증이 났다.", "더 패-선-저즈 워 어-노이드 바이 더 디-레이"],
+  ["frustrated", "/ˈfrʌstreɪtɪd/", "프러스-트레이-티드", "좌절한, 답답한", "He felt frustrated with the slow progress.", "그는 느린 진척에 답답함을 느꼈다.", "히 펠트 프러스-트레이-티드 위드 더 슬로우 프라-그레스"],
+  ["disappointed", "/ˌdɪsəˈpɔɪntɪd/", "디-서-포인-티드", "실망한", "The customers were disappointed with the service.", "고객들은 그 서비스에 실망했다.", "더 커스-터-머즈 워 디-서-포인-티드 위드 더 서-비스"],
+  ["sad", "/sæd/", "새드", "슬픈", "She was sad to leave the company.", "그녀는 회사를 떠나는 것이 슬펐다.", "시 워즈 새드 투 리브 더 컴-퍼-니"],
+  ["lonely", "/ˈloʊnli/", "로운-리", "외로운", "He felt lonely working in a foreign country.", "그는 외국에서 일하면서 외로움을 느꼈다.", "히 펠트 로운-리 워-킹 인 어 포-린 컨-트리"],
+  ["bored", "/bɔːrd/", "보드", "지루한", "The audience looked bored during the speech.", "청중은 연설 중에 지루해 보였다.", "디 오-디-언스 룩트 보드 두-링 더 스피치"],
+  ["tired", "/ˈtaɪərd/", "타이-어드", "피곤한", "She was tired after the long flight.", "그녀는 긴 비행 후에 피곤했다.", "시 워즈 타이-어드 애프-터 더 롱 플라이트"],
+  ["exhausted", "/ɪɡˈzɔːstɪd/", "이그-조스-티드", "지친, 기진맥진한", "The staff were exhausted after the event.", "직원들은 행사 후에 기진맥진했다.", "더 스태프 워 이그-조스-티드 애프-터 디 이-벤트"],
+  ["surprised", "/sərˈpraɪzd/", "서-프라이즈드", "놀란", "We were surprised by the sudden change.", "우리는 갑작스러운 변화에 놀랐다.", "위 워 서-프라이즈드 바이 더 서-든 체인지"],
+  ["shocked", "/ʃɑːkt/", "샤크트", "충격받은", "The team was shocked by the announcement.", "팀은 그 발표에 충격을 받았다.", "더 팀 워즈 샤크트 바이 디 어-나운스-먼트"],
+  ["grateful", "/ˈɡreɪtfl/", "그레이트-풀", "감사하는", "We are grateful for your generous support.", "아낌없는 지원에 감사드립니다.", "위 아 그레이트-풀 포 유어 제-너-러스 서-포트"],
+  ["thankful", "/ˈθæŋkfl/", "땡크-풀", "고마워하는", "I am thankful for the opportunity.", "이 기회에 감사드립니다.", "아이 엠 땡크-풀 포 디 아-퍼-튜-니-티"],
+  ["hopeful", "/ˈhoʊpfl/", "호우프-풀", "희망적인", "The company is hopeful about the new market.", "그 회사는 새 시장에 대해 희망적이다.", "더 컴-퍼-니 이즈 호우프-풀 어-바웃 더 누 마-킷"],
+  ["optimistic", "/ˌɑːptɪˈmɪstɪk/", "압-티-미스-틱", "낙관적인", "The manager is optimistic about sales growth.", "매니저는 매출 성장에 대해 낙관적이다.", "더 매-니-저 이즈 압-티-미스-틱 어-바웃 세일즈 그로우스"],
+  ["pessimistic", "/ˌpesɪˈmɪstɪk/", "페-시-미스-틱", "비관적인", "Do not be pessimistic about the outcome.", "결과에 대해 비관하지 마세요.", "두 낫 비 페-시-미스-틱 어-바웃 디 아웃-컴"],
+  ["positive", "/ˈpɑːzətɪv/", "파-지-티브", "긍정적인", "Keep a positive attitude during the interview.", "면접 동안 긍정적인 태도를 유지하세요.", "킵 어 파-지-티브 애-티-튜드 두-링 디 인-터-뷰"],
+  ["negative", "/ˈneɡətɪv/", "네-거-티브", "부정적인", "The company received negative reviews online.", "그 회사는 온라인에서 부정적인 리뷰를 받았다.", "더 컴-퍼-니 리-시브드 네-거-티브 리-뷰즈 온-라인"],
+  ["confident", "/ˈkɑːnfɪdənt/", "칸-피-던트", "자신 있는", "She is confident about passing the exam.", "그녀는 시험 통과에 자신이 있다.", "시 이즈 칸-피-던트 어-바웃 패-싱 디 이그-잼"],
+  ["confidence", "/ˈkɑːnfɪdəns/", "칸-피-던스", "자신감, 신뢰", "The training built up her confidence.", "그 교육은 그녀의 자신감을 키웠다.", "더 트레이-닝 빌트 업 허 칸-피-던스"],
+  ["calm", "/kɑːm/", "캄", "침착한, 차분한", "Please stay calm and follow the instructions.", "침착하게 지시에 따라 주세요.", "플리즈 스테이 캄 앤드 팔-로우 디 인-스트럭-션즈"]
+];

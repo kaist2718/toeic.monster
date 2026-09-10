@@ -1,0 +1,38 @@
+window.VOCAB_UNITS = window.VOCAB_UNITS || {};
+// UNIT 1. 비즈니스와 회사 (33 words)
+// 형식: [단어, IPA 발음기호, 한글발음, 뜻, 토익 예문, 예문 해석, 예문 한글 발음]
+window.VOCAB_UNITS[1] = [
+  ["company", "/ˈkʌmpəni/", "컴-퍼-니", "회사", "The company has offices in over thirty countries.", "그 회사는 30개국 이상에 지사를 두고 있다.", "더 컴-퍼-니 해즈 오-피-시즈 인 오우-버 서-티 컨-트리즈"],
+  ["business", "/ˈbɪznəs/", "비즈-니스", "사업, 업무", "She runs a small family business.", "그녀는 작은 가족 사업체를 운영한다.", "시 런즈 어 스몰 패-밀-리 비즈-니스"],
+  ["manage", "/ˈmænɪdʒ/", "매-니지", "관리하다, 운영하다", "He manages a team of twenty employees.", "그는 20명의 직원으로 이루어진 팀을 관리한다.", "히 매-니-지즈 어 팀 오브 트웬-티 임-플로이-이즈"],
+  ["manager", "/ˈmænɪdʒər/", "매-니-저", "관리자, 매니저", "The manager approved the new work schedule.", "매니저가 새로운 근무 일정을 승인했다.", "더 매-니-저 어-프루브드 더 누 워크 스케-줄"],
+  ["employee", "/ɪmˈplɔɪiː/", "임-플로이-이", "직원, 사원", "The employees were given a pay raise.", "직원들은 급여 인상을 받았다.", "디 임-플로이-이즈 워 기-븐 어 페이 레이즈"],
+  ["employer", "/ɪmˈplɔɪər/", "임-플로이-어", "고용주", "The employer provides health insurance to all workers.", "고용주는 모든 근로자에게 건강보험을 제공한다.", "디 임-플로이-어 프러-바이즈 헬스 인-슈어-런스 투 올 워-커즈"],
+  ["office", "/ˈɔːfɪs/", "오-피스", "사무실", "The office is located in the center of the city.", "사무실은 도시 중심부에 있다.", "디 오-피스 이즈 로우-케이-티드 인 더 센-터 오브 더 시-티"],
+  ["headquarters", "/ˈhedkwɔːrtərz/", "헤드-쿼-터-즈", "본사", "The company's headquarters are in New York.", "그 회사의 본사는 뉴욕에 있다.", "더 컴-퍼-니즈 헤드-쿼-터-즈 아 인 누 요크"],
+  ["branch", "/bræntʃ/", "브랜치", "지점, 지사", "She works at our Seoul branch.", "그녀는 우리 서울 지점에서 일한다.", "시 워크스 앳 아워 설 브랜치"],
+  ["department", "/dɪˈpɑːrtmənt/", "디-파-트먼트", "부서, 부", "The marketing department needs more staff.", "마케팅 부서는 직원이 더 필요하다.", "더 마-키-팅 디-파-트먼트 니즈 모어 스태프"],
+  ["staff", "/stæf/", "스태프", "직원, 직원들", "Our staff works hard every day.", "우리 직원들은 매일 열심히 일한다.", "아워 스태프 워크스 하드 에-브리 데이"],
+  ["colleague", "/ˈkɑːliːɡ/", "칼-리-그", "동료", "I discussed the project with my colleagues.", "나는 동료들과 프로젝트에 대해 논의했다.", "아이 디-스커스트 더 프라-젝트 위드 마이 칼-리-그즈"],
+  ["boss", "/bɔːs/", "보스", "상사, 사장", "My boss asked me to finish the report today.", "상사가 오늘 보고서를 끝내라고 요청했다.", "마이 보스 애스크트 미 투 피-니시 더 리-포-트 투-데이"],
+  ["position", "/pəˈzɪʃn/", "퍼-지-션", "직위, 자리", "She applied for a new position in the company.", "그녀는 회사 내 새로운 직위에 지원했다.", "시 어-플라이드 포 어 누 퍼-지-션 인 더 컴-퍼-니"],
+  ["hire", "/ˈhaɪər/", "하이-어", "고용하다, 채용하다", "The firm plans to hire ten new engineers.", "그 회사는 신입 엔지니어 열 명을 채용할 계획이다.", "더 펌 플랜즈 투 하이-어 텐 누 엔-지-니어즈"],
+  ["fire", "/ˈfaɪər/", "파이-어", "해고하다", "The company fired him for being late repeatedly.", "회사는 잦은 지각으로 그를 해고했다.", "더 컴-퍼-니 파이-어드 힘 포 비-잉 레이트 리-페-티드-리"],
+  ["retire", "/rɪˈtaɪər/", "리-타이-어", "은퇴하다", "She will retire next year after thirty years of service.", "그녀는 30년 근무 후 내년에 은퇴할 것이다.", "시 윌 리-타이-어 넥스트 이어 애프-터 서-티 이어즈 오브 서-비스"],
+  ["work", "/wɜːrk/", "워크", "일하다, 일", "I work from nine to five.", "나는 아침 9시부터 저녁 5시까지 일한다.", "아이 워크 프럼 나인 투 파이브"],
+  ["salary", "/ˈsæləri/", "샐-러-리", "급여, 봉급", "He earns a high salary as a software developer.", "그는 소프트웨어 개발자로서 높은 급여를 받는다.", "히 언즈 어 하이 샐-러-리 애즈 어 소프트-웨어 디-벨-럽-퍼"],
+  ["wage", "/weɪdʒ/", "웨이지", "임금, 품삯", "The minimum wage increased this year.", "올해 최저임금이 인상되었다.", "더 미-너-멈 웨이지 인-크리스트 디스 이어"],
+  ["benefit", "/ˈbenɪfɪt/", "베-너-핏", "혜택, 복지", "Health insurance is one of the job benefits.", "건강보험은 직장 복지 혜택 중 하나이다.", "헬스 인-슈어-런스 이즈 원 오브 더 잡 베-너-핏츠"],
+  ["experience", "/ɪkˈspɪriəns/", "익-스피-리-언스", "경험, 경력", "Do you have experience in sales management?", "당신은 영업 관리 경력이 있습니까?", "두 유 해브 익-스피-리-언스 인 세일즈 매-니지-먼트"],
+  ["skill", "/skɪl/", "스킬", "기술, 능력", "Good communication skills are essential for this job.", "좋은 의사소통 능력은 이 직업에 필수적이다.", "구드 커-뮤-니-케이-션 스킬즈 아 이-센-셜 포 디스 잡"],
+  ["training", "/ˈtreɪnɪŋ/", "트레이-닝", "훈련, 교육", "New employees receive two weeks of training.", "신입 직원들은 2주간 교육을 받는다.", "누 임-플로이-이즈 리-시브 투 위크스 오브 트레이-닝"],
+  ["resume", "/ˈrezəmeɪ/", "레-저-메이", "이력서", "Please send your resume to our human resources department.", "이력서를 인사 부서로 보내 주세요.", "플리즈 센드 유어 레-저-메이 투 아워 휴-먼 리-소-시즈 디-파-트먼트"],
+  ["interview", "/ˈɪntərvjuː/", "인-터-뷰", "면접, 인터뷰", "The job interview went very well this morning.", "오늘 아침 면접이 아주 잘 진행되었다.", "더 잡 인-터-뷰 웬트 베-리 웰 디스 모-닝"],
+  ["coworker", "/ˈkoʊwɜːrkər/", "코우-워-커", "직장 동료", "My coworkers are friendly and helpful.", "내 직장 동료들은 친절하고 도움이 된다.", "마이 코우-워-커즈 아 프렌드-리 앤드 헬프-풀"],
+  ["overtime", "/ˈoʊvərtaɪm/", "오우-버-타임", "초과 근무, 잔업", "We often work overtime during the busy season.", "우리는 성수기에 자주 초과 근무를 한다.", "위 오-픈 워크 오우-버-타임 두-링 더 비-지 시-즌"],
+  ["schedule", "/ˈskedʒuːl/", "스케-줄", "일정, 시간표", "The meeting schedule was changed at the last minute.", "회의 일정이 마지막 순간에 변경되었다.", "더 미-팅 스케-줄 워즈 체인지드 앳 더 래스트 미-닛"],
+  ["deadline", "/ˈdedlaɪn/", "데드-라인", "마감, 마감일", "The deadline for the report is this Friday.", "보고서 마감일은 이번 주 금요일이다.", "더 데드-라인 포 더 리-포-트 이즈 디스 프라이-데이"],
+  ["project", "/ˈprɑːdʒekt/", "프라-젝트", "프로젝트, 사업 계획", "The new project will take six months to complete.", "새 프로젝트는 완료까지 6개월이 걸릴 것이다.", "더 누 프라-젝트 윌 테이크 식스 먼스 투 컴-플리트"],
+  ["task", "/tæsk/", "태스크", "과업, 일", "Each employee is responsible for a specific task.", "각 직원은 특정 업무를 책임진다.", "이치 임-플로이-이 이즈 리-스판-서-블 포 어 스페-시-픽 태스크"],
+  ["workload", "/ˈwɜːrkloʊd/", "워크-로우드", "업무량", "The workload increases during the holiday season.", "휴가철에는 업무량이 증가한다.", "더 워크-로우드 인-크리-시즈 두-링 더 할-리-데이 시-즌"]
+];

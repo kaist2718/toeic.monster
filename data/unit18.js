@@ -1,0 +1,38 @@
+window.VOCAB_UNITS = window.VOCAB_UNITS || {};
+// UNIT 18. 주거와 부동산 (33 words)
+// 형식: [단어, IPA 발음기호, 한글발음, 뜻, 토익 예문, 예문 해석, 예문 한글 발음]
+window.VOCAB_UNITS[18] = [
+  ["house", "/haʊs/", "하우스", "집, 주택", "They are looking for a house near the station.", "그들은 역 근처의 집을 찾고 있다.", "데이 아 루-킹 포 어 하우스 니어 더 스테이-션"],
+  ["home", "/hoʊm/", "호움", "집, 가정", "The new home has three bedrooms.", "새 집에는 침실이 세 개 있다.", "더 누 호움 해즈 쓰리 베드-룸즈"],
+  ["apartment", "/əˈpɑːrtmənt/", "어-파-트먼트", "아파트", "She rents a small apartment downtown.", "그녀는 시내에 작은 아파트를 빌리고 있다.", "시 렌츠 어 스몰 어-파-트먼트 다운-타운"],
+  ["condo", "/ˈkɑːndoʊ/", "칸-도우", "콘도, 분양 아파트", "They bought a condo near the beach.", "그들은 해변 근처 콘도를 샀다.", "데이 보트 어 칸-도우 니어 더 비치"],
+  ["rent", "/rent/", "렌트", "임대료, 빌리다", "The rent is due on the first of the month.", "임대료는 매달 1일에 내야 한다.", "더 렌트 이즈 두 온 더 퍼스트 오브 더 먼스"],
+  ["rental", "/ˈrentl/", "렌-털", "임대, 임대료", "The rental price includes utilities.", "임대료에는 공과금이 포함되어 있다.", "더 렌-털 프라이스 인-클루즈 유-틸-러-티즈"],
+  ["lease", "/liːs/", "리스", "임대차 계약", "The lease expires at the end of the year.", "임대차 계약이 연말에 만료된다.", "더 리스 익-스파이어즈 앳 디 엔드 오브 더 이어"],
+  ["landlord", "/ˈlændlɔːrd/", "랜드-로드", "집주인, 임대인", "The landlord raised the rent by five percent.", "집주인이 임대료를 5% 올렸다.", "더 랜드-로드 레이즈드 더 렌트 바이 파이브 퍼-센트"],
+  ["tenant", "/ˈtenənt/", "테-넌트", "세입자", "The tenant is responsible for the repairs.", "세입자가 수리 비용을 부담한다.", "더 테-넌트 이즈 리-스판-서-블 포 더 리-페어즈"],
+  ["property", "/ˈprɑːpərti/", "프라-퍼-티", "재산, 부동산", "The property is worth over a million dollars.", "그 부동산은 100만 달러가 넘는 가치가 있다.", "더 프라-퍼-티 이즈 워스 오우-버 어 밀-리언 달-러즈"],
+  ["real estate", "/ˈriːəl ɪsteɪt/", "리-얼 이스-테이트", "부동산", "She works in the real estate business.", "그녀는 부동산업에 종사한다.", "시 워크스 인 더 리-얼 이스-테이트 비즈-니스"],
+  ["mortgage", "/ˈmɔːrɡɪdʒ/", "모-기지", "주택 담보 대출", "They are paying off a thirty-year mortgage.", "그들은 30년 모기지 대출을 갚고 있다.", "데이 아 페이-잉 오프 어 서-티-이어 모-기지"],
+  ["broker", "/ˈbroʊkər/", "브로우-커", "중개인, 브로커", "The broker showed us several houses.", "중개인이 우리에게 집 여러 채를 보여주었다.", "더 브로우-커 쇼우드 어스 세-버-럴 하우-시즈"],
+  ["agent", "/ˈeɪdʒənt/", "에이-전트", "대리인, 중개인", "Our agent helped us find an office.", "우리 중개인이 사무실을 찾는 것을 도와주었다.", "아워 에이-전트 헬프트 어스 파인드 언 오-피스"],
+  ["move in", "/muːv ɪn/", "무브 인", "이사 들어가다", "We will move in next Friday.", "우리는 다음 주 금요일에 이사 들어갈 것이다.", "위 윌 무브 인 넥스트 프라이-데이"],
+  ["move out", "/muːv aʊt/", "무브 아웃", "이사 나가다", "The tenants must move out by the end of the month.", "세입자들은 그달 말까지 이사 나가야 한다.", "더 테-넌츠 머스트 무브 아웃 바이 디 엔드 오브 더 먼스"],
+  ["bathroom", "/ˈbæθruːm/", "배스-룸", "욕실", "The apartment has two bathrooms.", "그 아파트에는 욕실이 두 개 있다.", "디 어-파-트먼트 해즈 투 배스-룸즈"],
+  ["bedroom", "/ˈbedruːm/", "베드-룸", "침실", "The master bedroom is very spacious.", "안방은 매우 넓다.", "더 매스-터 베드-룸 이즈 베-리 스페이-셔스"],
+  ["living room", "/ˈlɪvɪŋ ruːm/", "리-빙 룸", "거실", "The living room faces the garden.", "거실은 정원을 향하고 있다.", "더 리-빙 룸 페이-시즈 더 가-든"],
+  ["garage", "/ɡəˈrɑːʒ/", "거-라지", "차고", "The house has a two-car garage.", "그 집에는 차 두 대를 넣을 수 있는 차고가 있다.", "더 하우스 해즈 어 투-카 거-라지"],
+  ["garden", "/ˈɡɑːrdn/", "가-든", "정원", "They grow vegetables in the garden.", "그들은 정원에서 채소를 기른다.", "데이 그로우 베-지-터-블즈 인 더 가-든"],
+  ["yard", "/jɑːrd/", "야드", "마당, 뜰", "The children are playing in the yard.", "아이들이 마당에서 놀고 있다.", "더 칠-드런 아 플레이-잉 인 더 야드"],
+  ["neighborhood", "/ˈneɪbərhʊd/", "네이-버-후드", "이웃, 주변 지역", "This is a quiet neighborhood.", "여기는 조용한 주택가이다.", "디스 이즈 어 콰이-엇 네이-버-후드"],
+  ["downtown", "/ˌdaʊnˈtaʊn/", "다운-타운", "시내, 도심", "The office is located downtown.", "사무실은 시내에 있다.", "디 오-피스 이즈 로우-케이-티드 다운-타운"],
+  ["suburb", "/ˈsʌbɜːrb/", "서-버브", "교외", "They moved to a suburb of the city.", "그들은 도시 교외로 이사했다.", "데이 무브드 투 어 서-버브 오브 더 시-티"],
+  ["address", "/əˈdres/", "어-드레스", "주소", "Please write your current address on the form.", "양식에 현재 주소를 적어 주세요.", "플리즈 라이트 유어 커-런트 어-드레스 온 더 폼"],
+  ["floor", "/flɔːr/", "플로어", "층, 바닥", "Our office is on the tenth floor.", "우리 사무실은 10층에 있다.", "아워 오-피스 이즈 온 더 텐스 플로어"],
+  ["elevator", "/ˈelɪveɪtər/", "엘-리-베이-터", "엘리베이터", "The elevator is out of service.", "엘리베이터가 고장 났다.", "디 엘-리-베이-터 이즈 아웃 오브 서-비스"],
+  ["stairs", "/sterz/", "스테어즈", "계단", "Use the stairs during a fire alarm.", "화재 경보 시 계단을 이용하세요.", "유즈 더 스테어즈 두-링 어 파이어 어-람"],
+  ["balcony", "/ˈbælkəni/", "밸-커-니", "발코니, 베란다", "The room has a balcony with an ocean view.", "그 방에는 바다가 보이는 발코니가 있다.", "더 룸 해즈 어 밸-커-니 위드 언 오우-션 뷰"],
+  ["utility", "/juːˈtɪləti/", "유-틸-러-티", "공과금, 공공 시설", "Utilities are not included in the rent.", "공과금은 임대료에 포함되지 않는다.", "유-틸-러-티즈 아 낫 인-클루-디드 인 더 렌트"],
+  ["building", "/ˈbɪldɪŋ/", "빌-딩", "건물", "The building was constructed in 1990.", "그 건물은 1990년에 지어졌다.", "더 빌-딩 워즈 컨-스트럭-티드 인 나인-틴 나인-티"],
+  ["construction", "/kənˈstrʌkʃn/", "컨-스트럭-션", "건설, 공사", "The construction of the bridge will take a year.", "그 다리 공사는 1년이 걸릴 것이다.", "더 컨-스트럭-션 오브 더 브리지 윌 테이크 어 이어"]
+];

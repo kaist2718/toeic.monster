@@ -1,0 +1,38 @@
+window.VOCAB_UNITS = window.VOCAB_UNITS || {};
+// UNIT 16. 식당과 음식 (33 words)
+// 형식: [단어, IPA 발음기호, 한글발음, 뜻, 토익 예문, 예문 해석, 예문 한글 발음]
+window.VOCAB_UNITS[16] = [
+  ["restaurant", "/ˈrestərɑːnt/", "레스-터-런트", "식당, 레스토랑", "The restaurant is known for its fresh seafood.", "그 식당은 신선한 해산물로 유명하다.", "더 레스-터-런트 이즈 노운 포 이츠 프레시 시-푸드"],
+  ["menu", "/ˈmenjuː/", "메-뉴", "메뉴", "Please bring us the dessert menu.", "디저트 메뉴를 가져다 주세요.", "플리즈 브링 어스 더 디-저트 메-뉴"],
+  ["dish", "/dɪʃ/", "디시", "요리, 접시", "This dish is a local specialty.", "이 요리는 지역 특산 요리이다.", "디스 디시 이즈 어 로우-컬 스페-셜-티"],
+  ["meal", "/miːl/", "밀", "식사", "The price includes a three-course meal.", "그 가격에는 3코스 식사가 포함되어 있다.", "더 프라이스 인-클루즈 어 쓰리-코스 밀"],
+  ["breakfast", "/ˈbrekfəst/", "브렉-퍼스트", "아침 식사", "Breakfast is served from seven to ten.", "아침 식사는 7시부터 10시까지 제공된다.", "브렉-퍼스트 이즈 서브드 프럼 세-븐 투 텐"],
+  ["lunch", "/lʌntʃ/", "런치", "점심", "We had lunch at a small cafe.", "우리는 작은 카페에서 점심을 먹었다.", "위 해드 런치 앳 어 스몰 카-페"],
+  ["dinner", "/ˈdɪnər/", "디-너", "저녁 식사", "Dinner reservations are required on weekends.", "주말에는 저녁 식사 예약이 필요하다.", "디-너 레-저-베이-션즈 아 리-콰이어드 온 위크-엔즈"],
+  ["appetizer", "/ˈæpɪtaɪzər/", "애-피-타이-저", "전채 요리", "The appetizers were served before the main course.", "전채 요리가 메인 코스 전에 제공되었다.", "디 애-피-타이-저즈 워 서브드 비-포 더 메인 코스"],
+  ["dessert", "/dɪˈzɜːrt/", "디-저트", "디저트", "What would you like for dessert?", "디저트로 무엇을 드시겠어요?", "왓 우드 유 라이크 포 디-저트"],
+  ["beverage", "/ˈbevərɪdʒ/", "베-버-리지", "음료", "All beverages are included in the ticket price.", "모든 음료는 티켓 가격에 포함되어 있다.", "올 베-버-리-지즈 아 인-클루-디드 인 더 티-킷 프라이스"],
+  ["waiter", "/ˈweɪtər/", "웨이-터", "웨이터", "The waiter recommended the grilled salmon.", "웨이터가 구운 연어를 추천했다.", "더 웨이-터 레-커-멘-디드 더 그릴드 샐-먼"],
+  ["waitress", "/ˈweɪtrəs/", "웨이-트러스", "웨이트리스", "The waitress brought us extra napkins.", "웨이트리스가 여분의 냅킨을 가져다 주었다.", "더 웨이-트러스 브로트 어스 엑-스트라 내프-킨즈"],
+  ["chef", "/ʃef/", "셰프", "요리사, 셰프", "The chef creates a new menu every season.", "셰프는 매 계절 새로운 메뉴를 만든다.", "더 셰프 크리-에이츠 어 누 메-뉴 에-브리 시-즌"],
+  ["kitchen", "/ˈkɪtʃɪn/", "키-친", "주방", "The kitchen closes at eleven at night.", "주방은 밤 11시에 문을 닫는다.", "더 키-친 클로우-지즈 앳 일-레-븐 앳 나이트"],
+  ["table", "/ˈteɪbl/", "테이-블", "테이블, 식탁", "We booked a table for six people.", "우리는 6명이 앉을 테이블을 예약했다.", "위 북트 어 테이-블 포 식스 피-플"],
+  ["seat", "/siːt/", "시트", "좌석, 자리", "Please take a seat near the window.", "창가 근처에 앉으세요.", "플리즈 테이크 어 시트 니어 더 윈-도우"],
+  ["tip", "/tɪp/", "팁", "팁, 팁을 주다", "A fifteen percent tip is usually added.", "15% 팁이 보통 추가된다.", "어 피프-틴 퍼-센트 팁 이즈 유-주-얼-리 애-디드"],
+  ["bill", "/bɪl/", "빌", "계산서, 청구서", "Could we have the bill, please?", "계산서를 주시겠어요?", "쿠드 위 해브 더 빌 플리즈"],
+  ["fork", "/fɔːrk/", "포크", "포크", "The fork is on the left side of the plate.", "포크는 접시 왼쪽에 있다.", "더 포크 이즈 온 더 레프트 사이드 오브 더 플레이트"],
+  ["knife", "/naɪf/", "나이프", "칼", "Please cut the bread with a knife.", "칼로 빵을 잘라 주세요.", "플리즈 컷 더 브레드 위드 어 나이프"],
+  ["spoon", "/spuːn/", "스푼", "숟가락", "We need an extra spoon for the soup.", "수프용 숟가락이 하나 더 필요하다.", "위 니드 언 엑-스트라 스푼 포 더 수프"],
+  ["cup", "/kʌp/", "컵", "컵, 잔", "Would you like a cup of coffee?", "커피 한 잔 드시겠어요?", "우드 유 라이크 어 컵 오브 커-피"],
+  ["glass", "/ɡlæs/", "글래스", "유리컵", "Please bring two glasses of water.", "물 두 잔을 가져다 주세요.", "플리즈 브링 투 글래-시즈 오브 워-터"],
+  ["plate", "/pleɪt/", "플레이트", "접시", "The waiter cleared our plates.", "웨이터가 우리 접시를 치웠다.", "더 웨이-터 클리어드 아워 플레이츠"],
+  ["bowl", "/boʊl/", "보울", "그릇, 사발", "The soup is served in a large bowl.", "수프는 큰 그릇에 제공된다.", "더 수프 이즈 서브드 인 어 라지 보울"],
+  ["delicious", "/dɪˈlɪʃəs/", "디-리-셔스", "맛있는", "The pasta was absolutely delicious.", "파스타가 정말 맛있었다.", "더 파스-터 워즈 앱-서-루트-리 디-리-셔스"],
+  ["spicy", "/ˈspaɪsi/", "스파이-시", "매운, 향신료를 넣은", "The spicy soup is very popular here.", "매운 수프가 여기서 아주 인기 있다.", "더 스파이-시 수프 이즈 베-리 파-퓨-러 히어"],
+  ["fresh", "/freʃ/", "프레시", "신선한", "The salad is made with fresh vegetables.", "샐러드는 신선한 채소로 만들어진다.", "더 샐-러드 이즈 메이드 위드 프레시 베-지-터-블즈"],
+  ["healthy", "/ˈhelθi/", "헬-씨", "건강한", "The restaurant offers several healthy options.", "그 식당은 건강한 메뉴를 여러 가지 제공한다.", "더 레스-터-런트 오-퍼즈 세-버-럴 헬-씨 앱-션즈"],
+  ["vegetarian", "/ˌvedʒəˈteriən/", "베-지-터-리-언", "채식주의자의, 채식의", "Do you have any vegetarian dishes?", "채식 요리가 있나요?", "두 유 해브 에-니 베-지-터-리-언 디-시즈"],
+  ["buffet", "/bəˈfeɪ/", "버-페", "뷔페", "Breakfast is served as a buffet.", "아침 식사는 뷔페로 제공된다.", "브렉-퍼스트 이즈 서브드 애즈 어 버-페"],
+  ["snack", "/snæk/", "스낵", "간식, 가벼운 식사", "You can get a snack at the cafe.", "카페에서 간식을 먹을 수 있다.", "유 캔 겟 어 스낵 앳 더 카-페"],
+  ["ingredient", "/ɪnˈɡriːdiənt/", "인-그리-디-언트", "재료, 성분", "All ingredients are listed on the label.", "모든 재료가 라벨에 표시되어 있다.", "올 인-그리-디-언츠 아 리스-티드 온 더 레이-블"]
+];

@@ -1,0 +1,38 @@
+window.VOCAB_UNITS = window.VOCAB_UNITS || {};
+// UNIT 24. 품질과 개선 (33 words)
+// 형식: [단어, IPA 발음기호, 한글발음, 뜻, 토익 예문, 예문 해석, 예문 한글 발음]
+window.VOCAB_UNITS[24] = [
+  ["improve", "/ɪmˈpruːv/", "임-프루브", "개선하다, 향상하다", "We need to improve our customer service.", "우리는 고객 서비스를 개선해야 한다.", "위 니드 투 임-프루브 아워 커스-터-머 서-비스"],
+  ["improvement", "/ɪmˈpruːvmənt/", "임-프루브-먼트", "개선, 향상", "There was a clear improvement in sales.", "매출에 분명한 개선이 있었다.", "데어 워즈 어 클리어 임-프루브-먼트 인 세일즈"],
+  ["enhance", "/ɪnˈhæns/", "인-핸스", "향상시키다, 강화하다", "The new design enhances the product's appeal.", "새 디자인은 제품의 매력을 높인다.", "더 누 디-자인 인-핸-시즈 더 프라-덕츠 어-필"],
+  ["reduce", "/rɪˈduːs/", "리-두스", "줄이다, 감소시키다", "The company plans to reduce costs next year.", "그 회사는 내년에 비용을 줄일 계획이다.", "더 컴-퍼-니 플랜즈 투 리-두스 코스트 넥스트 이어"],
+  ["reduction", "/rɪˈdʌkʃn/", "리-덕-션", "감소, 삭감", "The reduction in prices attracted more customers.", "가격 인하가 더 많은 고객을 끌어들였다.", "더 리-덕-션 인 프라이-시즈 어-트랙-티드 모어 커스-터-머즈"],
+  ["efficient", "/ɪˈfɪʃnt/", "이-피-션트", "효율적인", "The new process is more efficient than the old one.", "새 공정은 기존 것보다 더 효율적이다.", "더 누 프라-세스 이즈 모어 이-피-션트 댄 디 올드 원"],
+  ["efficiency", "/ɪˈfɪʃnsi/", "이-피-션-시", "효율, 능률", "The training improved work efficiency.", "그 교육은 업무 효율을 높였다.", "더 트레이-닝 임-프루브드 워크 이-피-션-시"],
+  ["effective", "/ɪˈfektɪv/", "이-펙-티브", "효과적인", "This strategy is effective in reducing waste.", "이 전략은 낭비를 줄이는 데 효과적이다.", "디스 스트래-터-지 이즈 이-펙-티브 인 리-두-싱 웨이스트"],
+  ["effectiveness", "/ɪˈfektɪvnəs/", "이-펙-티브-니스", "효과, 유효성", "We measured the effectiveness of the campaign.", "우리는 그 캠페인의 효과를 측정했다.", "위 메-저드 디 이-펙-티브-니스 오브 더 캠-페인"],
+  ["productivity", "/ˌproʊdʌkˈtɪvəti/", "프라-덕-티-버-티", "생산성", "Better tools increase worker productivity.", "더 좋은 도구는 근로자의 생산성을 높인다.", "베-터 툴즈 인-크리스 워-커 프라-덕-티-버-티"],
+  ["productive", "/prəˈdʌktɪv/", "프러-덕-티브", "생산적인", "The meeting was short but very productive.", "그 회의는 짧았지만 매우 생산적이었다.", "더 미-팅 워즈 쇼트 벗 베-리 프러-덕-티브"],
+  ["performance", "/pərˈfɔːrməns/", "퍼-포-먼스", "성과, 성능", "Employee performance improved after the review.", "평가 이후 직원 성과가 향상되었다.", "임-플로이-이 퍼-포-먼스 임-프루브드 애프-터 더 리-뷰"],
+  ["achieve", "/əˈtʃiːv/", "어-치브", "달성하다, 이루다", "The team achieved all its targets this year.", "그 팀은 올해 모든 목표를 달성했다.", "더 팀 어-치브드 올 이츠 타-깃츠 디스 이어"],
+  ["achievement", "/əˈtʃiːvmənt/", "어-치브-먼트", "성취, 업적", "Winning the award was a great achievement.", "상을 받은 것은 큰 성취였다.", "위-닝 디 어-워드 워즈 어 그레이트 어-치브-먼트"],
+  ["goal", "/ɡoʊl/", "골", "목표, 골", "Our goal is to double sales in two years.", "우리의 목표는 2년 안에 매출을 두 배로 늘리는 것이다.", "아워 골 이즈 투 더-블 세일즈 인 투 이어즈"],
+  ["objective", "/əbˈdʒektɪv/", "업-젝-티브", "목표, 객관적인", "The main objective is to enter new markets.", "주요 목표는 새로운 시장에 진출하는 것이다.", "더 메인 업-젝-티브 이즈 투 엔-터 누 마-킷츠"],
+  ["aim", "/eɪm/", "에임", "목표, 겨냥하다", "The program aims to train young leaders.", "그 프로그램은 젊은 리더를 양성하는 것을 목표로 한다.", "더 프로우-그램 에임즈 투 트레인 영 리-더즈"],
+  ["purpose", "/ˈpɜːrpəs/", "퍼-퍼스", "목적", "The purpose of the visit is to inspect the plant.", "방문 목적은 공장을 검사하는 것이다.", "더 퍼-퍼스 오브 더 비-짓 이즈 투 인-스펙트 더 플랜트"],
+  ["measure", "/ˈmeʒər/", "메-저", "측정하다, 대책", "We measure customer satisfaction quarterly.", "우리는 분기마다 고객 만족도를 측정한다.", "위 메-저 커스-터-머 새-티스-팩-션 콰-터-리"],
+  ["measurement", "/ˈmeʒərmənt/", "메-저-먼트", "측정, 측정값", "Accurate measurement is essential in production.", "정확한 측정은 생산에서 필수적이다.", "애-큐-럿 메-저-먼트 이즈 이-센-셜 인 프러-덕-션"],
+  ["evaluate", "/ɪˈvæljueɪt/", "이-밸-류-에이트", "평가하다", "The committee will evaluate all the proposals.", "위원회는 모든 제안을 평가할 것이다.", "더 커-미-티 윌 이-밸-류-에이트 올 더 프러-포우-즐즈"],
+  ["evaluation", "/ɪˌvæljuˈeɪʃn/", "이-밸-류-에이-션", "평가, 검토", "The annual evaluation will be held next week.", "연례 평가가 다음 주에 있을 것이다.", "디 애-뉴-얼 이-밸-류-에이-션 윌 비 헬드 넥스트 위크"],
+  ["assess", "/əˈses/", "어-세스", "평가하다, 산정하다", "We need to assess the damage first.", "우리는 먼저 피해를 평가해야 한다.", "위 니드 투 어-세스 더 데-미지 퍼스트"],
+  ["assessment", "/əˈsesmənt/", "어-세스-먼트", "평가, 사정", "The risk assessment was completed on time.", "위험 평가가 제때 완료되었다.", "더 리스크 어-세스-먼트 워즈 컴-플리-티드 온 타임"],
+  ["analyze", "/ˈænəlaɪz/", "애-너-라이즈", "분석하다", "The experts analyzed the market data.", "전문가들이 시장 데이터를 분석했다.", "디 엑스-퍼츠 애-너-라이즈드 더 마-킷 데이-터"],
+  ["analysis", "/əˈnæləsɪs/", "어-날-러-시스", "분석", "The analysis shows a steady increase in demand.", "그 분석은 수요의 꾸준한 증가를 보여준다.", "디 어-날-러-시스 쇼우즈 어 스테-디 인-크리스 인 디-맨드"],
+  ["review", "/rɪˈvjuː/", "리-뷰", "검토하다, 평가", "The manager will review the report tonight.", "매니저가 오늘 밤 보고서를 검토할 것이다.", "더 매-니-저 윌 리-뷰 더 리-포-트 투-나이트"],
+  ["revise", "/rɪˈvaɪz/", "리-바이즈", "수정하다, 개정하다", "We revised the plan after the feedback.", "우리는 피드백을 받은 후 계획을 수정했다.", "위 리-바이즈드 더 플랜 애프-터 더 피드-백"],
+  ["modification", "/ˌmɑːdɪfɪˈkeɪʃn/", "마-디-피-케이-션", "수정, 변경", "The modification reduced the production time.", "그 변경은 생산 시간을 줄였다.", "더 마-디-피-케이-션 리-두스트 더 프러-덕-션 타임"],
+  ["adjust", "/əˈdʒʌst/", "어-저스트", "조정하다, 맞추다", "You can adjust the temperature with this button.", "이 버튼으로 온도를 조절할 수 있다.", "유 캔 어-저스트 더 템-퍼-러-처 위드 디스 버-턴"],
+  ["adjustment", "/əˈdʒʌstmənt/", "어-저스트-먼트", "조정, 수정", "A small adjustment to the price increased sales.", "가격을 조금 조정하자 매출이 늘었다.", "어 스몰 어-저스트-먼트 투 더 프라이스 인-크리스트 세일즈"],
+  ["optimize", "/ˈɑːptɪmaɪz/", "압-티-마이즈", "최적화하다", "The engineers optimized the delivery route.", "엔지니어들이 배송 경로를 최적화했다.", "디 엔-지-니어즈 압-티-마이즈드 더 디-리-버-리 루트"],
+  ["benchmark", "/ˈbentʃmɑːrk/", "벤치-마크", "기준점, 벤치마크", "Our service is the benchmark in the industry.", "우리 서비스는 업계의 기준이다.", "아워 서-비스 이즈 더 벤치-마크 인 디 인-더-스트리"]
+];

@@ -1,0 +1,38 @@
+window.VOCAB_UNITS = window.VOCAB_UNITS || {};
+// UNIT 23. 직장 인간관계 (33 words)
+// 형식: [단어, IPA 발음기호, 한글발음, 뜻, 토익 예문, 예문 해석, 예문 한글 발음]
+window.VOCAB_UNITS[23] = [
+  ["team", "/tiːm/", "팀", "팀", "Our team finished the project ahead of schedule.", "우리 팀은 일정보다 일찍 프로젝트를 끝냈다.", "아워 팀 피-니시트 더 프라-젝트 어-헤드 오브 스케-줄"],
+  ["leader", "/ˈliːdər/", "리-더", "지도자, 리더", "She is a natural leader with clear vision.", "그녀는 명확한 비전을 가진 타고난 리더이다.", "시 이즈 어 내-처-럴 리-더 위드 클리어 비-전"],
+  ["leadership", "/ˈliːdərʃɪp/", "리-더-십", "지도력, 리더십", "The company values strong leadership.", "그 회사는 강한 리더십을 중시한다.", "더 컴-퍼-니 밸-류즈 스트롱 리-더-십"],
+  ["member", "/ˈmembər/", "멤-버", "구성원, 회원", "Every team member attended the workshop.", "모든 팀 구성원이 워크숍에 참석했다.", "에-브리 팀 멤-버 어-텐-디드 더 워크-샵"],
+  ["partner", "/ˈpɑːrtnər/", "파-트-너", "파트너, 동료", "Our business partner agreed to the new terms.", "우리 사업 파트너가 새 조건에 동의했다.", "아워 비즈-니스 파-트-너 어-그리드 투 더 누 텀즈"],
+  ["cooperation", "/koʊˌɑːpəˈreɪʃn/", "코우-아-퍼-레이-션", "협력", "The two departments work in close cooperation.", "두 부서는 긴밀히 협력하여 일한다.", "더 투 디-파-트먼츠 워크 인 클로우스 코우-아-퍼-레이-션"],
+  ["cooperate", "/koʊˈɑːpəreɪt/", "코우-아-퍼-레이트", "협력하다", "We need to cooperate with the local office.", "우리는 현지 사무소와 협력해야 한다.", "위 니드 투 코우-아-퍼-레이트 위드 더 로우-컬 오-피스"],
+  ["collaborate", "/kəˈlæbəreɪt/", "컬-래-버-레이트", "공동 작업하다", "The teams collaborate on product development.", "팀들은 제품 개발을 위해 공동 작업한다.", "더 팀즈 컬-래-버-레이트 온 프라-덕트 디-벨-럽-먼트"],
+  ["collaboration", "/kəˌlæbəˈreɪʃn/", "컬-래-버-레이-션", "공동 작업, 협업", "The project requires collaboration between departments.", "그 프로젝트는 부서 간 협업이 필요하다.", "더 프라-젝트 리-콰이어즈 컬-래-버-레이-션 비-트윈 디-파-트먼츠"],
+  ["teamwork", "/ˈtiːmwɜːrk/", "팀-워크", "팀워크, 협동", "Good teamwork leads to better results.", "좋은 팀워크는 더 나은 결과로 이어진다.", "구드 팀-워크 리즈 투 베-터 리-절츠"],
+  ["trust", "/trʌst/", "트러스트", "신뢰, 신뢰하다", "Customers trust our brand for its reliability.", "고객들은 신뢰성 때문에 우리 브랜드를 신뢰한다.", "커스-터-머즈 트러스트 아워 브랜드 포 이츠 리-라이-어-빌-리-티"],
+  ["respect", "/rɪˈspekt/", "리-스펙트", "존경, 존중하다", "Employees respect the manager's decisions.", "직원들은 매니저의 결정을 존중한다.", "임-플로이-이즈 리-스펙트 더 매-니-저즈 디-시-전즈"],
+  ["encourage", "/ɪnˈkɜːrɪdʒ/", "인-커-리지", "격려하다, 장려하다", "The manager encourages employees to share ideas.", "매니저는 직원들이 아이디어를 공유하도록 격려한다.", "더 매-니-저 인-커-리-지즈 임-플로이-이즈 투 셰어 아이-디-어즈"],
+  ["praise", "/preɪz/", "프레이즈", "칭찬하다, 칭찬", "The supervisor praised her for the excellent work.", "상사는 훌륭한 업무에 대해 그녀를 칭찬했다.", "더 수-퍼-바이-저 프레이즈드 허 포 디 엑-설-런트 워크"],
+  ["criticize", "/ˈkrɪtɪsaɪz/", "크리-티-사이즈", "비판하다", "Do not criticize others in public.", "공개적으로 다른 사람을 비판하지 마세요.", "두 낫 크리-티-사이즈 어-더즈 인 퍼-블릭"],
+  ["criticism", "/ˈkrɪtɪsɪzəm/", "크리-티-시-즘", "비판", "The plan received strong criticism from staff.", "그 계획은 직원들로부터 강한 비판을 받았다.", "더 플랜 리-시브드 스트롱 크리-티-시-즘 프럼 스태프"],
+  ["conflict", "/ˈkɑːnflɪkt/", "칸-플릭트", "갈등, 충돌", "The meeting helped resolve the conflict between teams.", "그 회의는 팀 간 갈등을 해소하는 데 도움이 되었다.", "더 미-팅 헬프트 리-잘브 더 칸-플릭트 비-트윈 팀즈"],
+  ["argument", "/ˈɑːrɡjumənt/", "아-규-먼트", "논쟁, 주장", "They had a long argument about the budget.", "그들은 예산에 대해 긴 논쟁을 벌였다.", "데이 해드 어 롱 아-규-먼트 어-바웃 더 버-짓"],
+  ["argue", "/ˈɑːrɡjuː/", "아-규", "다투다, 주장하다", "The two managers argued over the schedule.", "두 매니저는 일정을 두고 다퉜다.", "더 투 매-니-저즈 아-규드 오우-버 더 스케-줄"],
+  ["appreciate", "/əˈpriːʃieɪt/", "어-프리-시-에이트", "감사하다, 높이 평가하다", "We appreciate your continued support.", "지속적인 지원에 감사드립니다.", "위 어-프리-시-에이트 유어 컨-티-뉴드 서-포트"],
+  ["gratitude", "/ˈɡrætɪtuːd/", "그래-티-튜드", "감사, 고마움", "She expressed her gratitude to the whole team.", "그녀는 팀 전체에게 감사를 표했다.", "시 익-스프레스트 허 그래-티-튜드 투 더 홀 팀"],
+  ["blame", "/bleɪm/", "블레임", "비난하다, 탓하다", "Do not blame others for the mistake.", "실수에 대해 남을 탓하지 마세요.", "두 낫 블레임 어-더즈 포 더 미-스테이크"],
+  ["accuse", "/əˈkjuːz/", "어-큐즈", "고소하다, 비난하다", "He was accused of leaking confidential data.", "그는 기밀 데이터를 유출한 혐의를 받았다.", "히 워즈 어-큐즈드 오브 리-킹 칸-피-덴-셜 데이-터"],
+  ["mentor", "/ˈmentɔːr/", "멘-터", "멘토, 조언자", "A senior mentor guides new employees.", "선배 멘토가 신입 직원을 지도한다.", "어 시-니-어 멘-터 가이즈 누 임-플로이-이즈"],
+  ["supervise", "/ˈsuːpərvaɪz/", "수-퍼-바이즈", "감독하다", "She supervises a team of ten workers.", "그녀는 직원 열 명으로 이루어진 팀을 감독한다.", "시 수-퍼-바이-지즈 어 팀 오브 텐 워-커즈"],
+  ["supervisor", "/ˈsuːpərvaɪzər/", "수-퍼-바이-저", "감독자, 상사", "The supervisor approved my vacation request.", "상사가 내 휴가 요청을 승인했다.", "더 수-퍼-바이-저 어-프루브드 마이 베-케이-션 리-퀘스트"],
+  ["subordinate", "/səˈbɔːrdɪnət/", "서-보-디-넛", "부하 직원, 하급자", "He delegates tasks to his subordinates.", "그는 부하 직원에게 업무를 위임한다.", "히 델-리-게이츠 태스크 투 히즈 서-보-디-넛츠"],
+  ["peer", "/pɪr/", "피어", "동료, 또래", "Her peers respect her opinion.", "그녀의 동료들은 그녀의 의견을 존중한다.", "허 피어즈 리-스펙트 허 어-핀-년"],
+  ["networking", "/ˈnetwɜːrkɪŋ/", "네트-워-킹", "인맥 형성, 네트워킹", "Networking events help build business relationships.", "네트워킹 행사는 비즈니스 관계를 만드는 데 도움이 된다.", "네트-워-킹 이-벤츠 헬프 빌드 비즈-니스 리-레이-션-십즈"],
+  ["motivation", "/ˌmoʊtɪˈveɪʃn/", "모우-티-베이-션", "동기 부여", "The bonus increased employee motivation.", "보너스는 직원들의 동기를 높였다.", "더 보우-너스 인-크리스트 임-플로이-이 모우-티-베이-션"],
+  ["morale", "/məˈræl/", "머-랠", "사기, 의욕", "Staff morale improved after the changes.", "변경 이후 직원 사기가 올라갔다.", "스태프 머-랠 임-프루브드 애프-터 더 체인-지즈"],
+  ["attitude", "/ˈætɪtuːd/", "애-티-튜드", "태도", "A positive attitude is important at work.", "직장에서 긍정적인 태도가 중요하다.", "어 파-지-티브 애-티-튜드 이즈 임-포-턴트 앳 워크"],
+  ["behavior", "/bɪˈheɪvjər/", "비-헤이-비-어", "행동, 태도", "Professional behavior is expected of all staff.", "모든 직원에게 전문적인 행동이 기대된다.", "프러-페-셔-널 비-헤이-비-어 이즈 익-스펙-티드 오브 올 스태프"]
+];

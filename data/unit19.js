@@ -1,0 +1,38 @@
+window.VOCAB_UNITS = window.VOCAB_UNITS || {};
+// UNIT 19. 교육과 학교 (33 words)
+// 형식: [단어, IPA 발음기호, 한글발음, 뜻, 토익 예문, 예문 해석, 예문 한글 발음]
+window.VOCAB_UNITS[19] = [
+  ["school", "/skuːl/", "스쿨", "학교", "The school offers evening classes for adults.", "그 학교는 성인을 위한 저녁 수업을 제공한다.", "더 스쿨 오-퍼즈 이-브닝 클래-시즈 포 어-덜츠"],
+  ["student", "/ˈstuːdnt/", "스투-던트", "학생", "Every student must submit a report.", "모든 학생은 보고서를 제출해야 한다.", "에-브리 스투-던트 머스트 서브-밋 어 리-포-트"],
+  ["teacher", "/ˈtiːtʃər/", "티-처", "선생님, 교사", "The teacher explained the grammar rules.", "선생님이 문법 규칙을 설명했다.", "더 티-처 익-스플레인드 더 그래-머 룰즈"],
+  ["professor", "/prəˈfesər/", "프러-페-서", "교수", "The professor gave a lecture on economics.", "교수가 경제학에 대해 강의했다.", "더 프러-페-서 게이브 어 렉-처 온 이-카-너-믹스"],
+  ["class", "/klæs/", "클래스", "수업, 학급", "The class starts at nine sharp.", "수업은 9시 정각에 시작한다.", "더 클래스 스타츠 앳 나인 샤프"],
+  ["course", "/kɔːrs/", "코스", "과정, 강좌", "She is taking a business course this term.", "그녀는 이번 학기에 비즈니스 과정을 듣고 있다.", "시 이즈 테이-킹 어 비즈-니스 코스 디스 텀"],
+  ["lesson", "/ˈlesn/", "레-슨", "수업, 과", "The driving lessons are held on weekends.", "운전 교습은 주말에 진행된다.", "더 드라이-빙 레-슨즈 아 헬드 온 위크-엔즈"],
+  ["lecture", "/ˈlektʃər/", "렉-처", "강의", "The lecture hall was completely full.", "강의실은 완전히 꽉 찼다.", "더 렉-처 홀 워즈 컴-플리트-리 풀"],
+  ["seminar", "/ˈsemɪnɑːr/", "세-미-나", "세미나", "The seminar will be held in room 301.", "세미나는 301호에서 열릴 것이다.", "더 세-미-나 윌 비 헬드 인 룸 쓰리 오우-원"],
+  ["textbook", "/ˈtekstbʊk/", "텍스트-북", "교과서", "The textbook costs over fifty dollars.", "그 교과서는 50달러가 넘는다.", "더 텍스트-북 코스트 오우-버 피프-티 달-러즈"],
+  ["notebook", "/ˈnoʊtbʊk/", "노우트-북", "공책, 노트북 컴퓨터", "Write the answer in your notebook.", "답을 공책에 적으세요.", "라이트 디 앤-서 인 유어 노우트-북"],
+  ["homework", "/ˈhoʊmwɜːrk/", "호움-워크", "숙제", "The teacher gave us a lot of homework.", "선생님이 우리에게 숙제를 많이 내주었다.", "더 티-처 게이브 어스 어 랏 오브 호움-워크"],
+  ["assignment", "/əˈsaɪnmənt/", "어-사인-먼트", "과제, 임무", "The assignment is due next Monday.", "그 과제는 다음 주 월요일까지다.", "디 어-사인-먼트 이즈 두 넥스트 먼-데이"],
+  ["exam", "/ɪɡˈzæm/", "이그-잼", "시험", "The final exam covers all the chapters.", "기말고사는 모든 단원을 다룬다.", "더 파이-널 이그-잼 커-버즈 올 더 채-퍼즈"],
+  ["test", "/test/", "테스트", "시험, 테스트", "She passed the proficiency test easily.", "그녀는 능력 시험을 쉽게 통과했다.", "시 패스트 더 프러-피-션-시 테스트 이-지-리"],
+  ["grade", "/ɡreɪd/", "그레이드", "성적, 학년", "He received a high grade in math.", "그는 수학에서 높은 성적을 받았다.", "히 리-시브드 어 하이 그레이드 인 매스"],
+  ["score", "/skɔːr/", "스코어", "점수, 득점", "A score of 90 or above is excellent.", "90점 이상이면 우수하다.", "어 스코어 오브 나인-티 오어 어-버브 이즈 엑-설-런트"],
+  ["study", "/ˈstʌdi/", "스터-디", "공부하다, 연구", "She studies English every morning.", "그녀는 매일 아침 영어를 공부한다.", "시 스터-디즈 잉-글리시 에-브리 모-닝"],
+  ["learn", "/lɜːrn/", "런", "배우다", "You will learn new skills at this job.", "이 일자리에서 새로운 기술을 배우게 될 것이다.", "유 윌 런 누 스킬즈 앳 디스 잡"],
+  ["teach", "/tiːtʃ/", "티치", "가르치다", "He teaches history at the university.", "그는 대학에서 역사를 가르친다.", "히 티-치즈 히스-터-리 앳 더 유-니-버-시-티"],
+  ["knowledge", "/ˈnɑːlɪdʒ/", "날-리지", "지식", "Practical knowledge is as important as theory.", "실용 지식은 이론만큼 중요하다.", "프랙-티-컬 날-리지 이즈 애즈 임-포-턴트 애즈 시-어-리"],
+  ["ability", "/əˈbɪləti/", "어-빌-러-티", "능력", "The job requires the ability to work in a team.", "그 일자리는 팀워크 능력을 요구한다.", "더 잡 리-콰이어즈 디 어-빌-러-티 투 워크 인 어 팀"],
+  ["scholarship", "/ˈskɑːlərʃɪp/", "스칼-러-십", "장학금", "She won a scholarship to study abroad.", "그녀는 해외 유학 장학금을 받았다.", "시 원 어 스칼-러-십 투 스터-디 어-브로드"],
+  ["tuition", "/tuˈɪʃn/", "투-이-션", "수업료", "Tuition fees have increased this year.", "올해 수업료가 인상되었다.", "투-이-션 피-즈 해브 인-크리스트 디스 이어"],
+  ["campus", "/ˈkæmpəs/", "캠-퍼스", "캠퍼스", "The campus is located in the suburbs.", "캠퍼스는 교외에 있다.", "더 캠-퍼스 이즈 로우-케이-티드 인 더 서-버브즈"],
+  ["library", "/ˈlaɪbreri/", "라이-브레-리", "도서관", "The library stays open until midnight.", "도서관은 자정까지 문을 연다.", "더 라이-브레-리 스테이즈 오우-픈 언-틸 미드-나이트"],
+  ["laboratory", "/ˈlæbrətɔːri/", "래-브러-토-리", "실험실", "The laboratory is equipped with new machines.", "실험실에는 새 기계가 갖춰져 있다.", "더 래-브러-토-리 이즈 이-퀴프트 위드 누 머-신즈"],
+  ["major", "/ˈmeɪdʒər/", "메이-저", "전공, 주요한", "Her major is international business.", "그녀의 전공은 국제 경영이다.", "허 메이-저 이즈 인-터-내-셔-널 비즈-니스"],
+  ["university", "/ˌjuːnɪˈvɜːrsəti/", "유-니-버-시-티", "대학교", "He graduated from the university last year.", "그는 작년에 그 대학교를 졸업했다.", "히 그래-주-에이-티드 프럼 더 유-니-버-시-티 래스트 이어"],
+  ["academy", "/əˈkædəmi/", "어-캐-더-미", "학원, 아카데미", "The academy offers language courses at night.", "그 학원은 밤에 어학 강좌를 제공한다.", "디 어-캐-더-미 오-퍼즈 랭-귀지 코-시즈 앳 나이트"],
+  ["tutor", "/ˈtuːtər/", "투-터", "개인 교사, 과외하다", "A tutor helps students with difficult subjects.", "개인 교사는 학생들이 어려운 과목을 돕는다.", "어 투-터 헬프스 스투-던츠 위드 디-피-컬트 서브-젝츠"],
+  ["classroom", "/ˈklæsruːm/", "클래스-룸", "교실", "The classroom has a projector and a screen.", "그 교실에는 프로젝터와 스크린이 있다.", "더 클래스-룸 해즈 어 프러-젝-터 앤드 어 스크린"],
+  ["enroll", "/ɪnˈroʊl/", "인-로울", "등록하다, 입학하다", "She enrolled in an online marketing course.", "그녀는 온라인 마케팅 과정에 등록했다.", "시 인-로울드 인 언 온-라인 마-키-팅 코스"]
+];

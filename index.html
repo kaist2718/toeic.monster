@@ -1,0 +1,1760 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>toeic.monster - TOEIC 보카 1000 · 발음·예문으로 쉽게 외우는 TOEIC 필수 어휘</title>
+<meta name="description" content="toeic.monster - TOEIC 필수 어휘 1,000개를 발음·예문으로 외우는 무료 학습 사이트. 암기 카드, 퀴즈, 실전 시험 모드, 오답노트, 학습 현황까지!">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👾</text></svg>">
+<style>
+  :root {
+    --primary: #3b5bdb;
+    --primary-dark: #2f4bb8;
+    --accent: #f59f00;
+    --bg: #f6f7fb;
+    --card: #ffffff;
+    --text: #212529;
+    --text-muted: #6b7280;
+    --border: #e5e7eb;
+    --green: #37b24d;
+    --ex-text: #495057;
+    --cyan: #0c8599;
+    --kpron-bg: #fff8e6;
+    --input-bg: #ffffff;
+    --soft-blue: #eef2ff;
+    --soft-cyan: #e6fcf5;
+    --correct-bg: #d3f9d8;
+    --wrong-bg: #ffe3e3;
+    --intro-grad: linear-gradient(135deg, #eef2ff, #fff5e6);
+    --shadow-sm: 0 4px 14px rgba(0,0,0,.07);
+    --shadow: 0 8px 24px rgba(0,0,0,.08);
+  }
+
+  body.dark {
+    --bg: #10141b;
+    --card: #1a1f2a;
+    --text: #e6e9ef;
+    --text-muted: #98a1b0;
+    --border: #2c3442;
+    --primary: #5c7cfa;
+    --primary-dark: #93a5ff;
+    --accent: #ffc93d;
+    --green: #51cf66;
+    --ex-text: #c9d1dc;
+    --cyan: #6fd3e8;
+    --kpron-bg: #3a3020;
+    --input-bg: #232936;
+    --soft-blue: #232c44;
+    --soft-cyan: #183038;
+    --correct-bg: #1e3526;
+    --wrong-bg: #3a2326;
+    --intro-grad: linear-gradient(135deg, #1d2440, #382b19);
+    --shadow-sm: 0 4px 14px rgba(0,0,0,.35);
+    --shadow: 0 8px 24px rgba(0,0,0,.45);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: "Pretendard Variable", Pretendard, "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+  }
+
+  /* ---------- 헤더 ---------- */
+  header.topbar {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: var(--primary);
+    color: #fff;
+    box-shadow: 0 2px 10px rgba(0,0,0,.15);
+  }
+  .topbar-inner {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 14px 20px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+  }
+  .topbar h1 {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -.5px;
+    white-space: nowrap;
+  }
+  .topbar h1 small {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    opacity: .85;
+    letter-spacing: 0;
+  }
+  .progress-wrap {
+    flex: 1;
+    min-width: 160px;
+  }
+  .progress-label {
+    font-size: 12px;
+    opacity: .9;
+    margin-bottom: 4px;
+  }
+  .progress-bar {
+    height: 8px;
+    background: rgba(255,255,255,.25);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--accent);
+    border-radius: 99px;
+    transition: width .3s ease;
+  }
+  .topbar-actions { display: flex; gap: 8px; }
+  .btn {
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 14px;
+    cursor: pointer;
+    background: rgba(255,255,255,.18);
+    color: #fff;
+    transition: background .15s;
+  }
+  .btn:hover { background: rgba(255,255,255,.3); }
+  .btn.active { background: #fff; color: var(--primary); }
+
+  /* ---------- 검색 ---------- */
+  .searchbar {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 16px 20px 0;
+  }
+  .searchbar input {
+    width: 100%;
+    font-family: inherit;
+    font-size: 15px;
+    padding: 12px 16px;
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    outline: none;
+    background: var(--card);
+    transition: border-color .15s;
+  }
+  .searchbar input:focus { border-color: var(--primary); }
+  .searchbar .hint {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin: 6px 2px 0;
+  }
+
+  .levelbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .lvl-btn {
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 7px 14px;
+    border-radius: 99px;
+    border: 2px solid var(--border);
+    background: var(--card);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: border-color .15s, background .15s, color .15s;
+  }
+  .lvl-btn:hover { border-color: var(--primary); color: var(--text); }
+  .lvl-btn.active { border-color: var(--primary); background: var(--primary); color: #fff; }
+
+  .lvl-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 99px;
+    vertical-align: 2px;
+    margin-left: 4px;
+  }
+  .lvl-easy { background: var(--correct-bg); color: #2b8a3e; }
+  .lvl-mid { background: #fff3bf; color: #9a7b00; }
+  .lvl-hard { background: var(--wrong-bg); color: #c92a2a; }
+  body.dark .lvl-easy { color: #69db7c; }
+  body.dark .lvl-mid { background: #3a3318; color: #ffd43b; }
+  body.dark .lvl-hard { color: #ff8787; }
+
+  .fc-level {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-muted);
+  }
+
+  .quiz-hint {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin: 2px 0 14px;
+  }
+
+  /* ---------- 본문 ---------- */
+  main { max-width: 960px; margin: 0 auto; padding: 16px 20px 80px; }
+
+  .book-intro {
+    background: var(--intro-grad);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px 24px;
+    margin: 16px 0 28px;
+  }
+  .book-intro h2 { font-size: 17px; margin-bottom: 8px; color: var(--primary-dark); }
+  .book-intro p { font-size: 14px; color: var(--text-muted); }
+  .book-intro .tips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .book-intro .tip {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 99px;
+    padding: 6px 12px;
+    font-size: 12.5px;
+    color: var(--text);
+  }
+
+  /* ---------- 유닛 ---------- */
+  section.unit {
+    margin-bottom: 40px;
+    scroll-margin-top: 130px;
+  }
+  .unit-head {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+  .unit-num {
+    background: var(--primary);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    border-radius: 6px;
+    padding: 3px 8px;
+  }
+  .unit-title { font-size: 20px; font-weight: 800; }
+  .unit-sub { font-size: 13px; color: var(--text-muted); margin: 2px 0 14px; }
+
+  /* ---------- 단어 카드 ---------- */
+  .vocab-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(430px, 1fr));
+    gap: 14px;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 18px;
+    display: flex;
+    gap: 14px;
+    transition: box-shadow .15s, border-color .15s;
+    position: relative;
+  }
+  .card:hover { box-shadow: var(--shadow-sm); }
+  .card.learned { border-left: 4px solid var(--green); }
+
+  .card-check {
+    flex-shrink: 0;
+    padding-top: 2px;
+  }
+  .card-check input {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--green);
+    cursor: pointer;
+  }
+
+  .card-word {
+    flex: 0 0 185px;
+  }
+  .card-word .w {
+    font-size: 19px;
+    font-weight: 800;
+    letter-spacing: -.3px;
+    color: var(--primary-dark);
+    word-break: break-word;
+  }
+  .card-word .ipa {
+    font-family: "Segoe UI", "Noto Sans", "Arial Unicode MS", sans-serif;
+    font-size: 13.5px;
+    color: var(--text-muted);
+    margin: 2px 0;
+  }
+  .card-word .kpron {
+    font-size: 14.5px;
+    font-weight: 700;
+    color: var(--accent);
+    background: var(--kpron-bg);
+    border-radius: 6px;
+    padding: 1px 7px;
+    display: inline-block;
+  }
+  .card-word .speak {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    margin-left: 6px;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    background: var(--input-bg);
+    cursor: pointer;
+    font-size: 13px;
+    vertical-align: middle;
+    transition: background .15s;
+  }
+  .card-word .speak:hover { background: var(--soft-blue); }
+
+  .card-body { flex: 1; min-width: 0; }
+  .card-body .mean {
+    font-size: 15.5px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .card-body .ex {
+    font-size: 13.5px;
+    color: var(--ex-text);
+    font-style: italic;
+  }
+  .card-body .ex .ex-speak {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    margin-left: 4px;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    background: var(--input-bg);
+    cursor: pointer;
+    font-size: 10px;
+    vertical-align: middle;
+    transition: background .15s;
+  }
+  .card-body .ex .ex-speak:hover { background: var(--soft-cyan); }
+  .card-body .ex-pron {
+    font-size: 12.5px;
+    color: var(--cyan);
+    font-weight: 600;
+    margin-top: 2px;
+  }
+  .card-body .ex-pron::before {
+    content: "🗣 ";
+    font-size: 11px;
+  }
+  .card-body .ex-ko {
+    font-size: 12.5px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  /* ---------- 암기 카드 모드 ---------- */
+  .flashcard-view { display: none; }
+  .flashcard-view.show { display: block; }
+  #units.hide { display: none; }
+
+  .fc-wrap {
+    max-width: 620px;
+    margin: 20px auto;
+    text-align: center;
+  }
+  .fc-card {
+    background: var(--card);
+    border: 2px solid var(--border);
+    border-radius: 16px;
+    min-height: 300px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 30px;
+    cursor: pointer;
+    user-select: none;
+    box-shadow: var(--shadow);
+  }
+  .fc-card .fc-word { font-size: 34px; font-weight: 800; color: var(--primary-dark); }
+  .fc-card .fc-ipa { font-size: 18px; color: var(--text-muted); }
+  .fc-card .fc-kpron { font-size: 20px; font-weight: 700; color: var(--accent); }
+  .fc-card .fc-mean {
+    font-size: 24px;
+    font-weight: 800;
+    margin-top: 8px;
+    color: var(--green);
+  }
+  .fc-card .fc-ex {
+    font-size: 15px;
+    font-style: italic;
+    color: var(--ex-text);
+    max-width: 460px;
+    margin-top: 6px;
+  }
+  .fc-card .fc-ex-pron {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--cyan);
+    max-width: 460px;
+    margin-top: 4px;
+  }
+  .fc-card .fc-ex-ko { font-size: 13px; color: var(--text-muted); }
+  .fc-card .fc-flip-hint {
+    position: relative;
+    margin-top: 14px;
+    font-size: 12px;
+    color: var(--text-muted);
+    opacity: 0;
+    transition: opacity .2s;
+  }
+  .fc-card:hover .fc-flip-hint { opacity: 1; }
+  .fc-controls {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+  .fc-controls .btn {
+    background: var(--primary);
+    color: #fff;
+  }
+  .fc-controls .btn:hover { background: var(--primary-dark); }
+  .fc-progress {
+    margin-top: 12px;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  /* ---------- 퀴즈 모드 ---------- */
+  .quiz-view { display: none; }
+  .quiz-view.show { display: block; }
+  .quiz-wrap { max-width: 620px; margin: 20px auto; }
+  .quiz-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+  }
+  .quiz-head select {
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 9px 10px;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    background: var(--input-bg);
+  }
+  .quiz-btn { background: var(--primary); color: #fff; }
+  .quiz-btn:hover { background: var(--primary-dark); }
+  .quiz-progress {
+    font-size: 13.5px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+    text-align: center;
+  }
+  .quiz-q {
+    font-size: 26px;
+    font-weight: 800;
+    text-align: center;
+    margin: 18px 0;
+    color: var(--primary-dark);
+    word-break: break-word;
+  }
+  .quiz-opt {
+    display: block;
+    width: 100%;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 600;
+    padding: 14px;
+    margin: 8px 0;
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    background: var(--input-bg);
+    cursor: pointer;
+    transition: background .15s, border-color .15s;
+    text-align: left;
+  }
+  .quiz-opt:hover:not(:disabled) { border-color: var(--primary); }
+  .quiz-opt.correct { background: var(--correct-bg); border-color: var(--green); }
+  .quiz-opt.wrong { background: var(--wrong-bg); border-color: #fa5252; }
+  .quiz-feedback {
+    text-align: center;
+    font-size: 15px;
+    font-weight: 700;
+    margin: 14px 0 8px;
+    min-height: 24px;
+  }
+  .quiz-next-wrap { text-align: center; margin-top: 6px; }
+  .quiz-result {
+    text-align: center;
+    background: var(--card);
+    border: 2px solid var(--border);
+    border-radius: 16px;
+    padding: 36px 24px;
+    margin-top: 12px;
+  }
+  .quiz-result .score { font-size: 44px; font-weight: 800; color: var(--primary); }
+  .quiz-result p { font-size: 15px; margin: 8px 0 18px; color: var(--text-muted); }
+
+  /* ---------- 내 단어장 · 오답 배지 ---------- */
+  .card.fav::before {
+    content: "⭐";
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    font-size: 14px;
+    pointer-events: none;
+  }
+  .card-word .fav-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    margin-left: 4px;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    background: var(--input-bg);
+    cursor: pointer;
+    font-size: 12px;
+    vertical-align: middle;
+    transition: background .15s;
+    color: var(--accent);
+  }
+  .card-word .fav-btn:hover { background: var(--soft-blue); }
+  .badge-wrong {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    background: var(--wrong-bg);
+    color: #c92a2a;
+    border-radius: 99px;
+    padding: 1px 8px;
+    margin-left: 6px;
+    vertical-align: 2px;
+  }
+  body.dark .badge-wrong { color: #ff8787; }
+  #dailyText.goal-done { color: var(--green); font-weight: 800; }
+
+  /* ---------- 실전 시험 모드 ---------- */
+  .exam-view { display: none; }
+  .exam-view.show { display: block; }
+  .exam-timer {
+    text-align: center;
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--primary);
+    margin: 4px 0 10px;
+  }
+  .exam-timer.timeout { color: #fa5252; animation: blink 1s infinite; }
+  @keyframes blink { 50% { opacity: .4; } }
+  .quiz-ex {
+    font-size: 13.5px;
+    font-style: italic;
+    color: var(--ex-text);
+    margin-top: 8px;
+    line-height: 1.5;
+  }
+  .quiz-ex .ex-ko { font-style: normal; color: var(--text-muted); }
+  .est-score { font-size: 32px; color: var(--primary); }
+  .muted { color: var(--text-muted); font-size: 13px; }
+
+  /* ---------- 시험 안내 모달 ---------- */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: rgba(0,0,0,.5);
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    max-width: 620px;
+    width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow);
+  }
+  .modal-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--card);
+  }
+  .modal-head h2 { font-size: 18px; }
+  .modal-close { background: var(--border); color: var(--text); padding: 6px 10px; }
+  .modal-body { padding: 18px 20px 22px; }
+  .modal-body h3 { font-size: 15px; margin: 18px 0 8px; color: var(--primary-dark); }
+  .modal-body p, .modal-body ul { font-size: 13.5px; color: var(--text-muted); }
+  .modal-body ul { padding-left: 18px; }
+  .modal-body li { margin-bottom: 4px; }
+  .part-table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 8px 0 4px; }
+  .part-table th, .part-table td { border: 1px solid var(--border); padding: 7px 10px; text-align: left; }
+  .part-table th { background: var(--soft-blue); }
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 10px;
+    margin: 10px 0;
+  }
+  .stat { background: var(--soft-blue); border-radius: 10px; padding: 12px 8px; text-align: center; }
+  .stat b { display: block; font-size: 20px; color: var(--primary); }
+  .stat span { font-size: 11.5px; color: var(--text-muted); }
+  .modal-actions { margin-top: 14px; text-align: right; }
+  #btnResetData { background: var(--wrong-bg); color: #c92a2a; }
+  body.dark #btnResetData { color: #ff8787; }
+
+  /* ---------- 푸터 ---------- */
+  footer {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 24px 20px 60px;
+    border-top: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+  footer h3 { color: var(--text); margin-bottom: 6px; font-size: 15px; }
+
+  /* ---------- 인쇄용 ---------- */
+  @media print {
+    body, body.dark { background: #fff; }
+    body.dark {
+      --card: #fff; --text: #212529; --text-muted: #6b7280; --border: #ccc;
+      --ex-text: #495057; --cyan: #0c8599; --kpron-bg: #fff8e6;
+      --input-bg: #fff; --correct-bg: #d3f9d8; --wrong-bg: #ffe3e3;
+    }
+    .topbar, .searchbar, .levelbar, .flashcard-view, .fc-controls, .card-check, .speak, .fav-btn,
+    .quiz-view, .exam-view, .modal-overlay, .topbar-actions, .print-hide { display: none !important; }
+    main { padding: 0 12px; }
+    .vocab-grid { display: block; }
+    .card {
+      break-inside: avoid;
+      border: 1px solid #ccc;
+      margin-bottom: 8px;
+    }
+    section.unit { break-before: page; }
+    section.unit:first-of-type { break-before: avoid; }
+    .book-intro { border: none; background: none; }
+  }
+
+  @media (max-width: 640px) {
+    .topbar-inner { padding: 10px 14px; gap: 8px; }
+    .topbar h1 { font-size: 16px; }
+    .progress-wrap { min-width: 130px; }
+    .progress-label { font-size: 11px; }
+    .btn { padding: 7px 10px; font-size: 12px; }
+    main, .searchbar { padding-left: 14px; padding-right: 14px; }
+    .vocab-grid { grid-template-columns: 1fr; }
+    .card { flex-direction: column; }
+    .card-word { flex: none; }
+    .card-body .ex { word-break: break-word; }
+    .unit-title { font-size: 17px; }
+    .book-intro { padding: 16px; }
+    .levelbar { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; }
+    .lvl-btn { flex-shrink: 0; }
+    .quiz-head select { flex: 1; min-width: 0; }
+    .quiz-q { font-size: 20px; }
+    .quiz-opt { font-size: 15px; padding: 13px 12px; min-height: 46px; }
+    .fc-card { min-height: 260px; padding: 20px 14px; }
+    .fc-card .fc-word { font-size: 26px; }
+    .fc-controls .btn { flex: 1; }
+  }
+  @media (max-width: 420px) {
+    .card.fav::before { right: 34px; }
+    .topbar-actions { width: 100%; justify-content: flex-end; }
+    .topbar h1 small { white-space: normal; }
+    .card-check { position: absolute; top: 10px; right: 10px; }
+    .card { position: relative; }
+    .card-word { padding-right: 26px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <h1>toeic.monster<small>발음 · 예문으로 외우는 TOEIC 필수 어휘 1,000</small></h1>
+    <div class="progress-wrap">
+      <div class="progress-label">학습 진행률 <span id="progressText">0 / 1000</span> · 오늘 <span id="dailyText">0/30</span> · <span id="streakText">🔥 0일</span></div>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn" id="btnList">📖 목록 보기</button>
+      <button class="btn" id="btnFlash">🃏 암기 카드</button>
+      <button class="btn" id="btnQuiz">🎯 퀴즈</button>
+      <button class="btn" id="btnExam">⏱ 실전 시험</button>
+      <button class="btn" id="btnGuide">📘 시험 안내</button>
+      <button class="btn" id="btnTheme" title="다크 모드 전환">🌙</button>
+    </div>
+  </div>
+</header>
+
+<div class="searchbar print-hide">
+  <input type="text" id="searchInput" placeholder="🔍 단어 · 뜻 · 예문 검색 (영어/한글)">
+  <div class="hint">💡 카드 클릭 = 외운 단어 표시 · ⭐ = 내 단어장 · 🔊 = 발음 듣기 · Ctrl+P = PDF 저장</div>
+  <div class="levelbar" id="levelbar">
+    <button class="lvl-btn active" data-level="" data-label="📚 전체">전체</button>
+    <button class="lvl-btn" data-level="초급" data-label="🟢 초급">초급</button>
+    <button class="lvl-btn" data-level="중급" data-label="🟡 중급">중급</button>
+    <button class="lvl-btn" data-level="고급" data-label="🔴 고급">고급</button>
+    <button class="lvl-btn" id="btnFav" data-label="⭐ 내 단어장">⭐ 내 단어장</button>
+    <button class="lvl-btn" id="btnReview" data-label="🔁 복습 필요">🔁 복습 필요</button>
+  </div>
+</div>
+
+<main>
+  <div class="book-intro print-hide">
+    <h2>📘 이 책의 활용법</h2>
+    <p>
+      TOEIC 시험에 자주 나오는 필수 어휘 1,000개를 주제별 30개 유닛으로 정리했습니다.
+      각 단어마다 <b>영어 발음기호(IPA)</b>와 <b>한글 발음</b>을 함께 실고, 예문에도 <b>한글 발음</b>을 달아 문장 통째로 소리 내어 읽을 수 있습니다.
+      모든 단어에는 실제 토익 시험 스타일의 <b>예문과 해석</b>이 포함되어 있어, 단어 암기와 동시에 리딩·리스닝 실전 감각을 기를 수 있습니다.
+    </p>
+    <div class="tips">
+      <span class="tip">1️⃣ 하루 1유닛씩, 소리 내어 3번 읽기</span>
+      <span class="tip">2️⃣ 예문은 눈으로만 읽지 말고 문장 통째로 따라 말하기</span>
+      <span class="tip">3️⃣ 외운 단어는 체크 → 진행률로 성취감 확인</span>
+      <span class="tip">4️⃣ 암기 카드·퀴즈 모드로 랜덤 복습하기</span>
+      <span class="tip">5️⃣ 3일 간격으로 이전 유닛 복습하기</span>
+    </div>
+  </div>
+
+  <div id="units"></div>
+
+  <div class="flashcard-view" id="flashcardView">
+    <div class="fc-wrap">
+      <div class="fc-card" id="fcCard">
+        <div class="fc-word" id="fcWord"></div>
+        <div class="fc-ipa" id="fcIpa"></div>
+        <div class="fc-kpron" id="fcKpron"></div>
+        <div class="fc-level" id="fcLevel"></div>
+        <div class="fc-mean" id="fcMean"></div>
+        <div class="fc-ex" id="fcEx"></div>
+        <div class="fc-ex-pron" id="fcExPron"></div>
+        <div class="fc-ex-ko" id="fcExKo"></div>
+        <div class="fc-flip-hint">👆 카드를 눌러 뜻 확인하기</div>
+      </div>
+      <div class="fc-controls">
+        <button class="btn" id="fcPrev">◀ 이전</button>
+        <button class="btn" id="fcShuffle">🔀 섞기</button>
+        <button class="btn" id="fcMark">✅ 외웠어요</button>
+        <button class="btn" id="fcFav">☆ 단어장에 추가</button>
+        <button class="btn" id="fcListen">🔊 예문 듣기</button>
+        <button class="btn" id="fcNext">다음 ▶</button>
+      </div>
+      <div class="fc-progress" id="fcProgress"></div>
+    </div>
+  </div>
+
+  <div class="quiz-view" id="quizView">
+    <div class="quiz-wrap">
+      <div class="quiz-head">
+        <select id="quizType">
+          <option value="en2ko">단어 → 뜻 맞히기</option>
+          <option value="ko2en">뜻 → 단어 맞히기</option>
+          <option value="blank">빈칸 채우기 (Part 5·6 유형)</option>
+        </select>
+        <select id="quizLength">
+          <option value="10">10문제</option>
+          <option value="20" selected>20문제</option>
+          <option value="50">50문제</option>
+        </select>
+        <button class="btn quiz-btn" id="quizStart">🎯 시작</button>
+        <button class="btn quiz-btn" id="quizWrong">📕 오답 복습 (0)</button>
+      </div>
+      <div class="quiz-hint">💡 퀴즈에서 틀린 단어는 자동으로 오답노트에 저장돼요. 📕 오답 복습으로 취약 단어만 골라 다시 풀 수 있어요!</div>
+      <div id="quizBox"></div>
+    </div>
+  </div>
+
+  <div class="exam-view" id="examView">
+    <div class="quiz-wrap">
+      <div class="quiz-head">
+        <select id="examType">
+          <option value="en2ko">단어 → 뜻 (Part 5 유형)</option>
+          <option value="ko2en">뜻 → 단어 (Part 5 유형)</option>
+          <option value="blank" selected>빈칸 채우기 (Part 5·6 유형)</option>
+        </select>
+        <select id="examLength">
+          <option value="10">10문항</option>
+          <option value="20" selected>20문항</option>
+          <option value="30">30문항</option>
+        </select>
+        <select id="examTime">
+          <option value="15">15초/문항</option>
+          <option value="30" selected>30초/문항 (실전)</option>
+          <option value="45">45초/문항 (여유)</option>
+        </select>
+        <button class="btn quiz-btn" id="examStart">⏱ 시작</button>
+        <button class="btn quiz-btn" id="examReset">🔄 초기화</button>
+      </div>
+      <div class="quiz-hint">⏱ 실전처럼 시간 제한을 두고 푸세요! 종료 시 TOEIC 예상 점수로 환산해 드립니다.</div>
+      <div class="exam-timer" id="examTimer"></div>
+      <div id="examBox"></div>
+    </div>
+  </div>
+</main>
+
+<!-- TOEIC 시험 안내 모달 -->
+<div class="modal-overlay" id="guideModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>📘 TOEIC 시험 안내</h2>
+      <button class="btn modal-close" id="guideClose">✕</button>
+    </div>
+    <div class="modal-body">
+      <h3>📋 TOEIC 시험 구성</h3>
+      <table class="part-table">
+        <tr><th>구분</th><th>파트</th><th>유형</th><th>문항 수</th></tr>
+        <tr><td rowspan="4">LC<br>약 45분</td><td>Part 1</td><td>사진 묘사</td><td>6</td></tr>
+        <tr><td>Part 2</td><td>질의·응답</td><td>25</td></tr>
+        <tr><td>Part 3</td><td>짧은 대화</td><td>39</td></tr>
+        <tr><td>Part 4</td><td>설명문</td><td>30</td></tr>
+        <tr><td rowspan="3">RC<br>75분</td><td>Part 5</td><td>단문 공란 채우기</td><td>30</td></tr>
+        <tr><td>Part 6</td><td>장문 공란 채우기</td><td>16</td></tr>
+        <tr><td>Part 7</td><td>독해</td><td>54</td></tr>
+      </table>
+      <h3>🎯 점수 체계</h3>
+      <p>총 200문항(LC 100 + RC 100), 10~990점. LC 5~495점 + RC 5~495점 합산이며 오답 감점이 없어 끝까지 답을 고르는 게 중요해요.</p>
+      <h3>⏱ 시간 배분 전략</h3>
+      <ul>
+        <li>Part 5·6 (46문항)은 문항당 30초 이내, 25분 안에 해결</li>
+        <li>Part 7 (54문항)에 50분 확보 — 지문 먼저 훑고 질문으로 들어가기</li>
+        <li>LC는 다음 문제가 시작되면 못 들으니 집중력을 유지하세요</li>
+      </ul>
+      <h3>📊 나의 학습 현황</h3>
+      <div class="stat-grid" id="statGrid"></div>
+      <div class="modal-actions">
+        <button class="btn" id="btnResetData">🗑️ 학습 데이터 초기화</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <h3>📚 단어 암기 TIP</h3>
+  <p>
+    단어를 <b>소리</b>와 함께 외우면 기억에 오래 남습니다. 한글 발음을 읽고, 🔊 버튼으로 원어민 발음을 들은 뒤 따라 말해 보세요.
+    예문 속 <b>전체 문장</b>을 외우면 문법과 콜로케이션까지 함께 학습할 수 있어 토익 RC·LC 점수 향상에 큰 도움이 됩니다.
+  </p>
+  <p style="margin-top:14px">👾 toeic.monster · TOEIC 어휘 무료 학습 사이트</p>
+</footer>
+
+<!-- 단어 데이터 (30개 유닛) -->
+<script src="data/unit01.js"></script>
+<script src="data/unit02.js"></script>
+<script src="data/unit03.js"></script>
+<script src="data/unit04.js"></script>
+<script src="data/unit05.js"></script>
+<script src="data/unit06.js"></script>
+<script src="data/unit07.js"></script>
+<script src="data/unit08.js"></script>
+<script src="data/unit09.js"></script>
+<script src="data/unit10.js"></script>
+<script src="data/unit11.js"></script>
+<script src="data/unit12.js"></script>
+<script src="data/unit13.js"></script>
+<script src="data/unit14.js"></script>
+<script src="data/unit15.js"></script>
+<script src="data/unit16.js"></script>
+<script src="data/unit17.js"></script>
+<script src="data/unit18.js"></script>
+<script src="data/unit19.js"></script>
+<script src="data/unit20.js"></script>
+<script src="data/unit21.js"></script>
+<script src="data/unit22.js"></script>
+<script src="data/unit23.js"></script>
+<script src="data/unit24.js"></script>
+<script src="data/unit25.js"></script>
+<script src="data/unit26.js"></script>
+<script src="data/unit27.js"></script>
+<script src="data/unit28.js"></script>
+<script src="data/unit29.js"></script>
+<script src="data/unit30.js"></script>
+
+<script>
+(function () {
+  "use strict";
+
+  var UNITS = [
+    { id: 1, title: "비즈니스와 회사", sub: "Business & Company · 토익 LC Part 1·2, RC Part 5 빈출", level: "초급" },
+    { id: 2, title: "회의와 협상", sub: "Meetings & Negotiation · 회의 관련 표현의 핵심", level: "중급" },
+    { id: 3, title: "프레젠테이션과 발표", sub: "Presentations · 발표·보고 상황에서 자주 등장", level: "중급" },
+    { id: 4, title: "마케팅과 광고", sub: "Marketing & Advertising · 광고·판촉 분야 어휘", level: "중급" },
+    { id: 5, title: "금융과 회계", sub: "Finance & Accounting · 결제·예산 관련 필수 어휘", level: "중급" },
+    { id: 6, title: "인사와 채용", sub: "Human Resources & Employment · 채용 공고·면접 빈출", level: "중급" },
+    { id: 7, title: "고객 서비스", sub: "Customer Service · 민원 응대·불만 처리 표현", level: "초급" },
+    { id: 8, title: "쇼핑과 소비", sub: "Shopping & Consumer · 매장·구매·배송 어휘", level: "초급" },
+    { id: 9, title: "여행과 출장", sub: "Travel & Business Trips · 출장·공항·호텔 상황", level: "초급" },
+    { id: 10, title: "사무실과 문서", sub: "Office & Documents · 업무 도구·서류 처리 어휘", level: "초급" },
+    { id: 11, title: "계약과 법률", sub: "Contracts & Legal · 계약 조건·법률 관련 어휘", level: "고급" },
+    { id: 12, title: "생산과 공급", sub: "Production & Supply · 제조·유통·재고 어휘", level: "중급" },
+    { id: 13, title: "기술과 IT", sub: "Technology & IT · 컴퓨터·인터넷·디지털 어휘", level: "중급" },
+    { id: 14, title: "통신과 미디어", sub: "Communication & Media · 연락·뉴스·소셜 미디어", level: "중급" },
+    { id: 15, title: "경제와 사회", sub: "Economy & Society · 경제 지표·사회 이슈 어휘", level: "고급" },
+    { id: 16, title: "식당과 음식", sub: "Restaurants & Food · 식당 예약·주문 상황 빈출", level: "초급" },
+    { id: 17, title: "건강과 병원", sub: "Health & Medical · 병원 방문·증상 설명 어휘", level: "중급" },
+    { id: 18, title: "주거와 부동산", sub: "Housing & Real Estate · 집 구하기·계약 상황 어휘", level: "중급" },
+    { id: 19, title: "교육과 학교", sub: "Education & School · 학교·수업·시험 관련 어휘", level: "중급" },
+    { id: 20, title: "은행과 투자", sub: "Banking & Investing · 계좌·주식·투자 어휘", level: "고급" },
+    { id: 21, title: "세일즈와 무역", sub: "Sales & Trade · 판매·수출입·계약 어휘", level: "고급" },
+    { id: 22, title: "도시와 생활", sub: "City & Everyday Life · 교통·시설·관광 어휘", level: "초급" },
+    { id: 23, title: "직장 인간관계", sub: "Workplace Relations · 협력·갈등·동기 어휘", level: "중급" },
+    { id: 24, title: "품질과 개선", sub: "Quality & Improvement · 개선·평가·분석 어휘", level: "중급" },
+    { id: 25, title: "이벤트와 행사", sub: "Events & Functions · 행사·모임·축제 어휘", level: "중급" },
+    { id: 26, title: "환경과 에너지", sub: "Environment & Energy · 환경·에너지·재활용 어휘", level: "고급" },
+    { id: 27, title: "진로와 직업", sub: "Careers & Occupations · 직업·직함·업무 어휘", level: "중급" },
+    { id: 28, title: "시간과 일정", sub: "Time & Schedule · 시간 표현·주기 어휘", level: "초급" },
+    { id: 29, title: "감정과 태도", sub: "Feelings & Attitudes · 기분·태도·성격 어휘", level: "초급" },
+    { id: 30, title: "복합 실전 어휘", sub: "Essential Mix · 시험에 자주 나오는 부사·형용사", level: "고급" }
+  ];
+
+  var learned = {};
+  try {
+    learned = JSON.parse(localStorage.getItem("toeic1000_learned") || "{}");
+  } catch (e) { learned = {}; }
+
+  var wrongSet = {};
+  try {
+    wrongSet = JSON.parse(localStorage.getItem("toeic1000_wrong") || "{}");
+  } catch (e) { wrongSet = {}; }
+  var quizWrongMode = false;
+  var currentLevel = "";
+  var wordLevelMap = {};
+
+  var favSet = {};
+  try {
+    favSet = JSON.parse(localStorage.getItem("toeic1000_fav") || "{}");
+  } catch (e) { favSet = {}; }
+  var wrongCount = {};
+  try {
+    wrongCount = JSON.parse(localStorage.getItem("toeic1000_wrongcount") || "{}");
+  } catch (e) { wrongCount = {}; }
+
+  var favFilter = false;
+  var reviewFilter = false;
+
+  // 일일 목표 · 연속 학습
+  var DAILY_GOAL = 30;
+  var daily = { date: "", count: 0 };
+  try {
+    daily = JSON.parse(localStorage.getItem("toeic1000_daily") || "{}");
+  } catch (e) { daily = { date: "", count: 0 }; }
+  var streakInfo = { last: "", count: 0 };
+  try {
+    streakInfo = JSON.parse(localStorage.getItem("toeic1000_streak") || "{}");
+  } catch (e) { streakInfo = { last: "", count: 0 }; }
+  var examBest = 0;
+  try { examBest = parseInt(localStorage.getItem("toeic1000_exambest") || "0", 10) || 0; } catch (e) { examBest = 0; }
+
+  function todayKey() {
+    var d = new Date();
+    return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
+  }
+  function yesterdayKey(key) {
+    var p = key.split("-");
+    var d = new Date(+p[0], +p[1] - 1, +p[2]);
+    d.setDate(d.getDate() - 1);
+    return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
+  }
+  function saveDaily() {
+    try { localStorage.setItem("toeic1000_daily", JSON.stringify(daily)); } catch (e) {}
+  }
+  function saveStreak() {
+    try { localStorage.setItem("toeic1000_streak", JSON.stringify(streakInfo)); } catch (e) {}
+  }
+  function touchDaily() {
+    var t = todayKey();
+    if (daily.date !== t) { daily.date = t; daily.count = 0; }
+    daily.count++;
+    saveDaily();
+    if (daily.count >= DAILY_GOAL) {
+      if (streakInfo.last === yesterdayKey(t)) {
+        streakInfo.count++;
+      } else if (streakInfo.last !== t) {
+        streakInfo.count = 1;
+      }
+      streakInfo.last = t;
+      saveStreak();
+    }
+    updateDailyUI();
+    updateStreakUI();
+  }
+  function updateDailyUI() {
+    var el = document.getElementById("dailyText");
+    if (!el) return;
+    var t = todayKey();
+    if (daily.date !== t) { daily.date = t; daily.count = 0; saveDaily(); }
+    var done = daily.count >= DAILY_GOAL;
+    el.textContent = daily.count + " / " + DAILY_GOAL + (done ? " ✅" : "");
+  }
+  function updateStreakUI() {
+    var el = document.getElementById("streakText");
+    if (el) el.textContent = "🔥 " + streakInfo.count + "일 연속";
+  }
+
+  var all = [];
+  function collectUnits() {
+    var byId = {};
+    UNITS.forEach(function (u) { byId[u.id] = u; });
+    window.VOCAB_UNITS = window.VOCAB_UNITS || {};
+    Object.keys(window.VOCAB_UNITS).forEach(function (key) {
+      var id = parseInt(key, 10);
+      var u = byId[id];
+      if (!u) return;
+      var words = window.VOCAB_UNITS[key];
+      all.push({ unit: id, title: u.title, sub: u.sub, level: u.level, words: words });
+      words.forEach(function (w) { wordLevelMap[w[0]] = u.level; });
+    });
+    all.sort(function (a, b) { return a.unit - b.unit; });
+  }
+
+  function speak(text) {
+    if (!("speechSynthesis" in window) || typeof SpeechSynthesisUtterance === "undefined") return;
+    var u = new SpeechSynthesisUtterance(text);
+    u.lang = "en-US";
+    u.rate = 0.85;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(u);
+  }
+
+  function cardHTML(u, w, idx) {
+    var isLearned = !!learned[w[0]];
+    var isFav = !!favSet[w[0]];
+    var wc = wrongCount[w[0]] || 0;
+    var li = '<div class="card ' + (isLearned ? "learned" : "") + (isFav ? " fav" : "") + '" data-word="' + escapeAttr(w[0]) + '">';
+    li += '<div class="card-check"><input type="checkbox" title="외웠어요" ' + (isLearned ? "checked" : "") + '></div>';
+    li += '<div class="card-word">';
+    li += '<div class="w">' + esc(w[0]) + '</div>';
+    li += '<div class="ipa">' + esc(w[1]) + '</div>';
+    li += '<div><span class="kpron">' + esc(w[2]) + '</span>';
+    li += '<button class="speak" title="발음 듣기">🔊</button>';
+    li += '<button class="fav-btn" title="내 단어장에 추가">' + (isFav ? "★" : "☆") + '</button></div>';
+    li += '</div>';
+    li += '<div class="card-body">';
+    li += '<div class="mean">' + esc(w[3]) + (wc ? ' <span class="badge-wrong">🔁 오답 ' + wc + '회</span>' : '') + '</div>';
+    li += '<div class="ex"><span class="ex-text">' + esc(w[4]) + '</span> <button class="speak ex-speak" title="예문 듣기">🔊</button></div>';
+    li += '<div class="ex-pron">' + esc(w[6]) + '</div>';
+    li += '<div class="ex-ko">' + esc(w[5]) + '</div>';
+    li += '</div></div>';
+    return li;
+  }
+
+  function esc(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+  function escapeAttr(s) {
+    return String(s).replace(/"/g, "&quot;");
+  }
+
+  var totalCount = 0;
+
+  function renderUnits(filter) {
+    var container = document.getElementById("units");
+    container.innerHTML = "";
+    var q = (filter || "").trim().toLowerCase();
+
+    all.forEach(function (u) {
+      if (currentLevel && u.level !== currentLevel) return;
+      var matches = u.words.filter(function (w) {
+        if (favFilter && !favSet[w[0]]) return false;
+        if (reviewFilter && !wrongSet[w[0]]) return false;
+        if (!q) return true;
+        return w.slice(0, 6).join(" ").toLowerCase().indexOf(q) !== -1;
+      });
+      if (!matches.length) return;
+
+      var sec = document.createElement("section");
+      sec.className = "unit";
+      sec.id = "unit-" + u.unit;
+      var lvlCls = u.level === "초급" ? "lvl-easy" : u.level === "중급" ? "lvl-mid" : "lvl-hard";
+      var lvlIcon = u.level === "초급" ? "🟢" : u.level === "중급" ? "🟡" : "🔴";
+      var html = '<div class="unit-head"><span class="unit-num">UNIT ' + u.unit + '</span><span class="lvl-badge ' + lvlCls + '">' + lvlIcon + " " + esc(u.level) + '</span><span class="unit-title">' + esc(u.title) + "</span></div>";
+      html += '<div class="unit-sub">' + esc(u.sub) + " · 총 " + u.words.length + "개 단어</div>";
+      html += '<div class="vocab-grid">';
+      matches.forEach(function (w) { html += cardHTML(u, w); });
+      html += "</div>";
+      sec.innerHTML = html;
+      container.appendChild(sec);
+    });
+
+    totalCount = all.reduce(function (n, u) { return n + u.words.length; }, 0);
+  }
+
+  // ---------- 난이도 필터 ----------
+  function levelCounts() {
+    var c = { "": 0, "초급": 0, "중급": 0, "고급": 0 };
+    all.forEach(function (u) { c[""] += u.words.length; c[u.level] += u.words.length; });
+    return c;
+  }
+  function syncLevelButtons() {
+    var c = levelCounts();
+    var btns = document.querySelectorAll("#levelbar .lvl-btn");
+    btns.forEach(function (b) {
+      var lv = b.getAttribute("data-level");
+      if (lv === null) return; // ⭐/🔁 필터 버튼은 건너뜀
+      b.textContent = b.getAttribute("data-label") + " (" + c[lv] + ")";
+      b.classList.toggle("active", currentLevel === lv);
+    });
+    var f = document.getElementById("btnFav");
+    var r = document.getElementById("btnReview");
+    if (f) f.classList.toggle("active", favFilter);
+    if (r) r.classList.toggle("active", reviewFilter);
+  }
+  document.getElementById("levelbar").addEventListener("click", function (e) {
+    var btn = e.target.closest(".lvl-btn");
+    if (!btn) return;
+    var lv = btn.getAttribute("data-level");
+    if (btn.id === "btnFav") {
+      favFilter = !favFilter;
+      if (favFilter) reviewFilter = false;
+    } else if (btn.id === "btnReview") {
+      reviewFilter = !reviewFilter;
+      if (reviewFilter) favFilter = false;
+    } else if (lv !== null) {
+      currentLevel = currentLevel === lv ? "" : lv;
+    } else {
+      return;
+    }
+    renderUnits(document.getElementById("searchInput").value);
+    syncLevelButtons();
+  });
+
+  // ---------- 오답노트 ----------
+  function wrongWords() {
+    return allWords().filter(function (w) { return wrongSet[w[0]]; });
+  }
+  function updateWrongBadge() {
+    var n = Object.keys(wrongSet).length;
+    var btn = document.getElementById("quizWrong");
+    if (btn) btn.textContent = "📕 오답 복습 (" + n + ")";
+  }
+  function saveWrong() {
+    try { localStorage.setItem("toeic1000_wrong", JSON.stringify(wrongSet)); } catch (e) {}
+    try { localStorage.setItem("toeic1000_wrongcount", JSON.stringify(wrongCount)); } catch (e) {}
+    updateWrongBadge();
+  }
+
+  // 이벤트 위임: 체크박스, 발음 버튼
+  document.getElementById("units").addEventListener("change", function (e) {
+    if (e.target.matches("input[type=checkbox]")) {
+      var card = e.target.closest(".card");
+      var word = card.getAttribute("data-word");
+      learned[word] = e.target.checked;
+      card.classList.toggle("learned", e.target.checked);
+      if (e.target.checked) touchDaily();
+      saveLearned();
+    }
+  });
+  document.getElementById("units").addEventListener("click", function (e) {
+    if (e.target.classList.contains("fav-btn")) {
+      var card = e.target.closest(".card");
+      var word = card.getAttribute("data-word");
+      if (favSet[word]) { delete favSet[word]; } else { favSet[word] = true; }
+      try { localStorage.setItem("toeic1000_fav", JSON.stringify(favSet)); } catch (err) {}
+      card.classList.toggle("fav", !!favSet[word]);
+      e.target.textContent = favSet[word] ? "★" : "☆";
+      if (favFilter) renderUnits(document.getElementById("searchInput").value);
+    } else if (e.target.classList.contains("speak")) {
+      var card = e.target.closest(".card");
+      if (e.target.classList.contains("ex-speak")) {
+        speak(card.querySelector(".ex-text").textContent);
+      } else {
+        speak(card.querySelector(".w").textContent);
+      }
+    }
+  });
+
+  function saveLearned() {
+    try { localStorage.setItem("toeic1000_learned", JSON.stringify(learned)); } catch (e) {}
+    updateProgress();
+    if (fcList.length) renderFlashProgress();
+  }
+
+  function updateProgress() {
+    var done = Object.keys(learned).filter(function (k) { return learned[k]; }).length;
+    var pct = totalCount ? Math.round(done / totalCount * 100) : 0;
+    document.getElementById("progressText").textContent = done + " / " + totalCount;
+    document.getElementById("progressFill").style.width = pct + "%";
+  }
+
+  // ---------- 암기 카드 모드 ----------
+  var fcList = [];
+  var fcIdx = 0;
+  var fcShown = false;
+
+  function enterFlash() {
+    fcList = all.reduce(function (arr, u) { return arr.concat(u.words); }, []);
+    shuffle(fcList);
+    fcIdx = 0;
+    fcShown = false;
+    showFlashCard();
+    document.getElementById("flashcardView").classList.add("show");
+    document.getElementById("quizView").classList.remove("show");
+    document.getElementById("examView").classList.remove("show");
+    document.getElementById("units").classList.add("hide");
+    document.getElementById("btnFlash").classList.add("active");
+    document.getElementById("btnQuiz").classList.remove("active");
+    document.getElementById("btnList").classList.remove("active");
+    document.getElementById("btnExam").classList.remove("active");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function showListView() {
+    document.getElementById("flashcardView").classList.remove("show");
+    document.getElementById("quizView").classList.remove("show");
+    document.getElementById("examView").classList.remove("show");
+    document.getElementById("units").classList.remove("hide");
+    document.getElementById("btnFlash").classList.remove("active");
+    document.getElementById("btnQuiz").classList.remove("active");
+    document.getElementById("btnExam").classList.remove("active");
+    document.getElementById("btnList").classList.add("active");
+  }
+
+  function exitFlash() {
+    showListView();
+  }
+
+  function shuffle(arr) {
+    for (var i = arr.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+    }
+  }
+
+  function showFlashCard() {
+    if (!fcList.length) return;
+    var w = fcList[fcIdx];
+    document.getElementById("fcWord").textContent = w[0];
+    document.getElementById("fcIpa").textContent = w[1];
+    document.getElementById("fcKpron").textContent = w[2];
+    var lv = wordLevelMap[w[0]] || "";
+    document.getElementById("fcLevel").textContent =
+      lv === "초급" ? "🟢 초급" : lv === "중급" ? "🟡 중급" : lv === "고급" ? "🔴 고급" : "";
+    var show = fcShown;
+    document.getElementById("fcMean").style.display = show ? "block" : "none";
+    document.getElementById("fcMean").textContent = show ? w[3] : "";
+    document.getElementById("fcEx").style.display = show ? "block" : "none";
+    document.getElementById("fcEx").textContent = show ? "“" + w[4] + "”" : "";
+    document.getElementById("fcExPron").style.display = show ? "block" : "none";
+    document.getElementById("fcExPron").textContent = show ? w[6] : "";
+    document.getElementById("fcExKo").style.display = show ? "block" : "none";
+    document.getElementById("fcExKo").textContent = show ? w[5] : "";
+    var favBtn = document.getElementById("fcFav");
+    if (favBtn) favBtn.textContent = favSet[w[0]] ? "★ 단어장에서 빼기" : "☆ 단어장에 추가";
+    renderFlashProgress();
+  }
+
+  function renderFlashProgress() {
+    document.getElementById("fcProgress").textContent =
+      (fcIdx + 1) + " / " + fcList.length + " · 남은 단어 " + (fcList.length - fcIdx - 1);
+  }
+
+  document.getElementById("fcCard").addEventListener("click", function () {
+    fcShown = !fcShown;
+    showFlashCard();
+  });
+  document.getElementById("fcNext").addEventListener("click", function () {
+    if (!fcList.length) return;
+    fcIdx = (fcIdx + 1) % fcList.length;
+    fcShown = false;
+    showFlashCard();
+  });
+  document.getElementById("fcPrev").addEventListener("click", function () {
+    if (!fcList.length) return;
+    fcIdx = (fcIdx - 1 + fcList.length) % fcList.length;
+    fcShown = false;
+    showFlashCard();
+  });
+  document.getElementById("fcShuffle").addEventListener("click", function () {
+    shuffle(fcList);
+    fcIdx = 0;
+    fcShown = false;
+    showFlashCard();
+  });
+  document.getElementById("fcMark").addEventListener("click", function () {
+    if (!fcList.length) return;
+    var w = fcList[fcIdx];
+    learned[w[0]] = true;
+    touchDaily();
+    saveLearned();
+    fcIdx = (fcIdx + 1) % fcList.length;
+    fcShown = false;
+    showFlashCard();
+  });
+  document.getElementById("fcFav").addEventListener("click", function () {
+    if (!fcList.length) return;
+    var w = fcList[fcIdx];
+    if (favSet[w[0]]) { delete favSet[w[0]]; } else { favSet[w[0]] = true; }
+    try { localStorage.setItem("toeic1000_fav", JSON.stringify(favSet)); } catch (err) {}
+    this.textContent = favSet[w[0]] ? "★ 단어장에서 빼기" : "☆ 단어장에 추가";
+  });
+  document.getElementById("fcListen").addEventListener("click", function () {
+    if (!fcList.length) return;
+    speak(fcList[fcIdx][4]);
+  });
+
+  // ---------- 퀴즈 모드 ----------
+  var quizQuestions = [];
+  var quizIdx = 0;
+  var quizCorrect = 0;
+  var quizAnswered = false;
+
+  function allWords() {
+    return all.reduce(function (arr, u) { return arr.concat(u.words); }, []);
+  }
+
+  function genQuiz(pool) {
+    var len = parseInt(document.getElementById("quizLength").value, 10);
+    var type = document.getElementById("quizType").value;
+    var copy = pool.slice();
+    shuffle(copy);
+    var picked = copy.slice(0, Math.min(len, copy.length));
+    quizQuestions = picked.map(function (w) {
+      var isBlank = type === "blank";
+      var answer = isBlank ? w[0] : (type === "en2ko" ? w[3] : w[0]);
+      var prompt = isBlank ? blankPrompt(w) : (type === "en2ko" ? w[0] : w[3]);
+      var distractors = [];
+      var attempts = 0;
+      while (distractors.length < 3 && attempts < 800) {
+        attempts++;
+        var d = pool[Math.floor(Math.random() * pool.length)];
+        var dv = isBlank ? d[0] : (type === "en2ko" ? d[3] : d[0]);
+        if (dv !== answer && distractors.indexOf(dv) === -1) distractors.push(dv);
+      }
+      var options = [answer].concat(distractors);
+      shuffle(options);
+      return { word: w[0], prompt: prompt, answer: answer, options: options };
+    });
+  }
+
+  function startQuiz(wrongOnly) {
+    quizWrongMode = !!wrongOnly;
+    quizIdx = 0;
+    quizCorrect = 0;
+    var pool = quizWrongMode ? wrongWords() : allWords();
+    if (!pool.length) {
+      document.getElementById("quizBox").innerHTML =
+        '<div class="quiz-result"><p>📕 오답노트가 비어 있어요! 🎉<br>퀴즈에서 틀린 단어가 자동으로 오답노트에 저장됩니다.</p></div>';
+      return;
+    }
+    genQuiz(pool);
+    renderQuiz();
+  }
+
+  function renderQuiz() {
+    quizAnswered = false;
+    var q = quizQuestions[quizIdx];
+    var html = '<div class="quiz-progress">문제 ' + (quizIdx + 1) + " / " + quizQuestions.length + " · 현재 정답 " + quizCorrect + "개</div>";
+    html += '<div class="quiz-q">' + esc(q.prompt) + '</div>';
+    q.options.forEach(function (opt) {
+      html += '<button class="quiz-opt">' + esc(opt) + '</button>';
+    });
+    html += '<div class="quiz-feedback" id="quizFeedback"></div>';
+    html += '<div class="quiz-next-wrap"><button class="btn quiz-btn" id="quizNext" style="display:none">다음 ▶</button></div>';
+    document.getElementById("quizBox").innerHTML = html;
+  }
+
+  function answerQuiz(btn) {
+    quizAnswered = true;
+    var q = quizQuestions[quizIdx];
+    var opts = document.querySelectorAll("#quizBox .quiz-opt");
+    var isCorrect = btn.textContent === q.answer;
+    var correctBtn = null;
+    opts.forEach(function (o) {
+      if (o.textContent === q.answer) correctBtn = o;
+    });
+    if (isCorrect) {
+      btn.classList.add("correct");
+      quizCorrect++;
+      if (wrongSet[q.word]) { delete wrongSet[q.word]; saveWrong(); }
+    } else {
+      btn.classList.add("wrong");
+      wrongSet[q.word] = true;
+      wrongCount[q.word] = (wrongCount[q.word] || 0) + 1;
+      saveWrong();
+      if (correctBtn) correctBtn.classList.add("correct");
+    }
+    opts.forEach(function (o) { o.disabled = true; });
+    document.getElementById("quizFeedback").textContent =
+      isCorrect ? "정답입니다! 🎉" : "오답입니다. 정답: " + q.answer;
+    var nextBtn = document.getElementById("quizNext");
+    nextBtn.style.display = "inline-block";
+    nextBtn.textContent = (quizIdx === quizQuestions.length - 1) ? "결과 보기 📊" : "다음 ▶";
+  }
+
+  function showQuizResult() {
+    var total = quizQuestions.length;
+    var pct = Math.round(quizCorrect / total * 100);
+    var msg = pct === 100 ? "완벽해요! 🏆" : pct >= 80 ? "훌륭해요! 🌟" : pct >= 60 ? "잘하고 있어요! 👍" : "복습이 필요해요! 📚";
+    var wrongBtn = Object.keys(wrongSet).length
+      ? '<button class="btn" id="quizWrongBtn">📕 오답 복습하기 (' + Object.keys(wrongSet).length + ')</button>'
+      : "";
+    document.getElementById("quizBox").innerHTML =
+      '<div class="quiz-result">' +
+      '<div class="score">' + quizCorrect + " / " + total + '</div>' +
+      '<p>정답률 ' + pct + "% · " + msg + '</p>' +
+      '<div class="fc-controls" style="justify-content:center">' +
+      '<button class="btn" id="quizRestart">🔁 다시 풀기</button>' +
+      wrongBtn +
+      '<button class="btn" id="quizBack">📖 목록으로</button>' +
+      '</div></div>';
+  }
+
+  function enterQuiz() {
+    document.getElementById("flashcardView").classList.remove("show");
+    document.getElementById("quizView").classList.add("show");
+    document.getElementById("examView").classList.remove("show");
+    document.getElementById("units").classList.add("hide");
+    document.getElementById("btnFlash").classList.remove("active");
+    document.getElementById("btnQuiz").classList.add("active");
+    document.getElementById("btnList").classList.remove("active");
+    document.getElementById("btnExam").classList.remove("active");
+    document.getElementById("quizBox").innerHTML =
+      '<div class="quiz-result"><p>문제 유형과 개수를 선택하고 🎯 시작 버튼을 눌러 주세요!</p></div>';
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  document.getElementById("btnQuiz").addEventListener("click", enterQuiz);
+  document.getElementById("quizStart").addEventListener("click", function () {
+    startQuiz(false);
+  });
+  document.getElementById("quizWrong").addEventListener("click", function () {
+    startQuiz(true);
+  });
+  document.getElementById("quizBox").addEventListener("click", function (e) {
+    if (e.target.classList.contains("quiz-opt") && !quizAnswered) {
+      answerQuiz(e.target);
+    } else if (e.target.id === "quizNext") {
+      quizIdx++;
+      if (quizIdx >= quizQuestions.length) {
+        showQuizResult();
+      } else {
+        renderQuiz();
+      }
+    } else if (e.target.id === "quizRestart") {
+      startQuiz(quizWrongMode);
+    } else if (e.target.id === "quizWrongBtn") {
+      startQuiz(true);
+    } else if (e.target.id === "quizBack") {
+      showListView();
+    }
+  });
+
+  // ---------- 상단 버튼 / 검색 ----------
+  document.getElementById("btnList").addEventListener("click", exitFlash);
+  document.getElementById("btnFlash").addEventListener("click", enterFlash);
+
+  var searchTimer = null;
+  document.getElementById("searchInput").addEventListener("input", function () {
+    clearTimeout(searchTimer);
+    var self = this;
+    searchTimer = setTimeout(function () { renderUnits(self.value); }, 150);
+  });
+
+  // ---------- 실전 시험 모드 ----------
+  var examQuestions = [];
+  var examIdx = 0;
+  var examCorrect = 0;
+  var examTimerId = null;
+  var examTimeLeft = 0;
+  var examAnswered = false;
+  var examType = "blank";
+
+  function enterExam() {
+    document.getElementById("flashcardView").classList.remove("show");
+    document.getElementById("quizView").classList.remove("show");
+    document.getElementById("examView").classList.add("show");
+    document.getElementById("units").classList.add("hide");
+    document.getElementById("btnFlash").classList.remove("active");
+    document.getElementById("btnQuiz").classList.remove("active");
+    document.getElementById("btnList").classList.remove("active");
+    document.getElementById("btnExam").classList.add("active");
+    stopExamTimer();
+    document.getElementById("examBox").innerHTML =
+      '<div class="quiz-result"><p>유형과 문항 수, 문항당 시간을 선택하고 ⏱ 시작을 눌러 주세요!</p></div>';
+    document.getElementById("examTimer").textContent = "";
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function stopExamTimer() {
+    if (examTimerId) { clearInterval(examTimerId); examTimerId = null; }
+  }
+
+  function fmtTime(s) {
+    var m = Math.floor(s / 60);
+    var r = s % 60;
+    return (m < 10 ? "0" : "") + m + ":" + (r < 10 ? "0" : "") + r;
+  }
+
+  function genExam(pool) {
+    var len = parseInt(document.getElementById("examLength").value, 10);
+    examType = document.getElementById("examType").value;
+    var secPerQ = parseInt(document.getElementById("examTime").value, 10);
+    var copy = pool.slice();
+    shuffle(copy);
+    var picked = copy.slice(0, Math.min(len, copy.length));
+    examQuestions = picked.map(function (w) {
+      var isBlank = examType === "blank";
+      var answer = isBlank ? w[0] : (examType === "en2ko" ? w[3] : w[0]);
+      var prompt = isBlank ? blankPrompt(w) : (examType === "en2ko" ? w[0] : w[3]);
+      var distractors = [];
+      var attempts = 0;
+      while (distractors.length < 3 && attempts < 800) {
+        attempts++;
+        var d = pool[Math.floor(Math.random() * pool.length)];
+        var dv = isBlank ? d[0] : (examType === "en2ko" ? d[3] : d[0]);
+        if (dv !== answer && distractors.indexOf(dv) === -1) distractors.push(dv);
+      }
+      var options = [answer].concat(distractors);
+      shuffle(options);
+      return { word: w[0], prompt: prompt, answer: answer, options: options, sec: secPerQ };
+    });
+    examTimeLeft = examQuestions.reduce(function (n, q) { return n + q.sec; }, 0);
+  }
+
+  function blankPrompt(w) {
+    // 예문에서 해당 단어(변형 포함: manages/managed/managing 등)를 빈칸으로 치환 (Part 5·6 유형)
+    var ex = w[4];
+    var word = w[0].toLowerCase();
+    // 1) 정확한 단어 매칭
+    var re = new RegExp("\\b" + w[0].replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b", "i");
+    if (re.test(ex)) return ex.replace(re, "＿＿＿＿");
+    // 2) 변형형 매칭: 단어가 4글자 이상일 때 토큰의 어간이 단어로 시작/끝나면 치환
+    if (word.length >= 4) {
+      var tokens = ex.split(/\s+/);
+      for (var i = 0; i < tokens.length; i++) {
+        var t = tokens[i].replace(/[^a-zA-Z]/g, "").toLowerCase();
+        if (t.length >= word.length && t.indexOf(word) === 0 && t.length - word.length <= 3) {
+          return ex.split(tokens[i]).join("＿＿＿＿");
+        }
+      }
+    }
+    return w[0];
+  }
+
+  function startExam() {
+    stopExamTimer();
+    var pool = allWords();
+    if (!pool.length) return;
+    genExam(pool);
+    examIdx = 0;
+    examCorrect = 0;
+    examAnswered = false;
+    renderExam();
+    examTimerId = setInterval(examTick, 1000);
+  }
+
+  function examTick() {
+    examTimeLeft--;
+    updateExamTimer();
+    if (examTimeLeft <= 0) {
+      stopExamTimer();
+      showExamResult();
+    }
+  }
+
+  function updateExamTimer() {
+    var el = document.getElementById("examTimer");
+    if (!el) return;
+    el.textContent = "⏱ 남은 시간 " + fmtTime(Math.max(0, examTimeLeft));
+    el.classList.toggle("timeout", examTimeLeft <= 10);
+  }
+
+  function renderExam() {
+    examAnswered = false;
+    var q = examQuestions[examIdx];
+    var html = '<div class="quiz-progress">문제 ' + (examIdx + 1) + " / " + examQuestions.length + " · 현재 정답 " + examCorrect + "개</div>";
+    html += '<div class="quiz-q">' + esc(q.prompt) + '</div>';
+    q.options.forEach(function (opt) {
+      html += '<button class="quiz-opt">' + esc(opt) + '</button>';
+    });
+    html += '<div class="quiz-feedback" id="examFeedback"></div>';
+    html += '<div class="quiz-next-wrap"><button class="btn quiz-btn" id="examNext" style="display:none">다음 ▶</button></div>';
+    document.getElementById("examBox").innerHTML = html;
+    updateExamTimer();
+  }
+
+  function answerExam(btn) {
+    if (examAnswered) return;
+    examAnswered = true;
+    var q = examQuestions[examIdx];
+    var opts = document.querySelectorAll("#examBox .quiz-opt");
+    var isCorrect = btn.textContent === q.answer;
+    var correctBtn = null;
+    opts.forEach(function (o) {
+      if (o.textContent === q.answer) correctBtn = o;
+    });
+    if (isCorrect) {
+      btn.classList.add("correct");
+      examCorrect++;
+      if (wrongSet[q.word]) { delete wrongSet[q.word]; saveWrong(); }
+    } else {
+      btn.classList.add("wrong");
+      wrongSet[q.word] = true;
+      wrongCount[q.word] = (wrongCount[q.word] || 0) + 1;
+      saveWrong();
+      if (correctBtn) correctBtn.classList.add("correct");
+    }
+    opts.forEach(function (o) { o.disabled = true; });
+    document.getElementById("examFeedback").textContent =
+      isCorrect ? "정답입니다! 🎉" : "오답입니다. 정답: " + q.answer;
+    var nextBtn = document.getElementById("examNext");
+    nextBtn.style.display = "inline-block";
+    nextBtn.textContent = (examIdx === examQuestions.length - 1) ? "결과 보기 📊" : "다음 ▶";
+  }
+
+  function showExamResult() {
+    var total = examQuestions.length;
+    var pct = total ? Math.round(examCorrect / total * 100) : 0;
+    // TOEIC 점수 환산 (어휘 기반 추정): 990점 만점, 문항 수에 비례
+    var est = Math.max(10, Math.min(990, Math.round(pct * 9.9)));
+    if (est > examBest) {
+      examBest = est;
+      try { localStorage.setItem("toeic1000_exambest", String(examBest)); } catch (e) {}
+    }
+    var msg = pct >= 90 ? "완벽해요! 🏆" : pct >= 70 ? "훌륭해요! 🌟" : pct >= 50 ? "잘하고 있어요! 👍" : "복습이 필요해요! 📚";
+    var wrongBtn = Object.keys(wrongSet).length
+      ? '<button class="btn" id="examWrongBtn">📕 오답 복습하기 (' + Object.keys(wrongSet).length + ')</button>'
+      : "";
+    document.getElementById("examBox").innerHTML =
+      '<div class="quiz-result">' +
+      '<div class="score">' + examCorrect + " / " + total + '</div>' +
+      '<p>정답률 ' + pct + "% · " + msg + '</p>' +
+      '<p class="muted">예상 TOEIC 점수 <b class="est-score">' + est + '점</b> · 최고 기록 ' + examBest + '점</p>' +
+      '<div class="fc-controls" style="justify-content:center">' +
+      '<button class="btn" id="examRestart">🔁 다시 풀기</button>' +
+      wrongBtn +
+      '<button class="btn" id="examBack">📖 목록으로</button>' +
+      '</div></div>';
+    document.getElementById("examTimer").textContent = "";
+  }
+
+  document.getElementById("btnExam").addEventListener("click", enterExam);
+  document.getElementById("examStart").addEventListener("click", startExam);
+  document.getElementById("examReset").addEventListener("click", function () {
+    stopExamTimer();
+    document.getElementById("examTimer").textContent = "";
+    document.getElementById("examBox").innerHTML =
+      '<div class="quiz-result"><p>유형과 문항 수, 문항당 시간을 선택하고 ⏱ 시작을 눌러 주세요!</p></div>';
+  });
+  document.getElementById("examBox").addEventListener("click", function (e) {
+    if (e.target.classList.contains("quiz-opt") && !examAnswered) {
+      answerExam(e.target);
+    } else if (e.target.id === "examNext") {
+      examIdx++;
+      if (examIdx >= examQuestions.length) {
+        stopExamTimer();
+        showExamResult();
+      } else {
+        renderExam();
+      }
+    } else if (e.target.id === "examRestart") {
+      startExam();
+    } else if (e.target.id === "examWrongBtn") {
+      enterQuiz();
+      startQuiz(true);
+    } else if (e.target.id === "examBack") {
+      showListView();
+    }
+  });
+
+  // ---------- 시험 안내 모달 ----------
+  function renderStats() {
+    var learnedN = Object.keys(learned).filter(function (k) { return learned[k]; }).length;
+    var wrongN = Object.keys(wrongSet).length;
+    var favN = Object.keys(favSet).length;
+    var pct = totalCount ? Math.round(learnedN / totalCount * 100) : 0;
+    var html =
+      '<div class="stat"><b>' + learnedN + "</b><span>외운 단어</span></div>" +
+      '<div class="stat"><b>' + totalCount + "</b><span>전체 단어</span></div>" +
+      '<div class="stat"><b>' + pct + "%</b><span>학습 진행률</span></div>" +
+      '<div class="stat"><b>' + wrongN + "</b><span>오답 단어</span></div>" +
+      '<div class="stat"><b>' + favN + "</b><span>내 단어장</span></div>" +
+      '<div class="stat"><b>' + examBest + "</b><span>최고 예상 점수</span></div>" +
+      '<div class="stat"><b>' + streakInfo.count + "</b><span>연속 학습일</span></div>" +
+      '<div class="stat"><b>' + daily.count + " / " + DAILY_GOAL + "</b><span>오늘 학습</span></div>";
+    document.getElementById("statGrid").innerHTML = html;
+  }
+
+  document.getElementById("btnGuide").addEventListener("click", function () {
+    renderStats();
+    document.getElementById("guideModal").classList.add("show");
+  });
+  document.getElementById("guideClose").addEventListener("click", function () {
+    document.getElementById("guideModal").classList.remove("show");
+  });
+  document.getElementById("guideModal").addEventListener("click", function (e) {
+    if (e.target === this) document.getElementById("guideModal").classList.remove("show");
+  });
+  document.getElementById("btnResetData").addEventListener("click", function () {
+    if (!confirm("모든 학습 데이터(외운 단어·오답노트·단어장·진행 기록)를 초기화할까요?")) return;
+    try {
+      ["toeic1000_learned", "toeic1000_wrong", "toeic1000_wrongcount", "toeic1000_fav",
+       "toeic1000_daily", "toeic1000_streak", "toeic1000_exambest"].forEach(function (k) {
+        localStorage.removeItem(k);
+      });
+    } catch (e) {}
+    learned = {}; wrongSet = {}; wrongCount = {}; favSet = {};
+    daily = { date: "", count: 0 }; streakInfo = { last: "", count: 0 }; examBest = 0;
+    renderUnits(document.getElementById("searchInput").value);
+    updateProgress();
+    updateWrongBadge();
+    updateDailyUI();
+    updateStreakUI();
+    renderStats();
+  });
+
+  // ---------- 초기화 ----------
+  collectUnits();
+  syncLevelButtons();
+  renderUnits("");
+  updateProgress();
+  updateWrongBadge();
+  updateDailyUI();
+  updateStreakUI();
+  document.getElementById("btnList").classList.add("active");
+
+  // ---------- 다크 모드 ----------
+  function setTheme(t) {
+    document.body.classList.toggle("dark", t === "dark");
+    try { localStorage.setItem("toeic1000_theme", t); } catch (e) {}
+    document.getElementById("btnTheme").textContent = t === "dark" ? "☀️" : "🌙";
+  }
+  document.getElementById("btnTheme").addEventListener("click", function () {
+    setTheme(document.body.classList.contains("dark") ? "light" : "dark");
+  });
+  var savedTheme = "light";
+  try { savedTheme = localStorage.getItem("toeic1000_theme") || "light"; } catch (e) {}
+  setTheme(savedTheme);
+})();
+</script>
+</body>
+</html>

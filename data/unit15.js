@@ -1,0 +1,38 @@
+window.VOCAB_UNITS = window.VOCAB_UNITS || {};
+// UNIT 15. 경제와 사회 (33 words)
+// 형식: [단어, IPA 발음기호, 한글발음, 뜻, 토익 예문, 예문 해석, 예문 한글 발음]
+window.VOCAB_UNITS[15] = [
+  ["economy", "/ɪˈkɑːnəmi/", "이-카-너-미", "경제", "The economy is growing faster than expected.", "경제가 예상보다 빠르게 성장하고 있다.", "디 이-카-너-미 이즈 그로우-잉 패스-터 댄 익-스펙-티드"],
+  ["economic", "/ˌiːkəˈnɑːmɪk/", "이-커-나-믹", "경제의, 경제적인", "The country is facing serious economic problems.", "그 나라는 심각한 경제 문제에 직면해 있다.", "더 컨-트리 이즈 페이-싱 시-리-어스 이-커-나-믹 프라-블럼즈"],
+  ["economist", "/ɪˈkɑːnəmɪst/", "이-카-너-미스트", "경제학자", "Economists predict a rise in interest rates.", "경제학자들은 금리 인상을 예측한다.", "이-카-너-미스트 프리-딕트 어 라이즈 인 인-트러-스트 레이츠"],
+  ["inflation", "/ɪnˈfleɪʃn/", "인-플레이-션", "인플레이션, 물가 상승", "Inflation has reached its highest level in ten years.", "인플레이션이 10년 만에 최고 수준에 도달했다.", "인-플레이-션 해즈 리치트 이츠 하이-이스트 레-벨 인 텐 이어즈"],
+  ["recession", "/rɪˈseʃn/", "리-세-션", "경기 침체", "Many companies closed during the recession.", "경기 침체 동안 많은 회사가 문을 닫았다.", "메-니 컴-퍼-니즈 클로우즈드 두-링 더 리-세-션"],
+  ["growth", "/ɡroʊθ/", "그로우스", "성장, 증가", "The company achieved steady growth in sales.", "그 회사는 매출에서 꾸준한 성장을 이루었다.", "더 컴-퍼-니 어-치브드 스테-디 그로우스 인 세일즈"],
+  ["decrease", "/dɪˈkriːs/", "디-크리스", "감소하다, 감소", "The number of visitors decreased by ten percent.", "방문자 수가 10% 감소했다.", "더 넘-버 오브 비-지-터즈 디-크리스트 바이 텐 퍼-센트"],
+  ["increase", "/ɪnˈkriːs/", "인-크리스", "증가하다, 증가", "Sales increased significantly during the holiday season.", "휴가철 동안 매출이 크게 증가했다.", "세일즈 인-크리스트 시그-니-피-컨트-리 두-링 더 할-리-데이 시-즌"],
+  ["rise", "/raɪz/", "라이즈", "오르다, 상승", "The price of oil continues to rise.", "유가가 계속 오르고 있다.", "더 프라이스 오브 오일 컨-티-뉴즈 투 라이즈"],
+  ["fall", "/fɔːl/", "폴", "떨어지다, 하락", "Stock prices fell sharply yesterday.", "주가가 어제 급락했다.", "스탁 프라이-시즈 펠 샤-플리 예스-터-데이"],
+  ["trend", "/trend/", "트렌드", "추세, 동향", "The trend toward online shopping is growing.", "온라인 쇼핑 쪽으로 가는 추세가 커지고 있다.", "더 트렌드 투-워드 온-라인 샤-핑 이즈 그로우-잉"],
+  ["forecast", "/ˈfɔːrkæst/", "포-캐스트", "예측, 예보하다", "The weather forecast says it will rain tomorrow.", "일기예보에 따르면 내일 비가 올 것이다.", "더 웨-더 포-캐스트 세즈 잇 윌 레인 투-모-로우"],
+  ["predict", "/prɪˈdɪkt/", "프리-딕트", "예측하다, 예상하다", "Experts predict strong growth in the service sector.", "전문가들은 서비스 분야의 강한 성장을 예측한다.", "엑스-퍼츠 프리-딕트 스트롱 그로우스 인 더 서-비스 섹-터"],
+  ["prediction", "/prɪˈdɪkʃn/", "프리-딕-션", "예측, 예상", "His prediction about the market turned out to be correct.", "시장에 대한 그의 예측은 맞는 것으로 드러났다.", "히즈 프리-딕-션 어-바웃 더 마-킷 턴드 아웃 투 비 커-렉트"],
+  ["unemployment", "/ˌʌnɪmˈplɔɪmənt/", "언-임-플로이-먼트", "실업, 실업률", "Unemployment fell to its lowest level in years.", "실업률이 수년 만에 최저 수준으로 떨어졌다.", "언-임-플로이-먼트 펠 투 이츠 로우-이스트 레-벨 인 이어즈"],
+  ["employment", "/ɪmˈplɔɪmənt/", "임-플로이-먼트", "고용, 취업", "The new factory will create many employment opportunities.", "새 공장은 많은 고용 기회를 창출할 것이다.", "더 누 팩-터-리 윌 크리-에이트 메-니 임-플로이-먼트 아-퍼-튜-니-티즈"],
+  ["poverty", "/ˈpɑːvərti/", "파-버-티", "빈곤, 가난", "The charity works to reduce poverty in rural areas.", "그 자선 단체는 농촌 지역의 빈곤을 줄이기 위해 일한다.", "더 채-러-티 워크스 투 리-두스 파-버-티 인 루-럴 에-리-어즈"],
+  ["wealth", "/welθ/", "웰스", "부, 재산", "The country's wealth comes from its natural resources.", "그 나라의 부는 천연자원에서 나온다.", "더 컨-트리즈 웰스 컴즈 프럼 이츠 내-처-럴 리-소-시즈"],
+  ["population", "/ˌpɑːpjuˈleɪʃn/", "파-퓨-레이-션", "인구", "The population of the city has doubled since 2000.", "그 도시의 인구는 2000년 이후 두 배가 되었다.", "더 파-퓨-레이-션 오브 더 시-티 해즈 더-블드 신스 투-사우-전드"],
+  ["environment", "/ɪnˈvaɪrənmənt/", "인-바이-런-먼트", "환경", "The company cares about the environment.", "그 회사는 환경을 중요하게 생각한다.", "더 컴-퍼-니 케어즈 어-바웃 디 인-바이-런-먼트"],
+  ["pollution", "/pəˈluːʃn/", "퍼-루-션", "오염", "Air pollution is a serious problem in big cities.", "대기 오염은 대도시의 심각한 문제이다.", "에어 퍼-루-션 이즈 어 시-리-어스 프라-블럼 인 빅 시-티즈"],
+  ["energy", "/ˈenərdʒi/", "에-너-지", "에너지, 힘", "The government supports renewable energy projects.", "정부는 재생 에너지 프로젝트를 지원한다.", "더 거-번-먼트 서-포츠 리-누-어-블 에-너-지 프라-젝츠"],
+  ["resource", "/ˈriːsɔːrs/", "리-소스", "자원", "Water is a valuable natural resource.", "물은 귀중한 천연자원이다.", "워-터 이즈 어 밸-류-어-블 내-처-럴 리-소스"],
+  ["government", "/ˈɡʌvərnmənt/", "거-번-먼트", "정부", "The government announced new trade regulations.", "정부가 새로운 무역 규정을 발표했다.", "더 거-번-먼트 어-나운스트 누 트레이드 레-규-레이-션즈"],
+  ["society", "/səˈsaɪəti/", "서-사이-어-티", "사회", "The new law affects the whole society.", "새 법은 사회 전체에 영향을 미친다.", "더 누 로 어-펙츠 더 홀 서-사이-어-티"],
+  ["social", "/ˈsoʊʃl/", "소우-셜", "사회의, 사회적인", "The company takes part in social responsibility programs.", "그 회사는 사회적 책임 프로그램에 참여한다.", "더 컴-퍼-니 테이크스 파트 인 소우-셜 리-스판-서-빌-리-티 프로우-그램즈"],
+  ["education", "/ˌedʒuˈkeɪʃn/", "에-듀-케이-션", "교육", "The government spends more on education each year.", "정부는 매년 교육에 더 많은 예산을 쓴다.", "더 거-번-먼트 스펜즈 모어 온 에-듀-케이-션 이치 이어"],
+  ["health", "/helθ/", "헬스", "건강", "Working long hours can affect your health.", "장시간 일하는 것은 건강에 영향을 줄 수 있다.", "워-킹 롱 아워즈 캔 어-펙트 유어 헬스"],
+  ["healthcare", "/ˈhelθker/", "헬스-케어", "의료, 건강 관리", "The cost of healthcare continues to increase.", "의료비가 계속 증가하고 있다.", "더 코스트 오브 헬스-케어 컨-티-뉴즈 투 인-크리스"],
+  ["welfare", "/ˈwelfer/", "웰-페어", "복지, 후생", "The government improved the welfare system.", "정부가 복지 제도를 개선했다.", "더 거-번-먼트 임-프루브드 더 웰-페어 시스-텀"],
+  ["infrastructure", "/ˈɪnfrəstrʌktʃər/", "인-프러-스트럭-처", "기반 시설, 인프라", "The country invested heavily in transportation infrastructure.", "그 나라는 교통 인프라에 대규모 투자를 했다.", "더 컨-트리 인-베스-티드 헤-빌-리 인 트랜스-퍼-테이-션 인-프러-스트럭-처"],
+  ["development", "/dɪˈveləpmənt/", "디-벨-럽-먼트", "개발, 발전", "Economic development has raised living standards.", "경제 발전이 생활 수준을 높였다.", "이-커-나-믹 디-벨-럽-먼트 해즈 레이즈드 리-빙 스탠-더즈"],
+  ["industry", "/ˈɪndəstri/", "인-더-스트리", "산업, 업계", "The tourism industry employs many local people.", "관광 산업은 많은 지역 주민을 고용한다.", "더 투-리-즘 인-더-스트리 임-플로이즈 메-니 로우-컬 피-플"]
+];

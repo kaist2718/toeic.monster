@@ -1,0 +1,38 @@
+window.VOCAB_UNITS = window.VOCAB_UNITS || {};
+// UNIT 14. 통신과 미디어 (33 words)
+// 형식: [단어, IPA 발음기호, 한글발음, 뜻, 토익 예문, 예문 해석, 예문 한글 발음]
+window.VOCAB_UNITS[14] = [
+  ["communication", "/kəˌmjuːnɪˈkeɪʃn/", "커-뮤-니-케이-션", "의사소통, 통신", "Good communication between departments is important.", "부서 간 원활한 의사소통이 중요하다.", "구드 커-뮤-니-케이-션 비-트윈 디-파-트먼츠 이즈 임-포-턴트"],
+  ["communicate", "/kəˈmjuːnɪkeɪt/", "커-뮤-니-케이트", "의사소통하다, 전달하다", "The two offices communicate by video call.", "두 지점은 화상 통화로 연락한다.", "더 투 오-피-시즈 커-뮤-니-케이트 바이 비-디-오 콜"],
+  ["cell phone", "/ˈsel foʊn/", "셀 폰", "휴대전화", "Please turn off your cell phone during the meeting.", "회의 중에는 휴대전화를 꺼 주세요.", "플리즈 턴 오프 유어 셀 폰 두-링 더 미-팅"],
+  ["mobile", "/ˈmoʊbl/", "모우-블", "휴대용의, 이동식의", "Mobile devices are used for online banking.", "모바일 기기는 온라인 뱅킹에 사용된다.", "모우-블 디-바이-시즈 아 유즈드 포 온-라인 뱅-킹"],
+  ["landline", "/ˈlændlaɪn/", "랜드-라인", "유선 전화", "The hotel provides a landline in every room.", "그 호텔은 모든 객실에 유선 전화를 제공한다.", "더 호우-텔 프러-바이즈 어 랜드-라인 인 에-브리 룸"],
+  ["voicemail", "/ˈvɔɪsmeɪl/", "보이스-메일", "음성 메시지, 자동 응답", "Please leave a message on my voicemail.", "내 음성 사서함에 메시지를 남겨 주세요.", "플리즈 리브 어 메-시지 온 마이 보이스-메일"],
+  ["conference call", "/ˈkɑːnfərəns kɔːl/", "칸-퍼-런스 콜", "전화 회의", "We will have a conference call with the Tokyo office.", "우리는 도쿄 지점과 전화 회의를 할 것이다.", "위 윌 해브 어 칸-퍼-런스 콜 위드 더 토우-키-오 오-피스"],
+  ["video call", "/ˈvɪdioʊ kɔːl/", "비-디-오 콜", "화상 통화", "Video calls save us a lot of travel time.", "화상 통화는 많은 이동 시간을 절약해 준다.", "비-디-오 콜즈 세이브 어스 어 랏 오브 트래-블 타임"],
+  ["teleconference", "/ˈtelikɑːnfərəns/", "텔-리-칸-퍼-런스", "원격 회의", "The teleconference was arranged for Friday morning.", "원격 회의가 금요일 아침으로 예정되었다.", "더 텔-리-칸-퍼-런스 워즈 어-레인지드 포 프라이-데이 모-닝"],
+  ["broadcast", "/ˈbrɔːdkæst/", "브로드-캐스트", "방송하다, 방송", "The ceremony was broadcast live on television.", "그 행사는 텔레비전으로 생중계되었다.", "더 세-러-모-니 워즈 브로드-캐스트 라이브 온 텔-리-비-전"],
+  ["television", "/ˈtelɪvɪʒn/", "텔-리-비-전", "텔레비전", "The company advertised its product on television.", "그 회사는 텔레비전에서 제품을 광고했다.", "더 컴-퍼-니 애드-버-타이즈드 이츠 프라-덕트 온 텔-리-비-전"],
+  ["radio", "/ˈreɪdioʊ/", "레이-디-오", "라디오", "He heard about the sale on the radio.", "그는 라디오에서 세일 소식을 들었다.", "히 허드 어-바웃 더 세일 온 더 레이-디-오"],
+  ["newspaper", "/ˈnuːzpeɪpər/", "누즈-페이-퍼", "신문", "The job opening was advertised in the local newspaper.", "채용 공고가 지역 신문에 실렸다.", "더 잡 오우-프닝 워즈 애드-버-타이즈드 인 더 로우-컬 누즈-페이-퍼"],
+  ["magazine", "/ˈmæɡəziːn/", "매-거-진", "잡지", "The article appeared in a business magazine.", "그 기사는 비즈니스 잡지에 실렸다.", "디 아-티-클 어-피어드 인 어 비즈-니스 매-거-진"],
+  ["article", "/ˈɑːrtɪkl/", "아-티-클", "기사, 논문", "She wrote an article about the new technology.", "그녀는 새 기술에 대한 기사를 썼다.", "시 로우트 언 아-티-클 어-바웃 더 누 텍-날-러-지"],
+  ["press", "/pres/", "프레스", "언론, 보도 기관", "The press conference will begin at noon.", "기자회견이 정오에 시작될 것이다.", "더 프레스 칸-퍼-런스 윌 비-긴 앳 눈"],
+  ["news", "/nuːz/", "누즈", "뉴스, 소식", "The news of the merger was announced yesterday.", "합병 소식이 어제 발표되었다.", "더 누즈 오브 더 머-저 워즈 어-나운스트 예스-터-데이"],
+  ["journalist", "/ˈdʒɜːrnəlɪst/", "저-널-리스트", "기자, 저널리스트", "The journalist asked the CEO several questions.", "기자가 CEO에게 여러 질문을 했다.", "더 저-널-리스트 애스크트 더 시-이-오우 세-버-럴 퀘스-천즈"],
+  ["reporter", "/rɪˈpɔːrtər/", "리-포-터", "기자, 리포터", "The reporter covered the trade fair for the paper.", "그 기자는 신문을 위해 박람회를 취재했다.", "더 리-포-터 커-버드 더 트레이드 페어 포 더 페이-퍼"],
+  ["publicity", "/pʌbˈlɪsəti/", "퍼-블리-서-티", "홍보, 주목", "The event received a lot of publicity.", "그 행사는 많은 언론의 주목을 받았다.", "디 이-벤트 리-시브드 어 랏 오브 퍼-블리-서-티"],
+  ["press release", "/ˈpres rɪliːs/", "프레스 리-리스", "보도 자료", "The company issued a press release about the new product.", "그 회사는 신제품에 대한 보도 자료를 발표했다.", "더 컴-퍼-니 이슈트 어 프레스 리-리스 어-바웃 더 누 프라-덕트"],
+  ["newsletter", "/ˈnuːzletər/", "누즈-레-터", "뉴스레터, 소식지", "Sign up for our monthly newsletter.", "월간 뉴스레터를 구독해 보세요.", "사인 업 포 아워 먼스-리 누즈-레-터"],
+  ["bulletin", "/ˈbʊlətɪn/", "불-러-틴", "회보, 공보", "The latest bulletin contains the meeting minutes.", "최신 회보에는 회의록이 포함되어 있다.", "더 레이-티스트 불-러-틴 컨-테인즈 더 미-팅 미-닛츠"],
+  ["social media", "/ˌsoʊʃl ˈmiːdiə/", "소우-셜 미-디-어", "소셜 미디어", "The brand is very active on social media.", "그 브랜드는 소셜 미디어에서 매우 활발하다.", "더 브랜드 이즈 베-리 액-티브 온 소우-셜 미-디-어"],
+  ["post", "/poʊst/", "포우스트", "게시하다, 게시물", "She posted photos of the event online.", "그녀는 행사 사진을 온라인에 게시했다.", "시 포우-스-티드 포우-토우즈 오브 디 이-벤트 온-라인"],
+  ["comment", "/ˈkɑːment/", "카-멘트", "댓글, 의견", "Please leave a comment below the video.", "영상 아래에 댓글을 남겨 주세요.", "플리즈 리브 어 카-멘트 비-로우 더 비-디-오"],
+  ["share", "/ʃer/", "셰어", "공유하다, 나누다", "Customers can share their reviews on the site.", "고객들은 사이트에서 리뷰를 공유할 수 있다.", "커스-터-머즈 캔 셰어 데어 리-뷰즈 온 더 사이트"],
+  ["follower", "/ˈfɑːloʊər/", "팔-로우-어", "팔로워, 추종자", "The influencer has over a million followers.", "그 인플루언서는 100만 명이 넘는 팔로워가 있다.", "디 인-플루-언-서 해즈 오우-버 어 밀-리언 팔-로우-어즈"],
+  ["live", "/laɪv/", "라이브", "생방송의, 실시간의", "The awards show will be broadcast live.", "시상식이 생방송으로 방송될 것이다.", "디 어-워즈 쇼우 윌 비 브로드-캐스트 라이브"],
+  ["viewer", "/ˈvjuːər/", "뷰-어", "시청자, 보는 사람", "The program attracted millions of viewers.", "그 프로그램은 수백만 명의 시청자를 끌어모았다.", "더 프로우-그램 어-트랙-티드 밀-리언즈 오브 뷰-어즈"],
+  ["coverage", "/ˈkʌvərɪdʒ/", "커-버-리지", "보도, 취재 범위", "The event received wide media coverage.", "그 행사는 언론의 폭넓은 보도를 받았다.", "디 이-벤트 리-시브드 와이드 미-디-어 커-버-리지"],
+  ["headline", "/ˈhedlaɪn/", "헤드-라인", "표제, 헤드라인", "The story made the front-page headline.", "그 기사는 1면 헤드라인을 장식했다.", "더 스토-리 메이드 더 프런트-페이지 헤드-라인"],
+  ["subscribe", "/səbˈskraɪb/", "서브-스크라이브", "구독하다", "You can subscribe to our channel for free.", "우리 채널을 무료로 구독할 수 있습니다.", "유 캔 서브-스크라이브 투 아워 채-널 포 프리"]
+];

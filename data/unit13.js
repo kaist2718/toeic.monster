@@ -1,0 +1,38 @@
+window.VOCAB_UNITS = window.VOCAB_UNITS || {};
+// UNIT 13. 기술과 IT (33 words)
+// 형식: [단어, IPA 발음기호, 한글발음, 뜻, 토익 예문, 예문 해석, 예문 한글 발음]
+window.VOCAB_UNITS[13] = [
+  ["computer", "/kəmˈpjuːtər/", "컴-퓨-터", "컴퓨터", "All employees use computers for their daily work.", "모든 직원은 일상 업무에 컴퓨터를 사용한다.", "올 임-플로이-이즈 유즈 컴-퓨-터즈 포 데어 데이-리 워크"],
+  ["software", "/ˈsɔːftwer/", "소프트-웨어", "소프트웨어", "The new software makes accounting much easier.", "새 소프트웨어는 회계 작업을 훨씬 쉽게 만든다.", "더 누 소프트-웨어 메이크스 어-카운-팅 머치 이-지-어"],
+  ["hardware", "/ˈhɑːrdwer/", "하드-웨어", "하드웨어", "The hardware store sells computer parts.", "그 하드웨어 매장은 컴퓨터 부품을 판매한다.", "더 하드-웨어 스토어 셀즈 컴-퓨-터 파츠"],
+  ["program", "/ˈproʊɡræm/", "프로우-그램", "프로그램, 프로그램을 짜다", "This program is designed for beginners.", "이 프로그램은 초보자를 위해 설계되었다.", "디스 프로우-그램 이즈 디-자인드 포 비-긴-너즈"],
+  ["programming", "/ˈproʊɡræmɪŋ/", "프로우-그래-밍", "프로그래밍", "She is taking a programming course online.", "그녀는 온라인 프로그래밍 강좌를 듣고 있다.", "시 이즈 테이-킹 어 프로우-그래-밍 코스 온-라인"],
+  ["database", "/ˈdeɪtəbeɪs/", "데이-터-베이스", "데이터베이스", "Customer information is stored in the database.", "고객 정보는 데이터베이스에 저장된다.", "커스-터-머 인-퍼-메이-션 이즈 스토어드 인 더 데이-터-베이스"],
+  ["network", "/ˈnetwɜːrk/", "네트-워크", "네트워크, 망", "The network connection was down for an hour.", "네트워크 연결이 한 시간 동안 중단되었다.", "더 네트-워크 커-넥-션 워즈 다운 포 언 아워"],
+  ["server", "/ˈsɜːrvər/", "서-버", "서버", "The server crashed during the peak hours.", "서버가 피크 시간대에 다운되었다.", "더 서-버 크래시트 두-링 더 피크 아워즈"],
+  ["website", "/ˈwebsaɪt/", "웹-사이트", "웹사이트", "Visit our website for more information.", "더 많은 정보를 원하시면 우리 웹사이트를 방문하세요.", "비-짓 아워 웹-사이트 포 모어 인-퍼-메이-션"],
+  ["online", "/ˌɑːnˈlaɪn/", "온-라인", "온라인의, 온라인으로", "You can pay your bills online.", "청구서를 온라인으로 납부할 수 있습니다.", "유 캔 페이 유어 빌즈 온-라인"],
+  ["download", "/ˌdaʊnˈloʊd/", "다운-로우드", "다운로드하다", "You can download the report from our website.", "우리 웹사이트에서 보고서를 다운로드할 수 있다.", "유 캔 다운-로우드 더 리-포-트 프럼 아워 웹-사이트"],
+  ["upload", "/ˌʌpˈloʊd/", "업-로우드", "업로드하다", "Please upload your photo on the application form.", "지원서에 사진을 업로드해 주세요.", "플리즈 업-로우드 유어 포우-토우 온 디 애-플리-케이-션 폼"],
+  ["install", "/ɪnˈstɔːl/", "인-스톨", "설치하다", "The technician will install the new system tomorrow.", "기술자가 내일 새 시스템을 설치할 것이다.", "더 텍-니-션 윌 인-스톨 더 누 시스-텀 투-모-로우"],
+  ["installation", "/ˌɪnstəˈleɪʃn/", "인-스터-레이-션", "설치", "The installation of the software takes ten minutes.", "소프트웨어 설치에는 10분이 걸린다.", "디 인-스터-레이-션 오브 더 소프트-웨어 테이크스 텐 미-닛츠"],
+  ["update", "/ˌʌpˈdeɪt/", "업-데이트", "업데이트, 최신 정보로 갱신하다", "Please update your contact information in the system.", "시스템에 연락처 정보를 업데이트해 주세요.", "플리즈 업-데이트 유어 칸-택트 인-퍼-메이-션 인 더 시스-텀"],
+  ["upgrade", "/ˌʌpˈɡreɪd/", "업-그레이드", "업그레이드하다, 개선", "We upgraded our computers to the latest model.", "우리는 컴퓨터를 최신 모델로 업그레이드했다.", "위 업-그레이-디드 아워 컴-퓨-터즈 투 더 레이-티스트 마-델"],
+  ["version", "/ˈvɜːrʒn/", "버-전", "버전, 판", "This is the latest version of the app.", "이것은 앱의 최신 버전이다.", "디스 이즈 더 레이-티스트 버-전 오브 디 앱"],
+  ["system", "/ˈsɪstəm/", "시스-텀", "시스템, 체계", "The new payment system is very efficient.", "새 결제 시스템은 매우 효율적이다.", "더 누 페이-먼트 시스-텀 이즈 베-리 이-피-션트"],
+  ["backup", "/ˈbækʌp/", "백-업", "백업, 예비품", "Always make a backup of important files.", "중요한 파일은 항상 백업해 두세요.", "올-웨이즈 메이크 어 백-업 오브 임-포-턴트 파일즈"],
+  ["security", "/səˈkjʊrəti/", "서-큐-러-티", "보안, 안전", "The company strengthened its network security.", "그 회사는 네트워크 보안을 강화했다.", "더 컴-퍼-니 스트렝-던드 이츠 네트-워크 서-큐-러-티"],
+  ["password", "/ˈpæswɜːrd/", "패스-워드", "비밀번호", "Do not share your password with anyone.", "비밀번호를 누구와도 공유하지 마세요.", "두 낫 셰어 유어 패스-워드 위드 에-니-원"],
+  ["username", "/ˈjuːzərneɪm/", "유-저-네임", "사용자 이름, 아이디", "Your username must be at least six characters.", "사용자 이름은 최소 6자여야 한다.", "유어 유-저-네임 머스트 비 앳 리스트 식스 캐-릭-터즈"],
+  ["login", "/ˈlɔːɡɪn/", "로그-인", "로그인, 접속", "The login page takes a long time to load.", "로그인 페이지가 로드되는 데 오래 걸린다.", "더 로그-인 페이지 테이크스 어 롱 타임 투 로우드"],
+  ["click", "/klɪk/", "클릭", "클릭하다, 클릭", "Click the button to confirm your order.", "주문을 확인하려면 버튼을 클릭하세요.", "클릭 더 버-턴 투 컨-펌 유어 오-더"],
+  ["screen", "/skriːn/", "스크린", "화면, 스크린", "The error message appeared on the screen.", "오류 메시지가 화면에 나타났다.", "디 에-러 메-시지 어-피어드 온 더 스크린"],
+  ["keyboard", "/ˈkiːbɔːrd/", "키-보드", "키보드, 자판", "The keyboard on this computer is very quiet.", "이 컴퓨터의 키보드는 매우 조용하다.", "더 키-보드 온 디스 컴-퓨-터 이즈 베-리 콰이-엇"],
+  ["monitor", "/ˈmɑːnɪtər/", "마-니-터", "모니터, 감시하다", "The monitor displays the sales figures in real time.", "그 모니터는 매출 수치를 실시간으로 표시한다.", "더 마-니-터 디-스플레이즈 더 세일즈 피-겨즈 인 리-얼 타임"],
+  ["digital", "/ˈdɪdʒɪtl/", "디-지-털", "디지털의", "Digital cameras have replaced film cameras.", "디지털 카메라가 필름 카메라를 대체했다.", "디-지-털 캐-머-러즈 해브 리-플레이스트 필름 캐-머-러즈"],
+  ["electronic", "/ɪˌlekˈtrɑːnɪk/", "일-렉-트라-닉", "전자식의, 전자 기기의", "Electronic payments are widely used today.", "오늘날 전자 결제가 널리 사용된다.", "일-렉-트라-닉 페이-먼츠 아 와이드-리 유즈드 투-데이"],
+  ["device", "/dɪˈvaɪs/", "디-바이스", "기기, 장치", "This device can be connected to the internet.", "이 기기는 인터넷에 연결할 수 있다.", "디스 디-바이스 캔 비 커-넥-티드 투 디 인-터-넷"],
+  ["user", "/ˈjuːzər/", "유-저", "사용자", "The new app is popular among young users.", "새 앱은 젊은 사용자들 사이에서 인기가 있다.", "더 누 앱 이즈 파-퓨-러 어-몽 영 유-저즈"],
+  ["internet", "/ˈɪntərnet/", "인-터-넷", "인터넷", "The internet connection is very fast here.", "여기는 인터넷 연결이 매우 빠르다.", "디 인-터-넷 커-넥-션 이즈 베-리 패스트 히어"],
+  ["wireless", "/ˈwaɪərləs/", "와이-어-러스", "무선의", "The office has wireless internet access.", "사무실에는 무선 인터넷 접속이 가능하다.", "디 오-피스 해즈 와이-어-러스 인-터-넷 액-세스"]
+];

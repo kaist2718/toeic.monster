@@ -1,0 +1,38 @@
+window.VOCAB_UNITS = window.VOCAB_UNITS || {};
+// UNIT 8. 쇼핑과 소비 (33 words)
+// 형식: [단어, IPA 발음기호, 한글발음, 뜻, 토익 예문, 예문 해석, 예문 한글 발음]
+window.VOCAB_UNITS[8] = [
+  ["shop", "/ʃɑːp/", "샵", "가게, 쇼핑하다", "The shop closes at nine in the evening.", "그 가게는 저녁 9시에 문을 닫는다.", "더 샵 클로우-지즈 앳 나인 인 디 이-브닝"],
+  ["store", "/stɔːr/", "스토어", "상점, 가게", "The department store is having a clearance sale.", "백화점에서 정리 세일을 하고 있다.", "더 디-파-트먼트 스토어 이즈 해-빙 어 클리-런스 세일"],
+  ["shopping mall", "/ˈʃɑːpɪŋ mɔːl/", "샤-핑 몰", "쇼핑몰, 상가", "The new shopping mall has over a hundred stores.", "새 쇼핑몰에는 100개가 넘는 매장이 있다.", "더 누 샤-핑 몰 해즈 오우-버 어 헌-드레드 스토어즈"],
+  ["supermarket", "/ˈsuːpərmɑːrkɪt/", "수-퍼-마-킷", "슈퍼마켓", "I buy fresh vegetables at the supermarket.", "나는 슈퍼마켓에서 신선한 채소를 산다.", "아이 바이 프레시 베-지-터-블즈 앳 더 수-퍼-마-킷"],
+  ["grocery", "/ˈɡroʊsəri/", "그로우-서-리", "식료품", "We spent fifty dollars on groceries.", "우리는 식료품에 50달러를 썼다.", "위 스펜트 피프-티 달-러즈 온 그로우-서-리즈"],
+  ["aisle", "/aɪl/", "아일", "통로, 복도", "The canned food is in aisle five.", "통조림은 5번 통로에 있다.", "더 캔드 푸드 이즈 인 아일 파이브"],
+  ["shelf", "/ʃelf/", "셸프", "선반", "The new products are on the top shelf.", "신제품은 맨 위 선반에 있다.", "더 누 프라-덕츠 아 온 더 탑 셸프"],
+  ["cart", "/kɑːrt/", "카트", "카트, 수레", "He filled the shopping cart with groceries.", "그는 쇼핑 카트에 식료품을 가득 채웠다.", "히 필드 더 샤-핑 카트 위드 그로우-서-리즈"],
+  ["checkout", "/ˈtʃekaʊt/", "체크-아웃", "계산대, 계산", "Please pay at the checkout counter.", "계산대에서 결제해 주세요.", "플리즈 페이 앳 더 체크-아웃 카운-터"],
+  ["cashier", "/kæˈʃɪr/", "캐-셔", "계산원, 출납원", "The cashier gave me the wrong change.", "계산원이 거스름돈을 잘못 주었다.", "더 캐-셔 게이브 미 더 롱 체인지"],
+  ["price tag", "/ˈpraɪs tæɡ/", "프라이스 태그", "가격표", "The price tag was hidden behind the label.", "가격표가 라벨 뒤에 가려져 있었다.", "더 프라이스 태그 워즈 히-든 비-하인드 더 레이-블"],
+  ["bargain", "/ˈbɑːrɡən/", "바-건", "흥정하다, 싼 물건", "This jacket was a real bargain at the sale.", "이 재킷은 세일에서 정말 싸게 샀다.", "디스 재-킷 워즈 어 리-얼 바-건 앳 더 세일"],
+  ["coupon", "/ˈkuːpɑːn/", "쿠-판", "쿠폰", "Use this coupon to get twenty percent off.", "이 쿠폰을 사용하면 20% 할인받을 수 있다.", "유즈 디스 쿠-판 투 겟 트웬-티 퍼-센트 오프"],
+  ["clearance", "/ˈklɪrəns/", "클리-런스", "정리 판매, 재고 정리", "Everything in the clearance section is half price.", "정리 판매 코너의 모든 물건이 반값이다.", "에-브리-씽 인 더 클리-런스 섹-션 이즈 하프 프라이스"],
+  ["size", "/saɪz/", "사이즈", "크기, 사이즈", "Do you have this shirt in a larger size?", "이 셔츠 더 큰 사이즈가 있나요?", "두 유 해브 디스 셔트 인 어 라-저 사이즈"],
+  ["fit", "/fɪt/", "핏", "맞다, 어울리다", "These shoes fit me perfectly.", "이 신발은 내게 딱 맞는다.", "디즈 슈즈 핏 미 퍼-펙트-리"],
+  ["try on", "/traɪ ɑːn/", "트라이 온", "입어 보다, 신어 보다", "You can try on the clothes before buying them.", "구매 전에 옷을 입어 볼 수 있습니다.", "유 캔 트라이 온 더 클로우-즈 비-포 바이-잉 뎀"],
+  ["order", "/ˈɔːrdər/", "오-더", "주문, 주문하다", "We placed an order for fifty chairs.", "우리는 의자 50개를 주문했다.", "위 플레이스트 언 오-더 포 피프-티 체어즈"],
+  ["delivery", "/dɪˈlɪvəri/", "디-리-버-리", "배달, 배송", "Delivery takes about five business days.", "배송에는 약 5영업일이 걸린다.", "디-리-버-리 테이크스 어-바웃 파이브 비즈-니스 데이즈"],
+  ["deliver", "/dɪˈlɪvər/", "디-리-버", "배달하다, 전달하다", "The package was delivered this morning.", "그 소포는 오늘 아침에 배달되었다.", "더 패-키지 워즈 디-리-버드 디스 모-닝"],
+  ["ship", "/ʃɪp/", "십", "배송하다, 운송하다", "We will ship your order tomorrow.", "주문하신 상품을 내일 배송하겠습니다.", "위 윌 십 유어 오-더 투-모-로우"],
+  ["shipping", "/ˈʃɪpɪŋ/", "시-핑", "배송, 운송", "Shipping costs are included in the price.", "배송비는 가격에 포함되어 있다.", "시-핑 코스트 아 인-클루-디드 인 더 프라이스"],
+  ["package", "/ˈpækɪdʒ/", "패-키지", "소포, 포장", "A package arrived at the office for you.", "당신에게 온 소포가 사무실에 도착했다.", "어 패-키지 어-라이브드 앳 디 오-피스 포 유"],
+  ["parcel", "/ˈpɑːrsl/", "파-슬", "소포, 꾸러미", "Please sign for the parcel at the front desk.", "접수처에서 소포에 서명해 주세요.", "플리즈 사인 포 더 파-슬 앳 더 프런트 데스크"],
+  ["return", "/rɪˈtɜːrn/", "리-턴", "반품, 반품하다", "You can return the item within fourteen days.", "14일 이내에 물품을 반품할 수 있습니다.", "유 캔 리-턴 디 아이-템 위드-인 포-틴 데이즈"],
+  ["in stock", "/ɪn stɑːk/", "인 스탁", "재고가 있는", "We are sorry, but the item is no longer in stock.", "죄송하지만 그 상품은 더 이상 재고가 없습니다.", "위 아 소-리 벗 디 아이-템 이즈 노우 롱-거 인 스탁"],
+  ["out of stock", "/aʊt əv stɑːk/", "아웃 오브 스탁", "재고가 없는, 품절된", "The blue model is currently out of stock.", "파란색 모델은 현재 품절되었습니다.", "더 블루 마-델 이즈 커-런트-리 아웃 오브 스탁"],
+  ["goods", "/ɡʊdz/", "구즈", "상품, 물품", "All goods in the store are on sale today.", "오늘 매장의 모든 상품이 할인 중이다.", "올 구즈 인 더 스토어 아 온 세일 투-데이"],
+  ["merchandise", "/ˈmɜːrtʃəndaɪz/", "머-천-다이즈", "상품, 판매 물품", "The merchandise was damaged during shipping.", "상품이 배송 중에 손상되었다.", "더 머-천-다이즈 워즈 데-미지드 두-링 시-핑"],
+  ["counter", "/ˈkaʊntər/", "카운-터", "계산대, 카운터", "Please bring your receipt to the service counter.", "영수증을 서비스 카운터로 가져와 주세요.", "플리즈 브링 유어 리-시트 투 더 서-비스 카운-터"],
+  ["buyer", "/ˈbaɪər/", "바이-어", "구매자", "The buyer requested a discount on the bulk order.", "구매자가 대량 주문에 대해 할인을 요청했다.", "더 바이-어 리-퀘스-티드 어 디스-카운트 온 더 벌크 오-더"],
+  ["vendor", "/ˈvendər/", "벤-더", "판매상, 공급업체", "The vendor delivered the goods on time.", "판매상이 상품을 제때 배달했다.", "더 벤-더 디-리-버드 더 구즈 온 타임"],
+  ["buy", "/baɪ/", "바이", "사다, 구입하다", "You can buy tickets at the entrance.", "입구에서 티켓을 살 수 있다.", "유 캔 바이 티-킷츠 앳 디 엔-트런스"]
+];

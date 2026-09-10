@@ -1,0 +1,38 @@
+window.VOCAB_UNITS = window.VOCAB_UNITS || {};
+// UNIT 26. 환경과 에너지 (33 words)
+// 형식: [단어, IPA 발음기호, 한글발음, 뜻, 토익 예문, 예문 해석, 예문 한글 발음]
+window.VOCAB_UNITS[26] = [
+  ["climate", "/ˈklaɪmət/", "클라-이-멋", "기후", "The climate here is warm and humid.", "여기 기후는 따뜻하고 습하다.", "더 클라-이-멋 히어 이즈 웜 앤드 휴-미드"],
+  ["weather", "/ˈweðər/", "웨-더", "날씨", "The weather delayed our outdoor event.", "날씨 때문에 우리 야외 행사가 연기되었다.", "더 웨-더 디-레이드 아워 아웃-도어 이-벤트"],
+  ["temperature", "/ˈtemprətʃər/", "템-프러-처", "기온, 온도", "The temperature dropped below freezing.", "기온이 영하로 떨어졌다.", "더 템-프러-처 드랍트 비-로우 프리-징"],
+  ["season", "/ˈsiːzn/", "시-즌", "계절", "Fruits are cheaper in season.", "제철 과일은 더 싸다.", "프루츠 아 치-퍼 인 시-즌"],
+  ["nature", "/ˈneɪtʃər/", "네이-처", "자연", "The resort is surrounded by nature.", "그 리조트는 자연으로 둘러싸여 있다.", "더 리-조트 이즈 서-라운-디드 바이 네이-처"],
+  ["natural", "/ˈnætʃrəl/", "내-처-럴", "자연의, 천연의", "The product is made from natural materials.", "그 제품은 천연 재료로 만들어진다.", "더 프라-덕트 이즈 메이드 프럼 내-처-럴 머-티-리-얼즈"],
+  ["earth", "/ɜːrθ/", "어스", "지구, 흙", "The satellite orbits the earth.", "그 위성은 지구를 돈다.", "더 새-털-라이트 오-빗츠 디 어스"],
+  ["planet", "/ˈplænɪt/", "플래-닛", "행성", "Protecting the planet is everyone's duty.", "지구를 보호하는 것은 모두의 의무이다.", "프러-텍-팅 더 플래-닛 이즈 에-브리-원즈 두-티"],
+  ["ocean", "/ˈoʊʃn/", "오우-션", "대양, 바다", "The ocean covers most of the earth.", "바다는 지구의 대부분을 덮는다.", "디 오우-션 커-버즈 모우스트 오브 디 어스"],
+  ["sea", "/siː/", "시", "바다", "The hotel overlooks the sea.", "그 호텔은 바다를 내려다본다.", "더 호우-텔 오우-버-룩스 더 시"],
+  ["river", "/ˈrɪvər/", "리-버", "강", "The river runs through the center of the city.", "그 강은 도시 한가운데를 흐른다.", "더 리-버 런즈 쓰루 더 센-터 오브 더 시-티"],
+  ["lake", "/leɪk/", "레이크", "호수", "We swam in the lake last summer.", "우리는 지난여름 그 호수에서 수영했다.", "위 스웜 인 더 레이크 래스트 서-머"],
+  ["forest", "/ˈfɔːrɪst/", "포-리스트", "숲", "The forest is home to many wild animals.", "그 숲은 많은 야생 동물의 서식지이다.", "더 포-리스트 이즈 호움 투 메-니 와일드 애-니-멀즈"],
+  ["mountain", "/ˈmaʊntn/", "마운-틴", "산", "The mountain is covered with snow all year.", "그 산은 일 년 내내 눈으로 덮여 있다.", "더 마운-틴 이즈 커-버드 위드 스노우 올 이어"],
+  ["animal", "/ˈænɪml/", "애-니-멀", "동물", "The zoo protects endangered animals.", "그 동물원은 멸종 위기 동물을 보호한다.", "더 주 프러-텍츠 인-데인-저드 애-니-멀즈"],
+  ["wildlife", "/ˈwaɪldlaɪf/", "와일드-라이프", "야생 동물", "The national park protects local wildlife.", "국립공원이 지역 야생 동물을 보호한다.", "더 내-셔-널 파크 프러-텍츠 로우-컬 와일드-라이프"],
+  ["species", "/ˈspiːʃiːz/", "스피-시-즈", "종, 종류", "This species is found only in this area.", "이 종은 이 지역에서만 발견된다.", "디스 스피-시-즈 이즈 파운드 온-리 인 디스 에-리-어"],
+  ["ecosystem", "/ˈiːkoʊsɪstəm/", "이-코우-시스-텀", "생태계", "Pollution harms the marine ecosystem.", "오염은 해양 생태계를 해친다.", "퍼-루-션 함즈 더 머-린 이-코우-시스-텀"],
+  ["recycle", "/ˌriːˈsaɪkl/", "리-사이-클", "재활용하다", "Please recycle paper and plastic bottles.", "종이와 플라스틱 병을 재활용해 주세요.", "플리즈 리-사이-클 페이-퍼 앤드 플래스-틱 바-틀즈"],
+  ["recycling", "/ˌriːˈsaɪklɪŋ/", "리-사이-클링", "재활용", "The city started a new recycling program.", "그 도시는 새로운 재활용 프로그램을 시작했다.", "더 시-티 스타-티드 어 누 리-사이-클링 프로우-그램"],
+  ["waste", "/weɪst/", "웨이스트", "낭비, 쓰레기", "The factory produces a lot of waste.", "그 공장은 많은 쓰레기를 배출한다.", "더 팩-터-리 프러-두-시즈 어 랏 오브 웨이스트"],
+  ["garbage", "/ˈɡɑːrbɪdʒ/", "가-비지", "쓰레기", "The garbage truck comes every Tuesday.", "쓰레기차는 매주 화요일에 온다.", "더 가-비지 트럭 컴즈 에-브리 튜즈-데이"],
+  ["trash", "/træʃ/", "트래시", "쓰레기, 버리다", "Please take out the trash before leaving.", "떠나기 전에 쓰레기를 내다 버리세요.", "플리즈 테이크 아웃 더 트래시 비-포 리-빙"],
+  ["landfill", "/ˈlændfɪl/", "랜드-필", "매립지", "The landfill is almost full.", "그 매립지가 거의 가득 찼다.", "더 랜드-필 이즈 올-모우스트 풀"],
+  ["emission", "/ɪˈmɪʃn/", "이-미-션", "배출, 배출량", "The new law limits carbon emissions.", "새 법은 탄소 배출을 제한한다.", "더 누 로 리-밋츠 카-번 이-미-션즈"],
+  ["greenhouse gas", "/ˈɡriːnhaʊs ɡæs/", "그린-하우스 개스", "온실가스", "Greenhouse gases cause global warming.", "온실가스는 지구 온난화를 일으킨다.", "그린-하우스 개-시즈 코즈 글로우-블 워-밍"],
+  ["carbon", "/ˈkɑːrbən/", "카-번", "탄소", "We need to reduce our carbon footprint.", "우리는 탄소 발자국을 줄여야 한다.", "위 니드 투 리-두스 아워 카-번 풋-프린트"],
+  ["solar", "/ˈsoʊlər/", "소우-러", "태양의, 태양광의", "The roof is covered with solar panels.", "지붕은 태양광 패널로 덮여 있다.", "더 루프 이즈 커-버드 위드 소우-러 패-널즈"],
+  ["wind power", "/ˈwɪnd paʊər/", "윈드 파우-어", "풍력", "The country invests in wind power.", "그 나라는 풍력에 투자한다.", "더 컨-트리 인-베스츠 인 윈드 파우-어"],
+  ["electricity", "/ɪˌlekˈtrɪsəti/", "일-렉-트리-서-티", "전기", "The storm cut off the electricity.", "폭풍으로 전기가 끊겼다.", "더 스톰 컷 오프 디 일-렉-트리-서-티"],
+  ["electric", "/ɪˈlektrɪk/", "일-렉-트릭", "전기의, 전기로 움직이는", "Electric buses are common in this city.", "전기 버스는 이 도시에서 흔하다.", "일-렉-트릭 버-시즈 아 카-먼 인 디스 시-티"],
+  ["fuel", "/ˈfjuːəl/", "퓨-얼", "연료", "The price of fuel rose again this month.", "이번 달 연료 가격이 또 올랐다.", "더 프라이스 오브 퓨-얼 로우즈 어-겐 디스 먼스"],
+  ["sustainable", "/səˈsteɪnəbl/", "서-스테이-너-블", "지속 가능한", "The company uses sustainable packaging.", "그 회사는 지속 가능한 포장재를 사용한다.", "더 컴-퍼-니 유-지즈 서-스테이-너-블 패-키-징"]
+];
