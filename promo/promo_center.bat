@@ -1,6 +1,5 @@
 @echo off
 setlocal EnableExtensions
-chcp 65001 >nul
 pushd "%~dp0"
 
 set "PYTHON="
@@ -12,8 +11,8 @@ if not defined PYTHON (
 )
 
 if not defined PYTHON (
-  echo [오류] Python 3을 찾지 못했습니다.
-  echo        https://www.python.org/downloads/ 에서 설치한 뒤 다시 실행하세요.
+  echo [ERROR] Python 3 was not found.
+  echo         Install it from https://www.python.org/downloads/ and run again.
   pause
   popd
   exit /b 1
@@ -27,7 +26,7 @@ if "%~1"=="" (
 set "EXIT_CODE=%ERRORLEVEL%"
 
 echo.
-if not "%EXIT_CODE%"=="0" echo [오류] 작업이 실패했습니다. 위 로그를 확인하세요.
+if not "%EXIT_CODE%"=="0" echo [ERROR] The task failed. Check the log above.
 pause
 popd
-exit /b %EXIT_CODE%
+exit /b %EXIT_CODE%
