@@ -2,9 +2,11 @@
 promo/config.json
 promo/.secrets/
 
-# 예약 게시·게시 이력 (개인 운영 데이터)
+# 예약 게시·게시 이력·성과 (개인 운영 데이터)
 promo/scheduled_posts.json
 promo/publish_history.csv
+promo/performance.json
+promo/reports/
 
 # Python 캐시
 __pycache__/

@@ -7,6 +7,7 @@
     "default_unit": 1,
     "default_words": 5,
     "default_theme": "blue",
+    "default_style": "classic",
     "default_voice": "en-US-JennyNeural",
     "default_tts": false,
     "default_privacy": "unlisted",
@@ -19,6 +20,7 @@
     "privacy": "unlisted",
     "category_id": "27",
     "include_shorts_tag": true,
+    "api_key": "",
     "tags": ["TOEIC", "토익", "영어단어", "영어공부"],
     "client_secret_file": "client_secret.json",
     "token_file": "youtube_token.json"

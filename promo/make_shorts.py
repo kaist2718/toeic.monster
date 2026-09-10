@@ -83,20 +83,43 @@ EMOJI_FONT_CANDIDATES = [
 
 # ---------------------------------------------------------------- themes ----
 THEMES = {
-    "blue":   ((30, 58, 138), (49, 46, 129)),    # indigo
-    "purple": ((76, 29, 149), (131, 24, 67)),    # violet→rose
-    "green":  ((6, 78, 59), (19, 78, 74)),       # emerald→teal
-    "orange": ((124, 45, 18), (154, 52, 18)),    # amber→orange
-    "pink":   ((131, 24, 67), (80, 7, 36)),      # rose→dark rose
-    "navy":   ((15, 23, 42), (30, 27, 75)),      # slate→indigo
+    "blue":     ((30, 58, 138), (49, 46, 129)),     # indigo
+    "purple":   ((76, 29, 149), (131, 24, 67)),     # violet→rose
+    "green":    ((6, 78, 59), (19, 78, 74)),        # emerald→teal
+    "orange":   ((124, 45, 18), (154, 52, 18)),     # amber→orange
+    "pink":     ((131, 24, 67), (80, 7, 36)),       # rose→dark rose
+    "navy":     ((15, 23, 42), (30, 27, 75)),       # slate→indigo
+    "midnight": ((2, 6, 23), (15, 23, 42)),         # deep space
+    "sunset":   ((124, 45, 18), (76, 29, 149)),     # amber→violet
+    "mint":     ((4, 47, 46), (6, 78, 59)),         # dark teal
+    "wine":     ((76, 5, 25), (45, 9, 36)),         # deep red
 }
 ACCENT = {
-    "blue":   (147, 197, 253),
-    "purple": (216, 180, 254),
-    "green":  (110, 231, 183),
-    "orange": (253, 186, 116),
-    "pink":   (249, 168, 212),
-    "navy":   (147, 197, 253),
+    "blue":     (147, 197, 253),
+    "purple":   (216, 180, 254),
+    "green":    (110, 231, 183),
+    "orange":   (253, 186, 116),
+    "pink":     (249, 168, 212),
+    "navy":     (147, 197, 253),
+    "midnight": (129, 140, 248),
+    "sunset":   (253, 186, 116),
+    "mint":     (110, 231, 183),
+    "wine":     (251, 113, 133),
+}
+
+# ---------------------------------------------------------------- styles ----
+STYLE_NAMES = ("classic", "modern", "minimal")
+# 카드 레이아웃 — y 좌표와 옵션을 스타일별로 정리합니다.
+LAYOUT = {
+    "classic": dict(chip=True, deco=True, card=False, word_y=560, ipa_y=790, ipa_pill=True,
+                     pron_dy=34, line_y=1120, mean_y=1170, label_y=1330, en_y=1395, en_dy=72,
+                     tr_max_y=1610, tr_dy=58, unit_y=None),
+    "modern":  dict(chip=True, deco=False, card=True, word_y=340, ipa_y=580, ipa_pill=True,
+                     pron_dy=30, line_y=840, mean_y=900, label_y=1070, en_y=1135, en_dy=66,
+                     tr_max_y=1500, tr_dy=54, unit_y=None),
+    "minimal": dict(chip=False, deco=False, card=False, word_y=560, ipa_y=780, ipa_pill=False,
+                     pron_dy=34, line_y=1120, mean_y=1170, label_y=1330, en_y=1395, en_dy=72,
+                     tr_max_y=1610, tr_dy=58, unit_y=130),
 }
 
 
@@ -229,29 +252,40 @@ def draw_deco(draw):
 
 
 # ---------------------------------------------------------------- slide ----
-def render_slide(idx: int, total: int, unit_no: int, unit_info: dict, wd: list, theme: str, font_path: str | None) -> Image.Image:
+def render_slide(idx: int, total: int, unit_no: int, unit_info: dict, wd: list,
+                 theme: str, font_path: str | None, style: str = "classic") -> Image.Image:
     global ACCENT_THEME
     ACCENT_THEME = ACCENT[theme]
+    ly = LAYOUT.get(style, LAYOUT["classic"])
     top, bottom = THEMES[theme]
     img = vertical_gradient((W, H), top, bottom)
     draw = ImageDraw.Draw(img, "RGBA")
-    draw_deco(draw)
+    if ly["deco"]:
+        draw_deco(draw)
 
     word, ipa, kor_pron, meaning, en_ex, kr_tr = wd[0], wd[1], wd[2], wd[3], wd[4], wd[5]
 
-    # ── 상단: 유닛 칩 ──
+    # ── 상단: 유닛 칩 (classic/modern) 또는 제목 텍스트 (minimal) ──
     icon_font = load_emoji_font(64)
     title_font = load_font(font_path, 40, bold=True)
     title = f"UNIT {unit_no} · {unit_info.get('title', '')}"
-    chip = (255, 255, 255, 36)  # rgba(255,255,255,0.14)
-    tw = text_width(draw, title, title_font)
-    chip_w = int(tw + 96)
-    chip_h = 78
-    cx0 = W // 2 - chip_w // 2
-    draw.rounded_rectangle([cx0, 96, cx0 + chip_w, 96 + chip_h], radius=39, fill=chip)
-    if icon_font:
-        draw.text((cx0 + 30, 96 + 6), unit_info.get("icon", "📚"), font=icon_font)
-    draw.text((cx0 + 86, 96 + 17), title, font=title_font, fill=(255, 255, 255))
+    if ly["chip"]:
+        chip = (255, 255, 255, 36)  # rgba(255,255,255,0.14)
+        tw = text_width(draw, title, title_font)
+        chip_w = int(tw + 96)
+        cx0 = W // 2 - chip_w // 2
+        draw.rounded_rectangle([cx0, 96, cx0 + chip_w, 174], radius=39, fill=chip)
+        if icon_font:
+            draw.text((cx0 + 30, 102), unit_info.get("icon", "📚"), font=icon_font)
+        draw.text((cx0 + 86, 113), title, font=title_font, fill=(255, 255, 255))
+    elif ly["unit_y"]:
+        tw = text_width(draw, title, title_font)
+        draw.text((W / 2 - tw / 2, ly["unit_y"]), title, font=title_font, fill=(255, 255, 255, 190))
+
+    # ── modern: 글래스 카드 + 좌측 액센트 바 ──
+    if ly["card"]:
+        draw.rounded_rectangle([60, 180, W - 60, 1700], radius=56, fill=(255, 255, 255, 22))
+        draw.rounded_rectangle([60, 180, 96, 1700], radius=18, fill=ACCENT_THEME + (70,))
 
     # ── 단어 ──
     word_font = load_font(font_path, 148, bold=True)
@@ -259,21 +293,25 @@ def render_slide(idx: int, total: int, unit_no: int, unit_info: dict, wd: list, 
     while word_w > W - 140 and word_font.size > 60:
         word_font = load_font(font_path, word_font.size - 12, bold=True)
         word_w = text_width(draw, word, word_font)
-    draw.text((W / 2 - word_w / 2, 560), word, font=word_font, fill=(255, 255, 255))
+    draw.text((W / 2 - word_w / 2, ly["word_y"]), word, font=word_font, fill=(255, 255, 255))
 
     # ── IPA + 한글 발음 ──
     ipa_font = load_font(font_path, 54, bold=False)
-    ipa_pill_bg = (0, 0, 0, 70)
-    y = 790
-    y = draw_pill(draw, W // 2, y, ipa, ipa_font, (235, 240, 255), ipa_pill_bg)
+    y = ly["ipa_y"]
+    if ly["ipa_pill"]:
+        y = draw_pill(draw, W // 2, y, ipa, ipa_font, (235, 240, 255), (0, 0, 0, 70))
+    else:
+        iw = text_width(draw, ipa, ipa_font)
+        draw.text((W / 2 - iw / 2, y), ipa, font=ipa_font, fill=(215, 225, 250))
+        y += 80
     pron_font = load_font(font_path, 46, bold=False)
     if kor_pron:
         ptext = f"발음: {kor_pron}"
         pw = text_width(draw, ptext, pron_font)
-        draw.text((W / 2 - pw / 2, y + 34), ptext, font=pron_font, fill=(215, 225, 250))
+        draw.text((W / 2 - pw / 2, y + ly["pron_dy"]), ptext, font=pron_font, fill=(215, 225, 250))
 
     # ── 구분선 ──
-    draw.line([200, 1120, W - 200, 1120], fill=(255, 255, 255, 70), width=3)
+    draw.line([200, ly["line_y"], W - 200, ly["line_y"]], fill=(255, 255, 255, 70), width=3)
 
     # ── 뜻 ──
     mean_font = load_font(font_path, 88, bold=True)
@@ -281,21 +319,21 @@ def render_slide(idx: int, total: int, unit_no: int, unit_info: dict, wd: list, 
     while mw > W - 160 and mean_font.size > 44:
         mean_font = load_font(font_path, mean_font.size - 8, bold=True)
         mw = text_width(draw, meaning, mean_font)
-    draw.text((W / 2 - mw / 2, 1170), meaning, font=mean_font, fill=ACCENT_THEME)
+    draw.text((W / 2 - mw / 2, ly["mean_y"]), meaning, font=mean_font, fill=ACCENT_THEME)
 
     # ── 예문 ──
     label_font = load_font(font_path, 34, bold=True)
     lbl = "TOEIC 예문"
-    draw.text((120, 1330), lbl, font=label_font, fill=(255, 255, 255, 190))
+    draw.text((120, ly["label_y"]), lbl, font=label_font, fill=(255, 255, 255, 190))
     en_font = load_font(font_path, 50, bold=False)
     en_lines = wrap_text(en_ex, en_font, W - 240, draw)
     while len(en_lines) > 5 and en_font.size > 30:
         en_font = load_font(font_path, en_font.size - 4, bold=False)
         en_lines = wrap_text(en_ex, en_font, W - 240, draw)
-    y = 1395
+    y = ly["en_y"]
     for line in en_lines[:5]:
         draw.text((120, y), line, font=en_font, fill=(255, 255, 255))
-        y += 72
+        y += ly["en_dy"]
 
     # ── 해석 ──
     tr_font = load_font(font_path, 40, bold=False)
@@ -303,10 +341,10 @@ def render_slide(idx: int, total: int, unit_no: int, unit_info: dict, wd: list, 
     while len(tr_lines) > 3 and tr_font.size > 26:
         tr_font = load_font(font_path, tr_font.size - 4, bold=False)
         tr_lines = wrap_text(kr_tr, tr_font, W - 240, draw)
-    y = min(y + 30, 1610)
+    y = min(y + 30, ly["tr_max_y"])
     for line in tr_lines[:3]:
         draw.text((120, y), line, font=tr_font, fill=(200, 210, 235))
-        y += 58
+        y += ly["tr_dy"]
 
     # ── 푸터 ──
     foot_font = load_font(font_path, 44, bold=True)
@@ -378,6 +416,30 @@ def run_ffmpeg(args: list[str]) -> bool:
     return True
 
 
+def mix_final(silent: Path, tts_wav: Path | None, music: Path | None,
+              music_volume: float, out: Path) -> bool:
+    """TTS·배경음악을 영상에 병합합니다. 둘 다 없으면 무성 영상을 그대로 복사합니다."""
+    if tts_wav is None and music is None:
+        out.write_bytes(silent.read_bytes())
+        return True
+    if tts_wav is not None and music is not None:
+        fc = (f"[1:a]volume=1.0[voice];"
+              f"[2:a]volume={music_volume},afade=t=in:st=0:d=1[bg];"
+              f"[voice][bg]amix=inputs=2:duration=first:dropout_transition=3[aout]")
+        return run_ffmpeg(["-i", str(silent), "-i", str(tts_wav), "-i", str(music),
+                           "-filter_complex", fc, "-map", "0:v", "-map", "[aout]",
+                           "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-shortest", str(out)])
+    if music is not None:
+        dur = probe_duration(silent) or 10.0
+        fc = (f"[1:a]volume={music_volume},afade=t=in:st=0:d=1,"
+              f"afade=t=out:st={max(0.0, dur - 1.5):.2f}:d=1.5[aout]")
+        return run_ffmpeg(["-i", str(silent), "-stream_loop", "-1", "-i", str(music),
+                           "-filter_complex", fc, "-map", "0:v", "-map", "[aout]",
+                           "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-t", f"{dur:.2f}", str(out)])
+    return run_ffmpeg(["-i", str(silent), "-i", str(tts_wav),
+                       "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-shortest", str(out)])
+
+
 # ---------------------------------------------------------------- main ----
 def main() -> None:
     ap = argparse.ArgumentParser(description="toeic.monster 단어 카드 쇼츠 영상 생성기 (1080x1920, 9:16)")
@@ -386,11 +448,14 @@ def main() -> None:
     ap.add_argument("--slide-sec", type=float, default=6.0, help="슬라이드당 길이 초 (기본 6)")
     ap.add_argument("--out", help="출력 mp4 경로 (기본: assets/shorts/unitNN_shorts.mp4)")
     ap.add_argument("--bg", default="blue", choices=sorted(THEMES), help="배경 테마")
+    ap.add_argument("--style", default="classic", choices=STYLE_NAMES, help="카드 스타일: classic/modern/minimal")
     ap.add_argument("--font", help="한국어 폰트 ttf/ttc 경로 (기본: 시스템 자동 탐색)")
     ap.add_argument("--seed", type=int, help="단어 선택 시드 (재현용)")
     ap.add_argument("--index", type=int, help="특정 단어 인덱스만 사용 (0부터, 테스트용)")
     ap.add_argument("--tts", action="store_true", help="영어 TTS 음성 추가 (edge-tts, 인터넷 필요)")
     ap.add_argument("--voice", default="en-US-JennyNeural", help="TTS 목소리 (기본 en-US-JennyNeural)")
+    ap.add_argument("--music", help="배경음악 오디오 파일(mp3/wav) 경로 (선택)")
+    ap.add_argument("--music-volume", type=float, default=0.15, help="배경음악 볼륨 0~1 (기본 0.15)")
     ap.add_argument("--dry-run", action="store_true", help="계획만 출력하고 종료")
     args = ap.parse_args()
 
@@ -413,6 +478,14 @@ def main() -> None:
         n = min(args.words, len(words))
         picked = rng.sample(words, n)
 
+    music = Path(args.music) if args.music else None
+    if music is not None:
+        music = music if music.is_absolute() else PROMO / music
+        if not music.exists():
+            sys.exit(f"배경음악 파일을 찾을 수 없습니다: {music}")
+        if not 0.0 < args.music_volume <= 1.0:
+            sys.exit("--music-volume 은 0 초과 1 이하로 지정해 주세요.")
+
     total_dur = len(picked) * args.slide_sec
     out = Path(args.out) if args.out else OUT_DIR / f"unit{unit_no:02d}_shorts.mp4"
     out = out if out.is_absolute() else PROMO / out
@@ -425,7 +498,10 @@ def main() -> None:
     log(f"단어  : {len(picked)}개 ({', '.join(w[0] for w in picked[:6])}{' …' if len(picked) > 6 else ''})")
     log(f"길이  : 약 {total_dur:.0f}초 ({len(picked)}장 × {args.slide_sec:g}초), {FPS}fps")
     log(f"출력  : {out} ({W}x{H}, 9:16 세로)")
+    log(f"스타일: {args.style}")
     log(f"음성  : {'edge-tts (' + args.voice + ')' if args.tts else '없음 (--tts 로 추가)'}")
+    if music:
+        log(f"배경음악: {music} (볼륨 {args.music_volume:g})")
     if args.dry_run:
         log("\n실제 생성하려면 --dry-run 을 빼고 실행하세요.")
         return
@@ -434,7 +510,7 @@ def main() -> None:
     try:
         # ── 슬라이드 렌더링 + 프레임 출력 ──
         try:
-            slides = [render_slide(i, len(picked), unit_no, unit_info, w, args.bg, args.font)
+            slides = [render_slide(i, len(picked), unit_no, unit_info, w, args.bg, args.font, args.style)
                       for i, w in enumerate(picked)]
         except RuntimeError as exc:
             fail(str(exc))
@@ -470,22 +546,19 @@ def main() -> None:
                            "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(silent)]):
             return
 
-        # ── TTS 음성 병합 ──
+        # ── TTS·배경음악 병합 ──
+        tts_wav = None
         if args.tts:
             audio_files = [tmp / f"audio_{i}.wav" for i in range(len(picked))]
             concat_list = tmp / "audio_list.txt"
             concat_list.write_text(
                 "".join(f"file '{af.as_posix()}'\n" for af in audio_files), encoding="utf-8")
-            full_audio = tmp / "full_audio.wav"
+            tts_wav = tmp / "full_audio.wav"
             if not run_ffmpeg(["-f", "concat", "-safe", "0", "-i", str(concat_list),
-                               "-c", "copy", str(full_audio)]):
+                               "-c", "copy", str(tts_wav)]):
                 return
-            if not run_ffmpeg(["-i", str(silent), "-i", str(full_audio),
-                               "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
-                               "-shortest", str(out)]):
-                return
-        else:
-            out.write_bytes(silent.read_bytes())
+        if not mix_final(silent, tts_wav, music, args.music_volume, out):
+            return
 
         size_mb = out.stat().st_size / (1024 * 1024)
         ok(f"생성 완료: {out} ({size_mb:.1f}MB, {W}x{H})")

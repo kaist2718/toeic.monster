@@ -54,6 +54,9 @@ SECRETS_DIR = PROMO / ".secrets"
 SHORTS_DIR = PROMO / "assets" / "shorts"
 SCHEDULE_FILE = PROMO / "scheduled_posts.json"
 HISTORY_FILE = PROMO / "publish_history.csv"
+REPORT_DIR = PROMO / "reports"
+PERF_FILE = PROMO / "performance.json"
+SCHED_TASK_NAME = "toeic_monster_promo"
 HISTORY_FIELDS = [
     "timestamp", "event", "status", "schedule_id", "scheduled_at", "platform",
     "video", "unit", "title", "url", "message",
@@ -680,6 +683,52 @@ def choose_video_menu() -> Path | None:
             warn("목록에 있는 번호를 입력해 주세요.")
 
 
+def run_batch_menu(cfg: dict) -> None:
+    """메뉴 12: 여러 영상을 선택해 같은 UNIT·플랫폼으로 순차 게시합니다."""
+    videos = list_videos_menu()
+    if not videos:
+        warn("assets/shorts 폴더에 mp4 영상이 없습니다.")
+        return
+    log("\n일괄 게시할 영상 (쉼표 구분, 범위 가능 — 예: 1,3,5 또는 1-3)")
+    for i, video in enumerate(videos, 1):
+        size = video.stat().st_size / (1024 * 1024)
+        log(f"  {i}. {video.name} ({size:.1f}MB)")
+    raw = ask_menu("번호", "1")
+    selected: list[int] = []
+    for token in raw.replace(" ", "").split(","):
+        if not token:
+            continue
+        if "-" in token:
+            a, _, b = token.partition("-")
+            try:
+                selected.extend(range(int(a), int(b) + 1))
+            except ValueError:
+                continue
+        else:
+            try:
+                selected.append(int(token))
+            except ValueError:
+                continue
+    picked = [videos[i - 1] for i in dict.fromkeys(selected) if 1 <= i <= len(videos)]
+    if not picked:
+        warn("선택한 영상이 없습니다.")
+        return
+    unit = choose_unit()
+    platforms = choose_platforms_menu(cfg)
+    dry_run = ask_yes_no("dry-run으로 미리 확인할까요?", True)
+    if not dry_run:
+        log("⚠️ 실제 게시를 진행합니다. 각 플랫폼에 콘텐츠가 업로드됩니다.")
+        if not ask_yes_no(f"{len(picked)}개 영상을 정말 게시할까요?", False):
+            log("일괄 게시를 취소했습니다.")
+            return
+    for video in picked:
+        log(f"\n▶ {video.name} 게시 시작")
+        v_args = argparse.Namespace(video=str(video), unit=unit, title=None, desc=None,
+                                    platforms=platforms, dry_run=dry_run, youtube_privacy=None)
+        publish_single(cfg, v_args, video)
+    ok(f"일괄 게시 처리 완료: {len(picked)}개 영상")
+
+
 def run_menu_command(command: list[str]) -> bool:
     log("\n$ " + " ".join(f'"{x}"' if " " in x else x for x in command))
     result = subprocess.run(command, cwd=str(PROMO))
@@ -687,17 +736,343 @@ def run_menu_command(command: list[str]) -> bool:
 
 
 def show_history_menu() -> None:
-    if not HISTORY_FILE.exists():
+    rows = read_history_rows()
+    if not rows:
         log("게시 이력이 아직 없습니다.")
         return
-    rows = []
-    with HISTORY_FILE.open("r", newline="", encoding="utf-8-sig") as f:
-        rows = list(csv.DictReader(f))
     log(f"\n게시 이력 {len(rows)}건 · {HISTORY_FILE.name}")
     for row in rows[-10:][::-1]:
         log(f"  {row.get('timestamp', '')} | {row.get('event', '')} | {row.get('status', '')} | "
             f"{row.get('platform', '')} | {row.get('title', '')[:45]}")
     log(f"전체 CSV 열기: {HISTORY_FILE}")
+
+
+def read_history_rows() -> list[dict]:
+    if not HISTORY_FILE.exists():
+        return []
+    with HISTORY_FILE.open("r", newline="", encoding="utf-8-sig") as f:
+        return list(csv.DictReader(f))
+
+
+def write_history_report(open_after: bool = True) -> Path | None:
+    """게시 이력 CSV를 요약 통계와 함께 HTML 리포트로 만듭니다."""
+    rows = read_history_rows()
+    if not rows:
+        warn("게시 이력이 아직 없어 리포트를 만들 수 없습니다.")
+        return None
+    publishes = [r for r in rows if r.get("event") == "publish"]
+    status_count: dict[str, int] = {}
+    platform_count: dict[str, int] = {}
+    total_views = 0
+    for r in publishes:
+        status = r.get("status", "") or ""
+        status_count[status] = status_count.get(status, 0) + 1
+        platform = r.get("platform", "") or ""
+        if platform:
+            platform_count[platform] = platform_count.get(platform, 0) + 1
+        try:
+            total_views += int(r.get("view_count", 0) or 0)
+        except (TypeError, ValueError):
+            pass
+    names = {"yt": "YouTube Shorts", "ig": "Instagram Reels", "tt": "TikTok"}
+    cards = "".join(
+        f'<div class="card"><b>{v}</b><span>{k}</span></div>'
+        for k, v in [("총 게시", len(publishes)),
+                     ("성공", status_count.get("success", 0)),
+                     ("실패", status_count.get("failed", 0)),
+                     ("dry-run", status_count.get("dry-run", 0))])
+    plat = "".join(
+        f"<li>{names.get(k, k)}: {v}건</li>" for k, v in sorted(platform_count.items()))
+    table_rows = "".join(
+        f"<tr><td>{esc_html(r.get('timestamp', ''))}</td>"
+        f"<td>{esc_html(names.get(r.get('platform', ''), r.get('platform', '')))}</td>"
+        f"<td>{esc_html(r.get('status', ''))}</td>"
+        f"<td>{esc_html(r.get('title', ''))[:50]}</td>"
+        f"<td>{'<a href="' + esc_html(r.get('url', '')) + '" target="_blank" rel="noopener">링크</a>' if r.get('url') else ''}</td></tr>"
+        for r in publishes[-100:][::-1])
+    html = f"""<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>게시 이력 리포트 · toeic.monster</title>
+<style>
+  body {{ font-family: 'Malgun Gothic', sans-serif; background: #0b1220; color: #e6edf7; margin: 0; padding: 32px; }}
+  h1 {{ font-size: 22px; }} .sub {{ color: #8fa3c0; font-size: 13px; margin-bottom: 24px; }}
+  .cards {{ display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }}
+  .card {{ background: #16233a; border: 1px solid #24344f; border-radius: 12px; padding: 14px 20px; min-width: 100px; }}
+  .card b {{ display: block; font-size: 24px; color: #7dd3fc; }} .card span {{ font-size: 12px; color: #8fa3c0; }}
+  ul {{ color: #aebfd8; font-size: 13px; margin-bottom: 24px; }}
+  table {{ width: 100%; border-collapse: collapse; font-size: 13px; }}
+  th, td {{ text-align: left; padding: 8px 10px; border-bottom: 1px solid #24344f; }}
+  th {{ color: #8fa3c0; font-size: 12px; }} a {{ color: #7dd3fc; }}
+</style>
+</head>
+<body>
+<h1>📊 게시 이력 리포트</h1>
+<div class="sub">생성: {now_iso()} · 총 {len(rows)}건 이벤트 중 게시 {len(publishes)}건</div>
+<div class="cards">{cards}</div>
+<ul>{plat}</ul>
+<table><thead><tr><th>시각</th><th>플랫폼</th><th>상태</th><th>제목</th><th>링크</th></tr></thead><tbody>{table_rows}</tbody></table>
+</body></html>"""
+    REPORT_DIR.mkdir(parents=True, exist_ok=True)
+    out = REPORT_DIR / "publish_report.html"
+    out.write_text(html, encoding="utf-8")
+    ok(f"게시 이력 리포트 생성: {out}")
+    if open_after:
+        open_path(out)
+    return out
+
+
+def esc_html(value: str) -> str:
+    return (str(value).replace("&", "&amp;").replace("<", "&lt;")
+            .replace(">", "&gt;").replace('"', "&quot;"))
+
+
+# --------------------------------------------------------------------------- #
+# 게시 성과 추적
+# --------------------------------------------------------------------------- #
+def fetch_youtube_stats(cfg: dict, video_ids: list[str]) -> list[dict]:
+    """YouTube Data API 로 영상 조회수·좋아요를 수집합니다 (공개 데이터라 API key 사용)."""
+    yt = cfg.get("youtube", {})
+    api_key = str(yt.get("api_key") or "").strip()
+    try:
+        from googleapiclient.discovery import build
+    except ImportError:
+        warn("google-api-python-client 미설치 — pip install -r requirements.txt")
+        return []
+    if api_key:
+        service = build("youtube", "v3", developerKey=api_key)
+    else:
+        # OAuth 토큰 폴백 (업로드 스코프 토큰은 읽기가 제한될 수 있어 실패 시 안내)
+        try:
+            from google.oauth2.credentials import Credentials
+            from google.auth.transport.requests import Request
+        except ImportError:
+            warn("google-auth 미설치 — pip install -r requirements.txt")
+            return []
+        token_file = SECRETS_DIR / (yt.get("token_file") or "youtube_token.json")
+        if not token_file.exists():
+            warn("YouTube 성과 수집에 필요: config.json 의 youtube.api_key 를 설정하거나 OAuth 토큰을 준비하세요.")
+            return []
+        try:
+            creds = Credentials.from_authorized_user_file(str(token_file))
+            if creds.expired and creds.refresh_token:
+                creds.refresh(Request())
+            service = build("youtube", "v3", credentials=creds)
+        except Exception as exc:
+            warn(f"YouTube OAuth 토큰을 사용할 수 없습니다: {exc} — youtube.api_key 설정을 권장합니다.")
+            return []
+    items: list[dict] = []
+    for i in range(0, len(video_ids), 50):
+        resp = service.videos().list(part="statistics,snippet",
+                                     id=",".join(video_ids[i:i + 50])).execute()
+        for item in resp.get("items", []):
+            st = item.get("statistics", {})
+            items.append({
+                "platform": "yt",
+                "video_id": item.get("id", ""),
+                "title": item.get("snippet", {}).get("title", ""),
+                "view_count": int(st.get("viewCount", 0) or 0),
+                "like_count": int(st.get("likeCount", 0) or 0),
+                "comment_count": int(st.get("commentCount", 0) or 0),
+                "published_at": item.get("snippet", {}).get("publishedAt", ""),
+            })
+    return items
+
+
+def fetch_instagram_stats(cfg: dict, media_pks: list[str]) -> list[dict]:
+    """instagrapi 로 게시한 Reels 의 성과를 수집합니다."""
+    ig = cfg.get("instagram", {})
+    username = str(ig.get("username") or "")
+    password = str(ig.get("password") or "")
+    if not username or not password or str(username).startswith("YOUR_"):
+        warn("Instagram 성과 수집은 config.json 의 username/password 가 필요합니다.")
+        return []
+    try:
+        from instagrapi import Client
+    except ImportError:
+        warn("instagrapi 미설치 — pip install -r requirements.txt")
+        return []
+    cl = Client()
+    session_file = SECRETS_DIR / (ig.get("session_file") or "ig_session.json")
+    if session_file.exists():
+        try:
+            cl.load_settings(session_file)
+        except Exception:
+            pass
+    try:
+        cl.login(username, password)
+        if session_file.exists():
+            cl.dump_settings(session_file)
+    except Exception as exc:
+        warn(f"Instagram 로그인 실패 — 성과 수집 불가: {exc}")
+        return []
+    items: list[dict] = []
+    for pk in media_pks:
+        try:
+            info = cl.media_info(pk)
+            caption = getattr(info, "caption_text", "") or ""
+            items.append({
+                "platform": "ig",
+                "media_id": pk,
+                "title": caption[:80],
+                "view_count": int(getattr(info, "view_count", 0) or 0),
+                "like_count": int(getattr(info, "like_count", 0) or 0),
+                "comment_count": int(getattr(info, "comment_count", 0) or 0),
+                "published_at": str(getattr(info, "taken_at", "") or ""),
+            })
+        except Exception as exc:
+            warn(f"IG 미디어 {pk} 성과 수집 실패: {exc}")
+    return items
+
+
+def display_performance(items: list[dict]) -> None:
+    if not items:
+        log("수집된 성과가 없습니다.")
+        return
+    names = {"yt": "YouTube Shorts", "ig": "Instagram Reels"}
+    log("\n📈 최근 게시 성과")
+    log(f"  {'플랫폼':<16}{'제목':<42}{'조회수':>9}{'좋아요':>8}{'댓글':>7}")
+    for item in items:
+        log(f"  {names.get(item['platform'], item['platform']):<16}{item['title'][:40]:<42}"
+            f"{item['view_count']:>9,}{item['like_count']:>8,}{item['comment_count']:>7,}")
+    total_views = sum(i["view_count"] for i in items)
+    total_likes = sum(i["like_count"] for i in items)
+    log(f"  합계: 조회수 {total_views:,} · 좋아요 {total_likes:,} (게시물 {len(items)}건)")
+
+
+def collect_performance(cfg: dict) -> dict:
+    """게시 이력의 URL에서 영상 성과를 수집해 performance.json 으로 저장합니다."""
+    rows = [r for r in read_history_rows()
+            if r.get("event") == "publish" and r.get("status") == "success" and r.get("url")]
+    yt_ids, ig_pks = [], []
+    for r in rows:
+        url = r.get("url", "")
+        m = re.search(r"youtu\.be/([\w-]+)", url)
+        if m:
+            yt_ids.append(m.group(1))
+        m = re.search(r"/reel/(\d+)/?", url)
+        if m:
+            ig_pks.append(m.group(1))
+    items: list[dict] = []
+    if yt_ids:
+        items += fetch_youtube_stats(cfg, yt_ids)
+    if ig_pks:
+        items += fetch_instagram_stats(cfg, ig_pks)
+    data = {"updated_at": now_iso(), "items": items}
+    PERF_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    display_performance(items)
+    ok(f"성과 저장: {PERF_FILE}")
+    return data
+
+
+def write_performance_report(open_after: bool = True) -> Path | None:
+    """performance.json 을 HTML 보고서로 만듭니다."""
+    if not PERF_FILE.exists():
+        warn("성과 데이터가 없습니다. 먼저 '게시 성과 수집'을 실행하세요.")
+        return None
+    try:
+        data = json.loads(PERF_FILE.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        warn(f"성과 파일을 읽지 못했습니다: {exc}")
+        return None
+    items = data.get("items", [])
+    names = {"yt": "YouTube Shorts", "ig": "Instagram Reels"}
+    total_views = sum(i.get("view_count", 0) for i in items)
+    total_likes = sum(i.get("like_count", 0) for i in items)
+    by_platform: dict[str, list[dict]] = {}
+    for item in items:
+        by_platform.setdefault(item.get("platform", ""), []).append(item)
+    plat_html = "".join(
+        f"<li>{names.get(k, k)}: {len(v)}건 · 조회 {sum(i.get('view_count', 0) for i in v):,}"
+        f" · 좋아요 {sum(i.get('like_count', 0) for i in v):,}</li>"
+        for k, v in by_platform.items())
+    table_rows = "".join(
+        f"<tr><td>{esc_html(names.get(i.get('platform', ''), i.get('platform', '')))}</td>"
+        f"<td>{esc_html(i.get('title', ''))[:50]}</td>"
+        f"<td>{i.get('view_count', 0):,}</td><td>{i.get('like_count', 0):,}</td>"
+        f"<td>{i.get('comment_count', 0):,}</td><td>{esc_html(i.get('published_at', ''))}</td></tr>"
+        for i in sorted(items, key=lambda x: x.get("view_count", 0), reverse=True))
+    html = f"""<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>게시 성과 보고서 · toeic.monster</title>
+<style>
+  body {{ font-family: 'Malgun Gothic', sans-serif; background: #0b1220; color: #e6edf7; margin: 0; padding: 32px; }}
+  h1 {{ font-size: 22px; }} .sub {{ color: #8fa3c0; font-size: 13px; margin-bottom: 24px; }}
+  .cards {{ display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }}
+  .card {{ background: #16233a; border: 1px solid #24344f; border-radius: 12px; padding: 14px 20px; min-width: 120px; }}
+  .card b {{ display: block; font-size: 24px; color: #7dd3fc; }} .card span {{ font-size: 12px; color: #8fa3c0; }}
+  ul {{ color: #aebfd8; font-size: 13px; margin-bottom: 24px; }}
+  table {{ width: 100%; border-collapse: collapse; font-size: 13px; }}
+  th, td {{ text-align: left; padding: 8px 10px; border-bottom: 1px solid #24344f; }}
+  th {{ color: #8fa3c0; font-size: 12px; }}
+</style>
+</head>
+<body>
+<h1>📈 게시 성과 보고서</h1>
+<div class="sub">수집 시각: {esc_html(data.get('updated_at', ''))}</div>
+<div class="cards">
+  <div class="card"><b>{len(items):,}</b><span>수집 게시물</span></div>
+  <div class="card"><b>{total_views:,}</b><span>총 조회수</span></div>
+  <div class="card"><b>{total_likes:,}</b><span>총 좋아요</span></div>
+</div>
+<ul>{plat_html}</ul>
+<table><thead><tr><th>플랫폼</th><th>제목</th><th>조회수</th><th>좋아요</th><th>댓글</th><th>게시일</th></tr></thead><tbody>{table_rows}</tbody></table>
+</body></html>"""
+    REPORT_DIR.mkdir(parents=True, exist_ok=True)
+    out = REPORT_DIR / "performance_report.html"
+    out.write_text(html, encoding="utf-8")
+    ok(f"성과 보고서 생성: {out}")
+    if open_after:
+        open_path(out)
+    return out
+
+
+# --------------------------------------------------------------------------- #
+# Windows 작업 스케줄러
+# --------------------------------------------------------------------------- #
+def install_scheduled_task(interval_min: int = 10, dry_run_only: bool = True) -> None:
+    """promo_center.bat --run-due 를 매 N분 실행하도록 Windows 작업 스케줄러에 등록합니다."""
+    if not sys.platform.startswith("win"):
+        warn("Windows 작업 스케줄러 등록은 Windows에서만 가능합니다.")
+        return
+    bat = PROMO / "promo_center.bat"
+    if not bat.exists():
+        fail(f"{bat} 을 찾을 수 없습니다.")
+        return
+    task_args = "--run-due --dry-run" if dry_run_only else "--run-due"
+    tr = f'"{bat}" {task_args}'
+    r = subprocess.run(["schtasks", "/Create", "/TN", SCHED_TASK_NAME, "/TR", tr,
+                        "/SC", "MINUTE", "/MO", str(interval_min), "/F"],
+                       capture_output=True, text=True)
+    if r.returncode == 0:
+        ok(f"작업 스케줄러 등록 완료: {SCHED_TASK_NAME} (매 {interval_min}분, {task_args})")
+        log("도래한 예약을 자동으로 확인하지만 기본이 dry-run이라 실제 게시는 직접 확인 후 진행됩니다.")
+    else:
+        fail("작업 스케줄러 등록 실패: " + (r.stderr.strip() or r.stdout.strip()))
+
+
+def remove_scheduled_task() -> None:
+    r = subprocess.run(["schtasks", "/Delete", "/TN", SCHED_TASK_NAME, "/F"],
+                       capture_output=True, text=True)
+    if r.returncode == 0:
+        ok(f"작업 스케줄러 제거 완료: {SCHED_TASK_NAME}")
+    else:
+        fail("작업 스케줄러 제거 실패: " + (r.stderr.strip() or r.stdout.strip()))
+
+
+# --------------------------------------------------------------------------- #
+# 쇼츠 생성기 선택지 (make_shorts 와의 순환 import 방지를 위해 런타임 import)
+# --------------------------------------------------------------------------- #
+def make_short_choices() -> tuple[list[str], list[str]]:
+    try:
+        from make_shorts import THEMES, STYLE_NAMES  # type: ignore[import-not-found]
+        return sorted(THEMES), list(STYLE_NAMES)
+    except Exception:
+        return (["blue", "purple", "green", "orange", "pink", "navy"],
+                ["classic", "modern", "minimal"])
 
 
 def show_config_status(cfg: dict) -> None:
@@ -723,9 +1098,13 @@ def configure_menu(cfg: dict) -> dict:
     promo = cfg.setdefault("promo", {})
     promo["default_unit"] = ask_int("기본 UNIT(1~30)", int(promo.get("default_unit", 1) or 1), 1, 30)
     promo["default_words"] = ask_int("기본 영상 단어 수(1~10)", int(promo.get("default_words", 5) or 5), 1, 10)
-    promo["default_theme"] = ask_menu("기본 배경 테마(blue/purple/green/orange/pink/navy)", str(promo.get("default_theme", "blue"))).lower()
-    if promo["default_theme"] not in ("blue", "purple", "green", "orange", "pink", "navy"):
+    themes, styles = make_short_choices()
+    promo["default_theme"] = ask_menu(f"기본 배경 테마({'/'.join(themes)})", str(promo.get("default_theme", "blue"))).lower()
+    if promo["default_theme"] not in themes:
         promo["default_theme"] = "blue"
+    promo["default_style"] = ask_menu(f"기본 카드 스타일({'/'.join(styles)})", str(promo.get("default_style", "classic"))).lower()
+    if promo["default_style"] not in styles:
+        promo["default_style"] = "classic"
     promo["default_tts"] = ask_yes_no("기본으로 TTS 추가", bool(promo.get("default_tts", False)))
     promo["confirm_real_upload"] = ask_yes_no("실제 게시 전 확인 질문 사용", bool(promo.get("confirm_real_upload", True)))
     yt = cfg.setdefault("youtube", {})
@@ -782,8 +1161,12 @@ def interactive_menu() -> None:
         default_words = 5
     default_words = min(10, max(1, default_words))
     default_theme = str(promo_cfg.get("default_theme", "blue")).lower()
-    if default_theme not in ("blue", "purple", "green", "orange", "pink", "navy"):
+    _themes, _styles = make_short_choices()
+    if default_theme not in _themes:
         default_theme = "blue"
+    default_style = str(promo_cfg.get("default_style", "classic")).lower()
+    if default_style not in _styles:
+        default_style = "classic"
     default_privacy = str(promo_cfg.get("default_privacy", cfg.get("youtube", {}).get("privacy", "unlisted"))).lower()
     if default_privacy not in ("public", "unlisted", "private"):
         default_privacy = "unlisted"
@@ -804,6 +1187,10 @@ def interactive_menu() -> None:
         log("  8. 게시 이력 CSV 보기")
         log("  9. 설정 편집")
         log(" 10. 의존성·폴더 열기")
+        log(" 11. Windows 작업 스케줄러 예약 실행 등록/해제")
+        log(" 12. 여러 영상 일괄 게시")
+        log(" 13. 게시 이력 HTML 리포트")
+        log(" 14. 게시 성과 수집·보고서")
         log("  0. 종료")
         action = ask_menu("메뉴", menu_default)
         if action == "0":
@@ -834,8 +1221,12 @@ def interactive_menu() -> None:
                 default_words = 5
             default_words = min(10, max(1, default_words))
             default_theme = str(promo_cfg.get("default_theme", "blue")).lower()
-            if default_theme not in ("blue", "purple", "green", "orange", "pink", "navy"):
+            _themes, _styles = make_short_choices()
+            if default_theme not in _themes:
                 default_theme = "blue"
+            default_style = str(promo_cfg.get("default_style", "classic")).lower()
+            if default_style not in _styles:
+                default_style = "classic"
             default_privacy = str(promo_cfg.get("default_privacy", cfg.get("youtube", {}).get("privacy", "unlisted"))).lower()
             if default_privacy not in ("public", "unlisted", "private"):
                 default_privacy = "unlisted"
@@ -882,6 +1273,28 @@ def interactive_menu() -> None:
         if action == "8":
             show_history_menu()
             continue
+        if action == "11":
+            sub = ask_menu("등록(r) / 해제(d)", "r").lower()
+            if sub in ("r", "등록", "y", "예"):
+                interval = ask_int("확인 주기(분)", 10, 1, 60)
+                dry = ask_yes_no("dry-run 모드로 등록(안전, 권장)", True)
+                install_scheduled_task(interval_min=interval, dry_run_only=dry)
+            elif sub in ("d", "해제", "삭제"):
+                remove_scheduled_task()
+            continue
+        if action == "12":
+            run_batch_menu(cfg)
+            continue
+        if action == "13":
+            write_history_report()
+            continue
+        if action == "14":
+            sub = ask_menu("성과 수집(c) / 보고서(r)", "c").lower()
+            if sub in ("c", "수집", "수"):
+                collect_performance(cfg)
+            else:
+                write_performance_report()
+            continue
         if action not in ("1", "2", "3", "5"):
             warn("메뉴 번호를 확인해 주세요.")
             continue
@@ -910,14 +1323,23 @@ def interactive_menu() -> None:
         video = None
         if action in ("1", "3"):
             words = str(ask_int("영상에 넣을 단어 수(1~10)", default_words, 1, 10))
-            theme = ask_menu("배경 테마(blue/purple/green/orange/pink/navy)", default_theme).lower()
-            while theme not in ("blue", "purple", "green", "orange", "pink", "navy"):
-                warn("지원하는 테마를 입력해 주세요: blue, purple, green, orange, pink, navy")
+            themes, styles = make_short_choices()
+            theme = ask_menu(f"배경 테마({'/'.join(themes)})", default_theme).lower()
+            while theme not in themes:
+                warn(f"지원하는 테마: {', '.join(themes)}")
                 theme = ask_menu("배경 테마", default_theme).lower()
+            style = ask_menu(f"카드 스타일({'/'.join(styles)})", default_style).lower()
+            while style not in styles:
+                warn(f"지원하는 스타일: {', '.join(styles)}")
+                style = ask_menu("카드 스타일", default_style).lower()
             command = [sys.executable, str(PROMO / "make_shorts.py"), "--unit", str(unit),
-                       "--words", words, "--bg", theme]
+                       "--words", words, "--bg", theme, "--style", style]
             if ask_yes_no("영어 TTS를 추가할까요?", default_tts):
                 command.append("--tts")
+            if ask_yes_no("배경음악을 추가할까요?(파일 경로 필요)", False):
+                music_path = ask_menu("배경음악 파일(mp3/wav) 경로")
+                if music_path:
+                    command.extend(["--music", music_path])
             if not run_menu_command(command):
                 fail("쇼츠 생성에 실패해 게시를 중단합니다.")
                 continue
@@ -991,6 +1413,14 @@ def main() -> None:
     ap.add_argument("--check", action="store_true", help="설정·의존성·폴더 상태 점검")
     ap.add_argument("--edit-config", action="store_true", help="터미널에서 설정 편집")
     ap.add_argument("--open-shorts", action="store_true", help="쇼츠 폴더 열기")
+    ap.add_argument("--batch", nargs="?", const=5, type=int, metavar="N",
+                    help="assets/shorts/ 의 최신 N개 영상을 순차 게시 (기본 5)")
+    ap.add_argument("--report", action="store_true", help="게시 이력 HTML 리포트 생성")
+    ap.add_argument("--stats", action="store_true", help="게시 성과 수집 (YouTube/Instagram)")
+    ap.add_argument("--stats-report", action="store_true", help="수집된 성과를 HTML 보고서로 생성")
+    ap.add_argument("--install-task", nargs="?", const=10, type=int, metavar="MIN",
+                    help="Windows 작업 스케줄러에 매 MIN분 예약 확인 등록 (기본 10)")
+    ap.add_argument("--remove-task", action="store_true", help="Windows 작업 스케줄러 등록 해제")
     args = ap.parse_args()
     if args.init_config:
         init_config()
@@ -1027,9 +1457,33 @@ def main() -> None:
     if args.history:
         show_history_menu()
         return
+    if args.report:
+        write_history_report()
+        return
+    if args.stats:
+        collect_performance(cfg)
+        return
+    if args.stats_report:
+        write_performance_report()
+        return
+    if args.install_task:
+        install_scheduled_task(interval_min=args.install_task)
+        return
+    if args.remove_task:
+        remove_scheduled_task()
+        return
     if args.run_due:
         processed = process_due_schedules(cfg, dry_run=args.dry_run)
         ok(f"도래한 예약 {processed}건을 처리했습니다.")
+        return
+    if args.batch:
+        videos = list_videos_menu()[:args.batch]
+        if not videos:
+            fail("assets/shorts 폴더에 게시할 mp4 영상이 없습니다.")
+            sys.exit(1)
+        log(f"\n일괄 게시: 최신 {len(videos)}개 영상 (dry-run={args.dry_run})")
+        for video in videos:
+            publish_single(cfg, args, video)
         return
     video = resolve_video(args)
     if args.schedule:
@@ -1048,6 +1502,11 @@ def main() -> None:
             return
         ok(f"예약 등록 완료: {item['id']} · {item['scheduled_at']}")
         return
+    publish_single(cfg, args, video)
+
+
+def publish_single(cfg: dict, args, video: Path) -> None:
+    """영상 하나를 지정 플랫폼에 게시하고 이력을 남깁니다. (--dry-run 지원)"""
     meta = build_meta(cfg, args)
     platforms = resolve_platforms(cfg, args.platforms)
 
