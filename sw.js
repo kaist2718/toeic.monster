@@ -1,5 +1,5 @@
 /* toeic.monster Service Worker - 오프라인 학습 지원 */
-var CACHE_NAME = "toeic-monster-v1";
+var CACHE_NAME = "toeic-monster-v2";
 var CORE_ASSETS = [
   "./",
   "./index.html",
