@@ -1,0 +1,10 @@
+# YouTube Shorts 업로드 (공식 Data API v3)
+google-api-python-client>=2.100.0
+google-auth>=2.23.0
+google-auth-oauthlib>=1.0.0
+
+# Instagram Reels 업로드 (비공식 라이브러리)
+instagrapi>=2.0.0
+
+# TikTok 업로드 (선택 — 공식 API 승인 대체용, 불안정)
+# TikTokApi>=6.2.0
