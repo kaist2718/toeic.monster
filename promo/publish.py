@@ -729,6 +729,81 @@ def run_batch_menu(cfg: dict) -> None:
     ok(f"일괄 게시 처리 완료: {len(picked)}개 영상")
 
 
+def probe_video_info(video: Path) -> dict:
+    """ffprobe로 해상도·길이·크기를 가져옵니다. (실패 시 안전한 기본값)"""
+    info = {"width": 0, "height": 0, "duration": 0.0, "size_mb": 0.0}
+    try:
+        info["size_mb"] = video.stat().st_size / (1024 * 1024)
+    except OSError:
+        pass
+    try:
+        r = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0",
+                            "-show_entries", "stream=width,height:format=duration",
+                            "-of", "json", str(video)], capture_output=True, text=True)
+        data = json.loads(r.stdout)
+        if data.get("streams"):
+            info["width"] = int(data["streams"][0]["width"])
+            info["height"] = int(data["streams"][0]["height"])
+        if data.get("format", {}).get("duration"):
+            info["duration"] = float(data["format"]["duration"])
+    except Exception:
+        pass
+    return info
+
+
+def verify_video_menu(cfg: dict) -> None:
+    """메뉴 15: 배포 전 영상을 재생·점검하고 게시 메타를 확인한 뒤 게시를 진행합니다."""
+    video = choose_video_menu()
+    if video is None:
+        return
+    unit = choose_unit()
+    v_args = argparse.Namespace(video=str(video), unit=unit, title=None, desc=None,
+                                platforms="auto", dry_run=True, youtube_privacy=None)
+    meta = build_meta(cfg, v_args)
+    info = probe_video_info(video)
+    ratio = (info["width"] / info["height"]) if info["height"] else 0.0
+    is_9x16 = 0.52 <= ratio <= 0.60
+    is_short = 0 < info["duration"] <= 61
+    log("\n" + "=" * 62)
+    log("🔍 배포 전 검증")
+    log("=" * 62)
+    log(f"영상  : {video.name}")
+    log(f"크기  : {info['size_mb']:.1f}MB")
+    ratio_text = f"{info['width']}x{info['height']}"
+    if info["width"]:
+        ratio_text += f" ({info['width'] / info['height']:.3f}:1)" if info["height"] else ""
+    log(f"해상도: {ratio_text} · " + ("9:16 세로(Shorts) ✓" if is_9x16 else "⚠️ 9:16 세로가 아닙니다"))
+    dur_text = f"{info['duration']:.1f}초" if info["duration"] else "측정 불가"
+    log(f"길이  : {dur_text} · " + ("60초 이내 ✓" if is_short else "⚠️ 60초 초과 — Shorts가 아닐 수 있습니다"))
+    log(f"제목  : {meta['title']}")
+    if meta["desc"]:
+        first = meta["desc"].splitlines()[0]
+        log(f"설명  : {first}" + (" …" if len(meta["desc"]) > len(first) else ""))
+    if meta["hashtags"]:
+        log(f"해시태그: {meta['hashtags']}")
+    log("-" * 62)
+    if ask_yes_no("영상을 기본 플레이어로 열어 직접 확인할까요?", True):
+        open_path(video)
+    if not ask_yes_no("이 영상으로 게시를 진행할까요?", False):
+        log("검증만 하고 종료합니다.")
+        return
+    platforms = choose_platforms_menu(cfg)
+    privacy = ask_menu("YouTube 공개 범위(public/unlisted/private)",
+                       str(cfg.get("promo", {}).get("default_privacy", "unlisted")))
+    if privacy not in ("public", "unlisted", "private"):
+        privacy = "unlisted"
+    dry_run = ask_yes_no("먼저 dry-run으로 확인할까요?", True)
+    if not dry_run:
+        log("⚠️ 실제 게시를 진행합니다. 각 플랫폼에 콘텐츠가 업로드됩니다.")
+        if not ask_yes_no("정말 게시할까요?", False):
+            log("게시를 취소했습니다.")
+            return
+    v_args.platforms = platforms
+    v_args.youtube_privacy = privacy
+    v_args.dry_run = dry_run
+    publish_single(cfg, v_args, video)
+
+
 def run_menu_command(command: list[str]) -> bool:
     log("\n$ " + " ".join(f'"{x}"' if " " in x else x for x in command))
     result = subprocess.run(command, cwd=str(PROMO))
@@ -1191,6 +1266,7 @@ def interactive_menu() -> None:
         log(" 12. 여러 영상 일괄 게시")
         log(" 13. 게시 이력 HTML 리포트")
         log(" 14. 게시 성과 수집·보고서")
+        log(" 15. 배포 전 검증 — 영상 재생·점검 후 게시")
         log("  0. 종료")
         action = ask_menu("메뉴", menu_default)
         if action == "0":
@@ -1294,6 +1370,9 @@ def interactive_menu() -> None:
                 collect_performance(cfg)
             else:
                 write_performance_report()
+            continue
+        if action == "15":
+            verify_video_menu(cfg)
             continue
         if action not in ("1", "2", "3", "5"):
             warn("메뉴 번호를 확인해 주세요.")
@@ -1423,6 +1502,8 @@ def main() -> None:
     ap.add_argument("--install-task", nargs="?", const=10, type=int, metavar="MIN",
                     help="Windows 작업 스케줄러에 매 MIN분 예약 확인 등록 (기본 10)")
     ap.add_argument("--remove-task", action="store_true", help="Windows 작업 스케줄러 등록 해제")
+    ap.add_argument("--verify", action="store_true",
+                    help="배포 전 영상 검증 실행 (재생·Shorts 요건 점검 후 게시)")
     args = ap.parse_args()
     if args.init_config:
         init_config()
@@ -1473,6 +1554,9 @@ def main() -> None:
         return
     if args.remove_task:
         remove_scheduled_task()
+        return
+    if args.verify:
+        verify_video_menu(cfg)
         return
     if args.run_due:
         processed = process_due_schedules(cfg, dry_run=args.dry_run)

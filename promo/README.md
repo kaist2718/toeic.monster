@@ -55,6 +55,7 @@ promo_center.bat
 12. **여러 영상 일괄 게시** — 영상 여러 개를 선택해 순차 게시
 13. **게시 이력 HTML 리포트** — 요약 통계와 함께 브라우저로 열기
 14. **게시 성과 수집·보고서** — YouTube/Instagram 조회수·좋아요 수집 및 보고서
+15. **배포 전 검증** — 영상을 재생해 직접 확인하고, 9:16·60초·게시 메타(제목/설명/해시태그)를 점검한 뒤 게시
 
 메뉴 입력에서 Enter를 누르면 설정된 기본값을 사용합니다. 기본 게시 방식은 dry-run이며, 실제 업로드는 별도의 확인 질문을 거칩니다.
 
@@ -78,6 +79,9 @@ python publish.py --video assets/shorts/unit01_shorts.mp4 --unit 1 --dry-run
 
 # 실제 업로드
 python publish.py --video assets/shorts/unit01_shorts.mp4 --unit 1 --platforms yt --youtube-privacy unlisted
+
+# 배포 전 검증 — 영상 재생·Shorts 요건·게시 메타 점검 후 게시
+python publish.py --verify
 
 # 최신 N개 영상 일괄 게시 (기본 5개, --dry-run 과 함께 권장)
 python publish.py --batch 3 --unit 1 --dry-run
