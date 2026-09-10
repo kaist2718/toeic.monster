@@ -1885,6 +1885,33 @@
       </div>
     </section>
 
+    <section class="home-section" aria-label="빠른 학습 도구">
+      <div class="section-head">
+        <div>
+          <h2 class="home-section-title">⚡ 빠른 학습 도구</h2>
+          <p class="home-section-sub">단어장을 내보내거나, 전체 단어 풀에서 랜덤 10문제를 바로 풀어 보세요.</p>
+        </div>
+      </div>
+      <div class="reading-grid">
+        <article class="reading-card">
+          <h3>📥 단어장 내보내기</h3>
+          <p class="practice-note">단어·발음·뜻·예문을 CSV로 저장해 엑셀·노트 앱에서 관리할 수 있어요. 학습 완료 단어만 골라낼 수도 있습니다.</p>
+          <div class="practice-actions">
+            <button type="button" class="btn quiz-btn" id="dlAllCsv">📦 전체 단어 CSV</button>
+            <button type="button" class="btn quiz-btn" id="dlLearnedCsv">✅ 학습 완료 CSV</button>
+          </div>
+        </article>
+        <article class="speaking-card">
+          <h3>🎲 랜덤 10문제 미니 테스트</h3>
+          <p class="practice-note">전체 1,000단어에서 무작위 10문제를 골라 뜻을 맞혀 보세요. 결과는 퀴즈 통계에 기록됩니다.</p>
+          <div id="miniQuizBox"></div>
+          <div class="practice-actions">
+            <button type="button" class="btn quiz-btn" id="miniQuizStart">🎯 새 테스트 시작</button>
+          </div>
+        </article>
+      </div>
+    </section>
+
     <section class="home-section" aria-label="주제별 유닛">
       <h2 class="home-section-title">📚 주제별 유닛 30개</h2>
       <p class="home-section-sub">비즈니스·금융·여행·IT까지 시험 빈출 주제만 모았어요. 버튼을 누르면 해당 유닛의 단어 카드로 이동합니다.</p>
@@ -3784,6 +3811,113 @@
     if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
   });
 
+  // ---------- 단어장 CSV 내보내기 ----------
+  function downloadWordlistCsv(filter) {
+    var rows = [["word", "ipa", "pronunciation", "meaning", "example", "translation", "learned"]];
+    allWords().forEach(function (w) {
+      if (filter === "learned" && !learned[w[0]]) return;
+      rows.push([w[0], w[1], w[2], w[3], w[4], w[5], learned[w[0]] ? "Y" : "N"]);
+    });
+    if (rows.length === 1) {
+      showToast("학습 완료 단어가 아직 없습니다. 단어를 외우면 내보낼 수 있어요!");
+      return;
+    }
+    var csv = rows.map(function (r) {
+      return r.map(function (v) { return '"' + String(v).replace(/"/g, '""') + '"'; }).join(",");
+    }).join("\r\n");
+    var blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = filter === "learned" ? "toeic_learned_words.csv" : "toeic_all_words.csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    showToast("📥 단어장 CSV를 다운로드했습니다.");
+  }
+  var dlAllCsv = document.getElementById("dlAllCsv");
+  if (dlAllCsv) dlAllCsv.addEventListener("click", function () { downloadWordlistCsv("all"); });
+  var dlLearnedCsv = document.getElementById("dlLearnedCsv");
+  if (dlLearnedCsv) dlLearnedCsv.addEventListener("click", function () { downloadWordlistCsv("learned"); });
+
+  // ---------- 랜덤 10문제 미니 테스트 ----------
+  var miniQuiz = { words: [], idx: 0, correct: 0, answered: false, done: false };
+  function startMiniQuiz() {
+    var pool = allWords().slice();
+    shuffle(pool);
+    miniQuiz.words = pool.slice(0, 10).map(function (w) {
+      var answer = w[3];
+      var opts = [answer];
+      var attempts = 0;
+      while (opts.length < 4 && attempts < 500) {
+        attempts++;
+        var d = pool[Math.floor(Math.random() * pool.length)][3];
+        if (opts.indexOf(d) === -1) opts.push(d);
+      }
+      shuffle(opts);
+      return { word: w[0], pron: w[2], answer: answer, options: opts };
+    });
+    miniQuiz.idx = 0;
+    miniQuiz.correct = 0;
+    miniQuiz.answered = false;
+    miniQuiz.done = false;
+    renderMiniQuiz();
+  }
+  function renderMiniQuiz() {
+    var box = document.getElementById("miniQuizBox");
+    if (!box) return;
+    if (miniQuiz.done) {
+      var pct = miniQuiz.words.length ? Math.round(miniQuiz.correct / miniQuiz.words.length * 100) : 0;
+      var msg = pct >= 80 ? "훌륭해요! 🔥" : pct >= 50 ? "좋아요, 오답은 다시 만나요. 💪" : "오답 단어를 복습해 보세요. 🌱";
+      box.innerHTML = '<div class="bank-card"><span class="bank-label">랜덤 미니 테스트 결과</span>' +
+        '<div class="bank-q">🎉 10문제 중 ' + miniQuiz.correct + '개 정답 (' + pct + '%)</div>' +
+        '<p class="practice-note">' + msg + ' — 새 테스트를 시작해 기록을 갱신해 보세요.</p></div>';
+      return;
+    }
+    if (!miniQuiz.words.length) {
+      box.innerHTML = '<p class="practice-note">시작하기 버튼을 누르면 전체 단어에서 10문제가 나옵니다.</p>';
+      return;
+    }
+    var q = miniQuiz.words[miniQuiz.idx];
+    var html = '<div class="bank-card"><span class="bank-label">랜덤 미니 테스트 · ' + (miniQuiz.idx + 1) + ' / ' + miniQuiz.words.length + '</span>' +
+      '<div class="bank-q">' + esc(q.word) + (q.pron ? ' <small style="font-size:12px;color:var(--text-muted)">' + esc(q.pron) + '</small>' : '') + '</div><div class="bank-options">' +
+      q.options.map(function (opt) { return '<button type="button" class="bank-opt">' + esc(opt) + '</button>'; }).join("") +
+      '</div><div class="bank-feedback" id="miniQuizFeedback"></div></div>';
+    box.innerHTML = html;
+    box.querySelectorAll(".bank-opt").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        if (miniQuiz.answered) return;
+        miniQuiz.answered = true;
+        var ok = btn.textContent === q.answer;
+        if (ok) miniQuiz.correct++;
+        recordStat("mini", ok);
+        box.querySelectorAll(".bank-opt").forEach(function (o) {
+          o.disabled = true;
+          if (o.textContent === q.answer) o.classList.add("correct");
+          if (o === btn && !ok) o.classList.add("wrong");
+        });
+        var fb = document.getElementById("miniQuizFeedback");
+        fb.textContent = ok ? "정답입니다! 🎉" : "정답: " + q.answer;
+        fb.style.color = ok ? "var(--green)" : "#fa5252";
+        var next = document.createElement("button");
+        next.type = "button";
+        next.className = "btn quiz-btn";
+        next.style.marginTop = "10px";
+        next.textContent = miniQuiz.idx + 1 >= miniQuiz.words.length ? "🏁 결과 보기" : "다음 문제 →";
+        next.addEventListener("click", function () {
+          miniQuiz.idx++;
+          miniQuiz.answered = false;
+          if (miniQuiz.idx >= miniQuiz.words.length) miniQuiz.done = true;
+          renderMiniQuiz();
+        });
+        fb.appendChild(next);
+      });
+    });
+  }
+  var miniQuizStart = document.getElementById("miniQuizStart");
+  if (miniQuizStart) miniQuizStart.addEventListener("click", startMiniQuiz);
+
   function renderExtendedHome() {
     renderPartBank("5");
     renderRelations();
@@ -3792,6 +3926,7 @@
     renderWritingPrompt();
     renderShadowing();
     renderDday();
+    renderMiniQuiz();
   }
   function renderHome() {
     activeView = "homeView";
@@ -4933,7 +5068,7 @@
     var dueN = srsDueWords().length;
     var pct = totalCount ? Math.round(learnedN / totalCount * 100) : 0;
     // 유형별 정답률
-    var typeLabels = { en2ko: "단어→뜻", ko2en: "뜻→단어", blank: "빈칸 채우기", listen_word: "리스닝 단어", listen_sent: "리스닝 예문", listen_dict: "받아쓰기", diag: "실력 진단", mock_LC: "모의 LC", mock_RC: "모의 RC" };
+    var typeLabels = { en2ko: "단어→뜻", ko2en: "뜻→단어", blank: "빈칸 채우기", listen_word: "리스닝 단어", listen_sent: "리스닝 예문", listen_dict: "받아쓰기", diag: "실력 진단", mock_LC: "모의 LC", mock_RC: "모의 RC", mini: "랜덤 미니 테스트" };
     var typeHtml = "";
     Object.keys(typeLabels).forEach(function (k) {
       var s = quizStats[k];
