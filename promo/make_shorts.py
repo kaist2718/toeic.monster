@@ -340,27 +340,24 @@ def render_slide(idx: int, total: int, unit_no: int, unit_info: dict, wd: list,
     word, ipa, kor_pron, meaning, en_ex, kr_tr = wd[0], wd[1], wd[2], wd[3], wd[4], wd[5]
 
     # ── 상단: 유닛 칩 (classic/modern) 또는 제목 텍스트 (minimal) ──
-    icon_font = load_emoji_font(64)
     title_font = load_font(font_path, 40, bold=True)
     title = f"UNIT {unit_no} · {unit_info.get('title', '')}"
     if ly["chip"]:
         chip = (255, 255, 255, 36)  # rgba(255,255,255,0.14)
         tw = text_width(draw, title, title_font)
-        icon_text = unit_info.get("icon", "📚")
-        icon_w = 0
-        if icon_font is not None and font_has_glyph(icon_font, icon_text):
-            icon_w = text_width(draw, icon_text, icon_font)
-        else:
-            icon_font = None  # 아이콘 글리프가 없으면 그리지 않음 (네모 방지)
-        left_pad = 40 if icon_font else 36
-        gap = 26
-        chip_w = int(left_pad + icon_w + gap + tw + 44)
+        badge_w = 80
+        chip_w = int(22 + badge_w + 24 + tw + 40)
         cx0 = W // 2 - chip_w // 2
         draw.rounded_rectangle([cx0, 96, cx0 + chip_w, 174], radius=39, fill=chip)
-        if icon_font:
-            draw.text((cx0 + 26, 100), icon_text, font=icon_font)
+        # 유닛 번호 뱃지 — 이모지 폰트에 의존하지 않아 어떤 PC에서도 □가 나오지 않습니다
+        draw.rounded_rectangle([cx0 + 22, 100, cx0 + 22 + badge_w, 170], radius=35, fill=ACCENT_THEME + (255,))
+        num = str(unit_no)
+        num_font = load_font(font_path, 42, bold=True)
+        nw = text_width(draw, num, num_font)
+        draw_text_rich(draw, num, num_font, (255, 255, 255),
+                       y=108, x=cx0 + 22 + (badge_w - nw) / 2)
         draw_text_rich(draw, title, title_font, (255, 255, 255), y=113,
-                       x=cx0 + left_pad + icon_w + gap)
+                       x=cx0 + 22 + badge_w + 24)
     elif ly["unit_y"]:
         draw_text_rich(draw, title, title_font, (255, 255, 255, 190), y=ly["unit_y"])
 
@@ -522,7 +519,7 @@ def build_ambient(dur: float, tmp: Path) -> Path | None:
     """부드러운 화음(ffmpeg lavfi)으로 영상이 무음이 되지 않도록 하는 배경 사운드를 만듭니다."""
     out = tmp / "ambient.wav"
     fade_out = max(1.5, dur - 2.0)
-    fc = (f"[0:a][1:a][2:a]amix=inputs=3,lowpass=f=900,volume=0.8,"
+    fc = (f"[0:a][1:a][2:a]amix=inputs=3,lowpass=f=900,volume=2.5,"
           f"afade=t=in:st=0:d=1.5,afade=t=out:st={fade_out:.2f}:d=2[a]")
     r = subprocess.run([_FFMPEG, "-y", "-hide_banner", "-loglevel", "error",
                         "-f", "lavfi", "-i", f"sine=frequency=220:duration={dur}",
@@ -619,12 +616,18 @@ def main() -> None:
 
         frame_files: list[Path] = []
         prev_last = None
+        tts_failed = False
         for si, slide in enumerate(slides):
             dur = args.slide_sec
-            if args.tts:
-                wav, dur = build_audio(picked[si][0], picked[si][4], args.voice, dur, tmp, si)
-                if dur > args.slide_sec:
-                    log(f"   · {picked[si][0]}: 음성 {dur - 0.8:.1f}초 → 슬라이드 연장")
+            if args.tts and not tts_failed:
+                try:
+                    wav, dur = build_audio(picked[si][0], picked[si][4], args.voice, dur, tmp, si)
+                    if dur > args.slide_sec:
+                        log(f"   · {picked[si][0]}: 음성 {dur - 0.8:.1f}초 → 슬라이드 연장")
+                except Exception as exc:
+                    tts_failed = True
+                    warn(f"TTS 음성 생성 실패({exc}) — 앰비언트 사운드로 대체합니다.")
+                    dur = args.slide_sec
             n = max(2, int(round(dur * FPS)))
             for i in range(n):
                 t = i / (n - 1) if n > 1 else 0.0
@@ -648,7 +651,7 @@ def main() -> None:
 
         # ── TTS·배경음악·앰비언트 병합 ──
         tts_wav = None
-        if args.tts:
+        if args.tts and not tts_failed:
             audio_files = [tmp / f"audio_{i}.wav" for i in range(len(picked))]
             concat_list = tmp / "audio_list.txt"
             concat_list.write_text(
