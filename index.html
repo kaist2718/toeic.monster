@@ -977,6 +977,105 @@
   .feature h3 { font-size: 15px; margin: 8px 0 4px; }
   .feature p { font-size: 12.5px; color: var(--text-muted); }
 
+  /* 학습 자료 허브 · 외부 리소스 */
+  .resource-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+  }
+  .resource-card {
+    display: flex;
+    flex-direction: column;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px;
+  }
+  .resource-card .resource-type {
+    display: inline-block;
+    align-self: flex-start;
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--cyan);
+    background: var(--soft-cyan);
+    border-radius: 99px;
+    padding: 3px 9px;
+    margin-bottom: 9px;
+  }
+  .resource-card h3 { font-size: 15px; margin-bottom: 5px; }
+  .resource-card p { font-size: 12.5px; color: var(--text-muted); margin-bottom: 12px; }
+  .resource-card a {
+    margin-top: auto;
+    color: var(--primary);
+    font-size: 13px;
+    font-weight: 800;
+    text-decoration: none;
+  }
+  .resource-card a:hover { text-decoration: underline; }
+  .resource-note {
+    font-size: 12px;
+    color: var(--text-muted);
+    background: var(--soft-blue);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-top: 12px;
+  }
+
+  /* 점수별 학습 로드맵 */
+  .roadmap-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+  }
+  .roadmap-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-top: 4px solid var(--primary);
+    border-radius: 12px;
+    padding: 15px 16px;
+  }
+  .roadmap-card h3 { font-size: 15px; margin-bottom: 6px; }
+  .roadmap-card p { font-size: 12.5px; color: var(--text-muted); }
+  .roadmap-card ul { list-style: none; margin-top: 8px; }
+  .roadmap-card li { font-size: 12.5px; padding: 3px 0; }
+  .roadmap-card li::before { content: "✓ "; color: var(--green); font-weight: 800; }
+
+  /* Part 미니 문제은행 · 리딩 */
+  .part-tabs { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 12px; }
+  .part-tab { font-family: inherit; font-size: 12.5px; font-weight: 800; padding: 7px 12px; border: 2px solid var(--border); border-radius: 99px; background: var(--card); color: var(--text-muted); cursor: pointer; }
+  .part-tab.active { border-color: var(--primary); background: var(--primary); color: #fff; }
+  .bank-card, .reading-card, .writing-card, .speaking-card, .dday-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 17px 19px; }
+  .bank-card { margin-bottom: 10px; }
+  .bank-label { display: inline-block; font-size: 11px; font-weight: 800; color: var(--cyan); background: var(--soft-cyan); border-radius: 99px; padding: 3px 8px; margin-bottom: 7px; }
+  .bank-q { font-size: 15px; font-weight: 800; margin-bottom: 9px; }
+  .bank-opt { display: inline-block; min-width: 45%; margin: 4px 4px 0 0; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--input-bg); color: var(--text); cursor: pointer; text-align: left; font: inherit; font-size: 13px; }
+  .bank-opt:hover:not(:disabled), .bank-opt.correct { border-color: var(--green); background: var(--correct-bg); }
+  .bank-opt.wrong { border-color: #fa5252; background: var(--wrong-bg); }
+  .bank-feedback { min-height: 20px; font-size: 12.5px; font-weight: 700; margin-top: 7px; color: var(--primary); }
+  .reading-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+  .reading-card h3, .writing-card h3, .speaking-card h3, .dday-card h3 { font-size: 15px; margin-bottom: 7px; }
+  .reading-passage { background: var(--soft-blue); border-radius: 10px; padding: 12px 14px; font-size: 13px; line-height: 1.7; margin-bottom: 10px; }
+  .reading-q { font-size: 13px; font-weight: 800; margin: 8px 0; }
+  .reading-answer { width: 100%; font-family: inherit; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--input-bg); color: var(--text); }
+  .relation-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 9px; }
+  .relation-card { background: var(--card); border: 1px solid var(--border); border-radius: 11px; padding: 12px 14px; }
+  .relation-card b { color: var(--primary-dark); font-size: 14px; }
+  .relation-card p { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+  .writing-area { width: 100%; min-height: 105px; resize: vertical; font: inherit; font-size: 13px; padding: 10px; border: 2px solid var(--border); border-radius: 9px; background: var(--input-bg); color: var(--text); }
+  .writing-area:focus { border-color: var(--primary); outline: none; }
+  .practice-actions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 9px; }
+  .practice-note { font-size: 12.5px; color: var(--text-muted); margin-top: 7px; }
+  .prompt-list { display: flex; flex-direction: column; gap: 8px; }
+  .prompt-item { display: flex; gap: 9px; align-items: flex-start; font-size: 13px; background: var(--soft-blue); border-radius: 9px; padding: 9px 11px; }
+  .prompt-item b { color: var(--primary); flex-shrink: 0; }
+  .dday-grid { display: grid; grid-template-columns: minmax(220px, .8fr) minmax(260px, 1.2fr); gap: 12px; }
+  .dday-input { width: 100%; font: inherit; padding: 10px; border: 2px solid var(--border); border-radius: 9px; background: var(--input-bg); color: var(--text); }
+  .dday-number { font-size: 38px; line-height: 1.1; font-weight: 900; color: var(--primary); }
+  .dday-plan { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-top: 11px; }
+  .dday-plan div { background: var(--soft-blue); border-radius: 9px; padding: 9px; font-size: 12px; text-align: center; }
+  .dday-plan b { display: block; color: var(--primary); font-size: 16px; }
+  @media (max-width: 640px) { .dday-grid { grid-template-columns: 1fr; } .bank-opt { min-width: 100%; } }
+
   /* TOEIC 구성 */
   .toeic-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .toeic-col {
@@ -1689,12 +1788,19 @@
       <button type="button" class="sn-chip" data-target="학습 모드">🧩 학습 모드</button>
       <button type="button" class="sn-chip" data-target="주제별 유닛">📚 유닛</button>
       <button type="button" class="sn-chip" data-target="빈출 구동사·숙어">💡 구동사</button>
+      <button type="button" class="sn-chip" data-target="학습 자료 허브">🌐 자료 허브</button>
+      <button type="button" class="sn-chip" data-target="점수별 학습 로드맵">🗺️ 로드맵</button>
+      <button type="button" class="sn-chip" data-target="Part 미니 문제은행">🧪 문제은행</button>
+      <button type="button" class="sn-chip" data-target="문맥·연어 학습">🔗 연어</button>
+      <button type="button" class="sn-chip" data-target="리딩 미니 지문">📖 리딩</button>
+      <button type="button" class="sn-chip" data-target="말하기·쓰기 연습">🗣️ 말하기·쓰기</button>
+      <button type="button" class="sn-chip" data-target="시험 D-day 플랜">📅 D-day</button>
       <button type="button" class="sn-chip" data-target="TOEIC 시험 안내">📋 TOEIC 정보</button>
       <button type="button" class="sn-chip" data-target="쉬어가는 코너">☕ 명언</button>
       <button type="button" class="sn-chip" data-target="자주 묻는 질문">❓ FAQ</button>
     </nav>
 
-    <section class="home-section" aria-label="오늘의 학습">
+    <section class="home-section" id="today-section" aria-label="오늘의 학습">
       <h2 class="home-section-title">☀️ 오늘의 학습</h2>
       <p class="home-section-sub">하루 30개 목표 · 꾸준함이 점수를 만듭니다.</p>
       <div class="today-grid" id="todayGrid"></div>
@@ -1833,6 +1939,107 @@
           <p>PWA로 설치하면 앱처럼 사용할 수 있고, 학습 데이터는 브라우저에만 저장되어 안전해요.</p>
         </div>
       </div>
+    </section>
+
+    <section class="home-section" aria-label="학습 자료 허브">
+      <div class="section-head">
+        <div>
+          <h2 class="home-section-title">🌐 더 넓게 공부하는 학습 자료 허브</h2>
+          <p class="home-section-sub">단어를 익힌 뒤 공식 시험 정보와 레벨별 듣기·읽기 자료로 실전 감각을 넓혀 보세요.</p>
+        </div>
+      </div>
+      <div class="resource-grid">
+        <article class="resource-card">
+          <span class="resource-type">공식 TOEIC 정보</span>
+          <h3>ETS TOEIC 시험 안내</h3>
+          <p>시험 목적, LC·RC 구성과 공식 준비 자료를 확인할 수 있는 출발점입니다. 실제 시험 정보는 공식 페이지에서 최종 확인하세요.</p>
+          <a href="https://www.ets.org/toeic/test-takers/prepare.html" target="_blank" rel="noopener noreferrer">공식 준비 자료 열기 ↗</a>
+        </article>
+        <article class="resource-card">
+          <span class="resource-type">영어 4기능</span>
+          <h3>British Council LearnEnglish</h3>
+          <p>레벨별 listening·reading·grammar·vocabulary 활동을 골라 단어 학습의 빈틈을 보완해 보세요.</p>
+          <a href="https://learnenglish.britishcouncil.org/free-resources" target="_blank" rel="noopener noreferrer">무료 자료 둘러보기 ↗</a>
+        </article>
+        <article class="resource-card">
+          <span class="resource-type">듣기 확장</span>
+          <h3>ELLLO Listening Library</h3>
+          <p>짧은 오디오·비디오, 스크립트와 퀴즈가 있는 자료로 다양한 억양과 자연스러운 속도에 익숙해져 보세요.</p>
+          <a href="https://www.elllo.org/" target="_blank" rel="noopener noreferrer">리스닝 자료 열기 ↗</a>
+        </article>
+        <article class="resource-card">
+          <span class="resource-type">사이트 활용법</span>
+          <h3>30분 연결 루틴</h3>
+          <p>toeic.monster 10분 → 듣기 10분 → 공식 샘플 10분. 학습한 단어를 다른 문맥에서 다시 만나는 방식입니다.</p>
+          <a href="#today-section" class="resource-local-link">오늘의 학습으로 이동 ↓</a>
+        </article>
+      </div>
+      <p class="resource-note">🔎 외부 사이트의 콘텐츠·정책·접근 권한은 각 운영 주체가 관리합니다. 링크가 열리지 않거나 시험 정보가 바뀐 경우 해당 공식 사이트의 최신 안내를 우선해 주세요.</p>
+    </section>
+
+    <section class="home-section" aria-label="점수별 학습 로드맵">
+      <h2 class="home-section-title">🗺️ 목표 점수별 학습 로드맵</h2>
+      <p class="home-section-sub">현재 점수와 목표의 차이에 따라 오늘 할 일을 좁혀 보세요. 진단·대시보드에서 나만의 약점도 확인할 수 있어요.</p>
+      <div class="roadmap-grid">
+        <article class="roadmap-card">
+          <h3>🌱 400~595점 · 기초 다지기</h3>
+          <p>짧고 정확한 문장을 많이 만나며 기본 어휘와 품사를 안정화합니다.</p>
+          <ul><li>하루 단어 20~30개</li><li>Part 1·2 듣기 반복</li><li>Part 5 품사·수일치</li></ul>
+        </article>
+        <article class="roadmap-card">
+          <h3>🚀 600~695점 · 유형 적응</h3>
+          <p>아는 단어를 문제에서 빠르게 찾는 연습으로 풀이 속도를 높입니다.</p>
+          <ul><li>유닛 예문 소리 내어 읽기</li><li>Part 3·4 키워드 듣기</li><li>Part 5 30초 훈련</li></ul>
+        </article>
+        <article class="roadmap-card">
+          <h3>📈 700~795점 · 속도와 정확도</h3>
+          <p>복수 지문과 긴 대화에서 핵심 정보를 놓치지 않는 훈련이 필요합니다.</p>
+          <ul><li>오답 원인 한 줄 기록</li><li>Part 7 질문 먼저 읽기</li><li>주 1회 모의고사</li></ul>
+        </article>
+        <article class="roadmap-card">
+          <h3>🏆 800점 이상 · 실전 완성</h3>
+          <p>실수 패턴을 줄이고 고급 어휘·동의어·연어를 문맥으로 확장합니다.</p>
+          <ul><li>오답·복습 단어 우선</li><li>LC 쉐도잉과 받아쓰기</li><li>주 2회 시간 제한 풀이</li></ul>
+        </article>
+      </div>
+    </section>
+
+    <section class="home-section" aria-label="Part 미니 문제은행">
+      <div class="section-head"><div><h2 class="home-section-title">🧪 Part별 미니 문제은행</h2><p class="home-section-sub">짧은 문제를 풀고 바로 해설을 확인하세요. 기록은 브라우저에 저장됩니다.</p></div></div>
+      <div class="part-tabs" id="partBankTabs">
+        <button type="button" class="part-tab active" data-part="5">Part 5 문법</button>
+        <button type="button" class="part-tab" data-part="6">Part 6 문맥</button>
+        <button type="button" class="part-tab" data-part="7">Part 7 독해</button>
+      </div>
+      <div id="partBankBox"></div>
+    </section>
+
+    <section class="home-section" aria-label="문맥·연어 학습">
+      <h2 class="home-section-title">🔗 동의어·반의어·연어 학습</h2>
+      <p class="home-section-sub">단어 하나를 문맥의 네트워크로 확장하면 독해와 어휘 문제에 강해집니다.</p>
+      <div class="relation-grid" id="relationGrid"></div>
+    </section>
+
+    <section class="home-section" aria-label="리딩 미니 지문">
+      <h2 class="home-section-title">📖 리딩 미니 지문</h2>
+      <p class="home-section-sub">공지·이메일·안내문을 읽고 핵심 정보와 어휘를 확인해 보세요.</p>
+      <div class="reading-grid" id="readingGrid"></div>
+    </section>
+
+    <section class="home-section" aria-label="말하기·쓰기 연습">
+      <h2 class="home-section-title">🗣️ 말하기·쓰기 확장 연습</h2>
+      <p class="home-section-sub">TOEIC Speaking·Writing을 대비하는 짧은 출력 연습입니다. 답변은 서버에 전송되지 않습니다.</p>
+      <div class="reading-grid">
+        <article class="speaking-card"><h3>🎙️ 15초 말하기 프롬프트</h3><div class="prompt-list" id="speakingPromptList"></div><div class="practice-actions"><button type="button" class="btn quiz-btn" id="speakingListen">🔊 질문 듣기</button><button type="button" class="btn quiz-btn" id="speakingRandom">🔄 다른 질문</button></div><p class="practice-note">핵심 단어 2개를 사용해 영어로 15초 동안 말해 보세요.</p></article>
+        <article class="writing-card"><h3>✍️ 이메일 한 문장 쓰기</h3><p class="practice-note">아래 상황에 맞는 정중한 영어 문장을 작성해 보세요.</p><div class="reading-passage" id="writingPrompt"></div><textarea class="writing-area" id="writingArea" placeholder="예: Thank you for your message. I will confirm the schedule shortly."></textarea><div class="practice-actions"><button type="button" class="btn quiz-btn" id="writingCheck">✅ 체크 포인트 보기</button><button type="button" class="btn quiz-btn" id="writingSample">💡 예시 보기</button></div><div class="practice-note" id="writingFeedback"></div></article>
+        <article class="speaking-card"><h3>🎧 쉐도잉 스튜디오</h3><p class="practice-note">문장을 듣고 1~2초 뒤에 따라 말해 보세요. 먼저 스크립트를 가린 채 연습하면 효과가 좋아요.</p><div class="reading-passage" id="shadowingSentence"></div><div class="practice-actions"><button type="button" class="btn quiz-btn" id="shadowingPlay">🔊 문장 듣기</button><button type="button" class="btn quiz-btn" id="shadowingReveal">👁 스크립트 보기</button><button type="button" class="btn quiz-btn" id="shadowingNext">🔄 다른 문장</button></div><label class="practice-note" for="shadowingSpeed">재생 속도</label><select class="dday-input" id="shadowingSpeed"><option value="0.7">0.7배</option><option value="0.85" selected>0.85배</option><option value="1">1배</option></select><p class="practice-note" id="shadowingFeedback"></p></article>
+      </div>
+    </section>
+
+    <section class="home-section" aria-label="시험 D-day 플랜">
+      <h2 class="home-section-title">📅 시험 D-day 학습 플랜</h2>
+      <p class="home-section-sub">시험 날짜를 저장하면 남은 기간에 맞는 복습량을 추천합니다.</p>
+      <div class="dday-grid"><article class="dday-card"><h3>시험 날짜 설정</h3><input type="date" class="dday-input" id="examDateInput"><div class="practice-actions"><button type="button" class="btn quiz-btn" id="saveExamDate">저장</button><button type="button" class="btn quiz-btn" id="clearExamDate">초기화</button></div></article><article class="dday-card"><h3>오늘의 계획</h3><div id="ddayResult"></div></article></div>
     </section>
 
     <section class="home-section" aria-label="TOEIC 시험 안내">
@@ -2483,7 +2690,7 @@
     return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
   function escapeAttr(s) {
-    return String(s).replace(/"/g, "&quot;");
+    return esc(s);
   }
 
   var totalCount = 0;
@@ -2597,7 +2804,7 @@
       try { localStorage.setItem("toeic1000_fav", JSON.stringify(favSet)); } catch (err) {}
       card.classList.toggle("fav", !!favSet[word]);
       e.target.textContent = favSet[word] ? "★" : "☆";
-      if (favFilter) renderUnits(document.getElementById("searchInput").value);
+        if (favFilter) renderUnits(document.getElementById("searchInput").value);
     } else if (e.target.classList.contains("speak")) {
       var card = e.target.closest(".card");
       if (e.target.classList.contains("ex-speak")) {
@@ -2625,9 +2832,11 @@
   var fcList = [];
   var fcIdx = 0;
   var fcShown = false;
+  var isSrsMode = false;
 
   // ---------- 공통 뷰 전환 ----------
   var VIEW_IDS = ["homeView", "units", "flashcardView", "quizView", "examView", "listenView", "mockView", "diagView", "dashView"];
+  var activeView = "homeView";
   var BTN_IDS = ["btnHome", "btnList", "btnFlash", "btnQuiz", "btnExam", "btnSrs", "btnListen", "btnMock", "btnDiag", "btnDash"];
   function showView(viewId, btnId) {
     VIEW_IDS.forEach(function (v) {
@@ -2644,10 +2853,12 @@
     if (sb) sb.style.display = viewId === "homeView" ? "none" : "";
     var bi = document.querySelector(".book-intro");
     if (bi) bi.style.display = viewId === "homeView" ? "none" : "";
+    activeView = viewId;
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function enterFlash() {
+    isSrsMode = false;
     fcList = all.reduce(function (arr, u) { return arr.concat(u.words); }, []);
     shuffle(fcList);
     fcIdx = 0;
@@ -2725,8 +2936,14 @@
   document.getElementById("fcMark").addEventListener("click", function () {
     if (!fcList.length) return;
     var w = fcList[fcIdx];
-    if (!learned[w[0]]) touchDaily();
-    learned[w[0]] = todayKey();
+    var previousDate = learned[w[0]];
+    if (!previousDate) touchDaily();
+    if (isSrsMode && previousDate) {
+      // 복습 완료는 오늘을 기준으로 다음 1일 주기를 시작합니다.
+      learned[w[0]] = todayKey();
+    } else {
+      learned[w[0]] = todayKey();
+    }
     saveLearned();
     fcIdx = (fcIdx + 1) % fcList.length;
     fcShown = false;
@@ -3368,7 +3585,216 @@
     if (fb) fb.textContent = isCorrect ? "정답입니다! 🎉" : "오답입니다. 정답: " + opt.getAttribute("data-a");
   });
 
+  // ---------- 확장 학습 콘텐츠: 문제은행·리딩·출력 연습 ----------
+  var PART_BANK = {
+    "5": [
+      { q: "The new policy will _____ improve customer satisfaction.", a: "significantly", opts: ["significant", "significantly", "significance", "signify"], why: "동사 improve를 수식하므로 부사 significantly가 정답입니다." },
+      { q: "Each employee _____ required to complete the training.", a: "is", opts: ["are", "is", "be", "being"], why: "Each는 단수 취급하므로 단수 동사 is를 씁니다." },
+      { q: "Please submit the application _____ Friday.", a: "by", opts: ["at", "by", "on", "for"], why: "by Friday는 금요일까지라는 마감 기한을 나타냅니다." }
+    ],
+    "6": [
+      { q: "The conference has been _____ until next month due to construction.", a: "postponed", opts: ["postponing", "postponed", "postpone", "postpones"], why: "conference가 연기되는 대상이므로 수동태 has been postponed가 자연스럽습니다." },
+      { q: "The new brochure is designed to be both attractive and _____.", a: "informative", opts: ["inform", "information", "informative", "informed"], why: "both A and B 병렬 구조이므로 attractive와 같은 형용사 informative가 필요합니다." },
+      { q: "_____ the heavy rain, the outdoor event continued as planned.", a: "Despite", opts: ["Despite", "Although", "Because", "Therefore"], why: "뒤에 명사구 the heavy rain이 있으므로 despite가 정답입니다." }
+    ],
+    "7": [
+      { q: "공지문: The east entrance will be closed from 6 to 8 p.m. for maintenance. Visitors should use the west entrance.", a: "서쪽 입구를 이용해야 한다", opts: ["동쪽 입구를 이용해야 한다", "서쪽 입구를 이용해야 한다", "방문 시간이 변경된다", "정비가 취소된다"], why: "공지문은 동쪽 입구 폐쇄 시간 동안 서쪽 입구를 이용하라고 안내합니다." },
+      { q: "이메일: Please send the revised invoice before noon so that our accounting team can process the payment today.", a: "수정된 청구서를 정오 전까지 보내기", opts: ["결제를 다음 주로 미루기", "수정된 청구서를 정오 전까지 보내기", "회계팀에 새 직원을 고용하기", "청구서를 폐기하기"], why: "before noon과 process the payment today가 핵심 단서입니다." },
+      { q: "광고: Early-bird registration ends on May 10. Members receive an additional 15% discount.", a: "회원은 추가 할인을 받는다", opts: ["등록은 5월 10일에 시작된다", "회원은 추가 할인을 받는다", "비회원만 등록할 수 있다", "행사가 15일간 열린다"], why: "Members receive an additional 15% discount라고 명시되어 있습니다." }
+    ]
+  };
+  var partBankState = {};
+  function renderPartBank(part) {
+    var box = document.getElementById("partBankBox");
+    if (!box) return;
+    var questions = PART_BANK[part] || PART_BANK["5"];
+    partBankState[part] = partBankState[part] || { answered: {} };
+    box.innerHTML = questions.map(function (item, qi) {
+      var answered = partBankState[part].answered[qi];
+      var html = '<article class="bank-card"><span class="bank-label">TOEIC Part ' + part + ' · ' + (qi + 1) + '번</span>' +
+        '<div class="bank-q">' + esc(item.q) + '</div><div class="bank-options">';
+      item.opts.forEach(function (opt) {
+        var state = answered ? (opt === item.a ? " correct" : answered.choice === opt ? " wrong" : "") : "";
+        html += '<button type="button" class="bank-opt' + state + '" data-part="' + part + '" data-qi="' + qi + '" data-answer="' + escapeAttr(item.a) + '"' + (answered ? " disabled" : "") + '>' + esc(opt) + '</button>';
+      });
+      html += '</div><div class="bank-feedback">' + (answered ? (answered.ok ? "정답입니다! 🎉 " : "다시 확인해 보세요. ❌ ") + esc(item.why) : "") + '</div></article>';
+      return html;
+    }).join("");
+  }
+  var partTabs = document.getElementById("partBankTabs");
+  if (partTabs) partTabs.addEventListener("click", function (e) {
+    var tab = e.target.closest(".part-tab");
+    if (!tab) return;
+    partTabs.querySelectorAll(".part-tab").forEach(function (el) { el.classList.remove("active"); });
+    tab.classList.add("active");
+    renderPartBank(tab.getAttribute("data-part"));
+  });
+  var partBox = document.getElementById("partBankBox");
+  if (partBox) partBox.addEventListener("click", function (e) {
+    var btn = e.target.closest(".bank-opt");
+    if (!btn || btn.disabled) return;
+    var part = btn.getAttribute("data-part");
+    var qi = parseInt(btn.getAttribute("data-qi"), 10);
+    var item = PART_BANK[part][qi];
+    var ok = btn.textContent === item.a;
+    partBankState[part].answered[qi] = { choice: btn.textContent, ok: ok };
+    recordStat("part_" + part, ok);
+    renderPartBank(part);
+  });
+
+  var RELATIONS = [
+    ["increase", "증가하다", "rise · grow", "decrease · decline", "increase revenue / a significant increase"],
+    ["purchase", "구매하다", "buy · acquire", "sell · return", "purchase equipment / make a purchase"],
+    ["prompt", "신속한", "quick · immediate", "delayed · slow", "prompt response / prompt payment"],
+    ["eligible", "자격이 있는", "qualified · entitled", "ineligible · disqualified", "eligible for a discount / eligible candidate"],
+    ["maintain", "유지하다", "preserve · sustain", "damage · neglect", "maintain quality / maintain a balance"],
+    ["require", "요구하다", "need · demand", "waive · exempt", "require approval / require attention"],
+    ["available", "이용 가능한", "accessible · obtainable", "unavailable · occupied", "available online / available upon request"],
+    ["efficient", "효율적인", "effective · productive", "inefficient · wasteful", "efficient system / energy-efficient"],
+    ["revenue", "수익", "income · earnings", "expense · loss", "generate revenue / annual revenue"],
+    ["submit", "제출하다", "hand in · provide", "withhold · withdraw", "submit an application / submit a report"]
+  ];
+  function renderRelations() {
+    var grid = document.getElementById("relationGrid");
+    if (!grid) return;
+    grid.innerHTML = RELATIONS.map(function (r) {
+      return '<article class="relation-card"><b>' + esc(r[0]) + ' · ' + esc(r[1]) + '</b><p>동의어: ' + esc(r[2]) + '</p><p>반의어: ' + esc(r[3]) + '</p><p>연어: <b>' + esc(r[4]) + '</b></p></article>';
+    }).join("");
+  }
+
+  var READING_MINI = [
+    { title: "사내 공지", type: "공지", text: "The elevator in Building B will be unavailable this Friday morning. Employees attending the 10 a.m. workshop should use the stairs or the elevator in Building A.", q: "10시 워크숍 참석자는 무엇을 해야 하는가?", a: "다른 엘리베이터나 계단을 이용한다", opts: ["워크숍을 취소한다", "다른 엘리베이터나 계단을 이용한다", "빌딩 B에서 기다린다"] },
+    { title: "고객 이메일", type: "이메일", text: "Thank you for contacting Greenway Travel. Your reservation has been confirmed for June 18. Please arrive at least 30 minutes before departure to collect your boarding pass.", q: "고객은 언제 도착해야 하는가?", a: "출발 30분 전", opts: ["예약일 다음 날", "출발 30분 전", "6월 18일 오후"] },
+    { title: "제품 안내", type: "광고", text: "The FlexiDesk is now available in three colors. Orders placed before March 31 include free delivery and a two-year warranty. Visit our website for bulk-order pricing.", q: "3월 31일 전에 주문하면 어떤 혜택이 있는가?", a: "무료 배송과 2년 보증", opts: ["색상 추가", "무료 배송과 2년 보증", "대량 주문 가격만 제공"] }
+  ];
+  function renderReadings() {
+    var grid = document.getElementById("readingGrid");
+    if (!grid) return;
+    grid.innerHTML = READING_MINI.map(function (item, i) {
+      return '<article class="reading-card"><span class="bank-label">' + esc(item.type) + '</span><h3>' + esc(item.title) + '</h3><div class="reading-passage">' + esc(item.text) + '</div><div class="reading-q">' + esc(item.q) + '</div><select class="reading-answer" data-reading="' + i + '"><option value="">정답을 선택하세요</option>' + item.opts.map(function (o) { return '<option>' + esc(o) + '</option>'; }).join("") + '</select><div class="bank-feedback" id="readingFeedback' + i + '"></div></article>';
+    }).join("");
+    grid.querySelectorAll(".reading-answer").forEach(function (select) {
+      select.addEventListener("change", function () {
+        var item = READING_MINI[parseInt(this.getAttribute("data-reading"), 10)];
+        var fb = document.getElementById("readingFeedback" + this.getAttribute("data-reading"));
+        var ok = this.value === item.a;
+        recordStat("reading", ok);
+        fb.textContent = ok ? "정답입니다! 🎉 핵심 단서가 정확해요." : "다시 읽어 보세요. 핵심 단서: " + item.a;
+        fb.style.color = ok ? "var(--green)" : "#fa5252";
+      });
+    });
+  }
+
+  var SPEAKING_PROMPTS = [
+    ["Describe a useful office tool.", "convenient, improve"],
+    ["What do you usually do before a meeting?", "agenda, prepare"],
+    ["Explain how to handle a customer complaint.", "listen, solution"],
+    ["What is one benefit of working in a team?", "cooperate, efficient"],
+    ["Describe a product you would recommend.", "feature, reliable"]
+  ];
+  var speakingPromptIdx = 0;
+  function renderSpeakingPrompt() {
+    var box = document.getElementById("speakingPromptList");
+    if (!box) return;
+    var p = SPEAKING_PROMPTS[speakingPromptIdx];
+    box.innerHTML = '<div class="prompt-item"><b>Q</b><span>' + esc(p[0]) + '<br><small>추천 단어: ' + esc(p[1]) + '</small></span></div>';
+  }
+  var speakingListen = document.getElementById("speakingListen");
+  if (speakingListen) speakingListen.addEventListener("click", function () { speak(SPEAKING_PROMPTS[speakingPromptIdx][0]); });
+  var speakingRandom = document.getElementById("speakingRandom");
+  if (speakingRandom) speakingRandom.addEventListener("click", function () { speakingPromptIdx = (speakingPromptIdx + 1) % SPEAKING_PROMPTS.length; renderSpeakingPrompt(); });
+
+  var WRITING_PROMPTS = [
+    ["회의 시간이 변경되었다고 동료에게 알리세요.", "Please note that the meeting time has been changed. I will send the updated agenda shortly."],
+    ["고객의 문의에 답변하겠다고 정중히 안내하세요.", "Thank you for your inquiry. We will get back to you as soon as possible."],
+    ["보고서 제출이 늦어질 수 있다고 알리세요.", "I am writing to let you know that the report may be delayed."],
+    ["도움을 준 동료에게 감사하세요.", "Thank you for your help. I really appreciate your prompt response."]
+  ];
+  var writingPromptIdx = dayOfYearNow() % WRITING_PROMPTS.length;
+  function renderWritingPrompt() {
+    var box = document.getElementById("writingPrompt");
+    if (box) box.textContent = WRITING_PROMPTS[writingPromptIdx][0];
+    var feedback = document.getElementById("writingFeedback");
+    if (feedback) feedback.textContent = "";
+  }
+  var writingCheck = document.getElementById("writingCheck");
+  if (writingCheck) writingCheck.addEventListener("click", function () {
+    var value = (document.getElementById("writingArea").value || "").trim();
+    var feedback = document.getElementById("writingFeedback");
+    if (!value) { feedback.textContent = "문장을 먼저 작성해 보세요."; return; }
+    var checks = [value.length >= 25, /[.!?]$/.test(value), /\b(I|We|Please|Thank|The)\b/i.test(value)];
+    feedback.textContent = "체크: " + (checks[0] ? "길이 ✓" : "조금 더 구체적으로 · ") + " " + (checks[1] ? "문장부호 ✓" : "문장부호 추가 · ") + " " + (checks[2] ? "정중한 주어/표현 ✓" : "주어·정중 표현 확인") + " / 예시를 참고해 다듬어 보세요.";
+  });
+  var writingSample = document.getElementById("writingSample");
+  if (writingSample) writingSample.addEventListener("click", function () { document.getElementById("writingFeedback").textContent = "예시: " + WRITING_PROMPTS[writingPromptIdx][1]; });
+
+  var SHADOWING_SENTENCES = [
+    "Please confirm the meeting room before noon.",
+    "We look forward to hearing from you soon.",
+    "The updated report is available on the company website.",
+    "Could you send me the revised schedule by Friday?",
+    "Our customer service team will follow up shortly."
+  ];
+  var shadowingIdx = 0;
+  var shadowingVisible = false;
+  function renderShadowing() {
+    var box = document.getElementById("shadowingSentence");
+    if (!box) return;
+    box.textContent = shadowingVisible ? SHADOWING_SENTENCES[shadowingIdx] : "스크립트를 가리고 먼저 들어 보세요.";
+  }
+  var shadowingPlay = document.getElementById("shadowingPlay");
+  if (shadowingPlay) shadowingPlay.addEventListener("click", function () { speakRate(SHADOWING_SENTENCES[shadowingIdx], parseFloat(document.getElementById("shadowingSpeed").value) || 0.85); });
+  var shadowingReveal = document.getElementById("shadowingReveal");
+  if (shadowingReveal) shadowingReveal.addEventListener("click", function () { shadowingVisible = !shadowingVisible; renderShadowing(); });
+  var shadowingNext = document.getElementById("shadowingNext");
+  if (shadowingNext) shadowingNext.addEventListener("click", function () { shadowingIdx = (shadowingIdx + 1) % SHADOWING_SENTENCES.length; shadowingVisible = false; renderShadowing(); });
+
+  var ddayInput = document.getElementById("examDateInput");
+  function localDateKey(date) {
+    return date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0") + "-" + String(date.getDate()).padStart(2, "0");
+  }
+  function renderDday() {
+    var result = document.getElementById("ddayResult");
+    if (!result) return;
+    var raw = ddayInput && ddayInput.value;
+    if (!raw) { result.innerHTML = '<p class="practice-note">시험 날짜를 설정하면 D-day와 추천 학습량이 표시됩니다.</p>'; return; }
+    var target = new Date(raw + "T00:00:00");
+    if (isNaN(target.getTime())) { result.innerHTML = '<p class="practice-note">시험 날짜를 확인해 주세요.</p>'; return; }
+    var now = new Date();
+    var todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    var days = Math.round((target - todayStart) / 86400000);
+    if (days < 0) { result.innerHTML = '<div class="dday-number">D+' + Math.abs(days) + '</div><p class="practice-note">새 시험 날짜를 설정해 보세요.</p>'; return; }
+    var remaining = Math.max(0, totalCount - Object.keys(learned).filter(function (k) { return learned[k]; }).length);
+    var dailyWords = Math.min(remaining, Math.max(10, Math.ceil(remaining / Math.max(1, days))));
+    result.innerHTML = '<div class="dday-number">D-' + days + '</div><p class="practice-note">남은 미학습 단어 ' + remaining + '개 · 하루 약 ' + dailyWords + '개 추천</p><div class="dday-plan"><div><b>' + Math.min(30, dailyWords) + '</b>새 단어</div><div><b>10</b>퀴즈</div><div><b>1</b>복습</div></div>';
+  }
+  if (ddayInput) {
+    try { ddayInput.value = localStorage.getItem("toeic1000_examdate") || ""; } catch (e) {}
+    ddayInput.addEventListener("change", renderDday);
+  }
+  var saveExamDate = document.getElementById("saveExamDate");
+  if (saveExamDate) saveExamDate.addEventListener("click", function () { try { localStorage.setItem("toeic1000_examdate", ddayInput.value); } catch (e) {} renderDday(); showToast("📅 시험 날짜를 저장했습니다."); });
+  var clearExamDate = document.getElementById("clearExamDate");
+  if (clearExamDate) clearExamDate.addEventListener("click", function () { ddayInput.value = ""; try { localStorage.removeItem("toeic1000_examdate"); } catch (e) {} renderDday(); });
+
+  var localResourceLink = document.querySelector(".resource-local-link");
+  if (localResourceLink) localResourceLink.addEventListener("click", function (e) {
+    e.preventDefault();
+    var target = document.getElementById("today-section");
+    if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+
+  function renderExtendedHome() {
+    renderPartBank("5");
+    renderRelations();
+    renderReadings();
+    renderSpeakingPrompt();
+    renderWritingPrompt();
+    renderShadowing();
+    renderDday();
+  }
   function renderHome() {
+    activeView = "homeView";
     var learnedN = Object.keys(learned).filter(function (k) { return learned[k]; }).length;
     var pct = totalCount ? Math.round(learnedN / totalCount * 100) : 0;
     document.getElementById("heroLearned").textContent = learnedN;
@@ -3905,6 +4331,7 @@
     return null;
   }
   function enterSrs() {
+    isSrsMode = true;
     var due = srsDueWords();
     if (!due.length) {
       showView("dashView", "btnDash");
@@ -3926,18 +4353,6 @@
       fcList.length + "개의 복습 단어 · 암기 후 ✅ 외웠어요 → 다음 주기로 이동";
   }
   document.getElementById("btnSrs").addEventListener("click", enterSrs);
-  // SRS 모드에서 외웠어요 → 학습일 갱신 (다음 주기 시작)
-  var origFcMark = document.getElementById("fcMark").onclick;
-  document.getElementById("fcMark").addEventListener("click", function () {
-    if (!fcList.length) return;
-    var w = fcList[fcIdx];
-    if (learned[w[0]] && dayDiff(String(learned[w[0]]).split(" ")[0] || learned[w[0]], todayKey()) >= 1) {
-      var nd = srsNextDate(String(learned[w[0]]).split(" ")[0] || learned[w[0]]);
-      if (nd) learned[w[0]] = nd;
-    }
-    if (!learned[w[0]]) { learned[w[0]] = todayKey(); touchDaily(); }
-    saveLearned();
-  });
 
   // ---------- 리스닝 연습 ----------
   var listenQuestions = [];
@@ -4597,6 +5012,7 @@
   collectUnits();
   syncLevelButtons();
   renderUnits("");
+  renderExtendedHome();
   updateProgress();
   updateWrongBadge();
   updateDailyUI();
