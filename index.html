@@ -875,7 +875,7 @@
   .btn-hero.primary { background: var(--primary); color: #fff; }
   .btn-hero.primary:hover { background: var(--primary-dark); border-color: var(--primary-dark); }
 
-  .home-section { margin-bottom: 38px; }
+  .home-section { margin-bottom: 30px; }
   .home-section-title { font-size: 19px; font-weight: 800; margin-bottom: 4px; }
   .home-section-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 14px; }
 
@@ -940,35 +940,26 @@
   /* 유닛 그리드 */
   .unit-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(255px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 8px;
   }
   .unit-btn {
     font-family: inherit;
     text-align: left;
     background: var(--card);
     border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 14px 16px;
+    border-radius: 12px;
+    padding: 10px 12px;
     cursor: pointer;
     transition: box-shadow .15s, border-color .15s, transform .15s;
   }
   .unit-btn:hover { border-color: var(--primary); box-shadow: var(--shadow-sm); transform: translateY(-2px); }
-  .unit-btn-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+  .unit-btn-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
   .unit-btn-num { font-size: 11px; font-weight: 800; color: var(--primary); letter-spacing: .3px; }
-  .unit-btn-title { display: block; font-size: 15px; font-weight: 800; color: var(--text); margin-bottom: 2px; }
-  .unit-btn-sub {
-    display: block;
-    font-size: 12px;
-    color: var(--text-muted);
-    margin-bottom: 10px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .unit-btn-bar { display: block; height: 6px; background: var(--soft-blue); border-radius: 99px; overflow: hidden; margin-bottom: 6px; }
+  .unit-btn-title { display: block; font-size: 14px; font-weight: 800; color: var(--text); margin-bottom: 4px; word-break: keep-all; }
+  .unit-btn-bar { display: block; height: 5px; background: var(--soft-blue); border-radius: 99px; overflow: hidden; margin-bottom: 4px; }
   .unit-btn-fill { display: block; height: 100%; background: var(--green); border-radius: 99px; }
-  .unit-btn-progress { display: block; font-size: 11.5px; color: var(--text-muted); font-weight: 600; }
+  .unit-btn-progress { display: block; font-size: 11px; color: var(--text-muted); font-weight: 600; }
 
   /* 특징 */
   .feature-grid {
@@ -1229,8 +1220,8 @@
   .quote-featured .quote-author { font-size: 12.5px; opacity: .75; margin-top: 10px; font-weight: 700; position: relative; }
   .quote-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
+    gap: 10px;
   }
   .quote-card {
     background: var(--card);
@@ -1286,9 +1277,9 @@
   /* 빈출 구동사·숙어 */
   .idiom-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 12px;
-    margin-top: 12px;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 8px;
+    margin-top: 10px;
   }
   .idiom-card {
     background: var(--card);
@@ -1319,6 +1310,31 @@
 
   /* 모의고사 약점 바 */
   .bar-fill.weak { background: #fa5252; }
+
+  /* 섹션 빠른 이동 내비게이션 */
+  .section-nav {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    margin: -16px 0 22px;
+    scrollbar-width: thin;
+  }
+  .sn-chip {
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 700;
+    white-space: nowrap;
+    border: 1px solid var(--border);
+    border-radius: 99px;
+    background: var(--card);
+    color: var(--text);
+    padding: 7px 13px;
+    cursor: pointer;
+    transition: border-color .15s, color .15s, background .15s;
+  }
+  .sn-chip:hover { border-color: var(--primary); color: var(--primary); }
+  #homeView section { scroll-margin-top: 80px; }
 
   /* 이미지 연상: 유닛 테마 이모지 */
   .unit-emoji { font-size: 14px; margin-right: 4px; vertical-align: 1px; }
@@ -1420,6 +1436,10 @@
     .hero-stats { grid-template-columns: repeat(2, 1fr); }
     .mode-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
     .toeic-grid { grid-template-columns: 1fr; }
+    .unit-grid, .idiom-grid, .today-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 359px) {
+    .unit-grid, .idiom-grid, .today-grid { grid-template-columns: 1fr; }
   }
 
   /* ---------- 푸터 ---------- */
@@ -1660,6 +1680,19 @@
         <button type="button" class="btn-hero" id="homeDiag">🧭 실력 진단</button>
       </div>
     </section>
+
+    <nav class="section-nav print-hide" aria-label="섹션 빠른 이동">
+      <button type="button" class="sn-chip" data-target="오늘의 학습">☀️ 오늘의 학습</button>
+      <button type="button" class="sn-chip" data-target="오늘의 단어">🃏 오늘의 단어</button>
+      <button type="button" class="sn-chip" data-target="오늘의 문법 팁">📐 문법 팁</button>
+      <button type="button" class="sn-chip" data-target="오늘의 대화문">🎧 대화문</button>
+      <button type="button" class="sn-chip" data-target="학습 모드">🧩 학습 모드</button>
+      <button type="button" class="sn-chip" data-target="주제별 유닛">📚 유닛</button>
+      <button type="button" class="sn-chip" data-target="빈출 구동사·숙어">💡 구동사</button>
+      <button type="button" class="sn-chip" data-target="TOEIC 시험 안내">📋 TOEIC 정보</button>
+      <button type="button" class="sn-chip" data-target="쉬어가는 코너">☕ 명언</button>
+      <button type="button" class="sn-chip" data-target="자주 묻는 질문">❓ FAQ</button>
+    </nav>
 
     <section class="home-section" aria-label="오늘의 학습">
       <h2 class="home-section-title">☀️ 오늘의 학습</h2>
@@ -3133,6 +3166,15 @@
     renderIdioms(document.getElementById("idiomSearch").value);
   });
 
+  // 섹션 빠른 이동 내비게이션
+  var secNav = document.querySelector(".section-nav");
+  if (secNav) secNav.addEventListener("click", function (e) {
+    var chip = e.target.closest(".sn-chip");
+    if (!chip) return;
+    var sec = document.querySelector('.home-section[aria-label="' + chip.getAttribute("data-target") + '"]');
+    if (sec) sec.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+
   function dayOfYearNow() {
     var nowD = new Date();
     var yearStart = new Date(nowD.getFullYear(), 0, 0);
@@ -3422,7 +3464,6 @@
       btn.innerHTML =
         '<span class="unit-btn-top"><span class="unit-btn-num">UNIT ' + u.unit + '</span><span class="lvl-badge ' + lvlCls + '">' + lvlIcon + " " + u.level + '</span></span>' +
         '<span class="unit-btn-title">' + (u.icon ? '<span class="unit-emoji">' + u.icon + '</span> ' : '') + esc(u.title) + '</span>' +
-        '<span class="unit-btn-sub">' + esc(u.sub) + '</span>' +
         '<span class="unit-btn-bar"><span class="unit-btn-fill" style="width:' + p + '%"></span></span>' +
         '<span class="unit-btn-progress">' + done + " / " + u.words.length + " 단어 · " + p + "%</span>";
       (function (id) {
