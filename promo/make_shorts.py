@@ -11,6 +11,9 @@ Ken Burns 줌 효과와 슬라이드 간 크로스페이드, 선택적으로 영
   python make_shorts.py --unit 3 --words 7 --tts     # 7개 + 영어 음성(edge-tts)
   python make_shorts.py --unit 5 --seed 42 --bg purple
   python make_shorts.py --unit 2 --words 3 --dry-run # 계획만 출력
+  python make_shorts.py --unit 1 --allow-repeat      # 이미 쓴 단어도 다시 사용
+
+중복 방지: 이미 쓴 단어는 다음 생성에서 자동으로 제외되고 promo/posted.json 에 기록됩니다.
 
 필요 패키지: Pillow, imageio-ffmpeg (pip install -r requirements.txt)
 TTS 사용 시: pip install edge-tts  (인터넷 필요, 무료/키 불필요)
@@ -39,7 +42,18 @@ except ImportError:
     _PIL_OK = False
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from publish import load_unit_info, load_unit_words, log, ok, warn, fail  # noqa: E402
+from publish import (  # noqa: E402
+    POSTED_FILE,
+    fail,
+    load_unit_info,
+    load_unit_words,
+    log,
+    mark_words_posted,
+    normalize_word,
+    ok,
+    posted_words_for_unit,
+    warn,
+)
 
 PROMO = Path(__file__).resolve().parent
 ROOT = PROMO.parent
@@ -580,6 +594,8 @@ def main() -> None:
     ap.add_argument("--font", help="한국어 폰트 ttf/ttc 경로 (기본: 시스템 자동 탐색)")
     ap.add_argument("--seed", type=int, help="단어 선택 시드 (재현용)")
     ap.add_argument("--index", type=int, help="특정 단어 인덱스만 사용 (0부터, 테스트용)")
+    ap.add_argument("--allow-repeat", action="store_true",
+                    help="이미 사용한 단어도 다시 사용 (중복 방지 무시)")
     ap.add_argument("--tts", dest="tts", action="store_true", default=True,
                     help="영어 TTS 음성(기본 켜짐 — edge-tts, 인터넷 필요)")
     ap.add_argument("--no-tts", dest="tts", action="store_false", help="영어 TTS 끄기")
@@ -607,8 +623,20 @@ def main() -> None:
             sys.exit(f"인덱스 {args.index} 는 범위 밖 (0~{len(words)-1}).")
         picked = [words[args.index]]
     else:
-        n = min(args.words, len(words))
-        picked = rng.sample(words, n)
+        pool = words
+        if not args.allow_repeat:
+            used = posted_words_for_unit(unit_no)
+            remaining = [w for w in words if normalize_word(w[0]) not in used]
+            if remaining:
+                if len(remaining) < len(words):
+                    log(f"중복 방지: 이미 사용한 단어 {len(words) - len(remaining)}개를 제외하고 "
+                        f"{len(remaining)}개 중에서 선택")
+                pool = remaining
+            elif used:
+                warn(f"UNIT {unit_no} 단어를 모두 사용했습니다 — --reset-posted 로 초기화하거나 "
+                     f"--allow-repeat 로 다시 사용할 수 있습니다. 전체 단어에서 선택합니다.")
+        n = min(args.words, len(pool))
+        picked = rng.sample(pool, n)
 
     music = Path(args.music) if args.music else None
     if music is not None:
@@ -712,6 +740,10 @@ def main() -> None:
 
         size_mb = out.stat().st_size / (1024 * 1024)
         ok(f"생성 완료: {out} ({size_mb:.1f}MB, {W}x{H})")
+        if not args.allow_repeat:
+            added = mark_words_posted(unit_no, [w[0] for w in picked])
+            if added:
+                log(f"🔁 중복 방지 기록: UNIT {unit_no} 단어 {added}개 저장 ({POSTED_FILE.name})")
         log(f"\n바로 배포: python publish.py --video {out.relative_to(PROMO)} --unit {unit_no}"
             + (" --tts 없이 --dry-run 으로 먼저 확인!" if args.tts else " (--dry-run 으로 미리 확인 추천)"))
     finally:

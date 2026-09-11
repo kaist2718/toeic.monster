@@ -12,6 +12,7 @@
     "default_tts": true,
     "default_privacy": "unlisted",
     "confirm_real_upload": true,
+    "manual_fallback": true,
     "history_limit": 20
   },
 
@@ -30,6 +31,9 @@
     "enabled": false,
     "username": "YOUR_INSTAGRAM_USERNAME",
     "password": "YOUR_INSTAGRAM_PASSWORD",
+    "verification_code": "",
+    "totp_secret": "",
+    "proxy": "",
     "session_file": "ig_session.json"
   },
 

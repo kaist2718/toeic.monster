@@ -8,9 +8,15 @@ toeic.monster 홍보 자동 배포 — YouTube Shorts / Instagram Reels / TikTok
   python publish.py --video assets/shorts/my.mp4 --title "제목" --desc "설명"
   python publish.py --video assets/shorts/my.mp4 --platforms yt,ig --youtube-privacy unlisted
   python publish.py --dry-run                       # 업로드 없이 계획만 출력
+  python publish.py --list-posted                    # 사용한 단어·게시한 영상 기록 보기
+  python publish.py --reset-posted 1                 # UNIT 1 중복 방지 기록 초기화
 
 자동 제목/설명: --unit N 을 주면 data/unitNN.js 의 단어를 랜덤으로 골라
 "단어 | TOEIC 필수 어휘 UNIT N 주제 | toeic.monster" 형식으로 생성합니다.
+
+중복 방지: 사용한 단어와 게시한 영상(내용 해시)을 promo/posted.json 에 기록해 다음
+게시에서 같은 단어·같은 숏폼을 자동으로 건너뜁니다. 다시 게시하려면 --allow-repeat,
+기록을 비우려면 --reset-posted(all 또는 UNIT 번호)를 사용하세요.
 
 플랫폼:
   - YouTube Shorts : 공식 YouTube Data API v3 (OAuth, 무료, 하루 6개 제한)
@@ -26,6 +32,7 @@ import argparse
 import ast
 import csv
 import getpass
+import hashlib
 import importlib.util
 import json
 import random
@@ -56,6 +63,7 @@ SCHEDULE_FILE = PROMO / "scheduled_posts.json"
 HISTORY_FILE = PROMO / "publish_history.csv"
 REPORT_DIR = PROMO / "reports"
 PERF_FILE = PROMO / "performance.json"
+POSTED_FILE = PROMO / "posted.json"
 SCHED_TASK_NAME = "toeic_monster_promo"
 HISTORY_FIELDS = [
     "timestamp", "event", "status", "schedule_id", "scheduled_at", "platform",
@@ -125,9 +133,16 @@ def config_issues(cfg: dict) -> tuple[list[str], list[str]]:
         errors.append("활성화된 플랫폼이 없습니다.")
     yt = cfg.get("youtube", {})
     if yt.get("enabled", True):
-        secret = SECRETS_DIR / (yt.get("client_secret_file") or "client_secret.json")
-        if not secret.exists():
-            warnings.append(f"YouTube OAuth 파일이 없습니다: {secret.name}")
+        secret = resolve_client_secret(cfg)
+        if secret is None:
+            warnings.append("YouTube OAuth 파일이 없습니다: .secrets/client_secret.json — --youtube-setup 참고")
+        else:
+            valid, message = validate_client_secret(secret)
+            if valid:
+                if message.startswith("'웹"):
+                    warnings.append(f"YouTube {secret.name}: {message}")
+            else:
+                errors.append(f"YouTube {secret.name} 문제: {message}")
     ig = cfg.get("instagram", {})
     if ig.get("enabled", True):
         if not ig.get("username") or str(ig.get("username")).startswith("YOUR_"):
@@ -149,6 +164,9 @@ def dependency_status() -> list[tuple[str, bool, str]]:
         ("Google OAuth", "google_auth_oauthlib", "YouTube 로그인"),
         ("instagrapi", "instagrapi", "Instagram 업로드"),
         ("edge-tts", "edge_tts", "선택 TTS"),
+        ("pyotp", "pyotp", "Instagram 2단계 인증 자동 입력(선택)"),
+        ("TikTokApi", "TikTokApi", "TikTok 업로드(선택)"),
+        ("playwright", "playwright", "TikTok 브라우저 자동화(선택)"),
     ]
     result = [(name, importlib.util.find_spec(module) is not None, purpose)
               for name, module, purpose in checks]
@@ -208,6 +226,163 @@ def load_unit_info() -> dict:
     return info
 
 
+# --------------------------------------------------------------------------- #
+# 중복 게시 방지 — 사용한 단어·게시한 영상 기록 (posted.json)
+# --------------------------------------------------------------------------- #
+POSTED_VERSION = 1
+
+
+def normalize_word(value: str) -> str:
+    """단어 비교용 키(소문자·공백 정리)."""
+    return re.sub(r"\s+", " ", str(value or "").strip().lower())
+
+
+def load_posted() -> dict:
+    """사용한 단어와 게시한 영상 기록을 읽습니다. 없으면 빈 기록을 돌려줍니다."""
+    data: dict = {"version": POSTED_VERSION, "words": {}, "videos": {}}
+    if not POSTED_FILE.exists():
+        return data
+    try:
+        loaded = json.loads(POSTED_FILE.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        warn(f"중복 방지 기록을 읽지 못했습니다({exc}) — 빈 기록으로 시작합니다.")
+        return data
+    if not isinstance(loaded, dict):
+        return data
+    words = loaded.get("words")
+    if isinstance(words, dict):
+        data["words"] = {str(k): [str(x) for x in v] for k, v in words.items() if isinstance(v, list)}
+    videos = loaded.get("videos")
+    if isinstance(videos, dict):
+        data["videos"] = {str(k): v for k, v in videos.items() if isinstance(v, dict)}
+    return data
+
+
+def save_posted(data: dict) -> None:
+    data["version"] = POSTED_VERSION
+    data["updated_at"] = now_iso()
+    POSTED_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def posted_words_for_unit(unit_no: int) -> set[str]:
+    """해당 UNIT에서 이미 사용한 단어 키 집합."""
+    return {normalize_word(w) for w in load_posted()["words"].get(str(unit_no), [])}
+
+
+def mark_words_posted(unit_no: int | None, words: list[str]) -> int:
+    """단어를 사용 기록에 추가하고 새로 추가된 개수를 돌려줍니다."""
+    if unit_no is None or not words:
+        return 0
+    data = load_posted()
+    bucket = data["words"].setdefault(str(unit_no), [])
+    known = {normalize_word(x) for x in bucket}
+    added = 0
+    for word in words:
+        key = normalize_word(word)
+        if key and key not in known:
+            bucket.append(key)
+            known.add(key)
+            added += 1
+    if added:
+        save_posted(data)
+    return added
+
+
+def video_fingerprint(video: Path) -> str:
+    """영상 파일 내용 해시(같은 파일 재게시 판별용)."""
+    digest = hashlib.sha256()
+    with video.open("rb") as fh:
+        for chunk in iter(lambda: fh.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def posted_platforms(video: Path) -> dict:
+    """이 영상(내용 기준)을 이미 게시한 플랫폼 딕셔너리."""
+    try:
+        record = load_posted()["videos"].get(video_fingerprint(video))
+    except OSError:
+        return {}
+    if not record:
+        return {}
+    platforms = record.get("platforms")
+    return platforms if isinstance(platforms, dict) else {}
+
+
+def filter_posted_platforms(video: Path, platforms: list[str]) -> tuple[list[str], list[str]]:
+    """이미 게시한 플랫폼을 제외한 (남은 플랫폼, 건너뛸 플랫폼)을 돌려줍니다."""
+    done = posted_platforms(video)
+    if not done:
+        return list(platforms), []
+    remaining = [p for p in platforms if p not in done]
+    skipped = [p for p in platforms if p in done]
+    return remaining, skipped
+
+
+def mark_video_posted(video: Path, platform: str, url: str = "") -> None:
+    """영상 내용 해시와 함께 플랫폼별 게시 기록을 남깁니다."""
+    try:
+        fingerprint = video_fingerprint(video)
+    except OSError:
+        return
+    try:
+        rel = str(video.relative_to(PROMO))
+    except ValueError:
+        rel = str(video)
+    data = load_posted()
+    record = data["videos"].setdefault(fingerprint, {"path": rel, "platforms": {}})
+    record.setdefault("platforms", {})
+    entry = record["platforms"].setdefault(platform, {"count": 0})
+    entry["count"] = int(entry.get("count", 0)) + 1
+    entry["last_posted_at"] = now_iso()
+    if url:
+        entry["last_url"] = url
+    record["path"] = rel
+    record["last_posted_at"] = entry["last_posted_at"]
+    save_posted(data)
+
+
+def show_posted_menu() -> None:
+    """사용한 단어·게시한 영상(중복 방지) 기록을 출력합니다."""
+    data = load_posted()
+    words = data["words"]
+    videos = data["videos"]
+    log(f"\n🔁 중복 게시 방지 기록 · {POSTED_FILE.name}")
+    if not words and not videos:
+        log("  아직 기록이 없습니다. 쇼츠를 생성하거나 게시하면 자동으로 쌓입니다.")
+        return
+    total_words = sum(len(v) for v in words.values())
+    log(f"  사용한 단어 {total_words}개 · 게시한 영상 {len(videos)}개")
+    for unit in sorted(words, key=lambda u: int(u) if str(u).isdigit() else 0):
+        items = words[unit]
+        if not items:
+            continue
+        preview = ", ".join(items[:8]) + (" …" if len(items) > 8 else "")
+        log(f"  UNIT {unit}: {len(items)}개 — {preview}")
+    for record in sorted(videos.values(), key=lambda r: r.get("last_posted_at", ""), reverse=True)[:10]:
+        platforms = ", ".join(sorted((record.get("platforms") or {}).keys())) or "-"
+        log(f"  영상: {record.get('path', '')} · {platforms} · {record.get('last_posted_at', '')}")
+
+
+def reset_posted(target: str = "all") -> None:
+    """중복 방지 기록을 초기화합니다(target=all 또는 UNIT 번호)."""
+    data = load_posted()
+    target = str(target or "all").strip().lower()
+    if target in ("all", "전체", "*"):
+        save_posted({"words": {}, "videos": {}})
+        ok("중복 방지 기록을 모두 초기화했습니다.")
+        return
+    if target.isdigit():
+        if not data["words"].get(target):
+            warn(f"UNIT {target} 의 단어 기록이 없습니다.")
+            return
+        data["words"][target] = []
+        save_posted(data)
+        ok(f"UNIT {target} 단어 기록을 초기화했습니다.")
+        return
+    warn("초기화 대상은 all 또는 UNIT 번호입니다.")
+
+
 def resolve_video(args) -> Path | None:
     if args.video:
         p = Path(args.video)
@@ -231,11 +406,25 @@ def build_meta(cfg: dict, args) -> dict:
     title = args.title
     desc = args.desc
     unit_info = {}
+    chosen_word: str | None = None
     if args.unit:
         unit_info = load_unit_info().get(args.unit, {})
         words = load_unit_words(args.unit)
         if words:
-            w = random.choice(words)
+            pool = words
+            if not getattr(args, "allow_repeat", False):
+                used = posted_words_for_unit(args.unit)
+                remaining = [x for x in words if normalize_word(x[0]) not in used]
+                if remaining:
+                    if len(remaining) < len(words):
+                        log(f"   중복 방지: UNIT {args.unit} 단어 {len(words) - len(remaining)}개 제외, "
+                            f"{len(remaining)}개 중에서 선택")
+                    pool = remaining
+                elif used:
+                    warn(f"UNIT {args.unit} 단어를 모두 사용했습니다 — --allow-repeat 또는 "
+                         f"--reset-posted 로 초기화할 수 있습니다. 전체 단어에서 선택합니다.")
+            w = random.choice(pool)
+            chosen_word = w[0]
             unit_tag = f"UNIT {args.unit} {unit_info.get('title', '')}".strip()
             if not title:
                 title = f"{w[0]} | TOEIC 필수 어휘 {unit_tag} | toeic.monster"
@@ -253,7 +442,8 @@ def build_meta(cfg: dict, args) -> dict:
     hashtags = " ".join("#" + h.strip().lstrip("#") for h in cfg.get("hashtags", []))
     if cfg.get("youtube", {}).get("include_shorts_tag", True) and "#Shorts" not in hashtags:
         hashtags += " #Shorts"
-    return {"title": title, "desc": desc, "hashtags": hashtags, "unit": args.unit, "unit_info": unit_info}
+    return {"title": title, "desc": desc, "hashtags": hashtags, "unit": args.unit,
+            "unit_info": unit_info, "word": chosen_word}
 
 
 def resolve_platforms(cfg: dict, arg: str | None) -> list[str]:
@@ -394,6 +584,8 @@ def run_scheduled_item(item: dict, cfg: dict, *, dry_run: bool = False) -> bool:
     args.unit = item.get("unit")
     args.title = item.get("title") or None
     args.desc = item.get("desc") or None
+    args.allow_repeat = False
+    args.manual_fallback = False  # 예약·백그라운드 실행은 브라우저를 열지 않습니다.
     meta = build_meta(cfg, args)
     platforms = resolve_platforms(cfg, item.get("platforms", "auto"))
     if not platforms:
@@ -401,6 +593,17 @@ def run_scheduled_item(item: dict, cfg: dict, *, dry_run: bool = False) -> bool:
                        scheduled_at=item.get("scheduled_at", ""), platform="", video=str(video),
                        unit=item.get("unit"), title=meta["title"], message="활성 플랫폼이 없습니다.")
         return False
+    if not dry_run:
+        remaining, already = filter_posted_platforms(video, platforms)
+        if already:
+            warn(f"{video.name}: 이미 게시한 플랫폼 {', '.join(p.upper() for p in already)} — 건너뜁니다.")
+        if not remaining:
+            append_history(event="publish", status="skipped", schedule_id=item.get("id", ""),
+                           scheduled_at=item.get("scheduled_at", ""), platform=item.get("platforms", ""),
+                           video=str(video), unit=item.get("unit"), title=meta["title"],
+                           message="중복 방지: 이미 게시한 영상/플랫폼")
+            return True
+        platforms = remaining
 
     global _yt_privacy_override
     _yt_privacy_override = item.get("youtube_privacy") or None
@@ -416,10 +619,14 @@ def run_scheduled_item(item: dict, cfg: dict, *, dry_run: bool = False) -> bool:
             url = None
         status = "dry-run" if url == "dry-run" else ("success" if url else "failed")
         all_ok = all_ok and bool(url)
+        if url and url != "dry-run":
+            mark_video_posted(video, short, url)
         append_history(event="publish", status=status, schedule_id=item.get("id", ""),
                        scheduled_at=item.get("scheduled_at", ""), platform=short,
                        video=str(video), unit=item.get("unit"), title=meta["title"], url=url or "",
                        message="예약 게시 실행" if url else "플랫폼 게시 실패 또는 건너뜀")
+    if not dry_run and all_ok and meta.get("word"):
+        mark_words_posted(item.get("unit"), [meta["word"]])
     return all_ok
 
 
@@ -441,6 +648,419 @@ def process_due_schedules(cfg: dict, *, dry_run: bool = False) -> int:
 
 
 # --------------------------------------------------------------------------- #
+# 설정 도우미 · 수동 게시 폴백
+# --------------------------------------------------------------------------- #
+MANUAL_UPLOAD_URLS = {
+    "yt": "https://www.youtube.com/upload",
+    "ig": "https://www.instagram.com/",
+    "tt": "https://www.tiktok.com/tiktokstudio/upload",
+}
+PLATFORM_NAMES = {"yt": "YouTube Shorts", "ig": "Instagram Reels", "tt": "TikTok"}
+
+YOUTUBE_SETUP_STEPS = [
+    ("① Google Cloud 프로젝트 만들기", "https://console.cloud.google.com/projectcreate"),
+    ("② YouTube Data API v3 사용 설정", "https://console.cloud.google.com/apis/library/youtube.googleapis.com"),
+    ("③ OAuth 동의 화면 구성 (외부 / 테스트 사용자 추가)", "https://console.cloud.google.com/apis/credentials/consent"),
+    ("④ OAuth 클라이언트 ID 만들기 (유형: 데스크톱 앱)", "https://console.cloud.google.com/apis/credentials"),
+]
+YOUTUBE_SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
+# OAuth 동의 화면 > 대상(Audience) > 테스트 사용자
+YOUTUBE_AUDIENCE_URL = "https://console.cloud.google.com/auth/audience"
+YOUTUBE_CONSENT_URL = "https://console.cloud.google.com/apis/credentials/consent"
+
+
+def copy_to_clipboard(text: str) -> bool:
+    """캡션을 클립보드에 복사합니다(Windows/macOS/Linux)."""
+    if not text:
+        return False
+    try:
+        if sys.platform.startswith("win"):
+            subprocess.run(
+                ["powershell", "-NoProfile", "-Command",
+                 "[Console]::InputEncoding=[Text.Encoding]::UTF8; "
+                 "Set-Clipboard -Value ([Console]::In.ReadToEnd())"],
+                input=text, text=True, encoding="utf-8", check=True)
+            return True
+        if sys.platform == "darwin":
+            subprocess.run(["pbcopy"], input=text, text=True, check=True)
+            return True
+        for cmd in (["xclip", "-selection", "clipboard"],
+                    ["xsel", "--clipboard", "--input"], ["wl-copy"]):
+            try:
+                subprocess.run(cmd, input=text, text=True, check=True)
+                return True
+            except (OSError, subprocess.CalledProcessError):
+                continue
+    except Exception:
+        return False
+    return False
+
+
+def open_url(url: str) -> bool:
+    """기본 브라우저로 URL을 엽니다."""
+    try:
+        import webbrowser
+        opened = webbrowser.open(url)
+    except Exception:
+        opened = False
+    if opened:
+        ok(f"브라우저에서 열었습니다: {url}")
+    else:
+        warn(f"브라우저를 자동으로 열지 못했습니다 — 직접 접속하세요: {url}")
+    return bool(opened)
+
+
+def build_caption(meta: dict) -> str:
+    """설명 + 해시태그를 합친 캡션을 만듭니다."""
+    caption = meta.get("desc", "") or ""
+    if meta.get("hashtags"):
+        caption = f"{caption}\n\n{meta['hashtags']}" if caption else meta["hashtags"]
+    return caption
+
+
+def manual_publish(video: Path, meta: dict, short: str, cfg: dict, *, mark: bool = True) -> bool:
+    """업로드 페이지를 열고 캡션을 복사해 수동 게시를 돕습니다."""
+    name = PLATFORM_NAMES.get(short, short)
+    caption = build_caption(meta)
+    log("\n" + "=" * 62)
+    log(f"📋 {name} 수동 게시 도우미")
+    log("=" * 62)
+    log(f"영상 파일 : {video}")
+    log(f"제목      : {meta.get('title', '')}")
+    if caption:
+        log("캡션/해시태그:")
+        for line in caption.splitlines():
+            log(f"    {line}")
+    if copy_to_clipboard(caption):
+        ok("캡션을 클립보드에 복사했습니다 — 업로드 화면에서 Ctrl+V 로 붙여넣으세요.")
+    else:
+        warn("클립보드 복사에 실패했습니다. 위 캡션을 직접 복사하세요.")
+    url = MANUAL_UPLOAD_URLS.get(short)
+    if url:
+        open_url(url)
+    log("업로드 화면에서 위 영상 파일을 선택하고 → 캡션 붙여넣기 → 게시하세요.")
+    if mark:
+        mark_video_posted(video, short, "")
+        append_history(event="publish", status="manual", platform=short, video=str(video),
+                       unit=meta.get("unit"), title=meta.get("title", ""),
+                       message="수동 게시 도우미 실행")
+    return True
+
+
+def resolve_client_secret(cfg: dict) -> Path | None:
+    """client_secret 파일을 찾습니다. Google이 내려준 원본 파일 이름도 자동 인식합니다."""
+    yt = cfg.get("youtube", {})
+    configured = SECRETS_DIR / (yt.get("client_secret_file") or "client_secret.json")
+    if configured.exists():
+        return configured
+    if SECRETS_DIR.exists():
+        candidates = sorted(
+            (p for p in SECRETS_DIR.glob("*.json")
+             if "client_secret" in p.name.lower() and "token" not in p.name.lower()),
+            key=lambda p: (p.name != "client_secret.json", p.name),
+        )
+        if candidates:
+            return candidates[0]
+    return None
+
+
+def validate_client_secret(path: Path) -> tuple[bool, str]:
+    """client_secret.json 형식을 검사합니다."""
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return False, f"JSON을 읽지 못했습니다: {exc}"
+    if not isinstance(data, dict):
+        return False, "최상위 값이 JSON 객체가 아닙니다."
+    block = data.get("installed")
+    if block is None:
+        if isinstance(data.get("web"), dict):
+            return True, ("'웹 애플리케이션(web)' 유형입니다. '데스크톱 앱(installed)' 유형으로 "
+                          "다시 만드는 것을 권장합니다.")
+        return False, ("'installed' 또는 'web' 키가 없습니다. OAuth 클라이언트 유형을 "
+                       "'데스크톱 앱'으로 만들었는지 확인하세요.")
+    if not isinstance(block, dict) or not block.get("client_id") or not block.get("client_secret"):
+        return False, "client_id / client_secret 값이 비어 있습니다."
+    return True, "정상적인 데스크톱 앱 OAuth 파일입니다."
+
+
+def youtube_setup_guide() -> None:
+    """YouTube OAuth 준비 순서를 안내합니다."""
+    log("\n" + "=" * 62)
+    log("📺 YouTube Shorts 설정 도우미")
+    log("=" * 62)
+    log("아래 순서대로 진행하면 5~10분이면 끝납니다.")
+    for title, url in YOUTUBE_SETUP_STEPS:
+        log(f"\n{title}")
+        log(f"    {url}")
+        if ask_yes_no("   이 페이지를 브라우저로 열까요?", True):
+            open_url(url)
+        if title.startswith("④"):
+            log("    · 애플리케이션 유형: '데스크톱 앱' 선택")
+            log("    · 만든 뒤 'JSON 다운로드' 클릭 → 그 파일을 아래 폴더에 그대로 넣으면 됩니다")
+            log("      (파일 이름은 바꾸지 않아도 자동 인식합니다)")
+    ok(f"저장 위치: {SECRETS_DIR}")
+    if ask_yes_no("지금 secrets 폴더를 열까요?", True):
+        SECRETS_DIR.mkdir(parents=True, exist_ok=True)
+        open_path(SECRETS_DIR)
+    log("\n중요:")
+    log("  · OAuth 동의 화면의 '테스트 사용자'에 로그인할 Google 계정을 반드시 추가하세요.")
+    log(f"    → {YOUTUBE_AUDIENCE_URL} → '+ ADD USERS'")
+    log("    (빠뜨리면 '403 access_denied — 개발자가 승인한 테스터만' 오류가 나옵니다)")
+    log("  · 앱 이름·지원 이메일·개발자 연락처도 비워두지 마세요.")
+    log("  · '테스트' 상태에서는 refresh 토큰이 7일마다 만료됩니다.")
+    log("    → 동의 화면 → 게시 상태 → '앱 게시' 로 바꾸면 만료되지 않습니다.")
+    log("  · '확인되지 않은 앱' 경고가 뜨면 '고급' → '계속'을 누르세요.")
+    log("  · YouTube 채널이 1개만 연결된 Google 계정을 권장합니다.")
+    if ask_yes_no("지금 YouTube 로그인(브라우저 승인)을 진행할까요?", True):
+        cfg = load_config()
+        youtube_login(cfg)
+
+
+def explain_youtube_auth_error(exc: Exception) -> None:
+    """OAuth 승인 실패 원인을 한국어로 친절하게 안내합니다."""
+    text = str(exc).lower()
+    if "access_denied" in text or "accessdenied" in text:
+        fail("Google이 승인을 거부했습니다 (403 access_denied).")
+        log("")
+        log("가장 흔한 원인: 방금 선택한 Google 계정이 OAuth 동의 화면의")
+        log("'테스트 사용자' 목록에 없습니다.")
+        log("")
+        log("해결 순서")
+        log(f"  1) 이 주소를 엽니다: {YOUTUBE_AUDIENCE_URL}")
+        log("     (안 열리면 Google Cloud → API 및 서비스 → OAuth 동의 화면)")
+        log("  2) '대상(Audience)' 섹션의 '테스트 사용자'에서 '+ ADD USERS' 클릭")
+        log("  3) 로그인 화면에서 고른 Google 계정 주소를 그대로 입력하고 저장")
+        log("  4) 1~2분 기다린 뒤 다시 실행: python publish.py --youtube-login")
+        log("")
+        log("확인 포인트")
+        log("  · 브라우저에 계정이 여러 개면, 테스트 사용자로 등록한 계정을 골라야 합니다.")
+        log("  · OAuth 동의 화면의 앱 이름·지원 이메일·개발자 연락처가 비어 있어도")
+        log("    같은 오류가 나므로 함께 채워 주세요.")
+        log("  · 회사/학교 계정은 관리자가 막아둔 경우가 있습니다 — 개인 Gmail을 쓰세요.")
+        if ask_yes_no("지금 테스트 사용자 설정 페이지를 열까요?", True):
+            open_url(YOUTUBE_AUDIENCE_URL)
+            open_url(YOUTUBE_CONSENT_URL)
+        return
+    if "waiting for response from authorization server" in text:
+        fail("시간이 초과되었습니다(5분) — 브라우저에서 승인을 끝내지 않았습니다.")
+        log("   → 다시 실행하고, 브라우저 창에서 '계속 / 허용'까지 마쳐주세요:")
+        log("     python publish.py --youtube-login")
+        return
+    if "invalid_client" in text:
+        fail("OAuth 클라이언트 정보가 거부되었습니다 (invalid_client).")
+        log("   → Google Cloud에서 만든 클라이언트가 삭제·재발급 되었는지 확인하고,")
+        log("     최신 JSON을 .secrets 폴더에 다시 넣으세요.")
+        return
+    if "redirect_uri_mismatch" in text:
+        fail("redirect_uri 불일치입니다. OAuth 클라이언트 유형을 '데스크톱 앱'으로 만드세요.")
+        return
+    fail(f"YouTube 로그인 실패: {exc}")
+    log("   → python publish.py --youtube-guide 로 설정을 다시 점검하거나,")
+    log(f"     OAuth 동의 화면({YOUTUBE_CONSENT_URL})을 확인하세요.")
+
+
+def get_youtube_credentials(cfg: dict, *, interactive: bool = True, force: bool = False,
+                            allow_non_tty: bool = False):
+    """YouTube OAuth 자격증명을 준비해 돌려줍니다. 실패하면 None."""
+    yt = cfg.get("youtube", {})
+    client_secret = resolve_client_secret(cfg)
+    token_file = SECRETS_DIR / (yt.get("token_file") or "youtube_token.json")
+    if client_secret is None:
+        warn(f"YouTube OAuth 파일이 없습니다: {SECRETS_DIR / 'client_secret.json'}")
+        log("   · Google에서 받은 client_secret*.json 파일을 .secrets 폴더에 넣으면 자동 인식합니다.")
+        log("   · python publish.py --youtube-setup 으로 설정 안내를 실행하세요.")
+        return None
+    if client_secret.name != "client_secret.json":
+        ok(f"OAuth 파일 인식: {client_secret.name}")
+    valid, message = validate_client_secret(client_secret)
+    if not valid:
+        fail(f"{client_secret.name} 문제: {message}")
+        return None
+    try:
+        from google.oauth2.credentials import Credentials
+        from google.auth.transport.requests import Request
+        from google_auth_oauthlib.flow import InstalledAppFlow
+    except ImportError:
+        fail("google-api-python-client / google-auth-oauthlib 미설치 — pip install -r requirements.txt")
+        return None
+
+    creds = None
+    if token_file.exists() and not force:
+        try:
+            creds = Credentials.from_authorized_user_file(str(token_file), YOUTUBE_SCOPES)
+        except Exception:
+            creds = None
+    if creds and creds.expired and creds.refresh_token:
+        try:
+            creds.refresh(Request())
+        except Exception as exc:
+            warn(f"YouTube 토큰 갱신 실패: {exc}")
+            warn("OAuth 앱이 '테스트' 상태면 refresh 토큰이 7일마다 만료됩니다. "
+                 "동의 화면을 '프로덕션'으로 게시하거나 다시 로그인하세요.")
+            creds = None
+    if not creds or not creds.valid:
+        # 작업 스케줄러·파이프 실행에서는 브라우저 인증을 시도하지 않습니다(무한 대기 방지).
+        # 단, --youtube-login 으로 사용자가 직접 요청한 경우(allow_non_tty)는 진행합니다.
+        if interactive and not allow_non_tty and not sys.stdin.isatty():
+            warn("비대화형 실행이라 브라우저 로그인을 건너뜁니다.")
+            interactive = False
+        if not interactive:
+            warn("YouTube 로그인이 필요합니다 — python publish.py --youtube-login 을 실행하세요.")
+            return None
+        log("   YouTube 로그인: 브라우저에서 승인해 주세요 (최초 1회)")
+        log("   ※ 로그인 화면에서 '테스트 사용자'로 등록한 Google 계정을 선택하세요.")
+        try:
+            flow = InstalledAppFlow.from_client_secrets_file(str(client_secret), YOUTUBE_SCOPES)
+            creds = flow.run_local_server(
+                port=0,
+                prompt="consent",
+                authorization_prompt_message=("브라우저가 자동으로 열리지 않으면 이 주소를 복사해 접속하세요:\n{url}\n"),
+                success_message="인증이 완료되었습니다. 이 창을 닫고 터미널로 돌아가세요.",
+                timeout_seconds=300,
+            )
+        except Exception as exc:
+            explain_youtube_auth_error(exc)
+            return None
+    token_file.parent.mkdir(parents=True, exist_ok=True)
+    token_file.write_text(creds.to_json(), encoding="utf-8")
+    return creds
+
+
+def youtube_login(cfg: dict, *, force: bool = False) -> bool:
+    """브라우저 OAuth를 미리 수행하고 토큰을 저장합니다(업로드와 분리)."""
+    creds = get_youtube_credentials(cfg, interactive=True, force=force, allow_non_tty=True)
+    if not creds:
+        return False
+    ok("YouTube 인증 완료 — 토큰을 저장했습니다.")
+    channel = describe_youtube_channel(creds)
+    if channel:
+        ok(f"연결된 채널: {channel}")
+    else:
+        warn("연결된 채널을 확인하지 못했습니다 — 이 Google 계정에 YouTube 채널이 있는지 확인하세요.")
+    log("  · 업로드 테스트: python publish.py --video assets/shorts/unit01_shorts.mp4 "
+        "--platforms yt --youtube-privacy unlisted")
+    log("  · 토큰 만료 방지: Google Cloud → OAuth 동의 화면 → 게시 상태 → '앱 게시'")
+    return True
+
+
+def load_stored_youtube_credentials(cfg: dict):
+    """토큰 파일에서 자격증명을 읽습니다(만료 시 자동 갱신). 실패하면 None."""
+    yt = cfg.get("youtube", {})
+    token_file = SECRETS_DIR / (yt.get("token_file") or "youtube_token.json")
+    if not token_file.exists():
+        return None
+    try:
+        from google.oauth2.credentials import Credentials
+        from google.auth.transport.requests import Request
+    except ImportError:
+        return None
+    try:
+        creds = Credentials.from_authorized_user_file(str(token_file), YOUTUBE_SCOPES)
+    except Exception:
+        return None
+    if creds.expired and creds.refresh_token:
+        try:
+            creds.refresh(Request())
+        except Exception:
+            return None
+        try:
+            token_file.write_text(creds.to_json(), encoding="utf-8")
+        except OSError:
+            pass
+    return creds if creds.valid else None
+
+
+def describe_youtube_channel(creds) -> str | None:
+    """로그인된 YouTube 채널 이름을 조회합니다(실패하면 None)."""
+    try:
+        from googleapiclient.discovery import build
+        service = build("youtube", "v3", credentials=creds, cache_discovery=False)
+        resp = service.channels().list(part="snippet,statistics", mine=True).execute()
+        items = resp.get("items") or []
+        if not items:
+            return None
+        snippet = items[0].get("snippet", {})
+        subs = items[0].get("statistics", {}).get("subscriberCount", "비공개")
+        return f"{snippet.get('title', '이름 없음')} (구독자 {subs})"
+    except Exception:
+        return None
+
+
+def youtube_token_status(cfg: dict) -> tuple[bool, str]:
+    """저장된 YouTube 토큰을 아직 쓸 수 있는지 확인합니다(필요하면 자동 갱신)."""
+    yt = cfg.get("youtube", {})
+    token_file = SECRETS_DIR / (yt.get("token_file") or "youtube_token.json")
+    if not token_file.exists():
+        return False, "토큰 없음 — 로그인이 필요합니다"
+    if load_stored_youtube_credentials(cfg) is not None:
+        return True, "유효"
+    return False, ("만료되었거나 갱신에 실패했습니다 — python publish.py --youtube-login 으로 다시 로그인하세요.\n"
+                   "   → OAuth 앱이 '테스트' 상태면 refresh 토큰이 7일마다 만료됩니다."
+                   " Google Cloud → OAuth 동의 화면 → '앱 게시' 로 전환하세요.")
+
+
+def youtube_check(cfg: dict) -> None:
+    """YouTube 설정 상태를 점검합니다."""
+    yt = cfg.get("youtube", {})
+    client_secret = resolve_client_secret(cfg)
+    log("\n📺 YouTube 상태")
+    if client_secret is None:
+        fail(f"OAuth 파일 없음: {SECRETS_DIR / 'client_secret.json'}")
+        log("   → Google에서 받은 client_secret*.json 을 .secrets 폴더에 넣으면 자동 인식합니다.")
+        log("   → python publish.py --youtube-setup 으로 설정하세요.")
+    else:
+        valid, message = validate_client_secret(client_secret)
+        (ok if valid else fail)(f"{client_secret.name}: {message}")
+    token_ok, token_message = youtube_token_status(cfg)
+    (ok if token_ok else warn)(f"토큰: {token_message}")
+    if token_ok:
+        channel = describe_youtube_channel(load_stored_youtube_credentials(cfg))
+        if channel:
+            ok(f"연결된 채널: {channel}")
+        log("   게시 준비 완료 — python publish.py --video <mp4> --platforms yt 으로 업로드할 수 있습니다.")
+    else:
+        log("   → python publish.py --youtube-login 으로 로그인하세요.")
+
+
+def youtube_menu(cfg: dict) -> None:
+    """현재 상태에 맞는 YouTube 다음 단계만 안내합니다."""
+    secret = resolve_client_secret(cfg)
+    secret_ok = False
+    if secret is not None:
+        secret_ok, _ = validate_client_secret(secret)
+    token_ok, token_message = youtube_token_status(cfg) if secret_ok else (False, "로그인 전")
+
+    log("\n" + "=" * 62)
+    log("📺 YouTube Shorts 준비 상태")
+    log("=" * 62)
+    log(f"  1) OAuth 파일 : {'✅ 인식됨 — ' + secret.name if secret_ok else '❌ 없음 또는 형식 오류'}")
+    log(f"  2) 로그인 토큰: {'✅ ' + token_message if token_ok else '⚠️  ' + token_message}")
+    if token_ok:
+        channel = describe_youtube_channel(load_stored_youtube_credentials(cfg))
+        if channel:
+            log(f"  3) 연결된 채널: {channel}")
+    log("=" * 62)
+
+    if secret_ok and token_ok:
+        if ask_yes_no("이미 준비됐습니다. 다시 로그인할까요?", False):
+            youtube_login(cfg, force=True)
+        return
+    if secret_ok:
+        log("⚠️  로그인 전에 확인하세요")
+        log("  · 승인 화면에서 '테스트 사용자'로 등록한 Google 계정을 선택해야 합니다.")
+        log("  · 등록 안 된 계정을 고르면 403 access_denied 로 실패합니다.")
+        log(f"  · 테스트 사용자 등록: {YOUTUBE_AUDIENCE_URL}")
+        if ask_yes_no("테스트 사용자 설정 페이지를 먼저 열까요?", False):
+            open_url(YOUTUBE_AUDIENCE_URL)
+        if ask_yes_no("지금 브라우저로 YouTube 로그인을 진행할까요?", True):
+            youtube_login(cfg)
+        return
+    if ask_yes_no("OAuth 파일이 아직 없습니다. 단계별 설정 안내를 열까요?", True):
+        youtube_setup_guide()
+
+
+# --------------------------------------------------------------------------- #
 # YouTube Shorts (공식 Data API v3)
 # --------------------------------------------------------------------------- #
 def upload_youtube(video: Path, meta: dict, cfg: dict, dry_run: bool) -> str | None:
@@ -450,38 +1070,15 @@ def upload_youtube(video: Path, meta: dict, cfg: dict, dry_run: bool) -> str | N
     if dry_run:
         log("   [YouTube Shorts] 업로드 예정 (dry-run)")
         return "dry-run"
-    client_secret = SECRETS_DIR / (yt.get("client_secret_file") or "client_secret.json")
-    token_file = SECRETS_DIR / (yt.get("token_file") or "youtube_token.json")
-    if not client_secret.exists():
-        warn("YouTube 설정 필요: Google Cloud에서 client_secret.json 을 다운로드해 "
-             f"{client_secret} 에 넣으세요. (README 참고)")
-        return None
-
     try:
-        from google.oauth2.credentials import Credentials
-        from google.auth.transport.requests import Request
-        from google_auth_oauthlib.flow import InstalledAppFlow
         from googleapiclient.discovery import build
         from googleapiclient.http import MediaFileUpload
     except ImportError:
-        fail("google-api-python-client / google-auth-oauthlib 미설치 — pip install -r requirements.txt")
+        fail("google-api-python-client 미설치 — pip install -r requirements.txt")
         return None
-
-    SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
-    creds = None
-    if token_file.exists():
-        try:
-            creds = Credentials.from_authorized_user_file(str(token_file), SCOPES)
-        except Exception:
-            creds = None
-    if creds and creds.expired and creds.refresh_token:
-        creds.refresh(Request())
-    if not creds or not creds.valid:
-        log("   YouTube 로그인: 브라우저에서 승인해 주세요 (최초 1회)")
-        flow = InstalledAppFlow.from_client_secrets_file(str(client_secret), SCOPES)
-        creds = flow.run_local_server(port=0, prompt="consent")
-    token_file.parent.mkdir(parents=True, exist_ok=True)
-    token_file.write_text(creds.to_json(), encoding="utf-8")
+    creds = get_youtube_credentials(cfg, interactive=True)
+    if not creds:
+        return None
 
     youtube = build("youtube", "v3", credentials=creds)
     desc = meta["desc"]
@@ -524,6 +1121,58 @@ def args_youtube_privacy(yt: dict) -> str:
 # --------------------------------------------------------------------------- #
 # Instagram Reels (instagrapi)
 # --------------------------------------------------------------------------- #
+def instagram_login(cl, ig: dict) -> None:
+    """instagrapi 로그인. 2FA·챌린지 코드를 처리합니다."""
+    username = str(ig.get("username") or "")
+    password = str(ig.get("password") or "")
+    verification_code = str(ig.get("verification_code") or "").strip()
+    totp_secret = str(ig.get("totp_secret") or "").strip()
+    proxy = str(ig.get("proxy") or "").strip()
+    if proxy:
+        try:
+            cl.set_proxy(proxy)
+            log(f"   Instagram 프록시 사용: {proxy}")
+        except Exception as exc:
+            warn(f"프록시 설정 실패(무시하고 진행): {exc}")
+
+    def challenge_code_handler(_username: str, choice) -> str:
+        label = getattr(choice, "value", choice)
+        warn(f"Instagram 인증 챌린지가 필요합니다 ({label}).")
+        return input("Instagram 인증 코드 입력: ").strip()
+
+    try:
+        cl.challenge_code_handler = challenge_code_handler
+        cl.delay_range = [1, 3]
+    except Exception:
+        pass
+
+    if verification_code:
+        log("   config.json 의 instagram.verification_code 로 2단계 인증합니다.")
+        cl.login(username, password, verification_code=verification_code)
+        return
+    if totp_secret:
+        try:
+            from pyotp import TOTP
+        except ImportError:
+            warn("2단계 인증 자동 입력에는 pyotp 가 필요합니다: pip install pyotp")
+        else:
+            log("   totp_secret 으로 2단계 인증 코드를 생성합니다.")
+            cl.login(username, password, verification_code=TOTP(totp_secret).now())
+            return
+    try:
+        cl.login(username, password)
+    except Exception as exc:
+        text = str(exc).lower()
+        if any(key in text for key in ("two-factor", "2fa", "verification", "challenge", "code")):
+            warn("Instagram 2단계 인증으로 보입니다.")
+            code = input("Instagram 인증 코드(2FA) 입력: ").strip()
+            if not code:
+                raise
+            cl.login(username, password, verification_code=code)
+        else:
+            raise
+
+
 def upload_instagram(video: Path, meta: dict, cfg: dict, dry_run: bool) -> str | None:
     ig = cfg.get("instagram", {})
     if not ig.get("enabled", True):
@@ -549,11 +1198,12 @@ def upload_instagram(video: Path, meta: dict, cfg: dict, dry_run: bool) -> str |
     try:
         if session_file.exists():
             cl.load_settings(session_file)
-        cl.login(username, password)
+        instagram_login(cl, ig)
         session_file.parent.mkdir(parents=True, exist_ok=True)
         cl.dump_settings(session_file)
     except Exception as e:
         fail(f"Instagram 로그인 실패: {e}")
+        warn("자동 로그인이 막히면 업로드 페이지를 여는 수동 게시 폴백을 사용하세요.")
         return None
 
     caption = meta["desc"]
@@ -590,7 +1240,8 @@ def upload_tiktok(video: Path, meta: dict, cfg: dict, dry_run: bool) -> str | No
     try:
         from TikTokApi import TikTokApi
     except ImportError:
-        warn("TikTokApi 미설치 — pip install TikTokApi 후 재시도 (TikTok은 선택 기능)")
+        warn("TikTokApi 미설치 — pip install TikTokApi playwright 후 "
+             "'playwright install chromium' 을 실행하세요 (TikTok은 선택 기능)")
         return None
     try:
         api = TikTokApi()
@@ -607,13 +1258,22 @@ def upload_tiktok(video: Path, meta: dict, cfg: dict, dry_run: bool) -> str | No
 # --------------------------------------------------------------------------- #
 def ask_menu(prompt: str, default: str | None = None) -> str:
     suffix = f" [{default}]" if default is not None else ""
-    value = input(f"{prompt}{suffix}: ").strip()
+    try:
+        value = input(f"{prompt}{suffix}: ").strip()
+    except EOFError:
+        # 비대화형 실행(작업 스케줄러·파이프 입력)에서는 기본값으로 진행합니다.
+        log(f"{prompt}: 입력 없음 — 기본값 {default if default is not None else '없음'} 사용")
+        return default or ""
     return value if value else (default or "")
 
 
 def ask_yes_no(prompt: str, default: bool = True) -> bool:
     default_text = "Y/n" if default else "y/N"
-    value = input(f"{prompt} [{default_text}]: ").strip().lower()
+    try:
+        value = input(f"{prompt} [{default_text}]: ").strip().lower()
+    except EOFError:
+        log(f"{prompt}: 입력 없음 — 기본값 {'예' if default else '아니오'} 사용")
+        return default
     if not value:
         return default
     return value in ("y", "yes", "예", "ㅇ")
@@ -715,6 +1375,16 @@ def run_batch_menu(cfg: dict) -> None:
         return
     unit = choose_unit()
     platforms = choose_platforms_menu(cfg)
+    allow_repeat = ask_yes_no("이미 게시한 영상도 다시 게시할까요?", False)
+    if not allow_repeat:
+        skipped = [v for v in picked if posted_platforms(v)]
+        if skipped:
+            for video in skipped:
+                warn(f"{video.name}: 이미 게시된 영상이라 건너뜁니다.")
+            picked = [v for v in picked if v not in skipped]
+            if not picked:
+                warn("새로 게시할 영상이 없습니다. (중복 허용을 선택하면 다시 게시할 수 있습니다.)")
+                return
     dry_run = ask_yes_no("dry-run으로 미리 확인할까요?", True)
     if not dry_run:
         log("⚠️ 실제 게시를 진행합니다. 각 플랫폼에 콘텐츠가 업로드됩니다.")
@@ -724,7 +1394,8 @@ def run_batch_menu(cfg: dict) -> None:
     for video in picked:
         log(f"\n▶ {video.name} 게시 시작")
         v_args = argparse.Namespace(video=str(video), unit=unit, title=None, desc=None,
-                                    platforms=platforms, dry_run=dry_run, youtube_privacy=None)
+                                    platforms=platforms, dry_run=dry_run, youtube_privacy=None,
+                                    allow_repeat=allow_repeat)
         publish_single(cfg, v_args, video)
     ok(f"일괄 게시 처리 완료: {len(picked)}개 영상")
 
@@ -758,7 +1429,8 @@ def verify_video_menu(cfg: dict) -> None:
         return
     unit = choose_unit()
     v_args = argparse.Namespace(video=str(video), unit=unit, title=None, desc=None,
-                                platforms="auto", dry_run=True, youtube_privacy=None)
+                                platforms="auto", dry_run=True, youtube_privacy=None,
+                                allow_repeat=False)
     meta = build_meta(cfg, v_args)
     info = probe_video_info(video)
     ratio = (info["width"] / info["height"]) if info["height"] else 0.0
@@ -1267,6 +1939,10 @@ def interactive_menu() -> None:
         log(" 13. 게시 이력 HTML 리포트")
         log(" 14. 게시 성과 수집·보고서")
         log(" 15. 배포 전 검증 — 영상 재생·점검 후 게시")
+        log(" 16. 중복 게시 방지 기록 보기")
+        log(" 17. 중복 게시 방지 기록 초기화")
+        log(" 18. YouTube 설정·로그인 (상태 확인 후 다음 단계만 진행)")
+        log(" 19. 수동 게시 도우미 (업로드 페이지 열기 + 캡션 복사)")
         log("  0. 종료")
         action = ask_menu("메뉴", menu_default)
         if action == "0":
@@ -1374,6 +2050,33 @@ def interactive_menu() -> None:
         if action == "15":
             verify_video_menu(cfg)
             continue
+        if action == "16":
+            show_posted_menu()
+            continue
+        if action == "17":
+            target = ask_menu("초기화 대상 (all 또는 UNIT 번호)", "all")
+            if ask_yes_no("중복 방지 기록을 초기화할까요?", False):
+                reset_posted(target)
+            continue
+        if action == "18":
+            youtube_menu(cfg)
+            continue
+        if action == "19":
+            video = choose_video_menu()
+            if video is None:
+                continue
+            unit_raw = ask_menu("자동 제목에 사용할 UNIT 번호(취소하려면 0)", str(default_unit))
+            unit = None if unit_raw == "0" else (int(unit_raw) if unit_raw.isdigit() else default_unit)
+            platforms = choose_platforms_menu(cfg)
+            m_args = argparse.Namespace(video=str(video), unit=unit, title=None, desc=None,
+                                        platforms=platforms, dry_run=True, youtube_privacy=None,
+                                        allow_repeat=True, manual_fallback=False)
+            meta = build_meta(cfg, m_args)
+            for short in (p.strip() for p in platforms.split(",") if p.strip()):
+                manual_publish(video, meta, short, cfg)
+            if meta.get("word"):
+                mark_words_posted(unit, [meta["word"]])
+            continue
         if action not in ("1", "2", "3", "5"):
             warn("메뉴 번호를 확인해 주세요.")
             continue
@@ -1421,6 +2124,8 @@ def interactive_menu() -> None:
                 music_path = ask_menu("배경음악 파일(mp3/wav) 경로")
                 if music_path:
                     command.extend(["--music", music_path])
+            if ask_yes_no("이미 사용한 단어도 다시 쓸까요?", False):
+                command.append("--allow-repeat")
             if not run_menu_command(command):
                 fail("쇼츠 생성에 실패해 게시를 중단합니다.")
                 continue
@@ -1450,6 +2155,8 @@ def interactive_menu() -> None:
                    "--platforms", platforms, "--youtube-privacy", privacy]
         if unit:
             command.extend(["--unit", str(unit)])
+        if ask_yes_no("이미 게시한 영상도 다시 게시할까요?", False):
+            command.append("--allow-repeat")
         if dry_run:
             command.append("--dry-run")
         else:
@@ -1482,6 +2189,12 @@ def main() -> None:
     ap.add_argument("--platforms", default="auto", help="yt,ig,tt (기본: config 에서 enabled 인 플랫폼)")
     ap.add_argument("--youtube-privacy", choices=["public", "unlisted", "private"], help="YouTube 공개 범위")
     ap.add_argument("--dry-run", action="store_true", help="실제 업로드 없이 계획만 출력")
+    ap.add_argument("--allow-repeat", action="store_true",
+                    help="이미 사용한 단어·게시한 영상도 다시 사용 (중복 방지 무시)")
+    ap.add_argument("--manual-fallback", dest="manual_fallback", action="store_true", default=None,
+                    help="자동 게시 실패 시 수동 게시 도우미 실행 (기본: config 값)")
+    ap.add_argument("--no-manual-fallback", dest="manual_fallback", action="store_false",
+                    help="수동 게시 폴백 사용 안 함")
     ap.add_argument("--menu", action="store_true", help="터미널 원클릭 메뉴 실행")
     ap.add_argument("--non-interactive", action="store_true", help=argparse.SUPPRESS)
     ap.add_argument("--schedule", action="store_true", help="지정한 게시 정보를 예약으로 저장")
@@ -1490,6 +2203,10 @@ def main() -> None:
     ap.add_argument("--list-schedules", action="store_true", help="예약 목록 출력")
     ap.add_argument("--cancel-schedule", metavar="ID", help="예약 ID 취소")
     ap.add_argument("--history", action="store_true", help="최근 게시 이력 CSV 출력")
+    ap.add_argument("--list-posted", action="store_true",
+                    help="사용한 단어·게시한 영상 기록 출력 (중복 방지)")
+    ap.add_argument("--reset-posted", nargs="?", const="all", metavar="UNIT|all",
+                    help="중복 방지 기록 초기화 (기본 all, UNIT 번호 지정 가능)")
     ap.add_argument("--init-config", action="store_true", help="config.example.json에서 config.json 생성")
     ap.add_argument("--check", action="store_true", help="설정·의존성·폴더 상태 점검")
     ap.add_argument("--edit-config", action="store_true", help="터미널에서 설정 편집")
@@ -1504,6 +2221,15 @@ def main() -> None:
     ap.add_argument("--remove-task", action="store_true", help="Windows 작업 스케줄러 등록 해제")
     ap.add_argument("--verify", action="store_true",
                     help="배포 전 영상 검증 실행 (재생·Shorts 요건 점검 후 게시)")
+    ap.add_argument("--youtube-setup", action="store_true",
+                    help="YouTube 상태 진단 후 필요한 단계만 진행 (OAuth 파일 없으면 설정 안내)")
+    ap.add_argument("--youtube-guide", action="store_true",
+                    help="YouTube OAuth 설정 도우미 (안내·검증·로그인)")
+    ap.add_argument("--youtube-login", action="store_true", help="YouTube 브라우저 로그인 후 토큰 저장")
+    ap.add_argument("--youtube-relogin", action="store_true", help="기존 토큰 무시하고 YouTube 재로그인")
+    ap.add_argument("--youtube-check", action="store_true", help="YouTube 설정 상태만 점검")
+    ap.add_argument("--manual", action="store_true",
+                    help="자동 업로드 대신 수동 게시 도우미만 실행 (업로드 페이지 열기 + 캡션 복사)")
     args = ap.parse_args()
     if args.init_config:
         init_config()
@@ -1539,6 +2265,36 @@ def main() -> None:
         return
     if args.history:
         show_history_menu()
+        return
+    if args.list_posted:
+        show_posted_menu()
+        return
+    if args.reset_posted:
+        reset_posted(args.reset_posted)
+        return
+    if args.youtube_check:
+        youtube_check(cfg)
+        return
+    if args.youtube_guide:
+        youtube_setup_guide()
+        return
+    if args.youtube_setup:
+        youtube_menu(cfg)
+        return
+    if args.youtube_login or args.youtube_relogin:
+        youtube_login(cfg, force=bool(args.youtube_relogin))
+        return
+    if args.manual:
+        video = resolve_video(args)
+        meta = build_meta(cfg, args)
+        platforms = resolve_platforms(cfg, args.platforms)
+        if not platforms:
+            fail("활성화된 플랫폼이 없습니다. --platforms yt,ig,tt 로 지정하세요.")
+            return
+        for short in platforms:
+            manual_publish(video, meta, short, cfg)
+        if meta.get("word"):
+            mark_words_posted(args.unit, [meta["word"]])
         return
     if args.report:
         write_history_report()
@@ -1596,6 +2352,19 @@ def publish_single(cfg: dict, args, video: Path) -> None:
     meta = build_meta(cfg, args)
     platforms = resolve_platforms(cfg, args.platforms)
 
+    if not args.dry_run and not getattr(args, "allow_repeat", False) and platforms:
+        remaining, already = filter_posted_platforms(video, platforms)
+        if already:
+            warn(f"{video.name}: 이미 게시한 플랫폼 {', '.join(p.upper() for p in already)} — 건너뜁니다.")
+        if not remaining:
+            warn("같은 숏폼을 다시 게시하지 않습니다. 정말 다시 올리려면 --allow-repeat 을 사용하세요.")
+            return
+        platforms = remaining
+
+    fallback = getattr(args, "manual_fallback", None)
+    if fallback is None:
+        fallback = bool(cfg.get("promo", {}).get("manual_fallback", True))
+
     size_mb = video.stat().st_size / (1024 * 1024)
     log("=" * 62)
     log("🎬 toeic.monster 홍보 자동 배포" + ("  (dry-run 미리보기)" if args.dry_run else ""))
@@ -1626,6 +2395,8 @@ def publish_single(cfg: dict, args, video: Path) -> None:
             warn(f"알 수 없는 플랫폼: {short}")
             continue
         results.append((short, url))
+        if url and url != "dry-run":
+            mark_video_posted(video, short, url)
         append_history(
             event="publish",
             status="dry-run" if url == "dry-run" else ("success" if url else "failed"),
@@ -1637,11 +2408,26 @@ def publish_single(cfg: dict, args, video: Path) -> None:
             message="직접 게시 실행" if url else "플랫폼 게시 실패 또는 건너뜀",
         )
 
+    if not args.dry_run and fallback:
+        failed = [s for s, u in results if u is None]
+        if failed:
+            log("\n자동 게시가 안 되는 플랫폼은 수동 게시 도우미로 넘깁니다.")
+        for index, (short, url) in enumerate(results):
+            if url is None and manual_publish(video, meta, short, cfg):
+                results[index] = (short, "manual")
+
+    if not args.dry_run and any(url and url != "dry-run" for _short, url in results):
+        if meta.get("word"):
+            mark_words_posted(args.unit, [meta["word"]])
+        log(f"🔁 중복 방지 기록 저장: {POSTED_FILE.name}")
+
     log("-" * 62)
     log("📋 결과")
     names = {"yt": "YouTube Shorts", "ig": "Instagram Reels", "tt": "TikTok"}
     for short, url in results:
-        if url and url != "dry-run":
+        if url == "manual":
+            log(f"  · {names[short]}: 수동 게시 도우미 실행 (브라우저에서 마무리하세요)")
+        elif url and url != "dry-run":
             ok(f"{names[short]}: {url}")
         elif url == "dry-run":
             log(f"  · {names[short]}: 업로드 예정 (dry-run — 실제 업로드하려면 옵션 제거)")

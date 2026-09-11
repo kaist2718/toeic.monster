@@ -56,6 +56,10 @@ promo_center.bat
 13. **게시 이력 HTML 리포트** — 요약 통계와 함께 브라우저로 열기
 14. **게시 성과 수집·보고서** — YouTube/Instagram 조회수·좋아요 수집 및 보고서
 15. **배포 전 검증** — 영상을 재생해 직접 확인하고, 9:16·60초·게시 메타(제목/설명/해시태그)를 점검한 뒤 게시
+16. **중복 게시 방지 기록 보기** — 사용한 단어·게시한 영상 기록 확인
+17. **중복 게시 방지 기록 초기화** — 전체 또는 UNIT별로 기록 삭제
+18. **YouTube 설정 도우미** — OAuth 안내·검증·로그인을 한 흐름으로
+19. **수동 게시 도우미** — 업로드 페이지를 열고 캡션을 클립보드에 복사
 
 메뉴 입력에서 Enter를 누르면 설정된 기본값을 사용합니다. 기본 게시 방식은 dry-run이며, 실제 업로드는 별도의 확인 질문을 거칩니다.
 
@@ -88,6 +92,26 @@ python publish.py --batch 3 --unit 1 --dry-run
 
 # 게시 이력 HTML 리포트 생성 후 브라우저로 열기
 python publish.py --report
+
+# 중복 방지 — 사용한 단어·게시한 영상 기록 보기 / 초기화
+python publish.py --list-posted
+python publish.py --reset-posted 1     # UNIT 1 단어 기록만 초기화
+python publish.py --reset-posted all   # 전체 초기화
+
+# 같은 숏폼·단어를 의도적으로 다시 사용 (중복 방지 무시)
+python publish.py --video assets/shorts/unit01_shorts.mp4 --unit 1 --allow-repeat
+python make_shorts.py --unit 1 --allow-repeat
+
+# YouTube 설정 도우미 / 로그인 / 상태 점검
+python publish.py --youtube-setup     # 현재 상태 진단 → 필요한 단계만 진행 (파일 없으면 설정 안내)
+python publish.py --youtube-guide     # Google Cloud 단계별 안내를 처음부터 끝까지 다시 보기
+python publish.py --youtube-login     # 브라우저 승인 후 토큰 저장 (업로드와 분리)
+python publish.py --youtube-relogin   # 기존 토큰 무시하고 재로그인
+python publish.py --youtube-check     # OAuth 파일·토큰 유효성 확인 (만료 시 자동 갱신 시도)
+
+# 자동 게시 대신 수동 게시 도우미 (업로드 페이지 열기 + 캡션 복사)
+python publish.py --manual --video assets/shorts/unit01_shorts.mp4 --unit 1 --platforms ig,tt
+python publish.py --video assets/shorts/unit01_shorts.mp4 --platforms yt --no-manual-fallback
 
 # 게시 성과 수집 (config.json 의 youtube.api_key 필요)
 python publish.py --stats
@@ -127,19 +151,78 @@ Windows 작업 스케줄러에서 `promo_center.bat --run-due --dry-run` 또는 
 
 ## 6. 플랫폼별 설정
 
-### 📺 YouTube Shorts
-1. Google Cloud Console에서 YouTube Data API v3를 활성화합니다.
-2. OAuth 동의 화면과 테스트 사용자를 설정합니다.
-3. 데스크톱 앱 OAuth JSON을 내려받아 `promo/.secrets/client_secret.json`으로 저장합니다.
-4. `config.json`의 `youtube.enabled`를 켭니다.
-5. 최초 실제 게시 때 브라우저 인증을 진행하면 토큰이 자동 저장됩니다.
-6. (선택) 성과 수집을 위해 **API 키**를 발급받아 `youtube.api_key`에 넣습니다.
+게시가 막힐 때는 **자동 우선 → 실패 시 수동 폴백**을 권장합니다. 자세한 내용은 아래 [6-1. 수동 게시 폴백](#6-1-수동-게시-폴백)을 참고하세요.
 
-### 📸 Instagram Reels
-`config.json`의 `instagram.enabled`, `username`, `password`를 설정합니다. 최초 로그인 뒤 세션은 `.secrets/ig_session.json`에 저장됩니다. instagrapi는 비공식 라이브러리이므로 계정 보호를 위해 낮은 빈도로 사용하세요.
+### 📺 YouTube Shorts (공식 API — 가장 안정적)
 
-### 🎵 TikTok
-기본 비활성입니다. 공식 API 승인이 없는 상태에서의 자동 게시가 불안정할 수 있으므로, 사용 시 `enabled`와 `ms_token`을 직접 설정하세요.
+가장 편한 방법은 원클릭 메뉴 **18번** 또는 `python publish.py --youtube-setup` 입니다. 이 명령은 지금 상태를 먼저 진단해서 **이미 끝난 단계는 건너뛰고 남은 단계만** 진행합니다.
+
+```
+1) OAuth 파일 : 인식됨 / 없음
+2) 로그인 토큰: 유효 / 갱신 완료 / 로그인 필요
+```
+
+수동으로 하려면:
+
+1. **프로젝트 만들기** — https://console.cloud.google.com/projectcreate
+2. **API 사용 설정** — https://console.cloud.google.com/apis/library/youtube.googleapis.com 에서 `YouTube Data API v3` → 사용
+3. **OAuth 동의 화면** — https://console.cloud.google.com/apis/credentials/consent
+   - User Type: **외부(External)**
+   - 범위에 `.../auth/youtube.upload` 추가
+   - 앱 이름·지원 이메일·개발자 연락처 입력 (비어 있으면 `403 access_denied` 로 실패합니다)
+   - **테스트 사용자**에 로그인할 Google 계정을 추가 — https://console.cloud.google.com/auth/audience 의 **+ ADD USERS**
+     (이 단계를 빼먹으면 브라우저에 "개발자가 승인한 테스터만 액세스할 수 있습니다" 403 오류가 뜽니다)
+4. **OAuth 클라이언트 ID 만들기** — https://console.cloud.google.com/apis/credentials
+   - 애플리케이션 유형: **데스크톱 앱** → JSON 다운로드
+5. 내려받은 JSON 파일을 `promo/.secrets/` 폴더에 **이름 그대로** 넣으면 됩니다. Google이 내려준 이름(`client_secret_1234-abc.apps.googleusercontent.com.json`)도 자동 인식하며, 꼭 `client_secret.json` 으로 바꾸지 않아도 됩니다. 여러 개면 `client_secret.json` 이 우선이고, 폴더는 메뉴 **10번 → 2번** 또는 설정 도우미로 열 수 있습니다.
+6. `python publish.py --youtube-login` → 브라우저에서 승인 (이후 토큰 자동 저장)
+7. 첫 테스트: `python publish.py --video assets/shorts/unit01_shorts.mp4 --platforms yt --youtube-privacy unlisted`
+8. (선택) 성과 수집용 **API 키**를 https://console.cloud.google.com/apis/credentials 에서 발급해 `config.json`의 `youtube.api_key`에 넣습니다.
+
+**자주 막히는 지점**
+
+| 증상 | 원인 / 해결 |
+|---|---|
+| `OAuth 파일 없음` | 파일이 `.secrets/` 밖에 있거나 확장자가 `.json.txt` 인 경우가 많습니다. [Windows 탐색기 → 보기 → 파일 확장명]을 켜고 확인하세요. 이름은 그대로 둬도 자동 인식합니다 |
+| 매주 로그아웃됨 (7일 후 401) | OAuth 동의 화면이 **테스트** 상태면 refresh 토큰이 7일마다 만료. 동의 화면 → 게시 상태 → **앱 게시(프로덕션)** 로 전환 |
+| `403 access_denied` ("개발자가 승인한 테스터만…") | OAuth 동의 화면의 **테스트 사용자**에 그 계정이 없습니다. https://console.cloud.google.com/auth/audience → `+ ADD USERS` → 저장 후 1~2분 뒤 재시도. 계정이 여러 개면 등록한 계정을 골라야 합니다 |
+| `403 quotaExceeded` | 기본 할당량 10,000 units/일, 업로드 1건 = 1,600 units → **하루 약 6개**. 하루 1~2개 권장 |
+| `'웹 애플리케이션' 유형` 경고 | OAuth 클라이언트를 **데스크톱 앱**으로 다시 만들어 교체 |
+| “확인되지 않은 앱” 경고 | **고급 → 계속(안전하지 않음)** 클릭 (본인 앱이므로 정상) |
+| Shorts로 안 올라감 | 9:16 세로·60초 이내·제목/설명에 `#Shorts` (도구가 자동 포함) |
+
+점검: `python publish.py --youtube-check`
+
+### 📸 Instagram Reels (instagrapi — 비공식)
+
+`config.json`의 `instagram.enabled`, `username`, `password`를 설정하면 됩니다. 로그인 세션은 `.secrets/ig_session.json`에 저장되어 다음부터 재사용됩니다.
+
+- **2단계 인증(2FA)**: 로그인 시 인증 코드를 물어보면 터미널에 입력하면 됩니다. 자동화하려면
+  - `instagram.verification_code`: 고정 코드(테스트용)
+  - `instagram.totp_secret`: 앱 인증(TOTP) 비밀키 → `pip install pyotp` 필요
+- **프록시**: `instagram.proxy` (예: `http://user:pass@host:port`)
+- 비공식 라이브러리라 로그인 챌린지·차단이 생길 수 있습니다. **하루 1~2개, 낮은 빈도**로 운영하고, 막히면 계정을 쉬게 한 뒤 수동 폴백을 사용하세요.
+
+### 🎵 TikTok (선택 — 불안정)
+
+자동 업로드는 공식 API 심사가 어렵고 비공식 라이브러리도 자주 바뀝니다. 기본은 비활성이면 **수동 폴백**을 권장합니다.
+
+수동으로 설정하려면: `config.json`의 `tiktok.enabled=true` + `ms_token` 입력 후
+
+```bash
+pip install TikTokApi playwright
+playwright install chromium
+```
+
+### 6-1. 수동 게시 폴백
+
+자동 게시가 실패하면 **업로드 페이지를 자동으로 열고 캡션·해시태그를 클립보드에 복사**합니다. 영상 파일만 선택해 붙여넣으면 되므로 API 설정 없이도 바로 게시할 수 있습니다.
+
+- 기본값: `config.json`의 `promo.manual_fallback` (기본 `true`)
+- 실행 중 끄기: `--no-manual-fallback`, 강제 켜기: `--manual-fallback`
+- 처음부터 수동만: `--manual` 또는 메뉴 **19번**
+- 예약 게시(`--run-due`)는 백그라운드 실행이므로 폴백을 사용하지 않습니다.
+- 수동으로 마친 게시도 `posted.json`에 기록되어 같은 영상을 다시 올리지 않습니다.
 
 ## 7. 쇼츠 생성
 
@@ -179,6 +262,23 @@ python publish.py --stats-report   # 성과를 HTML 보고서로 생성해 브�
 
 - YouTube는 `config.json`의 `youtube.api_key`가 있으면 키만으로 조회 가능합니다(공개 데이터).
 - Instagram은 계정 로그인(세션 캐시)이 필요하며, 수집 실패해도 다른 수집에는 영향이 없습니다.
+
+## 7-2. 중복 게시 방지
+
+게시 이력(`publish_history.csv`)과는 별개로, 사용한 단어와 게시한 영상(내용 해시)을 `promo/posted.json`에 기록해 **다음 번에 같은 숏폼·단어가 반복되지 않게** 합니다.
+
+- **단어 중복 방지**: `make_shorts.py`가 이미 쓴 단어를 빼고 선택하고, `publish.py --unit N`의 자동 제목도 남은 단어에서 고릅니다. UNIT의 단어를 모두 쓰면 경고 후 전체 단어에서 다시 선택합니다.
+- **영상 중복 방지**: 같은 내용의 mp4(해시 동일)를 **플랫폼별로** 이미 올렸으면 건너뜁니다. 예를 들어 유튜브에만 올린 영상은 Instagram에는 여전히 올릴 수 있습니다.
+- **일괄·예약 게시**도 같은 규칙을 따르며, `dry-run`은 차단하지도 기록하지도 않습니다.
+
+```bash
+python publish.py --list-posted        # 사용 단어·게시 영상 기록 보기
+python publish.py --reset-posted all   # 전체 초기화
+python publish.py --reset-posted 3     # UNIT 3 단어 기록만 초기화
+python publish.py --allow-repeat ...   # 기록을 무시하고 다시 게시
+```
+
+기록을 비우려면 원클릭 메뉴 **17번** 또는 `--reset-posted`를 사용하세요. `promo/posted.json`은 개인 운영 데이터라 git에 포함되지 않습니다.
 
 ## 8. 배포 전 체크리스트
 
