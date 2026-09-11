@@ -55,6 +55,10 @@ self.addEventListener("fetch", function (event) {
       }).catch(function () {
         return caches.match(req).then(function (cached) {
           return cached || caches.match("./index.html");
+        }).then(function (cached) {
+          // 첫 방문부터 오프라인이면 캐시가 없으므로 유효한 실패 응답으로 마무리
+          // (undefined 를 respondWith 하면 TypeError 로 unhandled rejection 이 발생합니다)
+          return cached || Response.error();
         });
       })
     );
@@ -69,7 +73,7 @@ self.addEventListener("fetch", function (event) {
           caches.open(CACHE_NAME).then(function (cache) { cache.put(req, copy); });
         }
         return response;
-      }).catch(function () { return cached; });
+      }).catch(function () { return cached || Response.error(); });
       return cached || network;
     })
   );
