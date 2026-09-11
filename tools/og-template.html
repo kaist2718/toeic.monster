@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>og template</title>
+<style>
+  html, body { margin: 0; padding: 0; }
+  body {
+    width: 1200px;
+    height: 630px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #eef2ff 0%, #fff5e6 100%);
+    font-family: "Pretendard Variable", Pretendard, "Noto Sans KR", "Malgun Gothic", sans-serif;
+  }
+  .card { width: 1040px; text-align: center; }
+  .badge {
+    display: inline-block;
+    font-size: 23px;
+    font-weight: 700;
+    color: #3b5bdb;
+    background: #ffffff;
+    border: 2px solid #dbe2f5;
+    border-radius: 999px;
+    padding: 10px 26px;
+    margin-bottom: 32px;
+  }
+  h1 {
+    font-size: 76px;
+    line-height: 1.15;
+    font-weight: 800;
+    color: #2f4bb8;
+    letter-spacing: -2px;
+    margin: 0 0 20px;
+  }
+  .sub {
+    font-size: 29px;
+    font-weight: 600;
+    color: #4a5568;
+    margin: 0 0 42px;
+  }
+  .stats { display: flex; gap: 16px; justify-content: center; }
+  .stat {
+    background: #ffffff;
+    border: 2px solid #e5e7eb;
+    border-radius: 18px;
+    padding: 16px 30px;
+    min-width: 150px;
+  }
+  .stat b { display: block; font-size: 36px; font-weight: 800; color: #3b5bdb; }
+  .stat span { font-size: 18px; font-weight: 600; color: #6b7280; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <span class="badge">무료 TOEIC 어휘 학습</span>
+    <h1>toeic.monster</h1>
+    <p class="sub">발음·예문으로 외우는 TOEIC 필수 어휘 1,000</p>
+    <div class="stats">
+      <div class="stat"><b>1,000</b><span>필수 단어</span></div>
+      <div class="stat"><b>30</b><span>주제별 유닛</span></div>
+      <div class="stat"><b>60</b><span>빈출 구동사</span></div>
+      <div class="stat"><b>무료</b><span>회원가입 없음</span></div>
+    </div>
+  </div>
+</body>
+</html>
