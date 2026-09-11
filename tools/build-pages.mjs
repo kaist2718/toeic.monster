@@ -111,7 +111,7 @@ const unitUrl = (id) => `${SITE}/units/${unitPath(id)}`;
 /* ------------------------------------------------------------------ */
 
 const CSS = `
-:root{--primary:#3b5bdb;--primary-dark:#2f4bb8;--bg:#f6f7fb;--card:#fff;--text:#212529;--muted:#6b7280;--border:#e5e7eb;--accent:#f59f00;--soft:#eef2ff;--cyan:#0c8599;--kpron-bg:#fff8e6}
+:root{--primary:#3b5bdb;--primary-dark:#2f4bb8;--bg:#f6f7fb;--card:#fff;--text:#212529;--muted:#5f6673;--border:#e5e7eb;--accent:#f59f00;--kpron-text:#8a5a00;--soft:#eef2ff;--cyan:#0b7285;--kpron-bg:#fff8e6}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:"Pretendard Variable",Pretendard,"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:var(--bg);color:var(--text);line-height:1.7}
 a{color:var(--primary)}
@@ -130,15 +130,15 @@ h2.sec{font-size:17px;margin:26px 0 12px;color:var(--text)}
 .cta{display:inline-block;background:var(--primary);color:#fff;text-decoration:none;font-weight:700;font-size:14px;border-radius:10px;padding:11px 18px;margin:2px 0 6px}
 .cta:hover{background:var(--primary-dark)}
 h1 .lvl{font-size:12px;font-weight:700;border-radius:99px;padding:3px 10px;vertical-align:3px;margin-left:6px}
-.lvl-easy{background:#d3f9d8;color:#2b8a3e}
-.lvl-mid{background:#fff3bf;color:#9a7b00}
-.lvl-hard{background:#ffe3e3;color:#c92a2a}
+.lvl-easy{background:#d3f9d8;color:#166534}
+.lvl-mid{background:#fff3bf;color:#7a5c00}
+.lvl-hard{background:#ffe3e3;color:#b02a2a}
 ol.words{list-style:none;display:grid;gap:12px;margin-top:6px}
 ol.words li{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:15px 17px}
 .w-row{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;margin-bottom:5px}
 .w-word{font-size:19px;font-weight:800;color:var(--primary-dark);letter-spacing:-.3px;word-break:break-word}
 .w-ipa{font-size:13px;color:var(--muted)}
-.w-kr{font-size:13.5px;font-weight:700;color:var(--accent);background:var(--kpron-bg);border-radius:6px;padding:1px 7px}
+.w-kr{font-size:13.5px;font-weight:700;color:var(--kpron-text);background:var(--kpron-bg);border-radius:6px;padding:1px 7px}
 .w-mean{font-size:15px;font-weight:700;margin-bottom:6px}
 .w-ex{font-size:13.5px;font-style:italic;color:#495057}
 .w-expron{font-size:12.5px;font-weight:600;color:var(--cyan)}

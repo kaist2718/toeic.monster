@@ -7,7 +7,7 @@
 <meta name="description" content="toeic.monster - TOEIC 필수 어휘 1,000개를 발음·예문으로 외우는 무료 학습 사이트. 암기 카드, 퀴즈, 실전 시험 모드, 오답노트, 학습 현황까지!">
 <meta name="author" content="toeic.monster">
 <meta name="robots" content="index, follow">
-<meta name="theme-color" content="#3b5bdb">
+<meta name="theme-color" content="#3b5bdb" id="metaThemeColor">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="toeic.monster">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -29,6 +29,19 @@
 <meta name="google-site-verification" content="4e8iFickPDbyvn3A6ngtR6t7VW1nX669C5QFTt0jQ-c">
 <meta name="naver-site-verification" content="bcf32ea6e5c92fb9ae719c55cd16f7a8dd8654cd">
 <link rel="manifest" href="manifest.webmanifest">
+<script>
+  // 저장된 테마를 첫 페인트 전에 적용해 흰 화면이 번쩍이는 현상을 막습니다.
+  (function () {
+    try {
+      var t = localStorage.getItem("toeic1000_theme") || "light";
+      if (t === "dark") {
+        document.documentElement.classList.add("dark-pending");
+        var m = document.getElementById("metaThemeColor");
+        if (m) m.setAttribute("content", "#10141b");
+      }
+    } catch (e) {}
+  })();
+</script>
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon.svg">
 <!-- 방문자 분석 (Umami Cloud — 쿠키 미사용, 개인정보 미수집) -->
@@ -105,11 +118,14 @@
     --bg: #f6f7fb;
     --card: #ffffff;
     --text: #212529;
-    --text-muted: #6b7280;
+    --text-muted: #5f6673;
     --border: #e5e7eb;
     --green: #37b24d;
+    /* 진행 바·테두리용 --green 은 밝아서 글자색으로는 대비가 부족합니다. */
+    --green-text: #166534;
+    --red-text: #b02a2a;
     --ex-text: #495057;
-    --cyan: #0c8599;
+    --cyan: #0b7285;
     --kpron-bg: #fff8e6;
     --input-bg: #ffffff;
     --soft-blue: #eef2ff;
@@ -119,9 +135,19 @@
     --intro-grad: linear-gradient(135deg, #eef2ff, #fff5e6);
     --shadow-sm: 0 4px 14px rgba(0,0,0,.07);
     --shadow: 0 8px 24px rgba(0,0,0,.08);
+    --kpron-text: #8a5a00;
+    /* --primary 는 "텍스트·테두리용 색", --primary-solid 는 "흰 글자를 얹는 버튼 배경"용입니다.
+       다크 모드에서는 이 두 용도가 서로 반대 방향의 밝기를 요구하므로 토큰을 분리합니다. */
+    --primary-solid: #3b5bdb;
+    --primary-solid-hover: #2f4bb8;
+    --topbar-bg: #3b5bdb;
+    --topbar-btn-bg: rgba(255,255,255,.10);
+    --topbar-btn-hover: rgba(0,0,0,.16);
+    --topbar-active-fg: #2f4bb8;
   }
 
-  body.dark {
+  body.dark,
+  html.dark-pending {
     --bg: #10141b;
     --card: #1a1f2a;
     --text: #e6e9ef;
@@ -131,6 +157,8 @@
     --primary-dark: #93a5ff;
     --accent: #ffc93d;
     --green: #51cf66;
+    --green-text: #51cf66;
+    --red-text: #ff8787;
     --ex-text: #c9d1dc;
     --cyan: #6fd3e8;
     --kpron-bg: #3a3020;
@@ -142,9 +170,21 @@
     --intro-grad: linear-gradient(135deg, #1d2440, #382b19);
     --shadow-sm: 0 4px 14px rgba(0,0,0,.35);
     --shadow: 0 8px 24px rgba(0,0,0,.45);
+    --kpron-text: var(--accent);
+    --primary: #8ba3ff;
+    --primary-solid: #3d51c4;
+    --primary-solid-hover: #33429f;
+    --topbar-bg: #3d51c4;
+    --topbar-btn-bg: rgba(255,255,255,.14);
+    --topbar-btn-hover: rgba(0,0,0,.16);
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* 버튼·입력 요소는 브라우저 기본 글자색(검정)을 사용합니다.
+     다크 모드에서 어두운 배경과 겹쳐 글자가 보이지 않는 문제를 막기 위해 색을 명시합니다. */
+  button, input, select, textarea { color: var(--text); }
+  a { color: var(--primary); }
 
   body {
     font-family: "Pretendard Variable", Pretendard, "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
@@ -158,7 +198,7 @@
     position: sticky;
     top: 0;
     z-index: 50;
-    background: var(--primary);
+    background: var(--topbar-bg);
     color: #fff;
     box-shadow: 0 2px 10px rgba(0,0,0,.15);
   }
@@ -210,7 +250,7 @@
   .topbar-actions { display: flex; gap: 8px; }
   .tts-ctrl { display: flex; align-items: center; gap: 6px; }
   .tts-ctrl .btn { padding: 8px 10px; }
-  .tts-ctrl .btn.muted { background: rgba(255,255,255,.35); }
+  .tts-ctrl .btn.muted { background: rgba(0,0,0,.32); }
   .tts-rate {
     font-family: inherit;
     font-size: 12.5px;
@@ -218,11 +258,11 @@
     border: none;
     border-radius: 8px;
     padding: 8px 8px;
-    background: rgba(255,255,255,.18);
+    background: var(--topbar-btn-bg);
     color: #fff;
     cursor: pointer;
   }
-  .tts-rate:hover { background: rgba(255,255,255,.3); }
+  .tts-rate:hover { background: var(--topbar-btn-hover); }
   .tts-rate option { color: var(--text); }
   .btn {
     font-family: inherit;
@@ -232,12 +272,13 @@
     border-radius: 8px;
     padding: 8px 14px;
     cursor: pointer;
-    background: rgba(255,255,255,.18);
-    color: #fff;
+    background: var(--border);
+    color: var(--text);
     transition: background .15s;
   }
-  .btn:hover { background: rgba(255,255,255,.3); }
-  .btn.active { background: #fff; color: var(--primary); }
+  .topbar .btn { background: var(--topbar-btn-bg); color: #fff; }
+  .topbar .btn:hover { background: var(--topbar-btn-hover); }
+  .topbar .btn.active { background: #fff; color: var(--topbar-active-fg); }
 
   /* ---------- 검색 ---------- */
   .searchbar {
@@ -282,7 +323,7 @@
     transition: border-color .15s, background .15s, color .15s;
   }
   .lvl-btn:hover { border-color: var(--primary); color: var(--text); }
-  .lvl-btn.active { border-color: var(--primary); background: var(--primary); color: #fff; }
+  .lvl-btn.active { border-color: var(--primary-solid); background: var(--primary-solid); color: #fff; }
 
   .lvl-badge {
     display: inline-block;
@@ -293,9 +334,9 @@
     vertical-align: 2px;
     margin-left: 4px;
   }
-  .lvl-easy { background: var(--correct-bg); color: #2b8a3e; }
-  .lvl-mid { background: #fff3bf; color: #9a7b00; }
-  .lvl-hard { background: var(--wrong-bg); color: #c92a2a; }
+  .lvl-easy { background: var(--correct-bg); color: #166534; }
+  .lvl-mid { background: #fff3bf; color: #7a5c00; }
+  .lvl-hard { background: var(--wrong-bg); color: #b02a2a; }
   body.dark .lvl-easy { color: #69db7c; }
   body.dark .lvl-mid { background: #3a3318; color: #ffd43b; }
   body.dark .lvl-hard { color: #ff8787; }
@@ -346,7 +387,7 @@
     margin-bottom: 4px;
   }
   .unit-num {
-    background: var(--primary);
+    background: var(--primary-solid);
     color: #fff;
     font-size: 12px;
     font-weight: 700;
@@ -405,7 +446,7 @@
   .card-word .kpron {
     font-size: 14.5px;
     font-weight: 700;
-    color: var(--accent);
+    color: var(--kpron-text);
     background: var(--kpron-bg);
     border-radius: 6px;
     padding: 1px 7px;
@@ -539,7 +580,7 @@
   }
   .fc-card .fc-word { font-size: 34px; font-weight: 800; color: var(--primary-dark); }
   .fc-card .fc-ipa { font-size: 18px; color: var(--text-muted); }
-  .fc-card .fc-kpron { font-size: 20px; font-weight: 700; color: var(--accent); }
+  .fc-card .fc-kpron { font-size: 20px; font-weight: 700; color: var(--kpron-text); }
   .fc-card .fc-mean {
     font-size: 24px;
     font-weight: 800;
@@ -578,10 +619,10 @@
     flex-wrap: wrap;
   }
   .fc-controls .btn {
-    background: var(--primary);
+    background: var(--primary-solid);
     color: #fff;
   }
-  .fc-controls .btn:hover { background: var(--primary-dark); }
+  .fc-controls .btn:hover { background: var(--primary-solid-hover); }
   .fc-progress {
     margin-top: 12px;
     font-size: 13px;
@@ -608,8 +649,8 @@
     border-radius: 8px;
     background: var(--input-bg);
   }
-  .quiz-btn { background: var(--primary); color: #fff; }
-  .quiz-btn:hover { background: var(--primary-dark); }
+  .quiz-btn { background: var(--primary-solid); color: #fff; }
+  .quiz-btn:hover { background: var(--primary-solid-hover); }
   .quiz-progress {
     font-size: 13.5px;
     color: var(--text-muted);
@@ -695,14 +736,14 @@
     font-size: 11px;
     font-weight: 700;
     background: var(--wrong-bg);
-    color: #c92a2a;
+    color: #b02a2a;
     border-radius: 99px;
     padding: 1px 8px;
     margin-left: 6px;
     vertical-align: 2px;
   }
   body.dark .badge-wrong { color: #ff8787; }
-  #dailyText.goal-done { color: var(--green); font-weight: 800; }
+  #dailyText.goal-done { color: var(--green-text); font-weight: 800; }
 
   /* ---------- 실전 시험 모드 ---------- */
   .exam-view { display: none; }
@@ -780,7 +821,7 @@
   .stat b { display: block; font-size: 20px; color: var(--primary); }
   .stat span { font-size: 11.5px; color: var(--text-muted); }
   .modal-actions { margin-top: 14px; text-align: right; }
-  #btnResetData { background: var(--wrong-bg); color: #c92a2a; }
+  #btnResetData { background: var(--wrong-bg); color: #b02a2a; }
   body.dark #btnResetData { color: #ff8787; }
 
   /* ---------- 가이드 탭 ---------- */
@@ -801,7 +842,7 @@
     color: var(--text-muted);
     cursor: pointer;
   }
-  .guide-tab.active { border-color: var(--primary); background: var(--primary); color: #fff; }
+  .guide-tab.active { border-color: var(--primary-solid); background: var(--primary-solid); color: #fff; }
   .guide-panel { margin-top: 4px; }
 
   /* ---------- 새 기능 공통 ---------- */
@@ -820,7 +861,7 @@
     cursor: pointer;
     margin: 8px 0;
   }
-  .listen-play:hover { background: var(--primary-dark); }
+  .listen-play:hover { background: var(--primary-solid-hover); }
   .listen-script {
     background: var(--soft-blue);
     border-radius: 10px;
@@ -905,10 +946,10 @@
     color: var(--primary);
   }
   .tag { display: inline-block; font-size: 11px; font-weight: 700; border-radius: 99px; padding: 2px 8px; margin: 2px; }
-  .tag-green { background: var(--correct-bg); color: #2b8a3e; }
-  .tag-red { background: var(--wrong-bg); color: #c92a2a; }
+  .tag-green { background: var(--correct-bg); color: #166534; }
+  .tag-red { background: var(--wrong-bg); color: #b02a2a; }
   .tag-blue { background: var(--soft-blue); color: var(--primary); }
-  .tag-yellow { background: #fff3bf; color: #9a7b00; }
+  .tag-yellow { background: #fff3bf; color: #7a5c00; }
 
   /* 문법 가이드 */
   .grammar-table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 8px 0; }
@@ -980,8 +1021,8 @@
     transition: background .15s, color .15s, border-color .15s;
   }
   .btn-hero:hover:not(.primary) { background: var(--soft-blue); }
-  .btn-hero.primary { background: var(--primary); color: #fff; }
-  .btn-hero.primary:hover { background: var(--primary-dark); border-color: var(--primary-dark); }
+  .btn-hero.primary { background: var(--primary-solid); border-color: var(--primary-solid); color: #fff; }
+  .btn-hero.primary:hover { background: var(--primary-solid-hover); border-color: var(--primary-solid-hover); }
 
   .home-section { margin-bottom: 30px; }
   .home-section-title { font-size: 19px; font-weight: 800; margin-bottom: 4px; }
@@ -1004,7 +1045,7 @@
   .today-big { font-size: 26px; font-weight: 800; color: var(--primary); }
   .today-rec { font-size: 14px; font-weight: 700; color: var(--text); }
   .today-sub { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
-  .today-done { font-size: 12.5px; font-weight: 700; color: var(--green); margin-top: 6px; }
+  .today-done { font-size: 12.5px; font-weight: 700; color: var(--green-text); margin-top: 6px; }
   .today-btn { margin-top: 10px; font-size: 13px; padding: 7px 14px; }
 
   /* 학습 모드 그리드 */
@@ -1043,7 +1084,7 @@
     border-radius: 99px;
     padding: 2px 8px;
   }
-  .mode-badge.has-due { color: #fff; background: #fa5252; }
+  .mode-badge.has-due { color: #fff; background: #c92a2a; }
 
   /* 유닛 그리드 */
   .unit-grid {
@@ -1147,12 +1188,12 @@
   .roadmap-card p { font-size: 12.5px; color: var(--text-muted); }
   .roadmap-card ul { list-style: none; margin-top: 8px; }
   .roadmap-card li { font-size: 12.5px; padding: 3px 0; }
-  .roadmap-card li::before { content: "✓ "; color: var(--green); font-weight: 800; }
+  .roadmap-card li::before { content: "✓ "; color: var(--green-text); font-weight: 800; }
 
   /* Part 미니 문제은행 · 리딩 */
   .part-tabs { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 12px; }
   .part-tab { font-family: inherit; font-size: 12.5px; font-weight: 800; padding: 7px 12px; border: 2px solid var(--border); border-radius: 99px; background: var(--card); color: var(--text-muted); cursor: pointer; }
-  .part-tab.active { border-color: var(--primary); background: var(--primary); color: #fff; }
+  .part-tab.active { border-color: var(--primary-solid); background: var(--primary-solid); color: #fff; }
   .bank-card, .reading-card, .writing-card, .speaking-card, .dday-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 17px 19px; }
   .bank-card { margin-bottom: 10px; }
   .bank-label { display: inline-block; font-size: 11px; font-weight: 800; color: var(--cyan); background: var(--soft-cyan); border-radius: 99px; padding: 3px 8px; margin-bottom: 7px; }
@@ -1235,7 +1276,7 @@
     height: 26px;
     align-items: center;
     justify-content: center;
-    background: var(--primary);
+    background: var(--primary-solid);
     color: #fff;
     border-radius: 50%;
     font-size: 13px;
@@ -1247,7 +1288,7 @@
 
   /* CTA */
   .cta-banner {
-    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    background: linear-gradient(135deg, var(--primary-solid), var(--primary-solid-hover));
     color: #fff;
     border-radius: 16px;
     padding: 30px 24px;
@@ -1258,6 +1299,9 @@
   .cta-banner p { font-size: 13.5px; opacity: .9; margin-bottom: 16px; }
   .cta-banner .btn-hero { background: #fff; border-color: #fff; }
   .cta-banner .btn-hero:hover { background: #f1f3f5; }
+  /* 흰 버튼 위에서는 밝은 --primary 가 읽히지 않으므로 진한 색을 씁니다. */
+  body.dark .cta-banner .btn-hero,
+  body.dark .cta-banner .btn-hero:hover { color: var(--primary-solid); }
 
   .hero-cheer {
     font-size: 13.5px;
@@ -1294,7 +1338,7 @@
   .wod-word { font-size: 19px; font-weight: 800; color: var(--primary-dark); margin-right: auto; word-break: break-word; }
   .wod-tags { display: flex; gap: 4px; }
   .wod-ipa { font-size: 12.5px; color: var(--text-muted); margin: 4px 0; }
-  .wod-kpron { font-weight: 700; color: var(--accent); background: var(--kpron-bg); border-radius: 6px; padding: 1px 7px; }
+  .wod-kpron { font-weight: 700; color: var(--kpron-text); background: var(--kpron-bg); border-radius: 6px; padding: 1px 7px; }
   .wod-mean { font-size: 14px; font-weight: 700; margin: 2px 0 4px; }
   .wod-ex { font-size: 12.5px; font-style: italic; color: var(--ex-text); }
   .wod-exko { font-size: 12px; color: var(--text-muted); }
@@ -1388,16 +1432,17 @@
   }
   .badge-item {
     background: var(--card);
-    border: 1px solid var(--border);
+    border: 1px dashed var(--border);
     border-radius: 12px;
     padding: 14px;
-    opacity: .55;
-    filter: grayscale(.65);
-    transition: opacity .2s, filter .2s, border-color .2s, box-shadow .2s, transform .2s;
+    /* 미달성 배지는 점선 테두리·흑백·🔒 문구로 구분합니다.
+       투명도를 낮추면 글자 대비가 기준 이하로 떨어져 읽기 어려워집니다. */
+    filter: grayscale(.6);
+    transition: filter .2s, border-color .2s, box-shadow .2s, transform .2s;
   }
   .badge-item.on {
-    opacity: 1;
     filter: none;
+    border-style: solid;
     border-color: var(--accent);
     box-shadow: var(--shadow-sm);
   }
@@ -1406,7 +1451,7 @@
   .badge-name { display: block; font-size: 14px; font-weight: 800; margin-top: 4px; }
   .badge-desc { display: block; font-size: 11.5px; color: var(--text-muted); margin-top: 2px; min-height: 28px; }
   .badge-check { display: inline-block; font-size: 11px; font-weight: 800; color: var(--text-muted); margin-top: 4px; }
-  .badge-item.on .badge-check { color: var(--green); }
+  .badge-item.on .badge-check { color: var(--green-text); }
 
   /* 혼동 어휘 */
   .confuse-grid {
@@ -1524,7 +1569,7 @@
 
   /* 쉬어가는 코너 (명언) */
   .quote-featured {
-    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    background: linear-gradient(135deg, var(--primary-solid), var(--primary-solid-hover));
     color: #fff;
     border-radius: 16px;
     padding: 26px 28px;
@@ -1581,8 +1626,8 @@
   .motivate-msg { font-size: 12.5px; color: var(--text-muted); }
   .motivate-num { margin-left: auto; font-size: 18px; font-weight: 800; color: var(--primary); white-space: nowrap; }
   .motivate-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
-  .motivate-actions .btn { background: var(--primary); color: #fff; }
-  .motivate-actions .btn:hover { background: var(--primary-dark); }
+  .motivate-actions .btn { background: var(--primary-solid); color: #fff; }
+  .motivate-actions .btn:hover { background: var(--primary-solid-hover); }
 
   /* 오늘의 문법 팁 */
   .grammar-tip-card {
@@ -1636,7 +1681,7 @@
     transition: background .15s;
   }
   .idiom-card .speak:hover { background: var(--soft-blue); }
-  .idiom-mean { font-size: 13.5px; font-weight: 700; color: var(--green); margin: 6px 0 4px; }
+  .idiom-mean { font-size: 13.5px; font-weight: 700; color: var(--green-text); margin: 6px 0 4px; }
   .idiom-ex { font-size: 12.5px; font-style: italic; color: var(--ex-text); }
   .idiom-exko { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 
@@ -1808,8 +1853,9 @@
   @media print {
     body, body.dark { background: #fff; }
     body.dark {
-      --card: #fff; --text: #212529; --text-muted: #6b7280; --border: #ccc;
-      --ex-text: #495057; --cyan: #0c8599; --kpron-bg: #fff8e6;
+      --card: #fff; --text: #212529; --text-muted: #5f6673; --border: #ccc;
+      --ex-text: #495057; --cyan: #0b7285; --kpron-bg: #fff8e6;
+      --kpron-text: #8a5a00;
       --input-bg: #fff; --correct-bg: #d3f9d8; --wrong-bg: #ffe3e3;
     }
     .topbar, .searchbar, .levelbar, .flashcard-view, .fc-controls, .card-check, .speak, .fav-btn,
@@ -1857,9 +1903,11 @@
     .card-word { padding-right: 26px; }
   }
 
-  /* ---------- 모바일 햄버거 메뉴 ---------- */
+  /* ---------- 모바일·태블릿 햄버거 메뉴 ---------- */
   .menu-toggle { display: none; }
-  @media (max-width: 768px) {
+  /* 1023px 이하(태블릿 포함)에서는 12개 내비게이션 버튼이 2~3줄로 늘어나
+     상단바가 화면을 과도하게 차지하므로 드롭다운 메뉴로 접습니다. */
+  @media (max-width: 1023px) {
     .topbar-inner { position: relative; }
     .menu-toggle {
       display: inline-block;
@@ -1893,13 +1941,13 @@
       border-radius: 8px;
     }
     .topbar-actions .btn:hover,
-    .topbar-actions .btn.active { background: var(--primary); color: #fff; }
+    .topbar-actions .btn.active { background: var(--primary-solid); color: #fff; }
   }
   .skip-link {
     position: absolute;
     left: -9999px;
     top: 0;
-    background: var(--primary);
+    background: var(--primary-solid);
     color: #fff;
     padding: 10px 16px;
     border-radius: 0 0 8px 0;
@@ -1989,10 +2037,10 @@
   </div>
 </header>
 
-<div class="searchbar print-hide">
+<section class="searchbar print-hide" aria-label="단어 검색과 난이도 필터">
   <label for="searchInput" class="sr-only">단어 검색</label>
   <input type="text" id="searchInput" placeholder="🔍 단어 · 뜻 · 예문 검색 (영어/한글)" autocomplete="off">
-  <div class="hint">💡 카드 클릭 = 외운 단어 표시 · ⭐ = 내 단어장 · 🔊 = 발음 듣기 · Ctrl+P = PDF 저장</div>
+  <div class="hint">💡 카드의 ✅ 체크 = 외운 단어 표시 · ⭐ = 내 단어장 · 🔊 = 발음 듣기 · Ctrl+P = PDF 저장</div>
   <div class="levelbar" id="levelbar">
     <button class="lvl-btn active" data-level="" data-label="📚 전체">전체</button>
     <button class="lvl-btn" data-level="초급" data-label="🟢 초급">초급</button>
@@ -2001,7 +2049,7 @@
     <button class="lvl-btn" id="btnFav" data-label="⭐ 내 단어장">⭐ 내 단어장</button>
     <button class="lvl-btn" id="btnReview" data-label="🔁 복습 필요">🔁 복습 필요</button>
   </div>
-</div>
+</section>
 
 <main id="mainContent">
   <!-- 홈 랜딩 -->
@@ -2206,7 +2254,8 @@
         </div>
         <button type="button" class="btn quiz-btn" id="idiomToggle">▼ 모두 보기</button>
       </div>
-      <input type="text" class="dict-input" id="idiomSearch" placeholder="🔍 구동사·뜻 검색 (예: put off, 미루다)" autocomplete="off">
+      <label class="sr-only" for="idiomSearch">구동사·숙어 검색</label>
+      <input type="text" class="dict-input" id="idiomSearch" aria-label="구동사·숙어 검색" placeholder="🔍 구동사·뜻 검색 (예: put off, 미루다)" autocomplete="off">
       <div class="idiom-grid" id="idiomGrid"></div>
     </section>
 
@@ -2425,16 +2474,17 @@
       <p class="home-section-sub">TOEIC Speaking·Writing을 대비하는 짧은 출력 연습입니다. 답변은 서버에 전송되지 않습니다.</p>
       <div class="reading-grid">
         <article class="speaking-card"><h3>🎙️ 15초 말하기 프롬프트</h3><div class="prompt-list" id="speakingPromptList"></div><div class="practice-actions"><button type="button" class="btn quiz-btn" id="speakingListen">🔊 질문 듣기</button><button type="button" class="btn quiz-btn" id="speakingRandom">🔄 다른 질문</button></div><p class="practice-note">핵심 단어 2개를 사용해 영어로 15초 동안 말해 보세요.</p></article>
-        <article class="writing-card"><h3>✍️ 이메일 한 문장 쓰기</h3><p class="practice-note">아래 상황에 맞는 정중한 영어 문장을 작성해 보세요.</p><div class="reading-passage" id="writingPrompt"></div><textarea class="writing-area" id="writingArea" placeholder="예: Thank you for your message. I will confirm the schedule shortly."></textarea><div class="practice-actions"><button type="button" class="btn quiz-btn" id="writingCheck">✅ 체크 포인트 보기</button><button type="button" class="btn quiz-btn" id="writingSample">💡 예시 보기</button></div><div class="practice-note" id="writingFeedback"></div></article>
-        <article class="speaking-card"><h3>🎧 쉐도잉 스튜디오</h3><p class="practice-note">문장을 듣고 1~2초 뒤에 따라 말해 보세요. 먼저 스크립트를 가린 채 연습하면 효과가 좋아요.</p><div class="reading-passage" id="shadowingSentence"></div><div class="practice-actions"><button type="button" class="btn quiz-btn" id="shadowingPlay">🔊 문장 듣기</button><button type="button" class="btn quiz-btn" id="shadowingReveal">👁 스크립트 보기</button><button type="button" class="btn quiz-btn" id="shadowingNext">🔄 다른 문장</button></div><label class="practice-note" for="shadowingSpeed">재생 속도</label><select class="dday-input" id="shadowingSpeed"><option value="0.7">0.7배</option><option value="0.85" selected>0.85배</option><option value="1">1배</option></select><p class="practice-note" id="shadowingFeedback"></p></article>
-        <article class="speaking-card"><h3>✍️ 혼동어휘 받아쓰기</h3><p class="practice-note">문장을 듣고 그대로 입력해 보세요. 비슷하게 들리는 단어의 철자를 정확히 구분하는 훈련입니다.</p><div class="practice-actions"><button type="button" class="btn quiz-btn" id="cdPlay">🔊 문장 듣기</button><button type="button" class="btn quiz-btn" id="cdSlow">🐢 천천히 듣기</button><button type="button" class="btn quiz-btn" id="cdNext">🔄 다른 문장</button><button type="button" class="btn quiz-btn" id="cdReveal">👁 정답 보기</button></div><input type="text" class="dict-input" id="cdInput" placeholder="들리는 영어 문장을 입력하세요" autocomplete="off" style="margin-top:10px"><div class="practice-actions"><button type="button" class="btn quiz-btn" id="cdCheck">✅ 채점</button></div><div class="practice-note" id="cdFeedback"></div></article>
+        <article class="writing-card"><h3>✍️ 이메일 한 문장 쓰기</h3><p class="practice-note">아래 상황에 맞는 정중한 영어 문장을 작성해 보세요.</p><div class="reading-passage" id="writingPrompt"></div><textarea class="writing-area" id="writingArea" aria-label="이메일 한 문장 쓰기" placeholder="예: Thank you for your message. I will confirm the schedule shortly."></textarea><div class="practice-actions"><button type="button" class="btn quiz-btn" id="writingCheck">✅ 체크 포인트 보기</button><button type="button" class="btn quiz-btn" id="writingSample">💡 예시 보기</button></div><div class="practice-note" id="writingFeedback"></div></article>
+        <article class="speaking-card"><h3>🎧 쉐도잉 스튜디오</h3><p class="practice-note">문장을 듣고 1~2초 뒤에 따라 말해 보세요. 먼저 스크립트를 가린 채 연습하면 효과가 좋아요.</p><div class="reading-passage" id="shadowingSentence"></div><div class="practice-actions"><button type="button" class="btn quiz-btn" id="shadowingPlay">🔊 문장 듣기</button><button type="button" class="btn quiz-btn" id="shadowingReveal">👁 스크립트 보기</button><button type="button" class="btn quiz-btn" id="shadowingNext">🔄 다른 문장</button></div><label class="practice-note" for="shadowingSpeed">재생 속도</label><select class="dday-input" id="shadowingSpeed" aria-label="쉐도잉 재생 속도"><option value="0.7">0.7배</option><option value="0.85" selected>0.85배</option><option value="1">1배</option></select><p class="practice-note" id="shadowingFeedback"></p></article>
+        <article class="speaking-card"><h3>✍️ 혼동어휘 받아쓰기</h3><p class="practice-note">문장을 듣고 그대로 입력해 보세요. 비슷하게 들리는 단어의 철자를 정확히 구분하는 훈련입니다.</p><div class="practice-actions"><button type="button" class="btn quiz-btn" id="cdPlay">🔊 문장 듣기</button><button type="button" class="btn quiz-btn" id="cdSlow">🐢 천천히 듣기</button><button type="button" class="btn quiz-btn" id="cdNext">🔄 다른 문장</button><button type="button" class="btn quiz-btn" id="cdReveal">👁 정답 보기</button></div>      <input type="text" class="dict-input" id="cdInput" aria-label="받아쓰기 답안 입력" placeholder="들리는 영어 문장을 입력하세요" autocomplete="off" style="margin-top:10px"><div class="practice-actions"><button type="button" class="btn quiz-btn" id="cdCheck">✅ 채점</button></div><div class="practice-note" id="cdFeedback"></div></article>
       </div>
     </section>
 
     <section class="home-section" aria-label="시험 D-day 플랜">
       <h2 class="home-section-title">📅 시험 D-day 학습 플랜</h2>
       <p class="home-section-sub">시험 날짜를 저장하면 남은 기간에 맞는 복습량을 추천합니다.</p>
-      <div class="dday-grid"><article class="dday-card"><h3>시험 날짜 설정</h3><input type="date" class="dday-input" id="examDateInput"><div class="practice-actions"><button type="button" class="btn quiz-btn" id="saveExamDate">저장</button><button type="button" class="btn quiz-btn" id="clearExamDate">초기화</button></div></article><article class="dday-card"><h3>오늘의 계획</h3><div id="ddayResult"></div></article></div>
+      <div class="dday-grid"><article class="dday-card"><h3>시험 날짜 설정</h3><label class="sr-only" for="examDateInput">시험 날짜</label>
+<input type="date" class="dday-input" id="examDateInput" aria-label="시험 날짜"><div class="practice-actions"><button type="button" class="btn quiz-btn" id="saveExamDate">저장</button><button type="button" class="btn quiz-btn" id="clearExamDate">초기화</button></div></article><article class="dday-card"><h3>오늘의 계획</h3><div id="ddayResult"></div></article></div>
     </section>
 
     <section class="home-section" aria-label="TOEIC 시험 안내">
@@ -2597,7 +2647,7 @@
 
   <div class="flashcard-view" id="flashcardView">
     <div class="fc-wrap">
-      <div class="fc-card" id="fcCard">
+      <div class="fc-card" id="fcCard" role="button" tabindex="0" aria-pressed="false" aria-label="암기 카드 — 눌러서 뜻 확인">
         <div class="fc-word" id="fcWord"></div>
         <div class="fc-ipa" id="fcIpa"></div>
         <div class="fc-kpron" id="fcKpron"></div>
@@ -2623,12 +2673,12 @@
   <div class="quiz-view" id="quizView">
     <div class="quiz-wrap">
       <div class="quiz-head">
-        <select id="quizType">
+        <select id="quizType" aria-label="퀴즈 유형">
           <option value="en2ko">단어 → 뜻 맞히기</option>
           <option value="ko2en">뜻 → 단어 맞히기</option>
           <option value="blank">빈칸 채우기 (Part 5·6 유형)</option>
         </select>
-        <select id="quizLength">
+        <select id="quizLength" aria-label="퀴즈 문제 수">
           <option value="10">10문제</option>
           <option value="20" selected>20문제</option>
           <option value="50">50문제</option>
@@ -2644,17 +2694,17 @@
   <div class="exam-view" id="examView">
     <div class="quiz-wrap">
       <div class="quiz-head">
-        <select id="examType">
+        <select id="examType" aria-label="시험 유형">
           <option value="en2ko">단어 → 뜻 (Part 5 유형)</option>
           <option value="ko2en">뜻 → 단어 (Part 5 유형)</option>
           <option value="blank" selected>빈칸 채우기 (Part 5·6 유형)</option>
         </select>
-        <select id="examLength">
+        <select id="examLength" aria-label="시험 문항 수">
           <option value="10">10문항</option>
           <option value="20" selected>20문항</option>
           <option value="30">30문항</option>
         </select>
-        <select id="examTime">
+        <select id="examTime" aria-label="문항당 제한 시간">
           <option value="15">15초/문항</option>
           <option value="30" selected>30초/문항 (실전)</option>
           <option value="45">45초/문항 (여유)</option>
@@ -2672,17 +2722,17 @@
   <div class="quiz-view" id="listenView">
     <div class="quiz-wrap">
       <div class="quiz-head">
-        <select id="listenType">
+        <select id="listenType" aria-label="리스닝 연습 유형">
           <option value="word" selected>단어 듣고 뜻 고르기 (Part 1·2)</option>
           <option value="sent">예문 듣고 해석 고르기 (Part 3·4)</option>
           <option value="dict">받아쓰기 (Dictation)</option>
         </select>
-        <select id="listenLength">
+        <select id="listenLength" aria-label="리스닝 문제 수">
           <option value="5">5문제</option>
           <option value="10" selected>10문제</option>
           <option value="20">20문제</option>
         </select>
-        <select id="listenSpeed" title="재생 속도">
+        <select id="listenSpeed" title="재생 속도" aria-label="재생 속도">
           <option value="0.7">0.7배 (느리게)</option>
           <option value="0.85" selected>0.85배</option>
           <option value="1">1배 (기본)</option>
@@ -2698,11 +2748,11 @@
   <div class="quiz-view" id="mockView">
     <div class="quiz-wrap">
       <div class="quiz-head">
-        <select id="mockMode">
+        <select id="mockMode" aria-label="모의고사 범위">
           <option value="mini" selected>미니 모의고사 (LC 10 + RC 10)</option>
           <option value="full">풀 모의고사 (LC 30 + RC 30)</option>
         </select>
-        <select id="mockLength">
+        <select id="mockLength" aria-label="문항당 제한 시간">
           <option value="15">15초/문항 (고속)</option>
           <option value="30" selected>30초/문항 (실전)</option>
           <option value="45">45초/문항 (여유)</option>
@@ -2720,7 +2770,7 @@
   <div class="quiz-view" id="diagView">
     <div class="quiz-wrap">
       <div class="quiz-head">
-        <select id="diagLevel">
+        <select id="diagLevel" aria-label="진단 레벨">
           <option value="all" selected>전체 레벨 진단</option>
           <option value="초급">초급 진단</option>
           <option value="중급">중급 진단</option>
@@ -2747,10 +2797,10 @@
 
 <!-- TOEIC 시험 안내 모달 -->
 <div class="modal-overlay" id="guideModal">
-  <div class="modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="guideModalTitle">
     <div class="modal-head">
-      <h2>📘 TOEIC 시험 안내</h2>
-      <button class="btn modal-close" id="guideClose">✕</button>
+      <h2 id="guideModalTitle">📘 TOEIC 시험 안내</h2>
+      <button class="btn modal-close" id="guideClose" aria-label="안내 창 닫기">✕</button>
     </div>
     <div class="modal-body">
       <div class="guide-tabs" role="tablist">
@@ -2821,7 +2871,7 @@
           <button class="btn" id="btnExport">💾 데이터 내보내기</button>
           <button class="btn" id="btnImport">📥 데이터 가져오기</button>
           <button class="btn" id="btnResetData">🗑️ 학습 데이터 초기화</button>
-          <input type="file" id="importFile" accept=".json,application/json" style="display:none">
+          <input type="file" id="importFile" accept=".json,application/json" aria-label="백업 파일 선택" style="display:none">
         </div>
         <p style="font-size:12px;color:var(--text-muted);margin-top:10px">💾 내보내기: 학습 데이터를 JSON 파일로 저장해 다른 기기로 옮길 수 있어요. 가져오기 시 현재 데이터가 덮어써집니다.</p>
       </div>
@@ -2885,6 +2935,15 @@
 (function () {
   "use strict";
 
+  // localStorage 값을 안전하게 읽습니다. 값이 없거나 손상됐거나 배열이면 빈 객체를 돌려주어
+  // Object.keys(null) 같은 오류로 앱 전체가 멈추는 일을 막습니다.
+  function storeObject(key) {
+    try {
+      var v = JSON.parse(localStorage.getItem(key) || "null");
+      return v && typeof v === "object" && !Array.isArray(v) ? v : {};
+    } catch (e) { return {}; }
+  }
+
   var UNITS = [
     { id: 1, title: "비즈니스와 회사", sub: "Business & Company · 토익 LC Part 1·2, RC Part 5 빈출", level: "초급", icon: "💼" },
     { id: 2, title: "회의와 협상", sub: "Meetings & Negotiation · 회의 관련 표현의 핵심", level: "중급", icon: "🤝" },
@@ -2918,10 +2977,7 @@
     { id: 30, title: "복합 실전 어휘", sub: "Essential Mix · 시험에 자주 나오는 부사·형용사", level: "고급", icon: "🎯" }
   ];
 
-  var learned = {};
-  try {
-    learned = JSON.parse(localStorage.getItem("toeic1000_learned") || "{}");
-  } catch (e) { learned = {}; }
+  var learned = storeObject("toeic1000_learned");
   // 레거시 호환: 이전 버전은 true로 저장 → 오늘 날짜로 변환 (SRS 간격 반복용)
   (function migrateLearned() {
     var t = todayKey();
@@ -2932,45 +2988,47 @@
     if (changed) saveLearned();
   })();
 
-  var wrongSet = {};
-  try {
-    wrongSet = JSON.parse(localStorage.getItem("toeic1000_wrong") || "{}");
-  } catch (e) { wrongSet = {}; }
+  var wrongSet = storeObject("toeic1000_wrong");
   var quizWrongMode = false;
   var currentLevel = "";
   var wordLevelMap = {};
   var wordUnitMap = {};
 
-  var favSet = {};
-  try {
-    favSet = JSON.parse(localStorage.getItem("toeic1000_fav") || "{}");
-  } catch (e) { favSet = {}; }
-  var wrongCount = {};
-  try {
-    wrongCount = JSON.parse(localStorage.getItem("toeic1000_wrongcount") || "{}");
-  } catch (e) { wrongCount = {}; }
+  var favSet = storeObject("toeic1000_fav");
+  var wrongCount = storeObject("toeic1000_wrongcount");
 
   var favFilter = false;
   var reviewFilter = false;
 
   // 일일 목표 · 연속 학습
   var DAILY_GOAL = 30;
+  // 저장된 값이 비었거나 손상되어도 화면에 "undefined / NaN"이 뜨지 않도록 값을 검증해 채웁니다.
+  function readInt(v) {
+    var n = parseInt(v, 10);
+    return isNaN(n) || n < 0 ? 0 : n;
+  }
+  function readDateKey(v) {
+    return typeof v === "string" && /^\d{1,4}-\d{1,2}-\d{1,2}$/.test(v) ? v : "";
+  }
   var daily = { date: "", count: 0 };
   try {
-    daily = JSON.parse(localStorage.getItem("toeic1000_daily") || "{}");
+    var savedDaily = JSON.parse(localStorage.getItem("toeic1000_daily") || "null");
+    if (savedDaily && typeof savedDaily === "object") {
+      daily = { date: readDateKey(savedDaily.date), count: readInt(savedDaily.count) };
+    }
   } catch (e) { daily = { date: "", count: 0 }; }
   var streakInfo = { last: "", count: 0 };
   try {
-    streakInfo = JSON.parse(localStorage.getItem("toeic1000_streak") || "{}");
+    var savedStreak = JSON.parse(localStorage.getItem("toeic1000_streak") || "null");
+    if (savedStreak && typeof savedStreak === "object") {
+      streakInfo = { last: readDateKey(savedStreak.last), count: readInt(savedStreak.count) };
+    }
   } catch (e) { streakInfo = { last: "", count: 0 }; }
   var examBest = 0;
   try { examBest = parseInt(localStorage.getItem("toeic1000_exambest") || "0", 10) || 0; } catch (e) { examBest = 0; }
 
   // 유형별 퀴즈 통계: { 유형: { c: 정답수, w: 오답수 } }
-  var quizStats = {};
-  try {
-    quizStats = JSON.parse(localStorage.getItem("toeic1000_quizstats") || "{}");
-  } catch (e) { quizStats = {}; }
+  var quizStats = storeObject("toeic1000_quizstats");
   function recordStat(type, correct) {
     var s = quizStats[type] || { c: 0, w: 0 };
     if (correct) s.c++; else s.w++;
@@ -2979,10 +3037,7 @@
   }
 
   // 주간 학습 로그: { "YYYY-M-D": 학습 활동 수 }
-  var weeklyLog = {};
-  try {
-    weeklyLog = JSON.parse(localStorage.getItem("toeic1000_weekly") || "{}");
-  } catch (e) { weeklyLog = {}; }
+  var weeklyLog = storeObject("toeic1000_weekly");
   function touchWeekly() {
     var t = todayKey();
     weeklyLog[t] = (weeklyLog[t] || 0) + 1;
@@ -3184,17 +3239,17 @@
     var isFav = !!favSet[w[0]];
     var wc = wrongCount[w[0]] || 0;
     var li = '<div class="card ' + (isLearned ? "learned" : "") + (isFav ? " fav" : "") + '" data-word="' + escapeAttr(w[0]) + '">';
-    li += '<div class="card-check"><input type="checkbox" title="외웠어요" ' + (isLearned ? "checked" : "") + '></div>';
+    li += '<div class="card-check"><input type="checkbox" title="외웠어요" aria-label="' + esc(w[0]) + ' 외운 단어로 표시" ' + (isLearned ? "checked" : "") + '></div>';
     li += '<div class="card-word">';
     li += '<div class="w">' + (u.icon ? '<span class="unit-emoji">' + u.icon + '</span>' : '') + esc(w[0]) + '</div>';
     li += '<div class="ipa">' + esc(w[1]) + '</div>';
     li += '<div><span class="kpron">' + esc(w[2]) + '</span>';
     li += '<button class="speak" title="발음 듣기" aria-label="' + esc(w[0]) + ' 발음 듣기">🔊</button>';
-    li += '<button class="fav-btn" title="내 단어장에 추가" aria-label="' + esc(w[0]) + ' 내 단어장에 추가">' + (isFav ? "★" : "☆") + '</button></div>';
+    li += '<button class="fav-btn" title="내 단어장에 추가" aria-label="' + esc(w[0]) + ' 내 단어장에 추가" aria-pressed="' + (isFav ? "true" : "false") + '">' + (isFav ? "★" : "☆") + '</button></div>';
     li += '</div>';
     li += '<div class="card-body">';
     li += '<div class="mean">' + esc(w[3]) + (wc ? ' <span class="badge-wrong">🔁 오답 ' + wc + '회</span>' : '') + '</div>';
-    li += '<div class="ex"><span class="ex-text">' + esc(w[4]) + '</span> <button class="speak ex-speak" title="예문 듣기" aria-label="예문 듣기">🔊</button></div>';
+    li += '<div class="ex"><span class="ex-text">' + esc(w[4]) + '</span> <button class="speak ex-speak" title="예문 듣기" aria-label="' + esc(w[0]) + ' 예문 듣기">🔊</button></div>';
     li += '<div class="ex-pron">' + esc(w[6]) + '</div>';
     li += '<div class="ex-ko">' + esc(w[5]) + '</div>';
     li += '</div></div>';
@@ -3336,6 +3391,7 @@
       try { localStorage.setItem("toeic1000_fav", JSON.stringify(favSet)); } catch (err) {}
       card.classList.toggle("fav", !!favSet[word]);
       e.target.textContent = favSet[word] ? "★" : "☆";
+      e.target.setAttribute("aria-pressed", favSet[word] ? "true" : "false");
         if (favFilter) renderUnits(document.getElementById("searchInput").value);
     } else if (e.target.classList.contains("speak")) {
       var card = e.target.closest(".card");
@@ -3444,11 +3500,21 @@
       (fcIdx + 1) + " / " + fcList.length + " · 남은 단어 " + (fcList.length - fcIdx - 1);
   }
 
-  document.getElementById("fcCard").addEventListener("click", function () {
+  function flipFlashCard() {
     fcShown = !fcShown;
     showFlashCard();
     // 카드를 뒤집어 예문이 보이면 예문을 자동 재생합니다.
     if (fcShown && fcList.length && TTS_ENABLED) speak(fcList[fcIdx][4]);
+    var card = document.getElementById("fcCard");
+    if (card) card.setAttribute("aria-pressed", fcShown ? "true" : "false");
+  }
+  document.getElementById("fcCard").addEventListener("click", flipFlashCard);
+  // 키보드만으로도 카드를 뒤집을 수 있게 합니다.
+  document.getElementById("fcCard").addEventListener("keydown", function (e) {
+    if (e.key === "Enter" || e.key === " " || e.key === "Spacebar") {
+      e.preventDefault();
+      flipFlashCard();
+    }
   });
   document.getElementById("fcNext").addEventListener("click", function () {
     if (!fcList.length) return;
@@ -3490,6 +3556,7 @@
     if (favSet[w[0]]) { delete favSet[w[0]]; } else { favSet[w[0]] = true; }
     try { localStorage.setItem("toeic1000_fav", JSON.stringify(favSet)); } catch (err) {}
     this.textContent = favSet[w[0]] ? "★ 단어장에서 빼기" : "☆ 단어장에 추가";
+    this.setAttribute("aria-pressed", favSet[w[0]] ? "true" : "false");
   });
   document.getElementById("fcListen").addEventListener("click", function () {
     if (!fcList.length) return;
@@ -3657,6 +3724,7 @@
     topActionsEl.classList.remove("open");
     if (menuBtn) {
       menuBtn.setAttribute("aria-expanded", "false");
+      menuBtn.setAttribute("aria-label", "메뉴 열기");
       menuBtn.textContent = "☰";
     }
   }
@@ -3665,6 +3733,7 @@
       e.stopPropagation();
       var open = topActionsEl.classList.toggle("open");
       menuBtn.setAttribute("aria-expanded", open ? "true" : "false");
+      menuBtn.setAttribute("aria-label", open ? "메뉴 닫기" : "메뉴 열기");
       menuBtn.textContent = open ? "✕" : "☰";
     });
   }
@@ -3685,7 +3754,9 @@
     syncLevelButtons();
     showListView();
     var sec = document.getElementById("unit-" + id);
-    if (sec) sec.scrollIntoView({ behavior: "smooth", block: "start" });
+    // 유닛은 문서 아래쪽에 있어 부드러운 스크롤이 수 초 걸립니다.
+    // 뷰를 바꾸는 이동이므로 즉시 이동해 기다림 없이 내용을 보여 줍니다.
+    if (sec) sec.scrollIntoView({ behavior: "auto", block: "start" });
   }
 
   var CHEERS = [
@@ -4051,8 +4122,7 @@
       streak: streakInfo.count, best: examBest, favN: Object.keys(favSet).length, mockDone: mockDone
     };
   }
-  var earnedBadges = {};
-  try { earnedBadges = JSON.parse(localStorage.getItem("toeic1000_badges") || "{}") || {}; } catch (e) { earnedBadges = {}; }
+  var earnedBadges = storeObject("toeic1000_badges");
   var badgeInitDone = false;
   function saveEarnedBadges() {
     try { localStorage.setItem("toeic1000_badges", JSON.stringify(earnedBadges)); } catch (e) {}
@@ -5011,7 +5081,7 @@
     var grid = document.getElementById("readingGrid");
     if (!grid) return;
     grid.innerHTML = READING_MINI.map(function (item, i) {
-      return '<article class="reading-card"><span class="bank-label">' + esc(item.type) + '</span><h3>' + esc(item.title) + '</h3><div class="reading-passage">' + esc(item.text) + ttsBtn(item.text, "지문 듣기") + '</div><div class="reading-q">' + esc(item.q) + '</div><select class="reading-answer" data-reading="' + i + '"><option value="">정답을 선택하세요</option>' + item.opts.map(function (o) { return '<option>' + esc(o) + '</option>'; }).join("") + '</select><div class="bank-feedback" id="readingFeedback' + i + '"></div></article>';
+      return '<article class="reading-card"><span class="bank-label">' + esc(item.type) + '</span><h3>' + esc(item.title) + '</h3><div class="reading-passage">' + esc(item.text) + ttsBtn(item.text, "지문 듣기") + '</div><div class="reading-q">' + esc(item.q) + '</div><select class="reading-answer" data-reading="' + i + '" aria-label="' + esc(item.title) + ' 문제 정답 선택"><option value="">정답을 선택하세요</option>' + item.opts.map(function (o) { return '<option>' + esc(o) + '</option>'; }).join("") + '</select><div class="bank-feedback" id="readingFeedback' + i + '"></div></article>';
     }).join("");
     grid.querySelectorAll(".reading-answer").forEach(function (select) {
       select.addEventListener("change", function () {
@@ -5020,7 +5090,7 @@
         var ok = this.value === item.a;
         recordStat("reading", ok);
         fb.textContent = ok ? "정답입니다! 🎉 핵심 단서가 정확해요." : "다시 읽어 보세요. 핵심 단서: " + item.a;
-        fb.style.color = ok ? "var(--green)" : "#fa5252";
+        fb.style.color = ok ? "var(--green-text)" : "var(--red-text)";
       });
     });
   }
@@ -5212,7 +5282,7 @@
         });
         var fb = document.getElementById("miniQuizFeedback");
         fb.textContent = ok ? "정답입니다! 🎉" : "정답: " + q.answer;
-        fb.style.color = ok ? "var(--green)" : "#fa5252";
+        fb.style.color = ok ? "var(--green-text)" : "var(--red-text)";
         var next = document.createElement("button");
         next.type = "button";
         next.className = "btn quiz-btn";
@@ -5606,15 +5676,27 @@
     document.getElementById("statGrid").innerHTML = html;
   }
 
-  document.getElementById("btnGuide").addEventListener("click", function () {
+  var guideModal = document.getElementById("guideModal");
+  function openGuide() {
     renderStats();
-    document.getElementById("guideModal").classList.add("show");
+    guideModal.classList.add("show");
+    var closeBtn = document.getElementById("guideClose");
+    if (closeBtn) closeBtn.focus();
+  }
+  function closeGuide() {
+    if (!guideModal.classList.contains("show")) return;
+    guideModal.classList.remove("show");
+    var opener = document.getElementById("btnGuide");
+    if (opener) opener.focus();
+  }
+  document.getElementById("btnGuide").addEventListener("click", openGuide);
+  document.getElementById("guideClose").addEventListener("click", closeGuide);
+  guideModal.addEventListener("click", function (e) {
+    if (e.target === this) closeGuide();
   });
-  document.getElementById("guideClose").addEventListener("click", function () {
-    document.getElementById("guideModal").classList.remove("show");
-  });
-  document.getElementById("guideModal").addEventListener("click", function (e) {
-    if (e.target === this) document.getElementById("guideModal").classList.remove("show");
+  // Esc 키로 안내 창을 닫을 수 있게 합니다(키보드 사용자).
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" || e.key === "Esc") closeGuide();
   });
   document.getElementById("btnResetData").addEventListener("click", function () {
     if (!confirm("모든 학습 데이터(외운 단어·오답노트·단어장·진행 기록)를 초기화할까요?")) return;
@@ -6506,9 +6588,21 @@
 
   // ---------- 다크 모드 ----------
   function setTheme(t) {
-    document.body.classList.toggle("dark", t === "dark");
+    var isDark = t === "dark";
+    document.body.classList.toggle("dark", isDark);
+    document.documentElement.classList.remove("dark-pending");
     try { localStorage.setItem("toeic1000_theme", t); } catch (e) {}
-    document.getElementById("btnTheme").textContent = t === "dark" ? "☀️" : "🌙";
+    var btn = document.getElementById("btnTheme");
+    if (btn) {
+      btn.textContent = isDark ? "☀️" : "🌙";
+      // 아이콘과 안내 문구가 항상 "누르면 되는 동작"을 설명하도록 함께 바꿉니다.
+      var label = isDark ? "라이트 모드로 전환" : "다크 모드로 전환";
+      btn.setAttribute("aria-label", label);
+      btn.title = label;
+      btn.setAttribute("aria-pressed", isDark ? "true" : "false");
+    }
+    var meta = document.getElementById("metaThemeColor");
+    if (meta) meta.setAttribute("content", isDark ? "#10141b" : "#3b5bdb");
   }
   document.getElementById("btnTheme").addEventListener("click", function () {
     setTheme(document.body.classList.contains("dark") ? "light" : "dark");
