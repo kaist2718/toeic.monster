@@ -1,5 +1,5 @@
 /* toeic.monster Service Worker - 오프라인 학습 지원 */
-var CACHE_NAME = "toeic-monster-v2";
+var CACHE_NAME = "toeic-monster-v3";
 var CORE_ASSETS = [
   "./",
   "./index.html",
@@ -32,24 +32,45 @@ self.addEventListener("activate", function (event) {
   );
 });
 
-// 요청: 캐시 우선, 실패 시 네트워크 → 캐시 폴백
+// 요청 전략
+//  - HTML 문서(페이지 이동): 네트워크 우선 → 새 배포가 즉시 반영, 오프라인이면 캐시 폴백
+//  - 그 외 에셋: stale-while-revalidate → 캐시를 즉시 응답하고 백그라운드에서 갱신
 self.addEventListener("fetch", function (event) {
-  var url = new URL(event.request.url);
-  if (event.request.method !== "GET") return;
+  var req = event.request;
+  if (req.method !== "GET") return;
+  var url = new URL(req.url);
   if (url.origin !== self.location.origin) return; // 외부 리소스 제외
 
-  event.respondWith(
-    caches.match(event.request).then(function (cached) {
-      if (cached) return cached;
-      return fetch(event.request).then(function (response) {
-        if (response && response.status === 200 && response.type === "basic") {
+  var accept = (req.headers.get("accept") || "");
+  var isHTML = req.mode === "navigate" || accept.indexOf("text/html") !== -1;
+
+  if (isHTML) {
+    event.respondWith(
+      fetch(req).then(function (response) {
+        if (response && response.status === 200) {
           var copy = response.clone();
-          caches.open(CACHE_NAME).then(function (cache) { cache.put(event.request, copy); });
+          caches.open(CACHE_NAME).then(function (cache) { cache.put(req, copy); });
         }
         return response;
       }).catch(function () {
-        return caches.match("./index.html");
-      });
+        return caches.match(req).then(function (cached) {
+          return cached || caches.match("./index.html");
+        });
+      })
+    );
+    return;
+  }
+
+  event.respondWith(
+    caches.match(req).then(function (cached) {
+      var network = fetch(req).then(function (response) {
+        if (response && response.status === 200 && response.type === "basic") {
+          var copy = response.clone();
+          caches.open(CACHE_NAME).then(function (cache) { cache.put(req, copy); });
+        }
+        return response;
+      }).catch(function () { return cached; });
+      return cached || network;
     })
   );
 });

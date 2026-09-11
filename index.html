@@ -163,6 +163,22 @@
     transition: width .3s ease;
   }
   .topbar-actions { display: flex; gap: 8px; }
+  .tts-ctrl { display: flex; align-items: center; gap: 6px; }
+  .tts-ctrl .btn { padding: 8px 10px; }
+  .tts-ctrl .btn.muted { background: rgba(255,255,255,.35); }
+  .tts-rate {
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 700;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 8px;
+    background: rgba(255,255,255,.18);
+    color: #fff;
+    cursor: pointer;
+  }
+  .tts-rate:hover { background: rgba(255,255,255,.3); }
+  .tts-rate option { color: var(--text); }
   .btn {
     font-family: inherit;
     font-size: 13px;
@@ -394,6 +410,46 @@
     transition: background .15s;
   }
   .card-body .ex .ex-speak:hover { background: var(--soft-cyan); }
+
+  /* 예문 듣기 공통 버튼 (오늘의 단어·숙어·문법·명언·독해 등) */
+  .tts-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    margin-left: 5px;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    background: var(--input-bg);
+    color: var(--cyan);
+    cursor: pointer;
+    font-size: 11px;
+    line-height: 1;
+    vertical-align: middle;
+    flex-shrink: 0;
+    transition: background .15s, transform .15s;
+  }
+  .tts-btn:hover { background: var(--soft-cyan); }
+  .tts-btn:active { transform: scale(.92); }
+  .tts-btn.on-dark {
+    background: rgba(255,255,255,.22);
+    border-color: rgba(255,255,255,.5);
+    color: #fff;
+  }
+  .tts-btn.on-dark:hover { background: rgba(255,255,255,.38); }
+
+  /* TTS 재생 중인 단어·문장 하이라이트 */
+  .tts-speaking {
+    background: rgba(245,159,0,.32);
+    border-radius: 6px;
+    box-shadow: 0 0 0 4px rgba(245,159,0,.22);
+    transition: background .2s, box-shadow .2s;
+  }
+  .quote-featured .tts-speaking {
+    background: rgba(255,255,255,.28);
+    box-shadow: 0 0 0 4px rgba(255,255,255,.22);
+  }
   .card-body .ex-pron {
     font-size: 12.5px;
     color: var(--cyan);
@@ -1263,6 +1319,129 @@
   .tip-card b { display: block; font-size: 15px; color: var(--primary-dark); margin-bottom: 4px; }
   .tip-card p { font-size: 12.5px; color: var(--text-muted); }
 
+  /* 학습 성취 배지 */
+  .badge-summary {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--primary);
+    background: var(--soft-blue);
+    border-radius: 99px;
+    padding: 5px 12px;
+    white-space: nowrap;
+  }
+  .badge-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
+    gap: 10px;
+  }
+  .badge-item {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+    opacity: .55;
+    filter: grayscale(.65);
+    transition: opacity .2s, filter .2s, border-color .2s, box-shadow .2s, transform .2s;
+  }
+  .badge-item.on {
+    opacity: 1;
+    filter: none;
+    border-color: var(--accent);
+    box-shadow: var(--shadow-sm);
+  }
+  .badge-item.on:hover { transform: translateY(-2px); }
+  .badge-ico { display: block; font-size: 24px; }
+  .badge-name { display: block; font-size: 14px; font-weight: 800; margin-top: 4px; }
+  .badge-desc { display: block; font-size: 11.5px; color: var(--text-muted); margin-top: 2px; min-height: 28px; }
+  .badge-check { display: inline-block; font-size: 11px; font-weight: 800; color: var(--text-muted); margin-top: 4px; }
+  .badge-item.on .badge-check { color: var(--green); }
+
+  /* 혼동 어휘 */
+  .confuse-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(285px, 1fr));
+    gap: 12px;
+  }
+  .confuse-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px 18px;
+  }
+  .confuse-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .confuse-pair { font-size: 15.5px; font-weight: 800; color: var(--primary-dark); word-break: keep-all; }
+  .confuse-tag {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--cyan);
+    background: var(--soft-cyan);
+    border-radius: 99px;
+    padding: 2px 8px;
+  }
+  .confuse-row { margin-top: 9px; font-size: 13px; line-height: 1.5; }
+  .confuse-en { font-style: italic; color: var(--ex-text); }
+  .confuse-ko { color: var(--text-muted); font-size: 12.5px; }
+  .confuse-tip {
+    margin-top: 10px;
+    font-size: 12px;
+    background: var(--soft-blue);
+    border-radius: 8px;
+    padding: 8px 10px;
+    color: var(--text-muted);
+  }
+
+  /* 접두사·어근 */
+  .wordpart-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(235px, 1fr));
+    gap: 10px;
+  }
+  .wordpart-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+  }
+  .wordpart-top { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .wordpart-type {
+    font-size: 10.5px;
+    font-weight: 800;
+    color: var(--cyan);
+    background: var(--soft-cyan);
+    border-radius: 99px;
+    padding: 2px 8px;
+  }
+  .wordpart-part { font-size: 17px; font-weight: 800; color: var(--primary-dark); }
+  .wordpart-mean { font-size: 13px; font-weight: 700; margin: 5px 0 2px; }
+  .wordpart-words { font-size: 12.5px; color: var(--text-muted); }
+  .wordpart-ex { font-size: 12.5px; font-style: italic; color: var(--ex-text); margin-top: 7px; }
+
+  /* 단어 패밀리 · 어원 · 템플릿 · 리포트 */
+  .wordfamily-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .wordfamily-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+  .wordfamily-root { font-size: 15px; font-weight: 800; color: var(--primary-dark); margin-bottom: 6px; }
+  .wordfamily-forms { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
+
+  .mnemonic-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(235px, 1fr)); gap: 10px; }
+  .mnemonic-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+  .mnemonic-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .mnemonic-word { font-size: 16px; font-weight: 800; color: var(--primary-dark); }
+  .mnemonic-root { font-size: 12.5px; font-weight: 700; color: var(--cyan); margin: 6px 0 2px; }
+  .mnemonic-tip { font-size: 12.5px; color: var(--text-muted); }
+
+  .template-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(285px, 1fr)); gap: 12px; }
+  .template-line { display: flex; align-items: center; flex-wrap: wrap; gap: 2px; }
+
+  .report-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 12px; }
+  .report-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; }
+
+  .lc-set-line { font-size: 13.5px; line-height: 1.6; margin: 3px 0; }
+
   /* FAQ */
   .faq-list { display: flex; flex-direction: column; gap: 10px; }
   .faq-item {
@@ -1727,6 +1906,16 @@
       <div class="progress-label">학습 진행률 <span id="progressText">0 / 1000</span> · 오늘 <span id="dailyText">0/30</span> · <span id="streakText">🔥 0일</span></div>
       <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
     </div>
+    <div class="tts-ctrl" role="group" aria-label="발음 듣기 설정">
+      <button class="btn" id="btnTts" title="발음 듣기 켜기/끄기" aria-label="발음 듣기 켜기/끄기" aria-pressed="true">🔊</button>
+      <label class="sr-only" for="ttsRate">발음 속도</label>
+      <select class="tts-rate" id="ttsRate" title="발음 속도">
+        <option value="0.7">0.7×</option>
+        <option value="0.85" selected>0.85×</option>
+        <option value="1">1×</option>
+        <option value="1.15">1.15×</option>
+      </select>
+    </div>
     <button class="btn" id="btnTheme" title="다크 모드 전환" aria-label="다크 모드 전환">🌙</button>
     <button class="btn menu-toggle" id="btnMenu" aria-label="메뉴 열기" aria-expanded="false">☰</button>
     <div class="topbar-actions">
@@ -1784,12 +1973,25 @@
 
     <nav class="section-nav print-hide" aria-label="섹션 빠른 이동">
       <button type="button" class="sn-chip" data-target="오늘의 학습">☀️ 오늘의 학습</button>
+      <button type="button" class="sn-chip" data-target="학습 성취 배지">🏅 배지</button>
       <button type="button" class="sn-chip" data-target="오늘의 단어">🃏 오늘의 단어</button>
       <button type="button" class="sn-chip" data-target="오늘의 문법 팁">📐 문법 팁</button>
       <button type="button" class="sn-chip" data-target="오늘의 대화문">🎧 대화문</button>
       <button type="button" class="sn-chip" data-target="학습 모드">🧩 학습 모드</button>
       <button type="button" class="sn-chip" data-target="주제별 유닛">📚 유닛</button>
       <button type="button" class="sn-chip" data-target="빈출 구동사·숙어">💡 구동사</button>
+      <button type="button" class="sn-chip" data-target="자주 헷갈리는 혼동 어휘">🤔 혼동 어휘</button>
+      <button type="button" class="sn-chip" data-target="접두사·어근으로 단어 확장">🧩 어근</button>
+      <button type="button" class="sn-chip" data-target="빈출 콜로케이션 드릴">🧱 콜로케이션</button>
+      <button type="button" class="sn-chip" data-target="문맥 속 어휘">🔍 문맥 어휘</button>
+      <button type="button" class="sn-chip" data-target="Part 1·2 LC 유형 훈련">🎧 LC 1·2</button>
+      <button type="button" class="sn-chip" data-target="Part 3·4 미니 세트">🗣️ Part 3·4</button>
+      <button type="button" class="sn-chip" data-target="단어 패밀리">🌳 단어 패밀리</button>
+      <button type="button" class="sn-chip" data-target="최소대립쌍 발음 구별">👂 최소대립쌍</button>
+      <button type="button" class="sn-chip" data-target="어원·연상 암기 팁">🧠 어원 팁</button>
+      <button type="button" class="sn-chip" data-target="비즈니스 이메일·회의 표현">📧 비즈니스</button>
+      <button type="button" class="sn-chip" data-target="스피드 어휘 60초">⚡ 스피드</button>
+      <button type="button" class="sn-chip" data-target="주간 학습 리포트">📈 리포트</button>
       <button type="button" class="sn-chip" data-target="학습 자료 허브">🌐 자료 허브</button>
       <button type="button" class="sn-chip" data-target="점수별 학습 로드맵">🗺️ 로드맵</button>
       <button type="button" class="sn-chip" data-target="Part 미니 문제은행">🧪 문제은행</button>
@@ -1810,6 +2012,17 @@
         <div class="quest-head"><span>🎯 오늘의 퀘스트</span><span id="questStatus">0 / 3 완료</span></div>
         <div class="quest-list" id="questList"></div>
       </div>
+    </section>
+
+    <section class="home-section" aria-label="학습 성취 배지">
+      <div class="section-head">
+        <div>
+          <h2 class="home-section-title">🏅 학습 성취 배지</h2>
+          <p class="home-section-sub">학습 기록이 쌓이면 조건에 따라 자동으로 켜집니다. 목표를 정하고 하나씩 모아 보세요.</p>
+        </div>
+        <span class="badge-summary" id="badgeSummary">0 / 0 획득</span>
+      </div>
+      <div class="badge-grid" id="badgeGrid"></div>
     </section>
 
     <section class="home-section" aria-label="오늘의 단어">
@@ -1911,6 +2124,14 @@
             <button type="button" class="btn quiz-btn" id="miniQuizStart">🎯 새 테스트 시작</button>
           </div>
         </article>
+        <article class="speaking-card">
+          <h3>🧠 혼동어휘·어근 10문제</h3>
+          <p class="practice-note">헷갈리는 단어쌍과 접두사·어근에서 뽑은 10문제입니다. 틀린 문제는 해설과 예문을 바로 확인할 수 있어요.</p>
+          <div id="mixQuizBox"></div>
+          <div class="practice-actions">
+            <button type="button" class="btn quiz-btn" id="mixQuizStart">🎲 새 10문제 시작</button>
+          </div>
+        </article>
       </div>
     </section>
 
@@ -1930,6 +2151,93 @@
       </div>
       <input type="text" class="dict-input" id="idiomSearch" placeholder="🔍 구동사·뜻 검색 (예: put off, 미루다)" autocomplete="off">
       <div class="idiom-grid" id="idiomGrid"></div>
+    </section>
+
+    <section class="home-section" aria-label="자주 헷갈리는 혼동 어휘">
+      <h2 class="home-section-title">🤔 자주 헷갈리는 혼동 어휘</h2>
+      <p class="home-section-sub">철자·발음은 비슷하지만 뜻이 다른 단어를 예문으로 구분해 보세요. 🔊를 누르면 문장을 읽어 줍니다.</p>
+      <div class="confuse-grid" id="confuseGrid"></div>
+    </section>
+
+    <section class="home-section" aria-label="접두사·어근으로 단어 확장">
+      <h2 class="home-section-title">🧩 접두사·어근으로 단어 늘리기</h2>
+      <p class="home-section-sub">의미 덩어리를 알면 처음 보는 단어도 뜻을 짐작할 수 있어요. 대표 예문은 🔊로 들어 보세요.</p>
+      <div class="wordpart-grid" id="wordpartGrid"></div>
+    </section>
+
+    <section class="home-section" aria-label="빈출 콜로케이션 드릴">
+      <div class="section-head"><div>
+        <h2 class="home-section-title">🧱 빈출 콜로케이션 드릴</h2>
+        <p class="home-section-sub">시험에 자주 나오는 동사+명사 조합을 뜻·표현 문제로 익혀 보세요.</p>
+      </div><button type="button" class="btn quiz-btn" id="colloStart">🔄 8문제 시작</button></div>
+      <div id="colloBox"></div>
+    </section>
+
+    <section class="home-section" aria-label="문맥 속 어휘">
+      <div class="section-head"><div>
+        <h2 class="home-section-title">🔍 문맥 속 어휘 (Part 7 유형)</h2>
+        <p class="home-section-sub">지문 속 단어의 의미를 문맥으로 판단하는 실전 어휘 유형입니다.</p>
+      </div><button type="button" class="btn quiz-btn" id="ctxStart">🔄 6문제 시작</button></div>
+      <div id="ctxBox"></div>
+    </section>
+
+    <section class="home-section" aria-label="Part 1·2 LC 유형 훈련">
+      <div class="section-head"><div>
+        <h2 class="home-section-title">🎧 Part 1·2 LC 유형 훈련</h2>
+        <p class="home-section-sub">질문–응답과 숫자·시간 합정을 듣고 고르는 실전 리스닝 훈련입니다.</p>
+      </div><button type="button" class="btn quiz-btn" id="lc12Start">🔄 8문제 시작</button></div>
+      <div id="lc12Box"></div>
+    </section>
+
+    <section class="home-section" aria-label="Part 3·4 미니 세트">
+      <h2 class="home-section-title">🗣️ Part 3·4 미니 세트</h2>
+      <p class="home-section-sub">대화·담화를 듣고 3문항을 푸는 실전 세트입니다. 문제를 먼저 읽는 습관을 들여 보세요.</p>
+      <div id="p34Box"></div>
+    </section>
+
+    <section class="home-section" aria-label="단어 패밀리">
+      <div class="section-head"><div>
+        <h2 class="home-section-title">🌳 단어 패밀리 (품사 변환)</h2>
+        <p class="home-section-sub">한 어근에서 파생된 품사 형태를 표로 익히고, Part 5 유형 문제로 확인하세요.</p>
+      </div><button type="button" class="btn quiz-btn" id="wfStart">🔄 8문제 시작</button></div>
+      <div class="wordfamily-grid" id="wordfamilyGrid"></div>
+      <div id="wfBox"></div>
+    </section>
+
+    <section class="home-section" aria-label="최소대립쌍 발음 구별">
+      <div class="section-head"><div>
+        <h2 class="home-section-title">👂 최소대립쌍 발음 구별</h2>
+        <p class="home-section-sub">비슷하게 들리는 두 단어를 듣고 정확히 구분하는 훈련입니다. 듣기 점수를 올리는 핵심입니다.</p>
+      </div><button type="button" class="btn quiz-btn" id="mpStart">▶ 시작</button></div>
+      <div id="mpBox"></div>
+    </section>
+
+    <section class="home-section" aria-label="어원·연상 암기 팁">
+      <h2 class="home-section-title">🧠 어원·연상 암기 팁</h2>
+      <p class="home-section-sub">어근의 의미로 단어를 이해하면 오래 기억에 남습니다. 참고 단어와 예문은 🔊로 들어 보세요.</p>
+      <div class="mnemonic-grid" id="mnemonicGrid"></div>
+    </section>
+
+    <section class="home-section" aria-label="비즈니스 이메일·회의 표현">
+      <h2 class="home-section-title">📧 비즈니스 이메일·회의 표현 템플릿</h2>
+      <p class="home-section-sub">Part 6·7 빈출 상황에서 바로 쓸 수 있는 문장입니다. 🔊로 듣고 📋로 복사하세요.</p>
+      <div class="template-grid" id="templateGrid"></div>
+    </section>
+
+    <section class="home-section" aria-label="스피드 어휘 60초">
+      <div class="section-head"><div>
+        <h2 class="home-section-title">⚡ 스피드 어휘 60초</h2>
+        <p class="home-section-sub">60초 안에 뜻을 최대한 많이 맞힐수록 점수와 콤보가 올라갑니다.</p>
+      </div><span class="badge-summary" id="speedBest">최고 0점</span><button type="button" class="btn quiz-btn" id="speedStart">▶ 시작</button></div>
+      <div id="speedBox"></div>
+    </section>
+
+    <section class="home-section" aria-label="주간 학습 리포트">
+      <div class="section-head"><div>
+        <h2 class="home-section-title">📈 주간 학습 리포트</h2>
+        <p class="home-section-sub">최근 7일 활동과 취약 유형을 한 장으로 정리했습니다. 인쇄하거나 저장해 보세요.</p>
+      </div><button type="button" class="btn quiz-btn print-hide" id="reportPrint">🖨 인쇄·저장</button></div>
+      <div class="report-card" id="reportBox"></div>
     </section>
 
     <section class="home-section" aria-label="오늘의 대화문">
@@ -2062,6 +2370,7 @@
         <article class="speaking-card"><h3>🎙️ 15초 말하기 프롬프트</h3><div class="prompt-list" id="speakingPromptList"></div><div class="practice-actions"><button type="button" class="btn quiz-btn" id="speakingListen">🔊 질문 듣기</button><button type="button" class="btn quiz-btn" id="speakingRandom">🔄 다른 질문</button></div><p class="practice-note">핵심 단어 2개를 사용해 영어로 15초 동안 말해 보세요.</p></article>
         <article class="writing-card"><h3>✍️ 이메일 한 문장 쓰기</h3><p class="practice-note">아래 상황에 맞는 정중한 영어 문장을 작성해 보세요.</p><div class="reading-passage" id="writingPrompt"></div><textarea class="writing-area" id="writingArea" placeholder="예: Thank you for your message. I will confirm the schedule shortly."></textarea><div class="practice-actions"><button type="button" class="btn quiz-btn" id="writingCheck">✅ 체크 포인트 보기</button><button type="button" class="btn quiz-btn" id="writingSample">💡 예시 보기</button></div><div class="practice-note" id="writingFeedback"></div></article>
         <article class="speaking-card"><h3>🎧 쉐도잉 스튜디오</h3><p class="practice-note">문장을 듣고 1~2초 뒤에 따라 말해 보세요. 먼저 스크립트를 가린 채 연습하면 효과가 좋아요.</p><div class="reading-passage" id="shadowingSentence"></div><div class="practice-actions"><button type="button" class="btn quiz-btn" id="shadowingPlay">🔊 문장 듣기</button><button type="button" class="btn quiz-btn" id="shadowingReveal">👁 스크립트 보기</button><button type="button" class="btn quiz-btn" id="shadowingNext">🔄 다른 문장</button></div><label class="practice-note" for="shadowingSpeed">재생 속도</label><select class="dday-input" id="shadowingSpeed"><option value="0.7">0.7배</option><option value="0.85" selected>0.85배</option><option value="1">1배</option></select><p class="practice-note" id="shadowingFeedback"></p></article>
+        <article class="speaking-card"><h3>✍️ 혼동어휘 받아쓰기</h3><p class="practice-note">문장을 듣고 그대로 입력해 보세요. 비슷하게 들리는 단어의 철자를 정확히 구분하는 훈련입니다.</p><div class="practice-actions"><button type="button" class="btn quiz-btn" id="cdPlay">🔊 문장 듣기</button><button type="button" class="btn quiz-btn" id="cdSlow">🐢 천천히 듣기</button><button type="button" class="btn quiz-btn" id="cdNext">🔄 다른 문장</button><button type="button" class="btn quiz-btn" id="cdReveal">👁 정답 보기</button></div><input type="text" class="dict-input" id="cdInput" placeholder="들리는 영어 문장을 입력하세요" autocomplete="off" style="margin-top:10px"><div class="practice-actions"><button type="button" class="btn quiz-btn" id="cdCheck">✅ 채점</button></div><div class="practice-note" id="cdFeedback"></div></article>
       </div>
     </section>
 
@@ -2684,14 +2993,132 @@
     all.sort(function (a, b) { return a.unit - b.unit; });
   }
 
-  function speak(text) {
-    if (!("speechSynthesis" in window) || typeof SpeechSynthesisUtterance === "undefined") return;
-    var u = new SpeechSynthesisUtterance(text);
-    u.lang = "en-US";
-    u.rate = 0.85;
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(u);
+  // ---------- TTS(음성 합성) 공통 ----------
+  // 브라우저에 설치된 음성 중 영어 음성을 골라 씁니다. (기본 음성이 한국어일 때 무음/오발음 방지)
+  var TTS_VOICE = null;
+  function pickEnglishVoice() {
+    if (!("speechSynthesis" in window)) return null;
+    var voices = [];
+    try { voices = window.speechSynthesis.getVoices() || []; } catch (e) { voices = []; }
+    if (!voices.length) return null;
+    var prefer = ["en-us", "en-gb", "en-au", "en-ca", "en"];
+    for (var p = 0; p < prefer.length; p++) {
+      var hit = voices.filter(function (v) {
+        return String(v.lang || "").toLowerCase().replace("_", "-").indexOf(prefer[p]) === 0;
+      })[0];
+      if (hit) return hit;
+    }
+    return voices.filter(function (v) { return /^en/i.test(v.lang || ""); })[0] || null;
   }
+  if ("speechSynthesis" in window) {
+    TTS_VOICE = pickEnglishVoice();
+    // 일부 브라우저는 음성 목록을 비동기로 채우므로, 준비되면 다시 고릅니다.
+    try {
+      window.speechSynthesis.onvoiceschanged = function () { TTS_VOICE = pickEnglishVoice(); };
+    } catch (e) {}
+  }
+  // 사용자 설정: 발음 듣기 켜기/끄기 + 재생 속도 (localStorage 에 저장)
+  var TTS_ENABLED = true;
+  var TTS_RATE = 0.85;
+  try { TTS_ENABLED = localStorage.getItem("toeic1000_tts") !== "off"; } catch (e) {}
+  try {
+    var savedRate = parseFloat(localStorage.getItem("toeic1000_ttsrate"));
+    if (savedRate && savedRate > 0.3 && savedRate < 2) TTS_RATE = savedRate;
+  } catch (e) {}
+
+  // 재생 중인 문장을 화면에서 하이라이트합니다.
+  var TTS_HL_SELECTORS = ".ex-text,.fc-ex,.wod-ex,.idiom-ex,.gt-ex,.quote-en,.reading-passage,.bank-q,.quiz-q,.listen-script,.dialogue-text,.dialogue-line,.w,.wod-word,.idiom-en";
+  var ttsHlTimer = null;
+  var ttsHlEl = null;
+  function normSpeak(s) {
+    return String(s == null ? "" : s)
+      .replace(/[_＿]{2,}/g, " ")
+      .replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, "") /* 이모지(서로게이트 쌍) 제거 */
+      .replace(/[★☆✓✔✕✖]/g, "")
+      .replace(/[“”"'’‘]/g, "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .toLowerCase();
+  }
+  function clearTTSHighlight() {
+    if (ttsHlTimer) { clearTimeout(ttsHlTimer); ttsHlTimer = null; }
+    if (ttsHlEl && ttsHlEl.classList) ttsHlEl.classList.remove("tts-speaking");
+    var olds = document.querySelectorAll(".tts-speaking");
+    for (var i = 0; i < olds.length; i++) olds[i].classList.remove("tts-speaking");
+    ttsHlEl = null;
+  }
+  function highlightSpeak(text) {
+    clearTTSHighlight();
+    var target = normSpeak(text);
+    if (!target) return;
+    var nodes = document.querySelectorAll(TTS_HL_SELECTORS);
+    var loose = null;
+    for (var i = 0; i < nodes.length; i++) {
+      var t = normSpeak(nodes[i].textContent);
+      if (t === target) { ttsHlEl = nodes[i]; break; }
+      if (!loose && target.length > 3 && t.indexOf(target) !== -1) loose = nodes[i];
+    }
+    if (!ttsHlEl) ttsHlEl = loose;
+    if (ttsHlEl) ttsHlEl.classList.add("tts-speaking");
+  }
+
+  function speakTTS(text, rate) {
+    if (!TTS_ENABLED) { showToast("🔇 발음 듣기가 꺼져 있어요. 상단 🔊 버튼으로 켜 주세요."); return; }
+    if (!("speechSynthesis" in window) || typeof SpeechSynthesisUtterance === "undefined") return;
+    // 빈칸(＿＿＿＿, ____)은 잠깐 쉬는 소리로 바꿔 읽습니다.
+    var clean = String(text == null ? "" : text).replace(/＿{2,}/g, " ... ").replace(/_{2,}/g, " ... ").trim();
+    if (!clean) return;
+    highlightSpeak(text);
+    var u = new SpeechSynthesisUtterance(clean);
+    u.lang = "en-US";
+    u.rate = rate || TTS_RATE;
+    if (!TTS_VOICE) TTS_VOICE = pickEnglishVoice();
+    if (TTS_VOICE) u.voice = TTS_VOICE;
+    u.onend = function () { clearTTSHighlight(); };
+    u.onerror = function () { clearTTSHighlight(); };
+    try { window.speechSynthesis.cancel(); } catch (e) {}
+    window.speechSynthesis.speak(u);
+    // 안전장치: onend 가 오지 않는 환경에서도 하이라이트를 해제합니다.
+    if (ttsHlTimer) clearTimeout(ttsHlTimer);
+    ttsHlTimer = setTimeout(clearTTSHighlight, Math.max(2000, clean.length * 120));
+  }
+  function speak(text) { speakTTS(text, TTS_RATE); }
+  // 예문 듣기 버튼(위임 처리): data-say 속성의 문장을 읽습니다.
+  document.addEventListener("click", function (e) {
+    var b = e.target && e.target.closest ? e.target.closest(".js-tts") : null;
+    if (!b) return;
+    speak(b.getAttribute("data-say") || "");
+  });
+
+  // 발음 듣기 토글 · 속도 컨트롤 (헤더)
+  var ttsToggleBtn = document.getElementById("btnTts");
+  var ttsRateSel = document.getElementById("ttsRate");
+  function applyTtsUI() {
+    if (ttsToggleBtn) {
+      ttsToggleBtn.textContent = TTS_ENABLED ? "🔊" : "🔇";
+      ttsToggleBtn.classList.toggle("muted", !TTS_ENABLED);
+      ttsToggleBtn.setAttribute("aria-pressed", TTS_ENABLED ? "true" : "false");
+      ttsToggleBtn.title = TTS_ENABLED ? "발음 듣기 끄기" : "발음 듣기 켜기";
+    }
+    if (ttsRateSel) ttsRateSel.value = String(TTS_RATE);
+  }
+  if (ttsToggleBtn) ttsToggleBtn.addEventListener("click", function () {
+    TTS_ENABLED = !TTS_ENABLED;
+    try { localStorage.setItem("toeic1000_tts", TTS_ENABLED ? "on" : "off"); } catch (e) {}
+    if (!TTS_ENABLED) {
+      try { window.speechSynthesis.cancel(); } catch (e) {}
+      clearTTSHighlight();
+    }
+    applyTtsUI();
+    showToast(TTS_ENABLED ? "🔊 발음 듣기를 켰습니다." : "🔇 발음 듣기를 껐습니다.");
+  });
+  if (ttsRateSel) ttsRateSel.addEventListener("change", function () {
+    var r = parseFloat(this.value);
+    if (r && r > 0.3 && r < 2) TTS_RATE = r;
+    try { localStorage.setItem("toeic1000_ttsrate", String(TTS_RATE)); } catch (e) {}
+    showToast("🔊 재생 속도 " + TTS_RATE + "×");
+  });
+  applyTtsUI();
 
   function cardHTML(u, w, idx) {
     var isLearned = !!learned[w[0]];
@@ -2720,6 +3147,23 @@
   }
   function escapeAttr(s) {
     return esc(s);
+  }
+
+  // 예문 등 문장 옆에 붙이는 🔊 듣기 버튼 (data-say 문장을 TTS로 재생)
+  function ttsBtn(text, label, extraClass) {
+    var txt = String(text == null ? "" : text).trim();
+    if (!txt) return "";
+    var la = label || "예문 듣기";
+    var cls = "tts-btn js-tts" + (extraClass ? " " + extraClass : "");
+    return '<button type="button" class="' + cls + '" data-say="' + escapeAttr(txt) +
+      '" title="' + escapeAttr(la) + '" aria-label="' + escapeAttr(la) + '">🔊</button>';
+  }
+
+  // 퀴즈·시험·모의고사 정답 공개 후 전체 예문 + TTS를 보여 주는 공통 블록
+  function exFeedback(q) {
+    if (!q || !q.example) return "";
+    return '<div class="quiz-ex">' + esc(q.example) + ttsBtn(q.example, "예문 듣기") +
+      (q.exampleKo ? '<br><span class="ex-ko">' + esc(q.exampleKo) + "</span>" : "") + "</div>";
   }
 
   var totalCount = 0;
@@ -2855,6 +3299,7 @@
     var pct = totalCount ? Math.round(done / totalCount * 100) : 0;
     document.getElementById("progressText").textContent = done + " / " + totalCount;
     document.getElementById("progressFill").style.width = pct + "%";
+    renderBadges();
   }
 
   // ---------- 암기 카드 모드 ----------
@@ -2943,6 +3388,8 @@
   document.getElementById("fcCard").addEventListener("click", function () {
     fcShown = !fcShown;
     showFlashCard();
+    // 카드를 뒤집어 예문이 보이면 예문을 자동 재생합니다.
+    if (fcShown && fcList.length && TTS_ENABLED) speak(fcList[fcIdx][4]);
   });
   document.getElementById("fcNext").addEventListener("click", function () {
     if (!fcList.length) return;
@@ -3020,7 +3467,7 @@
       }
       var options = [answer].concat(distractors);
       shuffle(options);
-      return { word: w[0], prompt: prompt, answer: answer, options: options };
+      return { word: w[0], prompt: prompt, answer: answer, options: options, example: w[4], exampleKo: w[5] };
     });
   }
 
@@ -3074,8 +3521,8 @@
       if (correctBtn) correctBtn.classList.add("correct");
     }
     opts.forEach(function (o) { o.disabled = true; });
-    document.getElementById("quizFeedback").textContent =
-      isCorrect ? "정답입니다! 🎉" : "오답입니다. 정답: " + q.answer;
+    document.getElementById("quizFeedback").innerHTML =
+      (isCorrect ? "정답입니다! 🎉" : "오답입니다. 정답: " + esc(q.answer)) + exFeedback(q);
     var nextBtn = document.getElementById("quizNext");
     nextBtn.style.display = "inline-block";
     nextBtn.textContent = (quizIdx === quizQuestions.length - 1) ? "결과 보기 📊" : "다음 ▶";
@@ -3241,7 +3688,7 @@
         '</div>' +
         '<div class="wod-ipa">' + esc(w[1]) + ' · <span class="wod-kpron">' + esc(w[2]) + '</span></div>' +
         '<div class="wod-mean">' + esc(w[3]) + '</div>' +
-        '<div class="wod-ex">' + esc(w[4]) + '</div>' +
+        '<div class="wod-ex">' + esc(w[4]) + ttsBtn(w[4], "예문 듣기") + '</div>' +
         '<div class="wod-exko">' + esc(w[5]) + '</div>';
       grid.appendChild(card);
     });
@@ -3265,7 +3712,7 @@
     var q = QUOTES[idx];
     feat.innerHTML =
       '<span class="quote-mark">“</span>' +
-      '<p class="quote-en">' + esc(q.en) + '</p>' +
+      '<p class="quote-en">' + esc(q.en) + ttsBtn(q.en, "문장 듣기", "on-dark") + '</p>' +
       '<p class="quote-ko">' + esc(q.ko) + '</p>' +
       '<p class="quote-author">— ' + esc(q.author) + '</p>';
     grid.innerHTML = "";
@@ -3274,7 +3721,7 @@
       var d = document.createElement("div");
       d.className = "quote-card";
       d.innerHTML =
-        '<p class="quote-en">' + esc(q2.en) + '</p>' +
+        '<p class="quote-en">' + esc(q2.en) + ttsBtn(q2.en, "문장 듣기") + '</p>' +
         '<p class="quote-ko">' + esc(q2.ko) + '</p>' +
         '<p class="quote-author">— ' + esc(q2.author) + '</p>';
       grid.appendChild(d);
@@ -3357,7 +3804,7 @@
     card.innerHTML =
       '<span class="gt-tag">오늘의 문법 팁</span>' +
       '<div class="gt-rule">' + esc(t[0]) + '</div>' +
-      '<div class="gt-ex">" ' + esc(t[1]) + ' "</div>' +
+      '<div class="gt-ex">" ' + esc(t[1]) + ' " ' + ttsBtn(t[1], "예문 듣기") + '</div>' +
       '<div class="gt-ko">' + esc(t[2]) + '</div>';
   }
   var gtm = document.getElementById("grammarTipMore");
@@ -3389,7 +3836,7 @@
       d.innerHTML =
         '<div class="idiom-top"><span class="idiom-en">' + esc(it[0]) + '</span><button type="button" class="speak" title="발음 듣기">🔊</button></div>' +
         '<div class="idiom-mean">' + esc(it[1]) + '</div>' +
-        '<div class="idiom-ex">' + esc(it[2]) + '</div>' +
+        '<div class="idiom-ex">' + esc(it[2]) + ttsBtn(it[2], "예문 듣기") + '</div>' +
         '<div class="idiom-exko">' + esc(it[3]) + '</div>';
       d.querySelector(".speak").addEventListener("click", function () { speak(it[0]); });
       grid.appendChild(d);
@@ -3412,7 +3859,811 @@
     renderIdioms(document.getElementById("idiomSearch").value);
   });
 
-  // 섹션 빠른 이동 내비게이션
+  // ---------- 자주 헷갈리는 혼동 어휘 ----------
+  var CONFUSABLES = [
+    { pair: "affect / effect", tag: "동사 / 명사",
+      a: { en: "The new policy will affect all employees.", ko: "새 정책은 모든 직원에게 영향을 줄 것이다." },
+      b: { en: "The effect of the change was immediate.", ko: "그 변화의 효과는 즉시 나타났다." },
+      tip: "affect는 '~에 영향을 주다'(동사), effect는 '효과·결과'(명사)예요." },
+    { pair: "adapt / adopt", tag: "적응 / 채택",
+      a: { en: "New staff quickly adapt to the company culture.", ko: "신입 직원들은 회사 문화에 빠르게 적응한다." },
+      b: { en: "The board decided to adopt the new system.", ko: "이사회는 새 시스템을 채택하기로 결정했다." },
+      tip: "adapt는 '적응하다·각색하다', adopt는 '채택하다·입양하다'예요." },
+    { pair: "advice / advise", tag: "명사 / 동사",
+      a: { en: "She gave me useful advice about the interview.", ko: "그녀는 면접에 대한 유용한 조언을 해 주었다." },
+      b: { en: "I advise you to confirm the schedule first.", ko: "먼저 일정을 확인하시길 권합니다." },
+      tip: "advice는 셀 수 없는 명사, advise는 동사입니다." },
+    { pair: "accept / except", tag: "수락 / 제외",
+      a: { en: "We accept applications until Friday.", ko: "우리는 금요일까지 지원서를 접수한다." },
+      b: { en: "The office is open every day except Sunday.", ko: "사무실은 일요일을 제외하고 매일 연다." },
+      tip: "accept는 '받아들이다', except는 '~을 제외하고'예요." },
+    { pair: "personal / personnel", tag: "개인 / 인사",
+      a: { en: "Please keep your personal belongings with you.", ko: "개인 소지품은 몸에 지니고 계세요." },
+      b: { en: "The personnel department is hiring new staff.", ko: "인사 부서는 신입 직원을 채용 중이다." },
+      tip: "personal은 '개인의', personnel은 '직원·인사'를 뜻해요." },
+    { pair: "principal / principle", tag: "주요한 / 원칙",
+      a: { en: "Cost is the principal reason for the change.", ko: "비용이 그 변경의 주된 이유이다." },
+      b: { en: "Our company operates on a simple principle.", ko: "우리 회사는 단순한 원칙으로 운영된다." },
+      tip: "principal은 '주요한·교장', principle은 '원칙'이에요." },
+    { pair: "stationary / stationery", tag: "고정된 / 문구",
+      a: { en: "The machines must remain stationary during use.", ko: "기계는 사용 중에 고정되어 있어야 한다." },
+      b: { en: "Office stationery can be ordered online.", ko: "사무용 문구는 온라인으로 주문할 수 있다." },
+      tip: "stationary는 '움직이지 않는', stationery는 '문구류'예요." },
+    { pair: "complement / compliment", tag: "보완 / 칭찬",
+      a: { en: "The new software will complement our services.", ko: "새 소프트웨어는 우리 서비스를 보완할 것이다." },
+      b: { en: "The manager complimented her on the presentation.", ko: "매니저는 그녀의 발표를 칭찬했다." },
+      tip: "complement는 '보완하다', compliment는 '칭찬하다'예요." },
+    { pair: "raise / rise", tag: "타동사 / 자동사",
+      a: { en: "They decided to raise the price next month.", ko: "그들은 다음 달에 가격을 인상하기로 했다." },
+      b: { en: "Sales rose sharply in the first quarter.", ko: "1분기에 매출이 급격히 올랐다." },
+      tip: "raise는 목적어가 필요한 타동사, rise는 목적어가 없는 자동사예요." },
+    { pair: "ensure / insure", tag: "보장 / 보험",
+      a: { en: "Please ensure that the door is locked.", ko: "문이 잠겼는지 반드시 확인해 주세요." },
+      b: { en: "The shipment is insured against damage.", ko: "그 화물은 손상에 대비해 보험에 가입되어 있다." },
+      tip: "ensure는 '확실히 하다', insure는 '보험에 들다'예요." },
+    { pair: "proceed / precede", tag: "진행 / 선행",
+      a: { en: "We will proceed with the plan as scheduled.", ko: "우리는 계획대로 진행할 것이다." },
+      b: { en: "A short introduction will precede the main speech.", ko: "짧은 소개가 본 연설에 앞설 것이다." },
+      tip: "proceed는 '계속하다·진행하다', precede는 '~보다 앞서다'예요." },
+    { pair: "economic / economical", tag: "경제 / 절약",
+      a: { en: "The report covers the current economic situation.", ko: "그 보고서는 현재 경제 상황을 다룬다." },
+      b: { en: "This model is more economical to maintain.", ko: "이 모델은 유지비가 더 경제적이다." },
+      tip: "economic은 '경제의', economical은 '비용이 절약되는'이에요." }
+  ];
+  function renderConfusables() {
+    var grid = document.getElementById("confuseGrid");
+    if (!grid) return;
+    grid.innerHTML = CONFUSABLES.map(function (c) {
+      return '<article class="confuse-card">' +
+        '<div class="confuse-head"><span class="confuse-pair">' + esc(c.pair) + '</span><span class="confuse-tag">' + esc(c.tag) + '</span></div>' +
+        '<div class="confuse-row"><div class="confuse-en">' + esc(c.a.en) + ttsBtn(c.a.en, "예문 듣기") + '</div><div class="confuse-ko">' + esc(c.a.ko) + '</div></div>' +
+        '<div class="confuse-row"><div class="confuse-en">' + esc(c.b.en) + ttsBtn(c.b.en, "예문 듣기") + '</div><div class="confuse-ko">' + esc(c.b.ko) + '</div></div>' +
+        '<div class="confuse-tip">💡 ' + esc(c.tip) + '</div>' +
+        '</article>';
+    }).join("");
+  }
+
+  // ---------- 접두사·어근으로 단어 확장 ----------
+  var WORD_PARTS = [
+    { type: "접두사", part: "re-", mean: "다시, 뒤로", words: "review · refund · renew", ex: "Please review the contract before signing." },
+    { type: "접두사", part: "pre-", mean: "미리, 앞서", words: "preview · prepare · prevent", ex: "We need to prepare the documents in advance." },
+    { type: "접두사", part: "un-", mean: "반대, 부정", words: "unavailable · unable · unclear", ex: "The product is currently unavailable." },
+    { type: "접두사", part: "dis-", mean: "떨어뜨리다, 반대", words: "discount · disappoint · dismiss", ex: "Members receive a ten percent discount." },
+    { type: "접두사", part: "over-", mean: "지나치게, 위에", words: "overtime · overdue · overlook", ex: "The payment is two weeks overdue." },
+    { type: "접두사", part: "inter-", mean: "사이에, 상호", words: "interview · internal · interact", ex: "She has an interview with the manager today." },
+    { type: "접두사", part: "trans-", mean: "가로질러, 이동", words: "transfer · transport · translate", ex: "The funds will be transferred tomorrow." },
+    { type: "어근", part: "-tain", mean: "붙잡다 (hold)", words: "maintain · obtain · contain", ex: "We must maintain high quality standards." },
+    { type: "어근", part: "-duct", mean: "이끌다 (lead)", words: "produce · conduct · reduce", ex: "The company will conduct a survey." },
+    { type: "어근", part: "-spect", mean: "보다 (look)", words: "inspect · prospect · aspect", ex: "The equipment is inspected every month." },
+    { type: "어근", part: "-port", mean: "나르다 (carry)", words: "import · export · report", ex: "Exports increased by twelve percent." },
+    { type: "어미", part: "-able / -ible", mean: "~할 수 있는", words: "available · reliable · flexible", ex: "The schedule is flexible for next week." }
+  ];
+  function renderWordParts() {
+    var grid = document.getElementById("wordpartGrid");
+    if (!grid) return;
+    grid.innerHTML = WORD_PARTS.map(function (w) {
+      return '<article class="wordpart-card">' +
+        '<div class="wordpart-top"><span class="wordpart-type">' + esc(w.type) + '</span><span class="wordpart-part">' + esc(w.part) + '</span></div>' +
+        '<div class="wordpart-mean">' + esc(w.mean) + '</div>' +
+        '<div class="wordpart-words">' + esc(w.words) + '</div>' +
+        '<div class="wordpart-ex">' + esc(w.ex) + ttsBtn(w.ex, "예문 듣기") + '</div>' +
+        '</article>';
+    }).join("");
+  }
+
+  // ---------- 학습 성취 배지 ----------
+  var BADGES = [
+    { ico: "🌱", name: "첫 걸음", desc: "첫 단어를 외웠어요", test: function (s) { return s.learnedN >= 1; } },
+    { ico: "📗", name: "워밍업", desc: "단어 10개 달성", test: function (s) { return s.learnedN >= 10; } },
+    { ico: "📘", name: "50단어 클럽", desc: "단어 50개 달성", test: function (s) { return s.learnedN >= 50; } },
+    { ico: "📙", name: "100단어 클럽", desc: "단어 100개 달성", test: function (s) { return s.learnedN >= 100; } },
+    { ico: "📚", name: "유닛 정복", desc: "한 유닛 100% 완주", test: function (s) { return s.maxUnitPct >= 100; } },
+    { ico: "⚡", name: "하프 러너", desc: "전체 50% 학습", test: function (s) { return s.pct >= 50; } },
+    { ico: "🏆", name: "1000 완주", desc: "1,000단어 전부 외우기", test: function (s) { return s.total > 0 && s.learnedN >= s.total; } },
+    { ico: "🎯", name: "퀴즈 마스터", desc: "퀴즈 100문제 풀이", test: function (s) { return s.quizQ >= 100; } },
+    { ico: "💎", name: "정확도 장인", desc: "50문제 이상 · 정답률 90%", test: function (s) { return s.quizQ >= 50 && s.quizPct >= 90; } },
+    { ico: "🔥", name: "3일 연속", desc: "3일 연속 학습", test: function (s) { return s.streak >= 3; } },
+    { ico: "🔥", name: "7일 연속", desc: "일주일 연속 학습", test: function (s) { return s.streak >= 7; } },
+    { ico: "🌟", name: "한 달 연속", desc: "30일 연속 학습", test: function (s) { return s.streak >= 30; } },
+    { ico: "📝", name: "모의고사 데뷔", desc: "모의고사 1회 완료", test: function (s) { return s.mockDone; } },
+    { ico: "🚀", name: "700 도달", desc: "최고 예상 점수 700+", test: function (s) { return s.best >= 700; } },
+    { ico: "👑", name: "900 도달", desc: "최고 예상 점수 900+", test: function (s) { return s.best >= 900; } },
+    { ico: "⭐", name: "단어 수집가", desc: "내 단어장 20개", test: function (s) { return s.favN >= 20; } }
+  ];
+  function badgeStats() {
+    var learnedN = Object.keys(learned).filter(function (k) { return learned[k]; }).length;
+    var total = totalCount || 0;
+    var maxUnitPct = 0;
+    all.forEach(function (u) {
+      var d = u.words.filter(function (w) { return learned[w[0]]; }).length;
+      var p = u.words.length ? d / u.words.length * 100 : 0;
+      if (p > maxUnitPct) maxUnitPct = p;
+    });
+    var qc = 0, qw = 0, mockDone = false;
+    Object.keys(quizStats).forEach(function (k) {
+      qc += (quizStats[k] && quizStats[k].c) || 0;
+      qw += (quizStats[k] && quizStats[k].w) || 0;
+      if (k.indexOf("mock_") === 0) mockDone = true;
+    });
+    var quizQ = qc + qw;
+    return {
+      learnedN: learnedN, total: total, pct: total ? Math.round(learnedN / total * 100) : 0,
+      maxUnitPct: maxUnitPct, quizQ: quizQ, quizPct: quizQ ? Math.round(qc / quizQ * 100) : 0,
+      streak: streakInfo.count, best: examBest, favN: Object.keys(favSet).length, mockDone: mockDone
+    };
+  }
+  var earnedBadges = {};
+  try { earnedBadges = JSON.parse(localStorage.getItem("toeic1000_badges") || "{}") || {}; } catch (e) { earnedBadges = {}; }
+  var badgeInitDone = false;
+  function saveEarnedBadges() {
+    try { localStorage.setItem("toeic1000_badges", JSON.stringify(earnedBadges)); } catch (e) {}
+  }
+  function renderBadges() {
+    var grid = document.getElementById("badgeGrid");
+    if (!grid) return;
+    var s = badgeStats();
+    var got = 0;
+    var newly = [];
+    var html = "";
+    BADGES.forEach(function (b) {
+      var on = false;
+      try { on = !!b.test(s); } catch (e) { on = false; }
+      if (on) {
+        got++;
+        if (!earnedBadges[b.name]) newly.push(b);
+        earnedBadges[b.name] = true;
+      }
+      html += '<div class="badge-item' + (on ? " on" : "") + '" title="' + escapeAttr(b.desc) + '">' +
+        '<span class="badge-ico">' + b.ico + '</span>' +
+        '<span class="badge-name">' + esc(b.name) + '</span>' +
+        '<span class="badge-desc">' + esc(b.desc) + '</span>' +
+        '<span class="badge-check">' + (on ? "✅ 획득" : "🔒 미달성") + '</span>' +
+        '</div>';
+    });
+    grid.innerHTML = html;
+    var summary = document.getElementById("badgeSummary");
+    if (summary) summary.textContent = got + " / " + BADGES.length + " 획득";
+    if (newly.length) saveEarnedBadges();
+    // 첫 로딩에서는 조용히 기록만 하고, 학습 중 새로 달성했을 때만 축하 알림을 띄웁니다.
+    if (badgeInitDone && newly.length) {
+      var names = newly.slice(0, 3).map(function (b) { return b.ico + " " + b.name; }).join(", ");
+      var more = newly.length > 3 ? " 외 " + (newly.length - 3) + "개" : "";
+      showToast("🏅 새 배지 획득! " + names + more);
+    }
+    badgeInitDone = true;
+  }
+
+  // ---------- 혼동어휘·어근 혼합 10문제 ----------
+  var mixQuiz = { q: [], idx: 0, correct: 0, answered: false, done: false };
+  function shuffleArr(a) {
+    for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; }
+    return a;
+  }
+  function pickN(pool, exclude, n) {
+    var out = [];
+    for (var i = 0; i < pool.length && out.length < n; i++) {
+      if (exclude.indexOf(pool[i]) === -1 && out.indexOf(pool[i]) === -1) out.push(pool[i]);
+    }
+    return out;
+  }
+  function buildMixPool() {
+    var pairWords = [];
+    CONFUSABLES.forEach(function (c) {
+      c.pair.split("/").forEach(function (w) { w = w.trim(); if (pairWords.indexOf(w) === -1) pairWords.push(w); });
+    });
+    var confuseQs = [];
+    CONFUSABLES.forEach(function (c) {
+      var pair = c.pair.split("/").map(function (s) { return s.trim(); });
+      [{ s: c.a, target: pair[0], other: pair[1] }, { s: c.b, target: pair[1], other: pair[0] }].forEach(function (item) {
+        var re = new RegExp("\\b" + item.target.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b", "i");
+        if (!re.test(item.s.en)) return; // 문장에 기본형이 그대로 나온 경우만 출제
+        var d = pickN(pairWords.filter(function (w) { return w !== item.target && w !== item.other; }), [item.target, item.other], 2);
+        confuseQs.push({
+          kind: "confuse", theme: "혼동 어휘",
+          prompt: item.s.en.replace(re, "＿＿＿＿"),
+          answer: item.target, options: shuffleArr([item.target, item.other].concat(d)),
+          example: item.s.en, exampleKo: item.s.ko, why: c.tip
+        });
+      });
+    });
+    var partQs = WORD_PARTS.map(function (wp) {
+      var others = shuffleArr(WORD_PARTS.map(function (x) { return x.mean; }).filter(function (m) { return m !== wp.mean; }));
+      return {
+        kind: "part", theme: "접두사·어근",
+        prompt: "「" + wp.part + "」의 의미로 알맞은 것은? (" + wp.words + ")",
+        answer: wp.mean, options: shuffleArr([wp.mean].concat(pickN(others, [wp.mean], 3))),
+        example: wp.ex, exampleKo: "", why: wp.part + " = " + wp.mean + " · 예: " + wp.words
+      };
+    });
+    return { confuse: shuffleArr(confuseQs), part: shuffleArr(partQs) };
+  }
+  function startMixQuiz() {
+    var pool = buildMixPool();
+    var picked = pool.confuse.slice(0, 6).concat(pool.part.slice(0, 4));
+    if (picked.length < 10) picked = picked.concat(pool.confuse.slice(6)).concat(pool.part.slice(4));
+    shuffleArr(picked);
+    mixQuiz.q = picked.slice(0, 10);
+    mixQuiz.idx = 0; mixQuiz.correct = 0; mixQuiz.answered = false; mixQuiz.done = false;
+    renderMixQuiz();
+  }
+  function renderMixQuiz() {
+    var box = document.getElementById("mixQuizBox");
+    if (!box) return;
+    if (mixQuiz.done) {
+      var pct = mixQuiz.q.length ? Math.round(mixQuiz.correct / mixQuiz.q.length * 100) : 0;
+      var msg = pct >= 80 ? "혼동어휘 감각이 좋아요! 🔥" : pct >= 50 ? "절반 이상! 오답을 다시 확인해 보세요. 💪" : "혼동어휘·어근 섹션을 먼저 복습해 보세요. 🌱";
+      box.innerHTML = '<div class="bank-card"><span class="bank-label">혼동어휘·어근 결과</span><div class="bank-q">🎉 ' + mixQuiz.correct + " / " + mixQuiz.q.length + ' 정답 (' + pct + '%)</div><p class="practice-note">' + msg + '</p></div>';
+      return;
+    }
+    if (!mixQuiz.q.length) { box.innerHTML = '<p class="practice-note">시작하기 버튼을 누르면 혼동어휘·어근에서 10문제가 나옵니다.</p>'; return; }
+    var q = mixQuiz.q[mixQuiz.idx];
+    box.innerHTML = '<div class="bank-card"><span class="bank-label">' + esc(q.theme) + " · " + (mixQuiz.idx + 1) + " / " + mixQuiz.q.length + '</span>' +
+      '<div class="bank-q">' + esc(q.prompt) + '</div><div class="bank-options">' +
+      q.options.map(function (o) { return '<button type="button" class="bank-opt">' + esc(o) + '</button>'; }).join("") +
+      '</div><div class="bank-feedback" id="mixQuizFeedback"></div></div>';
+    box.querySelectorAll(".bank-opt").forEach(function (b) { b.addEventListener("click", function () { answerMixQuiz(b); }); });
+  }
+  function answerMixQuiz(btn) {
+    if (mixQuiz.answered) return;
+    mixQuiz.answered = true;
+    var q = mixQuiz.q[mixQuiz.idx];
+    var ok = btn.textContent === q.answer;
+    if (ok) mixQuiz.correct++;
+    recordStat("mix_" + q.kind, ok);
+    var box = document.getElementById("mixQuizBox");
+    box.querySelectorAll(".bank-opt").forEach(function (o) {
+      o.disabled = true;
+      if (o.textContent === q.answer) o.classList.add("correct");
+      if (o === btn && !ok) o.classList.add("wrong");
+    });
+    var fb = document.getElementById("mixQuizFeedback");
+    fb.innerHTML = (ok ? "정답입니다! 🎉 " : "오답입니다. 정답: <b>" + esc(q.answer) + "</b> ") +
+      '<div class="practice-note">💡 ' + esc(q.why) + '</div>' + exFeedback(q);
+    var next = document.createElement("button");
+    next.type = "button"; next.className = "btn quiz-btn"; next.style.marginTop = "10px";
+    next.textContent = mixQuiz.idx + 1 >= mixQuiz.q.length ? "🏁 결과 보기" : "다음 문제 →";
+    next.addEventListener("click", function () {
+      mixQuiz.idx++; mixQuiz.answered = false;
+      if (mixQuiz.idx >= mixQuiz.q.length) mixQuiz.done = true;
+      renderMixQuiz();
+    });
+    fb.appendChild(next);
+  }
+  var mixQuizStartEl = document.getElementById("mixQuizStart");
+  if (mixQuizStartEl) mixQuizStartEl.addEventListener("click", startMixQuiz);
+
+  // ---------- 혼동어휘 받아쓰기 ----------
+  var CONFUSE_SENTENCES = [];
+  CONFUSABLES.forEach(function (c) {
+    CONFUSE_SENTENCES.push({ en: c.a.en, ko: c.a.ko, pair: c.pair });
+    CONFUSE_SENTENCES.push({ en: c.b.en, ko: c.b.ko, pair: c.pair });
+  });
+  var cdIdx = 0;
+  function cdNorm(s) {
+    return String(s || "").toLowerCase().replace(/[^a-z0-9'\s]/g, " ").replace(/\s+/g, " ").trim();
+  }
+  function cdScore(input, target) {
+    var a = cdNorm(input).split(" ").filter(Boolean);
+    var b = cdNorm(target).split(" ").filter(Boolean);
+    if (!b.length) return 0;
+    var n = Math.min(a.length, b.length), m = 0;
+    for (var i = 0; i < n; i++) if (a[i] === b[i]) m++;
+    return Math.round(m / b.length * 100);
+  }
+  function cdReset() {
+    var inp = document.getElementById("cdInput");
+    if (inp) inp.value = "";
+    var fb = document.getElementById("cdFeedback");
+    if (fb) fb.textContent = CONFUSE_SENTENCES.length ? "🔊 듣기 버튼을 누르고 들리는 문장을 입력해 보세요." : "";
+  }
+  function cdCheck() {
+    var inp = document.getElementById("cdInput");
+    var fb = document.getElementById("cdFeedback");
+    if (!inp || !fb) return;
+    var target = CONFUSE_SENTENCES[cdIdx];
+    if (!target) return;
+    var val = inp.value || "";
+    if (!val.trim()) { fb.textContent = "문장을 먼저 입력해 주세요."; return; }
+    var score = cdScore(val, target.en);
+    var ok = score >= 90;
+    recordStat("confuse_dict", ok);
+    fb.innerHTML = (ok ? "🎉 거의 완벽해요! " : "✍️ ") + "일치도 <b>" + score + "%</b>" +
+      '<div class="listen-script">🔊 ' + esc(target.en) + ttsBtn(target.en, "정답 듣기") + '<br>💬 ' + esc(target.ko) + '</div>';
+  }
+  var cdPlayEl = document.getElementById("cdPlay");
+  if (cdPlayEl) cdPlayEl.addEventListener("click", function () { var t = CONFUSE_SENTENCES[cdIdx]; if (t) speak(t.en); });
+  var cdSlowEl = document.getElementById("cdSlow");
+  if (cdSlowEl) cdSlowEl.addEventListener("click", function () { var t = CONFUSE_SENTENCES[cdIdx]; if (t) speakTTS(t.en, 0.65); });
+  var cdNextEl = document.getElementById("cdNext");
+  if (cdNextEl) cdNextEl.addEventListener("click", function () { if (CONFUSE_SENTENCES.length) cdIdx = (cdIdx + 1) % CONFUSE_SENTENCES.length; cdReset(); });
+  var cdRevealEl = document.getElementById("cdReveal");
+  if (cdRevealEl) cdRevealEl.addEventListener("click", function () {
+    var fb = document.getElementById("cdFeedback"); var t = CONFUSE_SENTENCES[cdIdx];
+    if (fb && t) fb.innerHTML = '<div class="listen-script">👁 정답: ' + esc(t.en) + ttsBtn(t.en, "정답 듣기") + '<br>💬 ' + esc(t.ko) + " <small>(" + esc(t.pair) + ")</small></div>";
+  });
+  var cdCheckEl = document.getElementById("cdCheck");
+  if (cdCheckEl) cdCheckEl.addEventListener("click", cdCheck);
+  var cdInputEl = document.getElementById("cdInput");
+  if (cdInputEl) cdInputEl.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); cdCheck(); } });
+  cdReset();
+
+  // ================= 확장 콘텐츠 =================
+
+  // ---------- 범용 미니 퀴즈 엔진 ----------
+  function makeMiniQuiz(opts) {
+    var st = { q: [], idx: 0, correct: 0, answered: false, done: false };
+    function start() {
+      var list = (typeof opts.build === "function" ? opts.build() : (opts.questions || [])).slice();
+      shuffleArr(list);
+      st.q = list.slice(0, opts.count || list.length);
+      st.idx = 0; st.correct = 0; st.answered = false; st.done = false;
+      render();
+    }
+    function render() {
+      var box = document.getElementById(opts.boxId);
+      if (!box) return;
+      if (st.done) {
+        var pct = st.q.length ? Math.round(st.correct / st.q.length * 100) : 0;
+        var msg = pct >= 80 ? "훌륭해요! 🔥" : pct >= 50 ? "좋아요, 오답을 복습해 보세요. 💪" : "기초부터 다시 확인해 보세요. 🌱";
+        box.innerHTML = '<div class="bank-card"><span class="bank-label">' + esc(opts.title || "결과") + ' 결과</span><div class="bank-q">🎉 ' + st.correct + " / " + st.q.length + ' 정답 (' + pct + '%)</div><p class="practice-note">' + msg + '</p></div>';
+        return;
+      }
+      if (!st.q.length) { box.innerHTML = '<p class="practice-note">' + esc(opts.emptyHint || "시작 버튼을 눌러 주세요.") + "</p>"; return; }
+      var q = st.q[st.idx];
+      var html = '<div class="bank-card"><span class="bank-label">' + esc(q.tag || opts.title || "문제") + " · " + (st.idx + 1) + " / " + st.q.length + '</span>';
+      if (q.audio) html += '<div style="text-align:center"><button type="button" class="listen-play" id="' + opts.boxId + 'Audio">🔊 듣기 (다시 듣기)</button></div>';
+      if (q.passageHtml) html += '<div class="reading-passage">' + q.passageHtml + ttsBtn(q.passageSay || "", "지문 듣기") + '</div>';
+      html += '<div class="bank-q">' + esc(q.prompt) + (q.promptSay ? ttsBtn(q.promptSay, "문제 듣기") : "") + '</div>';
+      html += '<div class="bank-options">' + q.options.map(function (o) { return '<button type="button" class="bank-opt">' + esc(o) + '</button>'; }).join("") + '</div>';
+      html += '<div class="bank-feedback" id="' + opts.boxId + 'Fb"></div></div>';
+      box.innerHTML = html;
+      var ab = document.getElementById(opts.boxId + "Audio");
+      if (ab && q.audio) ab.addEventListener("click", function () { speak(q.audio); });
+      box.querySelectorAll(".bank-opt").forEach(function (b) { b.addEventListener("click", function () { answer(b); }); });
+      if (q.audio && (opts.autoPlay || q.autoPlay)) { try { speak(q.audio); } catch (e) {} }
+    }
+    function answer(btn) {
+      if (st.answered) return;
+      st.answered = true;
+      var q = st.q[st.idx];
+      var ok = btn.textContent === q.answer;
+      if (ok) st.correct++;
+      recordStat(opts.statKey || "mini", ok);
+      var box = document.getElementById(opts.boxId);
+      box.querySelectorAll(".bank-opt").forEach(function (o) {
+        o.disabled = true;
+        if (o.textContent === q.answer) o.classList.add("correct");
+        if (o === btn && !ok) o.classList.add("wrong");
+      });
+      var fb = document.getElementById(opts.boxId + "Fb");
+      fb.innerHTML = (ok ? "정답입니다! 🎉 " : "오답입니다. 정답: <b>" + esc(q.answer) + "</b> ") +
+        (q.why ? '<div class="practice-note">💡 ' + esc(q.why) + '</div>' : "") + exFeedback(q);
+      var next = document.createElement("button");
+      next.type = "button"; next.className = "btn quiz-btn"; next.style.marginTop = "10px";
+      next.textContent = st.idx + 1 >= st.q.length ? "🏁 결과 보기" : "다음 문제 →";
+      next.addEventListener("click", function () {
+        st.idx++; st.answered = false;
+        if (st.idx >= st.q.length) st.done = true;
+        render();
+      });
+      fb.appendChild(next);
+    }
+    return { start: start, render: render };
+  }
+  function wireMiniQuiz(btnId, quiz) {
+    var b = document.getElementById(btnId);
+    if (b) b.addEventListener("click", quiz.start);
+    quiz.render();
+  }
+
+  // ---------- 1) 빈출 콜로케이션 ----------
+  var COLLOCATIONS = [
+    { phrase: "deliver a speech", ko: "연설하다", ex: "The director will deliver a speech at the awards ceremony.", exKo: "그 책임자는 시상식에서 연설할 것이다." },
+    { phrase: "make a decision", ko: "결정하다", ex: "We need to make a decision before Friday.", exKo: "우리는 금요일 전까지 결정을 내려야 한다." },
+    { phrase: "reach an agreement", ko: "합의에 이르다", ex: "The two sides reached an agreement on the price.", exKo: "양측은 가격에 합의했다." },
+    { phrase: "meet a deadline", ko: "마감을 지키다", ex: "The team worked late to meet the deadline.", exKo: "그 팀은 마감을 지키기 위해 늦게까지 일했다." },
+    { phrase: "gain experience", ko: "경험을 쌓다", ex: "She gained valuable experience during the internship.", exKo: "그녀는 인턴 기간 동안 값진 경험을 쌓았다." },
+    { phrase: "take responsibility", ko: "책임을 지다", ex: "The manager took responsibility for the mistake.", exKo: "그 매니저가 실수에 대한 책임을 졌다." },
+    { phrase: "raise funds", ko: "자금을 모으다", ex: "The charity raised funds for the new hospital.", exKo: "그 자선단체는 새 병원을 위해 자금을 모았다." },
+    { phrase: "launch a product", ko: "제품을 출시하다", ex: "The company will launch a new product next month.", exKo: "그 회사는 다음 달에 신제품을 출시할 것이다." },
+    { phrase: "conduct a survey", ko: "설문조사를 하다", ex: "We conducted a survey of our customers last week.", exKo: "우리는 지난주에 고객을 대상으로 설문조사를 했다." },
+    { phrase: "submit a proposal", ko: "제안서를 제출하다", ex: "Please submit a proposal by the end of the week.", exKo: "이번 주 말까지 제안서를 제출해 주세요." },
+    { phrase: "place an order", ko: "주문하다", ex: "We placed an order for fifty laptops.", exKo: "우리는 노트북 50대를 주문했다." },
+    { phrase: "exceed expectations", ko: "기대를 뛰어넘다", ex: "The results exceeded our expectations.", exKo: "그 결과는 우리의 기대를 뛰어넘었다." }
+  ];
+  function buildColloQuestions() {
+    var phrases = COLLOCATIONS.map(function (c) { return c.phrase; });
+    var kos = COLLOCATIONS.map(function (c) { return c.ko; });
+    var qs = [];
+    COLLOCATIONS.forEach(function (c) {
+      qs.push({ tag: "콜로케이션 뜻", prompt: "「" + c.phrase + "」의 뜻으로 알맞은 것은?", answer: c.ko,
+        options: [c.ko].concat(pickN(shuffleArr(kos.slice()), [c.ko], 3)),
+        why: c.phrase + " = " + c.ko, example: c.ex, exampleKo: c.exKo, promptSay: c.phrase });
+      qs.push({ tag: "콜로케이션 표현", prompt: "「" + c.ko + "」에 해당하는 표현은?", answer: c.phrase,
+        options: [c.phrase].concat(pickN(shuffleArr(phrases.slice()), [c.phrase], 3)),
+        why: c.phrase + " = " + c.ko, example: c.ex, exampleKo: c.exKo, promptSay: c.phrase });
+    });
+    return qs;
+  }
+  var colloQuiz = makeMiniQuiz({ boxId: "colloBox", title: "콜로케이션", statKey: "collo", count: 8, build: buildColloQuestions, emptyHint: "시작 버튼을 누르면 콜로케이션 8문제가 나옵니다." });
+  wireMiniQuiz("colloStart", colloQuiz);
+
+  // ---------- 2) 문맥 속 어휘 (Part 7 유형) ----------
+  var CONTEXT_VOCAB = [
+    { passage: "The manager asked the team to <b>expedite</b> the delivery because the client had moved the deadline forward.", q: "밑줄 친 expedite와 의미가 가장 가까운 것은?", a: "speed up", opts: ["speed up", "put off", "cancel", "review"], ko: "매니저는 고객이 마감을 앞당겼기 때문에 팀에 배송을 신속히 처리하라고 요청했다.", why: "expedite = 신속히 처리하다 ≈ speed up" },
+    { passage: "All employees must <b>comply with</b> the safety regulations at all times.", q: "comply with의 의미는?", a: "준수하다", opts: ["준수하다", "무시하다", "개정하다", "질문하다"], ko: "모든 직원은 항상 안전 규정을 준수해야 한다.", why: "comply with = (규정을) 준수하다" },
+    { passage: "The company decided to <b>outsource</b> its customer service to a partner firm.", q: "outsource의 의미는?", a: "외주를 주다", opts: ["외주를 주다", "직접 운영하다", "축소하다", "합병하다"], ko: "그 회사는 고객 서비스를 협력사에 외주 주기로 했다.", why: "outsource = 외부 업체에 위탁하다" },
+    { passage: "Please <b>verify</b> the account details before processing the payment.", q: "verify의 의미는?", a: "확인하다", opts: ["확인하다", "변경하다", "지연하다", "거절하다"], ko: "결제를 처리하기 전에 계좌 정보를 확인해 주세요.", why: "verify = 사실 여부를 확인하다" },
+    { passage: "The new policy is <b>subject to</b> approval by the board.", q: "subject to의 의미는?", a: "~의 적용을 받는", opts: ["~의 적용을 받는", "~와 무관한", "~를 대신하는", "~에 반대하는"], ko: "새 정책은 이사회의 승인을 받아야 한다.", why: "be subject to = ~의 적용·승인을 받아야 하는" },
+    { passage: "Sales figures <b>fluctuate</b> depending on the season.", q: "fluctuate의 의미는?", a: "변동하다", opts: ["변동하다", "급증하다", "고정되다", "급감하다"], ko: "매출 수치는 계절에 따라 변동한다.", why: "fluctuate = 오르내리며 변동하다" },
+    { passage: "The supervisor will <b>oversee</b> the renovation project.", q: "oversee의 의미는?", a: "감독하다", opts: ["감독하다", "취소하다", "참여하다", "지연시키다"], ko: "그 관리자가 리모델링 프로젝트를 감독할 것이다.", why: "oversee = 감독·관리하다" },
+    { passage: "Employees are <b>eligible for</b> a discount on company products.", q: "eligible for의 의미는?", a: "~을 받을 자격이 있는", opts: ["~을 받을 자격이 있는", "~을 피하는", "~에 익숙한", "~을 제공하는"], ko: "직원들은 회사 제품 할인을 받을 자격이 있다.", why: "be eligible for = 자격이 있다" },
+    { passage: "The report <b>highlights</b> the need for better training.", q: "highlight의 의미는?", a: "강조하다", opts: ["강조하다", "숨기다", "반복하다", "측정하다"], ko: "그 보고서는 더 나은 교육의 필요성을 강조한다.", why: "highlight = 두드러지게 강조하다" },
+    { passage: "We should <b>take into account</b> the shipping costs.", q: "take into account의 의미는?", a: "고려하다", opts: ["고려하다", "무시하다", "계산하다", "축소하다"], ko: "우리는 배송 비용을 고려해야 한다.", why: "take into account = 고려하다" }
+  ];
+  function buildContextQuestions() {
+    return CONTEXT_VOCAB.map(function (c) {
+      var plain = c.passage.replace(/<[^>]+>/g, "");
+      return { tag: "문맥 어휘", passageHtml: c.passage, passageSay: plain, prompt: c.q, answer: c.a,
+        options: shuffleArr(c.opts.slice()), why: c.why, example: plain, exampleKo: c.ko };
+    });
+  }
+  var ctxQuiz = makeMiniQuiz({ boxId: "ctxBox", title: "문맥 어휘", statKey: "ctx", count: 6, build: buildContextQuestions, emptyHint: "시작 버튼을 누르면 문맥 어휘 6문제가 나옵니다." });
+  wireMiniQuiz("ctxStart", ctxQuiz);
+
+  // ---------- 3) Part 1·2 LC 유형 훈련 ----------
+  var LC_TRAINING = [
+    { tag: "Part 2 질문·응답", audio: "When does the meeting start?", a: "At three o'clock this afternoon.", opts: ["At three o'clock this afternoon.", "Yes, I met him yesterday.", "No, the room is on the left.", "It was a long meeting."], why: "When에는 시간으로 답합니다.", ko: "회의는 언제 시작하나요? — 오늘 오후 3시입니다." },
+    { tag: "Part 2 질문·응답", audio: "Who is in charge of the marketing team?", a: "Ms. Kim, the new manager.", opts: ["Ms. Kim, the new manager.", "In the conference room.", "About two hours.", "Yes, I do."], why: "Who에는 사람으로 답합니다.", ko: "마케팅 팀은 누가 담당하나요? — 새 매니저인 김 씨입니다." },
+    { tag: "Part 2 질문·응답", audio: "Where can I find the employee handbook?", a: "On the company intranet.", opts: ["On the company intranet.", "Yes, it is new.", "Every Monday.", "Mr. Park will attend."], why: "Where에는 장소로 답합니다.", ko: "직원 안내서는 어디서 볼 수 있나요? — 사내 인트라넷에서요." },
+    { tag: "Part 2 질문·응답", audio: "Why was the shipment delayed?", a: "Because of the heavy snow.", opts: ["Because of the heavy snow.", "It leaves at noon.", "Yes, it was delivered.", "About fifty boxes."], why: "Why에는 이유로 답합니다.", ko: "배송이 왜 지연됐나요? — 폭설 때문입니다." },
+    { tag: "Part 2 질문·응답", audio: "How long will the maintenance take?", a: "About two hours.", opts: ["About two hours.", "At the front desk.", "Yes, please.", "Mr. Lee did it."], why: "How long에는 기간으로 답합니다.", ko: "정비에 얼마나 걸리나요? — 두 시간 정도입니다." },
+    { tag: "Part 2 질문·응답", audio: "Would you like to join the workshop?", a: "I'd love to, but I have a deadline.", opts: ["I'd love to, but I have a deadline.", "It is on the second floor.", "Yes, she works here.", "Last Tuesday."], why: "제안에는 수락·거절 의사로 답합니다.", ko: "워크숍에 참여하시겠어요? — 그러고 싶지만 마감이 있어요." },
+    { tag: "숫자·시간 합정", audio: "The flight departs at a quarter to nine.", a: "8:45", opts: ["8:45", "9:15", "9:45", "8:15"], why: "a quarter to nine = 9시 15분 전 = 8시 45분", ko: "비행기는 8시 45분에 출발한다." },
+    { tag: "숫자·시간 합정", audio: "The invoice is due in fifteen days.", a: "15일 후", opts: ["15일 후", "5일 후", "50일 후", "2주 전"], why: "in fifteen days = 15일 후", ko: "청구서는 15일 후가 기한이다." },
+    { tag: "숫자·시간 합정", audio: "Please submit the form by the 30th of next month.", a: "다음 달 30일", opts: ["다음 달 30일", "이번 달 13일", "다음 달 3일", "이번 달 30일"], why: "the 30th of next month = 다음 달 30일", ko: "다음 달 30일까지 서식을 제출해 주세요." },
+    { tag: "숫자·시간 합정", audio: "The discount is thirteen percent off the original price.", a: "13%", opts: ["13%", "30%", "3%", "33%"], why: "thirteen(13)과 thirty(30)은 발음이 다릅니다.", ko: "정가에서 13% 할인됩니다." },
+    { tag: "숫자·시간 합정", audio: "The conference runs from Tuesday to Thursday.", a: "화요일~목요일", opts: ["화요일~목요일", "목요일~화요일", "화요일~수요일", "수요일~금요일"], why: "from A to B = A부터 B까지", ko: "회의는 화요일부터 목요일까지 열린다." },
+    { tag: "숫자·시간 합정", audio: "Our office is on the fourteenth floor.", a: "14층", opts: ["14층", "4층", "40층", "15층"], why: "fourteenth = 14번째", ko: "우리 사무실은 14층에 있다." }
+  ];
+  function buildLc12Questions() {
+    return LC_TRAINING.map(function (c) {
+      return { tag: c.tag, audio: c.audio, prompt: "🔊 들리는 내용에 알맞은 것을 고르세요.", answer: c.a,
+        options: shuffleArr(c.opts.slice()), why: c.why, example: c.audio, exampleKo: c.ko, autoPlay: true };
+    });
+  }
+  var lc12Quiz = makeMiniQuiz({ boxId: "lc12Box", title: "LC 1·2", statKey: "lc12", count: 8, build: buildLc12Questions, autoPlay: true, emptyHint: "시작 버튼을 누르면 LC 유형 8문제가 나옵니다." });
+  wireMiniQuiz("lc12Start", lc12Quiz);
+
+  // ---------- 4) Part 3·4 미니 세트 ----------
+  var PART34_SETS = [
+    { title: "사무실 공지", kind: "담화",
+      lines: [
+        "Attention, all employees. The elevator in Building B will be closed for maintenance from Monday to Wednesday.",
+        "During this period, please use the stairs or the elevator in Building A.",
+        "Employees attending the 10 a.m. workshop should allow extra time to arrive."
+      ],
+      qs: [
+        { q: "직원들이 해야 할 일로 옳은 것은?", a: "다른 엘리베이터나 계단을 이용한다", opts: ["다른 엘리베이터나 계단을 이용한다", "워크숍을 취소한다", "빌딩 B에서 기다린다", "정비 일정을 변경한다"], why: "Building B 대신 계단이나 Building A 엘리베이터를 이용하라고 안내합니다.", ex: "During this period, please use the stairs or the elevator in Building A.", exKo: "이 기간에는 계단이나 빌딩 A의 엘리베이터를 이용해 주세요." },
+        { q: "엘리베이터 정비 기간은 언제인가?", a: "월요일부터 수요일까지", opts: ["월요일부터 수요일까지", "수요일부터 금요일까지", "월요일 하루", "주말 내내"], why: "from Monday to Wednesday라고 명시되어 있습니다." },
+        { q: "10시 워크숍 참석자에 대한 안내는?", a: "시간 여유를 두고 도착해야 한다", opts: ["시간 여유를 두고 도착해야 한다", "엘리베이터를 쓸 수 없다", "장소가 Building A로 바뀐다", "참석이 취소된다"], why: "allow extra time to arrive = 시간 여유를 두라는 뜻입니다." }
+      ] },
+    { title: "항공편 변경 상담", kind: "대화",
+      lines: [
+        "M: Thank you for calling SkyLine Airlines. How may I help you?",
+        "W: I'd like to change my flight from Chicago to Boston. My original departure was 7 a.m.",
+        "M: Certainly. There is a 2 p.m. flight available at no extra charge.",
+        "W: That works. Please confirm the new booking by email."
+      ],
+      qs: [
+        { q: "여성이 요청한 것은?", a: "항공편 변경", opts: ["항공편 변경", "좌석 업그레이드", "수하물 추가", "환불 요청"], why: "change my flight 라고 말했습니다." },
+        { q: "새 항공편 출발 시각은?", a: "오후 2시", opts: ["오후 2시", "오전 7시", "오후 5시", "오전 10시"], why: "a 2 p.m. flight 라고 안내했습니다." },
+        { q: "항공편 변경 추가 요금은?", a: "없다", opts: ["없다", "50달러", "100달러", "20%"], why: "at no extra charge = 추가 요금 없음" }
+      ] },
+    { title: "신제품 출시 담화", kind: "담화",
+      lines: [
+        "Thank you for attending the product launch. The new FlexiDesk will be available from March 1.",
+        "Orders placed before March 31 include free delivery and a two-year warranty.",
+        "Visit our website to see bulk-order pricing."
+      ],
+      qs: [
+        { q: "신제품 출시일은?", a: "3월 1일", opts: ["3월 1일", "3월 31일", "4월 1일", "2월 말"], why: "available from March 1" },
+        { q: "3월 31일 전에 주문하면 받는 혜택은?", a: "무료 배송과 2년 보증", opts: ["무료 배송과 2년 보증", "20% 할인", "추가 사은품", "무료 설치"], why: "include free delivery and a two-year warranty" },
+        { q: "대량 주문 가격은 어디서 확인하나?", a: "웹사이트", opts: ["웹사이트", "매장 방문", "이메일 문의", "전화 상담"], why: "Visit our website to see bulk-order pricing." }
+      ] },
+    { title: "병원 예약 확인", kind: "담화",
+      lines: [
+        "Good afternoon. This is Riverside Clinic calling to confirm your appointment.",
+        "Your appointment with Dr. Patel is on Thursday at 4 p.m. Please arrive ten minutes early.",
+        "If you need to reschedule, call us at least 24 hours in advance."
+      ],
+      qs: [
+        { q: "예약 일시는?", a: "목요일 오후 4시", opts: ["목요일 오후 4시", "화요일 오전 4시", "목요일 오전 10시", "금요일 오후 4시"], why: "Thursday at 4 p.m." },
+        { q: "몇 분 일찍 도착해야 하나?", a: "10분", opts: ["10분", "20분", "30분", "5분"], why: "arrive ten minutes early" },
+        { q: "일정 변경은 언제까지 연락해야 하나?", a: "최소 24시간 전", opts: ["최소 24시간 전", "당일 아침", "최소 2시간 전", "언제든 가능"], why: "at least 24 hours in advance" }
+      ] }
+  ];
+  var p34Idx = 0;
+  function renderPart34(forceRandom) {
+    var box = document.getElementById("p34Box");
+    if (!box) return;
+    if (forceRandom || p34Idx < 0) p34Idx = Math.floor(Math.random() * PART34_SETS.length);
+    if (p34Idx >= PART34_SETS.length) p34Idx = 0;
+    var s = PART34_SETS[p34Idx];
+    var html = '<div class="dialogue-card"><div class="dialogue-title">' + esc(s.title) + '<span class="dialogue-theme">' + esc(s.kind) + '</span></div>';
+    html += '<div class="reading-passage">' + s.lines.map(function (l) { return '<div class="lc-set-line">' + esc(l) + '</div>'; }).join("") + ttsBtn(s.lines.join(" "), "전체 듣기") + '</div>';
+    html += '<div class="practice-actions"><button type="button" class="btn quiz-btn" id="p34Play">🔊 전체 듣기</button><button type="button" class="btn quiz-btn" id="p34Next">🔄 다른 세트</button></div>';
+    html += '<div id="p34Qs">';
+    s.qs.forEach(function (q, qi) {
+      html += '<div class="dialogue-q"><p class="dialogue-qtext">Q' + (qi + 1) + ". " + esc(q.q) + '</p>';
+      q.opts.forEach(function (o) { html += '<button type="button" class="quiz-opt p34-opt" data-qi="' + qi + '" data-a="' + escapeAttr(q.a) + '">' + esc(o) + '</button>'; });
+      html += '<div class="quiz-feedback" id="p34Fb' + qi + '"></div></div>';
+    });
+    html += '</div></div>';
+    box.innerHTML = html;
+    var play = document.getElementById("p34Play");
+    if (play) play.addEventListener("click", function () {
+      var t = 0;
+      s.lines.forEach(function (l) { setTimeout(function () { speak(l); }, t); t += Math.max(1900, l.length * 110); });
+    });
+    var nx = document.getElementById("p34Next");
+    if (nx) nx.addEventListener("click", function () { p34Idx = (p34Idx + 1) % PART34_SETS.length; renderPart34(false); });
+    box.querySelectorAll(".p34-opt").forEach(function (b) {
+      b.addEventListener("click", function () {
+        if (b.disabled) return;
+        var qi = parseInt(b.getAttribute("data-qi"), 10);
+        var a = b.getAttribute("data-a");
+        var ok = b.textContent === a;
+        box.querySelectorAll('[data-qi="' + qi + '"]').forEach(function (o) {
+          o.disabled = true;
+          if (o.getAttribute("data-a") === o.textContent) o.classList.add("correct");
+        });
+        if (!ok) b.classList.add("wrong");
+        recordStat("part34", ok);
+        var q = s.qs[qi];
+        var fb = document.getElementById("p34Fb" + qi);
+        if (fb) fb.innerHTML = (ok ? "정답입니다! 🎉" : "오답입니다. 정답: <b>" + esc(a) + "</b>") +
+          '<div class="practice-note">💡 ' + esc(q.why || "") + '</div>' + exFeedback({ example: q.ex || "", exampleKo: q.exKo || "" });
+      });
+    });
+  }
+
+  // ---------- 5) 단어 패밀리 (품사 변환) ----------
+  var WORD_FAMILIES = [
+    { root: "성공", forms: ["success", "succeed", "successful", "successfully"], ex: "The launch was highly successful." },
+    { root: "결정", forms: ["decision", "decide", "decisive", "decisively"], ex: "She made a decisive move to cut costs." },
+    { root: "경쟁", forms: ["competition", "compete", "competitive", "competitively"], ex: "We offer competitive prices." },
+    { root: "생산", forms: ["production", "produce", "productive", "productively"], ex: "The new system made the team more productive." },
+    { root: "혁신", forms: ["innovation", "innovate", "innovative", "innovatively"], ex: "They introduced an innovative design." },
+    { root: "정확", forms: ["accuracy", "accurate", "accurately"], ex: "Please record the figures accurately." },
+    { root: "다양", forms: ["variety", "vary", "various", "variously"], ex: "We received various suggestions." },
+    { root: "지원", forms: ["application", "apply", "applicant", "applicable"], ex: "Please submit your application by Friday." }
+  ];
+  function renderWordFamilies() {
+    var grid = document.getElementById("wordfamilyGrid");
+    if (!grid) return;
+    grid.innerHTML = WORD_FAMILIES.map(function (f) {
+      return '<div class="wordfamily-card"><div class="wordfamily-root">' + esc(f.root) + '</div>' +
+        '<div class="wordfamily-forms">' + f.forms.map(function (x) { return '<span class="tag tag-blue">' + esc(x) + '</span>'; }).join("") + '</div>' +
+        '<div class="wordpart-ex">' + esc(f.ex) + ttsBtn(f.ex, "예문 듣기") + '</div></div>';
+    }).join("");
+  }
+  var WF_QUESTIONS = [
+    { prompt: "The team completed the project ＿＿＿＿.", a: "successfully", opts: ["success", "succeed", "successful", "successfully"], why: "동사 completed를 수식하므로 부사 successfully", ex: "The team completed the project successfully.", exKo: "그 팀은 프로젝트를 성공적으로 완료했다." },
+    { prompt: "The board will ＿＿＿＿ on the merger tomorrow.", a: "decide", opts: ["decision", "decide", "decisive", "decisively"], why: "조동사 will 뒤에는 동사원형 decide", ex: "The board will decide on the merger tomorrow.", exKo: "이사회는 내일 합병을 결정할 것이다." },
+    { prompt: "The market is highly ＿＿＿＿.", a: "competitive", opts: ["competition", "compete", "competitive", "competitively"], why: "be동사 뒤 보어 자리에는 형용사", ex: "The market is highly competitive.", exKo: "그 시장은 경쟁이 매우 치열하다." },
+    { prompt: "The factory increased ＿＿＿＿ last quarter.", a: "production", opts: ["production", "produce", "productive", "productively"], why: "타동사의 목적어 자리에는 명사 production", ex: "The factory increased production last quarter.", exKo: "그 공장은 지난 분기에 생산량을 늘렸다." },
+    { prompt: "The company is known for its ＿＿＿＿ products.", a: "innovative", opts: ["innovation", "innovate", "innovative", "innovatively"], why: "명사 products를 수식하는 형용사", ex: "The company is known for its innovative products.", exKo: "그 회사는 혁신적인 제품으로 유명하다." },
+    { prompt: "Please record the figures ＿＿＿＿.", a: "accurately", opts: ["accuracy", "accurate", "accurately", "accurateness"], why: "동사 record를 수식하는 부사", ex: "Please record the figures accurately.", exKo: "수치를 정확하게 기록해 주세요." },
+    { prompt: "We received ＿＿＿＿ suggestions from customers.", a: "various", opts: ["variety", "vary", "various", "variously"], why: "명사 suggestions를 수식하는 형용사", ex: "We received various suggestions from customers.", exKo: "우리는 고객들로부터 다양한 제안을 받았다." },
+    { prompt: "Please submit your ＿＿＿＿ by Friday.", a: "application", opts: ["application", "apply", "applicant", "applicable"], why: "소유격 your 뒤에는 명사 application", ex: "Please submit your application by Friday.", exKo: "금요일까지 지원서를 제출해 주세요." },
+    { prompt: "The report provides ＿＿＿＿ data on sales.", a: "accurate", opts: ["accuracy", "accurate", "accurately", "accurateness"], why: "명사 data를 수식하는 형용사", ex: "The report provides accurate data on sales.", exKo: "그 보고서는 정확한 매출 데이터를 제공한다." },
+    { prompt: "Our team will ＿＿＿＿ in the global market.", a: "compete", opts: ["competition", "compete", "competitive", "competitively"], why: "조동사 will 뒤에는 동사원형", ex: "Our team will compete in the global market.", exKo: "우리 팀은 글로벌 시장에서 경쟁할 것이다." }
+  ];
+  function buildWfQuestions() {
+    return WF_QUESTIONS.map(function (q) {
+      return { tag: "단어 패밀리", prompt: q.prompt, answer: q.a, options: shuffleArr(q.opts.slice()),
+        why: q.why, example: q.ex, exampleKo: q.exKo };
+    });
+  }
+  var wfQuiz = makeMiniQuiz({ boxId: "wfBox", title: "단어 패밀리", statKey: "wf", count: 8, build: buildWfQuestions, emptyHint: "시작 버튼을 누르면 단어 패밀리 8문제가 나옵니다." });
+  wireMiniQuiz("wfStart", wfQuiz);
+
+  // ---------- 6) 최소대립쌍 발음 구별 ----------
+  var MINIMAL_PAIRS = [
+    { a: "ship", b: "sheep", aKo: "배", bKo: "양", tip: "/ɪ/ 짧게 vs /iː/ 길게" },
+    { a: "work", b: "walk", aKo: "일하다", bKo: "걷다", tip: "/ɜːr/ vs /ɔː/ — 혀 위치가 달라요" },
+    { a: "live", b: "leave", aKo: "살다", bKo: "떠나다", tip: "/ɪ/ vs /iː/ 소리 길이" },
+    { a: "full", b: "fool", aKo: "가득한", bKo: "바보", tip: "/ʊ/ 짧게 vs /uː/ 길게" },
+    { a: "cut", b: "cat", aKo: "자르다", bKo: "고양이", tip: "/ʌ/ vs /æ/ 입 벌림 차이" },
+    { a: "pen", b: "pan", aKo: "펜", bKo: "냄비", tip: "/e/ vs /æ/" },
+    { a: "right", b: "light", aKo: "오른쪽", bKo: "빛", tip: "/r/ vs /l/ 첫소리" },
+    { a: "glass", b: "grass", aKo: "유리", bKo: "잔디", tip: "/l/ vs /r/ 두 번째 소리" },
+    { a: "dessert", b: "desert", aKo: "디저트", bKo: "사막", tip: "강세 위치: de-SSERT vs DE-sert" },
+    { a: "affect", b: "effect", aKo: "영향을 주다", bKo: "효과", tip: "첫 모음 /ə/ vs /ɪ/ — 뜻이 완전히 다릅니다" }
+  ];
+  function buildMpQuestions() {
+    var words = [];
+    MINIMAL_PAIRS.forEach(function (p) { words.push(p.a, p.b); });
+    return MINIMAL_PAIRS.map(function (p) {
+      var pickA = Math.random() < 0.5;
+      var target = pickA ? p.a : p.b;
+      var other = pickA ? p.b : p.a;
+      return { tag: "최소대립쌍", audio: target, prompt: "🔊 들리는 단어를 고르세요.", answer: target,
+        options: shuffleArr([p.a, p.b].concat(pickN(shuffleArr(words.slice()), [p.a, p.b], 2))),
+        why: p.a + "(" + p.aKo + ") vs " + p.b + "(" + p.bKo + ") · " + p.tip,
+        example: target, exampleKo: (pickA ? p.aKo : p.bKo) + " / 짝: " + other, autoPlay: true };
+    });
+  }
+  var mpQuiz = makeMiniQuiz({ boxId: "mpBox", title: "최소대립쌍", statKey: "mp", count: 10, build: buildMpQuestions, autoPlay: true, emptyHint: "시작 버튼을 누르면 듣고 구별하는 10문제가 나옵니다." });
+  wireMiniQuiz("mpStart", mpQuiz);
+
+  // ---------- 7) 어원·연상 암기 팁 ----------
+  var MNEMONICS = [
+    { word: "benefit", root: "bene(좋은) + fit", tip: "좋은(bene) 것이 나에게 맞다(fit) → 혜택", ex: "Health insurance is one of the job benefits." },
+    { word: "predict", root: "pre(미리) + dict(말하다)", tip: "미리 말하다 → 예측하다", ex: "Analysts predict strong demand this year." },
+    { word: "inspect", root: "in(안) + spect(보다)", tip: "안을 들여다보다 → 점검하다", ex: "The equipment is inspected every month." },
+    { word: "transport", root: "trans(가로질러) + port(나르다)", tip: "건너 나르다 → 운송하다", ex: "We transport goods by sea." },
+    { word: "refund", root: "re(다시) + fund(돈)", tip: "돈을 다시 돌려주다 → 환불", ex: "We can give you a full refund." },
+    { word: "proceed", root: "pro(앞으로) + ceed(가다)", tip: "앞으로 가다 → 진행하다", ex: "We will proceed with the plan as scheduled." },
+    { word: "maintain", root: "main(손) + tain(잡다)", tip: "손에 쥐고 있다 → 유지하다", ex: "We must maintain high quality standards." },
+    { word: "exclude", root: "ex(밖으로) + clude(닫다)", tip: "밖으로 닫다 → 제외하다", ex: "The price excludes delivery fees." },
+    { word: "conference", root: "con(함께) + fer(나르다)", tip: "함께 모이다 → 회의·학회", ex: "The conference was held in Seoul." },
+    { word: "postpone", root: "post(뒤) + pone(놓다)", tip: "뒤로 놓다 → 연기하다", ex: "The meeting was postponed until Friday." },
+    { word: "substitute", root: "sub(대신) + stitute(세우다)", tip: "대신 세우다 → 대체하다", ex: "You can substitute olive oil for butter." },
+    { word: "collaborate", root: "co(함께) + labor(일하다)", tip: "함께 일하다 → 협업하다", ex: "Our teams collaborate on every project." }
+  ];
+  function renderMnemonics() {
+    var grid = document.getElementById("mnemonicGrid");
+    if (!grid) return;
+    grid.innerHTML = MNEMONICS.map(function (m) {
+      return '<div class="mnemonic-card"><div class="mnemonic-top"><span class="mnemonic-word">' + esc(m.word) + '</span><span class="wordpart-type">어원</span>' + ttsBtn(m.word, "발음 듣기") + '</div>' +
+        '<div class="mnemonic-root">' + esc(m.root) + '</div>' +
+        '<div class="mnemonic-tip">💡 ' + esc(m.tip) + '</div>' +
+        '<div class="wordpart-ex">' + esc(m.ex) + ttsBtn(m.ex, "예문 듣기") + '</div></div>';
+    }).join("");
+  }
+
+  // ---------- 8) 비즈니스 이메일·회의 템플릿 ----------
+  var BIZ_TEMPLATES = [
+    { cat: "일정 변경", ko: "회의 일정 변경 안내", lines: ["I am writing to inform you that the meeting has been rescheduled to Friday at 2 p.m.", "Please let me know if the new time does not work for you."] },
+    { cat: "회의 요청", ko: "회의 요청", lines: ["Would you be available for a brief meeting sometime this week?", "I would like to discuss the upcoming project schedule with you."] },
+    { cat: "확인 요청", ko: "자료 확인 요청", lines: ["Could you please confirm that you have received the attached documents?", "Please review the draft and share your feedback by Thursday."] },
+    { cat: "사과", ko: "답변 지연 사과", lines: ["I apologize for the delay in responding to your email.", "We will make sure to complete the task by the end of this week."] },
+    { cat: "감사", ko: "협조 감사", lines: ["Thank you for your prompt response and continued support.", "I really appreciate your help with this matter."] },
+    { cat: "제품 문의", ko: "제품 가격 문의", lines: ["I am writing to inquire about the availability of the new model.", "Could you send us a price quote for bulk orders?"] },
+    { cat: "사내 안내", ko: "휴무 안내", lines: ["This is a reminder that the office will be closed on Monday for maintenance.", "Please back up your files before leaving on Friday."] },
+    { cat: "후속 확인", ko: "계약 후속 확인", lines: ["I am following up on our conversation last week regarding the contract.", "Please let me know if there is anything else you need from us."] }
+  ];
+  function renderTemplates() {
+    var grid = document.getElementById("templateGrid");
+    if (!grid) return;
+    grid.innerHTML = BIZ_TEMPLATES.map(function (t) {
+      return '<article class="reading-card"><span class="bank-label">' + esc(t.cat) + '</span><h3>' + esc(t.ko) + '</h3>' +
+        t.lines.map(function (l) { return '<div class="reading-passage template-line">' + esc(l) + ttsBtn(l, "문장 듣기") + '<button type="button" class="tts-btn js-copy" data-copy="' + escapeAttr(l) + '" title="문장 복사" aria-label="문장 복사">📋</button></div>'; }).join("") +
+        '</article>';
+    }).join("");
+  }
+  document.addEventListener("click", function (e) {
+    var b = e.target && e.target.closest ? e.target.closest(".js-copy") : null;
+    if (!b) return;
+    var text = b.getAttribute("data-copy") || "";
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { showToast("📋 문장을 복사했습니다."); }).catch(function () { showToast("복사: " + text); });
+    } else { showToast("복사: " + text); }
+  });
+
+  // ---------- 9) 스피드 어휘 60초 ----------
+  var speedState = { on: false, left: 60, score: 0, combo: 0, bestCombo: 0, correct: 0, total: 0, timer: null, cur: null };
+  var speedBestScore = 0;
+  try { speedBestScore = parseInt(localStorage.getItem("toeic1000_speedbest") || "0", 10) || 0; } catch (e) {}
+  function speedUI() {
+    var el = document.getElementById("speedBest");
+    if (el) el.textContent = "최고 " + speedBestScore + "점";
+    var btn = document.getElementById("speedStart");
+    if (btn) btn.textContent = speedState.on ? "⏹ 중지" : "▶ 시작";
+  }
+  function speedNewQuestion() {
+    var box = document.getElementById("speedBox");
+    if (!box) return;
+    var pool = allWords();
+    if (!pool.length) return;
+    var w = pool[Math.floor(Math.random() * pool.length)];
+    var opts = [w[3]], att = 0;
+    while (opts.length < 4 && att < 400) { att++; var d = pool[Math.floor(Math.random() * pool.length)][3]; if (opts.indexOf(d) === -1) opts.push(d); }
+    shuffleArr(opts);
+    speedState.cur = { answer: w[3] };
+    box.innerHTML = '<div class="bank-card"><span class="bank-label">스피드 · ' + speedState.score + '점 · 콤보 ' + speedState.combo + ' · 남은 시간 ' + speedState.left + '초</span>' +
+      '<div class="bank-q">' + esc(w[0]) + ttsBtn(w[0], "발음 듣기") + '</div><div class="bank-options">' +
+      opts.map(function (o) { return '<button type="button" class="bank-opt">' + esc(o) + '</button>'; }).join("") + '</div></div>';
+    box.querySelectorAll(".bank-opt").forEach(function (b) {
+      b.addEventListener("click", function () {
+        if (!speedState.on || b.disabled) return;
+        var ok = b.textContent === speedState.cur.answer;
+        speedState.total++;
+        if (ok) { speedState.correct++; speedState.combo++; speedState.score += 10 + Math.min(10, speedState.combo) * 2; if (speedState.combo > speedState.bestCombo) speedState.bestCombo = speedState.combo; }
+        else { speedState.combo = 0; speedState.score = Math.max(0, speedState.score - 5); }
+        box.querySelectorAll(".bank-opt").forEach(function (o) { o.disabled = true; if (o.textContent === speedState.cur.answer) o.classList.add("correct"); });
+        b.classList.add(ok ? "correct" : "wrong");
+        setTimeout(function () { if (speedState.on) speedNewQuestion(); }, 300);
+      });
+    });
+  }
+  function speedStart() {
+    if (speedState.on) { speedEnd(); return; }
+    speedState.on = true; speedState.left = 60; speedState.score = 0; speedState.combo = 0; speedState.bestCombo = 0; speedState.correct = 0; speedState.total = 0;
+    speedUI();
+    speedNewQuestion();
+    if (speedState.timer) clearInterval(speedState.timer);
+    speedState.timer = setInterval(function () {
+      speedState.left--;
+      var box = document.getElementById("speedBox");
+      var label = box && box.querySelector ? box.querySelector(".bank-label") : null;
+      if (label) label.textContent = "스피드 · " + speedState.score + "점 · 콤보 " + speedState.combo + " · 남은 시간 " + speedState.left + "초";
+      if (speedState.left <= 0) speedEnd();
+    }, 1000);
+  }
+  function speedEnd() {
+    speedState.on = false;
+    if (speedState.timer) { clearInterval(speedState.timer); speedState.timer = null; }
+    if (speedState.score > speedBestScore) {
+      speedBestScore = speedState.score;
+      try { localStorage.setItem("toeic1000_speedbest", String(speedBestScore)); } catch (e) {}
+    }
+    speedUI();
+    recordStat("speed", speedState.total ? (speedState.correct / speedState.total >= 0.7) : false);
+    var box = document.getElementById("speedBox");
+    if (box) box.innerHTML = '<div class="quiz-result"><div class="score">' + speedState.score + '</div><p>60초 결과 · 정답 ' + speedState.correct + " / " + speedState.total + " · 최고 콤보 " + speedState.bestCombo + '<br>최고 점수 ' + speedBestScore + '점</p></div>';
+    renderBadges();
+  }
+  var speedStartEl = document.getElementById("speedStart");
+  if (speedStartEl) speedStartEl.addEventListener("click", speedStart);
+  speedUI();
+
+  // ---------- 10) 주간 학습 리포트 ----------
+  function renderReport() {
+    var box = document.getElementById("reportBox");
+    if (!box) return;
+    var learnedN = Object.keys(learned).filter(function (k) { return learned[k]; }).length;
+    var pct = totalCount ? Math.round(learnedN / totalCount * 100) : 0;
+    var days = [], totalAct = 0, maxAct = 1;
+    for (var i = 6; i >= 0; i--) {
+      var d = new Date(); d.setDate(d.getDate() - i);
+      var k = d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
+      var n = weeklyLog[k] || 0;
+      days.push({ label: (d.getMonth() + 1) + "/" + d.getDate(), n: n });
+      if (n > maxAct) maxAct = n;
+      totalAct += n;
+    }
+    var bars = days.map(function (day) {
+      var h = Math.max(4, Math.round(day.n / maxAct * 80));
+      return '<div class="week-bar" style="height:' + h + 'px"><span class="val">' + (day.n || "") + '</span><span>' + day.label + '</span></div>';
+    }).join("");
+    var typeLabels = { en2ko: "단어→뜻", ko2en: "뜻→단어", blank: "빈칸", listen_word: "LC 단어", listen_sent: "LC 예문", listen_dict: "받아쓰기", diag: "실력 진단", mock_LC: "모의 LC", mock_RC: "모의 RC", mini: "미니 테스트", collo: "콜로케이션", ctx: "문맥 어휘", lc12: "LC 1·2", part34: "Part 3·4", wf: "단어 패밀리", mp: "최소대립쌍", confuse_dict: "혼동어휘 받아쓰기", speed: "스피드 어휘", mix_confuse: "혼동어휘", mix_part: "어근" };
+    var rows = [], totalQ = 0, totalC = 0;
+    Object.keys(typeLabels).forEach(function (k) {
+      var s = quizStats[k];
+      if (!s || !(s.c + s.w)) return;
+      var q = s.c + s.w; totalQ += q; totalC += s.c;
+      rows.push({ label: typeLabels[k], pct: Math.round(s.c / q * 100) });
+    });
+    rows.sort(function (a, b) { return a.pct - b.pct; });
+    var weak = rows.length ? rows[0] : null;
+    var coach = pct >= 80 ? "거의 완성 단계예요! 오답 단어만 정리해도 점수가 오릅니다. 🏆" : pct >= 40 ? "절반을 향해 가고 있어요. 하루 1유닛씩 꾸준히 이어가 봅시다. 💪" : "지금은 양을 채우는 시기입니다. 오늘의 단어부터 시작해 보세요. 🌱";
+    var weakMsg = weak ? "가장 약한 유형은 <b>" + esc(weak.label) + "</b> (" + weak.pct + "%)입니다. 해당 섹션을 먼저 복습해 보세요." : "아직 유형별 기록이 없어요. 퀴즈·리스닝을 한 번씩 풀어 보세요.";
+    box.innerHTML =
+      '<div class="report-grid">' +
+      '<div class="dash-card"><h3>📚 학습 진행률</h3><div class="big">' + pct + '%</div><p class="muted">' + learnedN + " / " + totalCount + ' 단어</p></div>' +
+      '<div class="dash-card"><h3>🔥 연속 학습</h3><div class="big">' + streakInfo.count + '일</div><p class="muted">최고 예상 점수 ' + examBest + '점</p></div>' +
+      '<div class="dash-card"><h3>📅 최근 7일 활동</h3><div class="big">' + totalAct + '회</div><p class="muted">단어 학습·퀴즈 합계</p></div>' +
+      '<div class="dash-card"><h3>🎯 퀴즈 정확도</h3><div class="big">' + (totalQ ? Math.round(totalC / totalQ * 100) : 0) + '%</div><p class="muted">총 ' + totalQ + '문제</p></div>' +
+      '</div>' +
+      '<div class="dash-card"><h3>최근 7일 학습 활동</h3><div class="week-bars">' + bars + '</div></div>' +
+      '<div class="listen-script" style="margin-top:10px">🧭 ' + coach + '<br>' + weakMsg + '</div>';
+  }
+  var reportPrintEl = document.getElementById("reportPrint");
+  if (reportPrintEl) reportPrintEl.addEventListener("click", function () { try { window.print(); } catch (e) {} });
+
   var secNav = document.querySelector(".section-nav");
   if (secNav) secNav.addEventListener("click", function (e) {
     var chip = e.target.closest(".sn-chip");
@@ -3446,6 +4697,7 @@
     else if (kind === "exam") quests.exam = true;
     saveQuests();
     renderQuests();
+    renderBadges();
   }
   function renderQuests() {
     var list = document.getElementById("questList");
@@ -3641,7 +4893,7 @@
     box.innerHTML = questions.map(function (item, qi) {
       var answered = partBankState[part].answered[qi];
       var html = '<article class="bank-card"><span class="bank-label">TOEIC Part ' + part + ' · ' + (qi + 1) + '번</span>' +
-        '<div class="bank-q">' + esc(item.q) + '</div><div class="bank-options">';
+        '<div class="bank-q">' + esc(item.q) + ttsBtn(item.q, "문제 듣기") + '</div><div class="bank-options">';
       item.opts.forEach(function (opt) {
         var state = answered ? (opt === item.a ? " correct" : answered.choice === opt ? " wrong" : "") : "";
         html += '<button type="button" class="bank-opt' + state + '" data-part="' + part + '" data-qi="' + qi + '" data-answer="' + escapeAttr(item.a) + '"' + (answered ? " disabled" : "") + '>' + esc(opt) + '</button>';
@@ -3700,7 +4952,7 @@
     var grid = document.getElementById("readingGrid");
     if (!grid) return;
     grid.innerHTML = READING_MINI.map(function (item, i) {
-      return '<article class="reading-card"><span class="bank-label">' + esc(item.type) + '</span><h3>' + esc(item.title) + '</h3><div class="reading-passage">' + esc(item.text) + '</div><div class="reading-q">' + esc(item.q) + '</div><select class="reading-answer" data-reading="' + i + '"><option value="">정답을 선택하세요</option>' + item.opts.map(function (o) { return '<option>' + esc(o) + '</option>'; }).join("") + '</select><div class="bank-feedback" id="readingFeedback' + i + '"></div></article>';
+      return '<article class="reading-card"><span class="bank-label">' + esc(item.type) + '</span><h3>' + esc(item.title) + '</h3><div class="reading-passage">' + esc(item.text) + ttsBtn(item.text, "지문 듣기") + '</div><div class="reading-q">' + esc(item.q) + '</div><select class="reading-answer" data-reading="' + i + '"><option value="">정답을 선택하세요</option>' + item.opts.map(function (o) { return '<option>' + esc(o) + '</option>'; }).join("") + '</select><div class="bank-feedback" id="readingFeedback' + i + '"></div></article>';
     }).join("");
     grid.querySelectorAll(".reading-answer").forEach(function (select) {
       select.addEventListener("change", function () {
@@ -3924,6 +5176,15 @@
     renderPartBank("5");
     renderRelations();
     renderReadings();
+    renderConfusables();
+    renderWordParts();
+    renderBadges();
+    renderMixQuiz();
+    renderPart34(false);
+    renderWordFamilies();
+    renderMnemonics();
+    renderTemplates();
+    renderReport();
     renderSpeakingPrompt();
     renderWritingPrompt();
     renderShadowing();
@@ -3949,6 +5210,8 @@
     renderGrammarTip();
     renderIdioms(document.getElementById("idiomSearch") ? document.getElementById("idiomSearch").value : "");
     renderQuests();
+    renderBadges();
+    renderReport();
     renderDialogue(false);
 
     var dueN = srsDueWords().length;
@@ -4112,7 +5375,7 @@
       }
       var options = [answer].concat(distractors);
       shuffle(options);
-      return { word: w[0], prompt: prompt, answer: answer, options: options, sec: secPerQ };
+      return { word: w[0], prompt: prompt, answer: answer, options: options, sec: secPerQ, example: w[4], exampleKo: w[5] };
     });
     examTimeLeft = examQuestions.reduce(function (n, q) { return n + q.sec; }, 0);
   }
@@ -4203,8 +5466,8 @@
       if (correctBtn) correctBtn.classList.add("correct");
     }
     opts.forEach(function (o) { o.disabled = true; });
-    document.getElementById("examFeedback").textContent =
-      isCorrect ? "정답입니다! 🎉" : "오답입니다. 정답: " + q.answer;
+    document.getElementById("examFeedback").innerHTML =
+      (isCorrect ? "정답입니다! 🎉" : "오답입니다. 정답: " + esc(q.answer)) + exFeedback(q);
     var nextBtn = document.getElementById("examNext");
     nextBtn.style.display = "inline-block";
     nextBtn.textContent = (examIdx === examQuestions.length - 1) ? "결과 보기 📊" : "다음 ▶";
@@ -4299,19 +5562,28 @@
     try {
       ["toeic1000_learned", "toeic1000_wrong", "toeic1000_wrongcount", "toeic1000_fav",
        "toeic1000_daily", "toeic1000_streak", "toeic1000_exambest", "toeic1000_quizstats",
-       "toeic1000_weekly"].forEach(function (k) {
+       "toeic1000_weekly", "toeic1000_quests", "toeic1000_examdate", "toeic1000_badges"].forEach(function (k) {
         localStorage.removeItem(k);
       });
     } catch (e) {}
     learned = {}; wrongSet = {}; wrongCount = {}; favSet = {};
     daily = { date: "", count: 0 }; streakInfo = { last: "", count: 0 }; examBest = 0;
-    quizStats = {}; weeklyLog = {};
+    quizStats = {}; weeklyLog = {}; quests = { date: "", quiz: false, exam: false };
+    earnedBadges = {}; badgeInitDone = true;
+    mixQuiz = { q: [], idx: 0, correct: 0, answered: false, done: false };
+    cdIdx = 0; cdReset(); renderMixQuiz();
+    if (ddayInput) ddayInput.value = "";
     renderUnits(document.getElementById("searchInput").value);
     updateProgress();
     updateWrongBadge();
     updateDailyUI();
     updateStreakUI();
     renderStats();
+    renderQuests();
+    renderMotivation();
+    renderBadges();
+    renderReport();
+    renderDday();
     showToast("🗑️ 모든 학습 데이터가 초기화되었습니다.");
   });
 
@@ -4499,14 +5771,7 @@
   var listenType = "word";
   var listenSpeed = 0.85;
 
-  function speakRate(text, rate) {
-    if (!("speechSynthesis" in window) || typeof SpeechSynthesisUtterance === "undefined") return;
-    var u = new SpeechSynthesisUtterance(text);
-    u.lang = "en-US";
-    u.rate = rate;
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(u);
-  }
+  function speakRate(text, rate) { speakTTS(text, rate); }
 
   function genListen() {
     listenType = document.getElementById("listenType").value;
@@ -4607,7 +5872,7 @@
     }
     opts.forEach(function (o) { o.disabled = true; });
     var html = isCorrect ? "정답입니다! 🎉" : "오답입니다. 정답: <b>" + esc(q.answer) + "</b>";
-    if (q.kind === "sent") html += '<div class="listen-script">🔊 ' + esc(q.audio) + "</div>";
+    if (q.kind === "sent") html += '<div class="listen-script">🔊 ' + esc(q.audio) + ttsBtn(q.audio, "예문 듣기") + "</div>";
     document.getElementById("listenFeedback").innerHTML = html;
     var nextBtn = document.getElementById("listenNext");
     nextBtn.style.display = "inline-block";
@@ -4714,7 +5979,7 @@
       }
       var options = [answer].concat(distractors);
       shuffle(options);
-      mockQ.push({ word: w[0], answer: answer, audio: audio, options: options, section: "LC", part: sentMode ? "Part 3·4" : "Part 1·2", kind: sentMode ? "sent" : "word", sec: secPerQ, ok: false });
+      mockQ.push({ word: w[0], answer: answer, audio: audio, options: options, section: "LC", part: sentMode ? "Part 3·4" : "Part 1·2", kind: sentMode ? "sent" : "word", sec: secPerQ, ok: false, example: w[4], exampleKo: w[5] });
     });
     // RC: 빈칸 채우기 (Part 5) / 뜻→단어 (Part 7 독해 어휘)
     rcPool.forEach(function (w, i) {
@@ -4730,7 +5995,7 @@
       }
       var options = [answer].concat(distractors);
       shuffle(options);
-      mockQ.push({ word: w[0], answer: answer, prompt: prompt, options: options, section: "RC", part: blankMode ? "Part 5" : "Part 7", kind: blankMode ? "blank" : "word", sec: secPerQ, ok: false });
+      mockQ.push({ word: w[0], answer: answer, prompt: prompt, options: options, section: "RC", part: blankMode ? "Part 5" : "Part 7", kind: blankMode ? "blank" : "word", sec: secPerQ, ok: false, example: w[4], exampleKo: w[5] });
     });
     mockTimeLeft = mockQ.reduce(function (n, q) { return n + q.sec; }, 0);
   }
@@ -4825,7 +6090,9 @@
     var html = isCorrect ? "정답입니다! 🎉" : "오답입니다. 정답: <b>" + esc(q.answer) + "</b>";
     if (q.kind === "blank") {
       var w = allWords().filter(function (x) { return x[0] === q.word; })[0];
-      if (w) html += '<div class="listen-script">📝 ' + esc(w[4]) + '<br>💬 ' + esc(w[5]) + "</div>";
+      if (w) html += '<div class="listen-script">📝 ' + esc(w[4]) + ttsBtn(w[4], "예문 듣기") + '<br>💬 ' + esc(w[5]) + "</div>";
+    } else {
+      html += exFeedback(q);
     }
     document.getElementById("mockFeedback").innerHTML = html;
     var nextBtn = document.getElementById("mockNext");
@@ -4946,7 +6213,7 @@
       }
       var options = [answer].concat(distractors);
       shuffle(options);
-      return { word: w[0], prompt: prompt, answer: answer, options: options, level: wordLevelMap[w[0]] || "중급" };
+      return { word: w[0], prompt: prompt, answer: answer, options: options, level: wordLevelMap[w[0]] || "중급", example: w[4], exampleKo: w[5] };
     });
     diagLevelResult = { 초급: { c: 0, t: 0 }, 중급: { c: 0, t: 0 }, 고급: { c: 0, t: 0 } };
   }
@@ -5001,14 +6268,15 @@
       if (correctBtn) correctBtn.classList.add("correct");
     }
     opts.forEach(function (o) { o.disabled = true; });
-    document.getElementById("diagFeedback").textContent =
-      isCorrect ? "정답입니다! 🎉" : "오답입니다. 정답: " + q.answer;
+    document.getElementById("diagFeedback").innerHTML =
+      (isCorrect ? "정답입니다! 🎉" : "오답입니다. 정답: " + esc(q.answer)) + exFeedback(q);
     var nextBtn = document.getElementById("diagNext");
     nextBtn.style.display = "inline-block";
     nextBtn.textContent = (diagIdx === diagQ.length - 1) ? "결과 보기 📊" : "다음 ▶";
   }
 
   function showDiagResult() {
+    renderBadges();
     var total = diagQ.length;
     var pct = total ? Math.round(diagCorrect / total * 100) : 0;
     var est = Math.max(10, Math.min(990, Math.round(pct * 9.9)));
