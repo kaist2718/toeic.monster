@@ -289,6 +289,21 @@
   .tts-rate option { color: var(--text); }
   /* 발음 목소리 선택 — 브라우저에 설치된 영어 음성 목록 */
   .tts-voice { max-width: 150px; text-overflow: ellipsis; }
+  /* 목소리 추가 도움말 — 넓은 화면에서는 ❔ 아이콘만, 모바일 메뉴 안에서는 글자까지 보입니다. */
+  .topbar .btn.tts-voice-help { padding: 8px 9px; }
+  .tts-voice-help-label { display: none; }
+  .topbar .tts-menu-group .btn.tts-voice-help {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 12px;
+    text-align: left;
+    background: var(--soft-blue);
+    color: var(--text);
+  }
+  .topbar .tts-menu-group .tts-voice-help-label { display: inline; }
+  /* 설치된 영어 음성이 적을 때 눈에 띄게 — 배경색만 바꾸고 글자는 모바일 메뉴에서만 늘어납니다. */
+  .topbar .btn.tts-voice-help.need,
+  .topbar .tts-menu-group .btn.tts-voice-help.need { background: var(--accent); color: #212529; }
   .btn {
     font-family: inherit;
     font-size: 13px;
@@ -846,6 +861,16 @@
   .stat b { display: block; font-size: 20px; color: var(--primary); }
   .stat span { font-size: 11.5px; color: var(--text-muted); }
   .modal-actions { margin-top: 14px; text-align: right; }
+  /* 목소리 추가 도움말 모달 */
+  .modal-body p.voice-now { font-size: 14px; font-weight: 700; color: var(--text); }
+  .modal-body p.voice-now b { color: var(--primary); }
+  .voice-steps { display: grid; gap: 12px; margin: 10px 0 4px; }
+  .voice-step { border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; background: var(--soft-blue); }
+  .modal-body .voice-step h3 { margin: 0 0 6px; }
+  .voice-step ol { font-size: 13px; color: var(--text-muted); padding-left: 18px; margin: 0; }
+  .voice-step li { margin-bottom: 4px; }
+  .voice-badge { font-size: 11px; font-weight: 700; color: #fff; background: var(--primary-solid); border-radius: 99px; padding: 2px 8px; }
+  .voice-badge[hidden] { display: none; }
   #btnResetData { background: var(--wrong-bg); color: #b02a2a; }
   body.dark #btnResetData { color: #ff8787; }
 
@@ -2113,6 +2138,7 @@
         <select class="tts-rate tts-voice" id="ttsVoice" title="발음 목소리 선택" aria-label="발음 목소리 선택">
           <option value="">자동</option>
         </select>
+        <button class="btn tts-voice-help" id="btnVoiceHelp" type="button" aria-haspopup="dialog" title="발음 목소리 목록과 늘리는 방법 보기" aria-label="발음 목소리 늘리는 방법 보기">❔<span class="tts-voice-help-label"> 목소리 도움말</span></button>
       </div>
     </div>
     <button class="btn" id="btnTheme" title="다크 모드 전환" aria-label="다크 모드 전환">🌙</button>
@@ -3102,6 +3128,7 @@
           <li><b>자동</b>: 목록의 첫 항목입니다. 따로 고르지 않으면 가장 자연스러운 영어 음성을 알아서 사용합니다.</li>
           <li>고른 속도와 목소리는 브라우저에 저장되어 다음 방문에도 그대로 유지됩니다. 카드·예문·리스닝 어디서든 같은 목소리로 들립니다.</li>
           <li>목록이 비어 있거나 원하는 목소리가 없으면 운영체제 설정에서 영어 음성을 추가로 설치해 주세요. Windows는 <b>설정</b>의 시간 및 언어, macOS는 <b>시스템 설정</b>의 손쉬운 사용 항목에 있습니다.</li>
+          <li>휴대폰은 영어 음성이 1~2개만 설치돼 있어 목소리가 적게 보일 수 있습니다. 목록 옆 <b>❔</b> 버튼(휴대폰은 ☰ 메뉴 안 <b>목소리 도움말</b>)을 누르면 iPhone·Android에서 음성을 추가로 설치하는 방법이 나옵니다.</li>
         </ul>
         <h3>💾 학습 기록 관리</h3>
         <ul>
@@ -3113,6 +3140,51 @@
           <li>상단 검색창에서 단어·뜻·예문을 한글과 영어로 모두 검색할 수 있습니다.</li>
           <li><b>Ctrl+P</b>로 현재 단어 목록을 PDF로 저장할 수 있습니다.</li>
         </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 발음 목소리 추가 도움말 모달 -->
+<div class="modal-overlay" id="voiceHelpModal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="voiceHelpTitle">
+    <div class="modal-head">
+      <h2 id="voiceHelpTitle">🔊 발음 목소리 늘리는 방법</h2>
+      <button class="btn modal-close" id="voiceHelpClose" aria-label="도움말 창 닫기">✕</button>
+    </div>
+    <div class="modal-body">
+      <p class="voice-now" id="voiceHelpCount">영어 목소리를 확인하는 중…</p>
+      <p>목소리 목록은 이 사이트가 아니라 <b>기기(운영체제)에 설치된 음성</b>에서 옵니다. 그래서 휴대폰에서는 영어 음성이 1~2개만 잡히기도 합니다. 아래 방법으로 음성을 설치하면 목록에 바로 추가됩니다.</p>
+      <div class="voice-steps" id="voiceHelpSteps">
+        <section class="voice-step" data-platform="ios">
+          <h3>📱 iPhone · iPad <span class="voice-badge" hidden>✔ 지금 쓰는 기기</span></h3>
+          <ol>
+            <li><b>설정 → 손쉬운 사용 → 콘텐츠 말하기 → 음성 → 영어</b> 순서로 들어갑니다.</li>
+            <li>원하는 음성(Samantha · Daniel · Karen 등) 오른쪽의 <b>⬇ 다운로드</b> 아이콘을 눌러 설치합니다. <b>고품질(Premium·Enhanced)</b> 음성이 더 자연스럽습니다.</li>
+            <li>사파리를 완전히 닫았다가 다시 열거나 <b>새로고침</b>하면 목소리 목록에 나타납니다.</li>
+          </ol>
+        </section>
+        <section class="voice-step" data-platform="android">
+          <h3>🤖 Android (갤럭시 등) <span class="voice-badge" hidden>✔ 지금 쓰는 기기</span></h3>
+          <ol>
+            <li><b>설정 → 언어 및 입력 → 텍스트 음성 변환</b>(기기에 따라 <b>일반 관리</b> 안)으로 들어갑니다.</li>
+            <li><b>기본 엔진</b>이 <b>Google 음성 서비스</b>인지 확인합니다. 삼성 음성(Samsung TTS)은 언어당 음성이 1개뿐이라 목소리가 적게 보일 수 있습니다.</li>
+            <li><b>Google 음성 서비스 → 음성 데이터 설치</b>에서 <b>영어</b>를 설치하고, 미국·영국 등 원하는 음성을 골라 내려받습니다.</li>
+            <li>브라우저를 <b>새로고침</b>하면 목록에 추가됩니다.</li>
+          </ol>
+        </section>
+        <section class="voice-step" data-platform="desktop">
+          <h3>💻 PC · Mac <span class="voice-badge" hidden>✔ 지금 쓰는 기기</span></h3>
+          <ol>
+            <li><b>Windows</b>: 설정 → 시간 및 언어 → 언어 및 지역 → 영어 → <b>언어 옵션</b>에서 음성을 설치합니다. Chrome·Edge는 Microsoft 음성을 함께 보여 줍니다.</li>
+            <li><b>macOS</b>: 시스템 설정 → 손쉬운 사용 → 콘텐츠 말하기 → <b>시스템 음성 → 음성 관리</b>에서 영어 음성을 내려받습니다.</li>
+          </ol>
+        </section>
+      </div>
+      <p style="margin-top:12px">목록이 비어 있거나 개수가 그대로면 화면을 한 번 눌러 본 뒤(휴대폰은 첫 조작 뒤에 목록이 채워집니다) <b>🔄 목소리 다시 확인</b>을 눌러 보세요. iOS 사파리는 일부 음성(Premium · Personal Voice)을 노출하지 않아 다른 브라우저보다 적게 보일 수 있습니다.</p>
+      <div class="modal-actions">
+        <button class="btn" id="voiceRecheck">🔄 목소리 다시 확인</button>
+        <button class="btn" id="voiceHelpDone">확인</button>
       </div>
     </div>
   </div>
@@ -3378,6 +3450,30 @@
   function englishVoices() {
     return allVoices().filter(isEnglishVoice);
   }
+  // 목소리 추가 도움말에서 어떤 운영체제의 설정 경로를 안내할지 정합니다.
+  // (navigator·document 가 없는 테스트 환경에서도 안전하도록 typeof 로 확인합니다)
+  function voiceHelpPlatform() {
+    var nav = (typeof navigator !== "undefined" && navigator) || null;
+    var ua = "";
+    var platform = "";
+    try { ua = String((nav && nav.userAgent) || ""); } catch (e) {}
+    try { platform = String((nav && nav.platform) || ""); } catch (e) {}
+    // 아이패드는 최신 iPadOS 에서 userAgent 가 Macintosh 로 오므로 터치 지원으로 한 번 더 확인합니다.
+    var touchMac = platform === "MacIntel" && typeof document !== "undefined" && !!document && "ontouchend" in document;
+    if (/iPad|iPhone|iPod/.test(ua) || touchMac) return "ios";
+    if (/Android/i.test(ua)) return "android";
+    return "desktop";
+  }
+  // 음성 목록이 갱신될 때(도움말 UI 등) 알림을 받을 콜백.
+  var ttsVoiceListeners = [];
+  function onTtsVoicesUpdated(fn) {
+    if (typeof fn === "function") ttsVoiceListeners.push(fn);
+  }
+  function notifyTtsVoicesUpdated(list) {
+    for (var i = 0; i < ttsVoiceListeners.length; i++) {
+      try { ttsVoiceListeners[i](list); } catch (e) {}
+    }
+  }
   // 모바일 사파리 등은 voiceURI 가 세션마다 달라질 수 있어 이름으로도 한 번 더 찾습니다.
   function findVoiceByURI(uri) {
     if (!uri) return null;
@@ -3435,7 +3531,10 @@
   // 목록과 현재 선택을 최신 음성 기준으로 다시 계산합니다.
   function refreshTtsVoices() {
     TTS_VOICE = pickEnglishVoice();
-    if (!englishVoices().length) return false;
+    var list = englishVoices();
+    // 목록이 비어 있어도 알립니다 — “음성이 0개” 안내를 띄울 수 있어야 하기 때문입니다.
+    notifyTtsVoicesUpdated(list);
+    if (!list.length) return false;
     fillVoiceSelect();
     return true;
   }
@@ -3684,6 +3783,106 @@
     if (e.key === "Escape" && isSpeakingNow()) stopSpeak();
   });
   applyTtsUI();
+
+  // ---------- 목소리 추가 도움말 (음성이 적게 잡히는 휴대폰 대응) ----------
+  // 목소리 목록은 이 사이트가 아니라 기기에 설치된 음성에서 오므로, 휴대폰에서는
+  // 영어 음성이 1~2개만 잡힙니다. 그럴 때 OS 설정에서 음성을 설치하는 방법을 안내합니다.
+  var voiceHelpBtn = document.getElementById("btnVoiceHelp");
+  var voiceHelpLabel = voiceHelpBtn ? voiceHelpBtn.querySelector(".tts-voice-help-label") : null;
+  var voiceHelpModal = document.getElementById("voiceHelpModal");
+  var voiceHelpCountEl = document.getElementById("voiceHelpCount");
+  var VOICE_HELP_MIN = 3; // 영어 음성이 이보다 적으면 도움말 버튼을 강조합니다
+  var voiceHelpNotified = false;
+  try { voiceHelpNotified = localStorage.getItem("toeic1000_voicehelp") === "seen"; } catch (e) {}
+
+  // 좁은 화면에서는 목소리 목록이 ☰ 메뉴 안으로 들어가므로 안내 위치도 함께 바뀝니다.
+  function voiceHelpWhereTo() {
+    return window.innerWidth <= 1023 ? "☰ 메뉴 안 " : "상단 ";
+  }
+  // 버튼 상태·안내 문구·현재 개수를 최신 음성 목록에 맞춥니다. 찾은 개수를 돌려줍니다.
+  function updateVoiceHelpUI(list) {
+    var count = (list || englishVoices()).length;
+    var low = count < VOICE_HELP_MIN;
+    if (voiceHelpCountEl) {
+      voiceHelpCountEl.innerHTML = count
+        ? "이 브라우저에서 쓸 수 있는 영어 목소리: <b>" + count + "개</b>" + (low ? " · 휴대폰은 기본 설치된 음성이 적습니다" : "")
+        : "영어 목소리를 아직 찾지 못했습니다. 화면을 한 번 눌러 본 뒤 <b>🔄 목소리 다시 확인</b>을 눌러 보세요.";
+    }
+    if (voiceHelpBtn) {
+      voiceHelpBtn.classList.toggle("need", low);
+      if (voiceHelpLabel) voiceHelpLabel.textContent = low ? " 목소리 추가" : " 목소리 도움말";
+      voiceHelpBtn.title = low
+        ? "영어 목소리가 " + count + "개뿐입니다 · 늘리는 방법 보기"
+        : "발음 목소리 목록과 늘리는 방법 보기";
+    }
+    return count;
+  }
+  // 음성이 적게 잡힐 때 한 번만 알려 줍니다(같은 브라우저에서 반복되지 않게 저장합니다).
+  function maybeNotifyLowVoices(count) {
+    if (voiceHelpNotified || !count || count >= VOICE_HELP_MIN) return;
+    if (voiceHelpModal && voiceHelpModal.classList.contains("show")) return;
+    voiceHelpNotified = true;
+    try { localStorage.setItem("toeic1000_voicehelp", "seen"); } catch (e) {}
+    showToast("🔊 영어 목소리가 " + count + "개뿐입니다. " + voiceHelpWhereTo() + "❔를 눌러 늘려 보세요.");
+  }
+  function openVoiceHelp() {
+    if (!voiceHelpModal) return;
+    updateVoiceHelpUI();
+    voiceHelpModal.classList.add("show");
+    var closeBtn = document.getElementById("voiceHelpClose");
+    if (closeBtn) closeBtn.focus();
+  }
+  function closeVoiceHelp() {
+    if (!voiceHelpModal || !voiceHelpModal.classList.contains("show")) return;
+    voiceHelpModal.classList.remove("show");
+    if (voiceHelpBtn) voiceHelpBtn.focus();
+  }
+  // 음성을 설치한 직후 목록을 다시 조회합니다(모바일은 조작이 있어야 목록을 내어 줍니다).
+  function recheckTtsVoices() {
+    watchTtsVoices();
+    var before = englishVoices().length;
+    updateVoiceHelpUI();
+    setTimeout(function () {
+      var now = englishVoices().length;
+      updateVoiceHelpUI();
+      showToast(now > before
+        ? "🔊 영어 목소리를 " + now + "개 찾았습니다."
+        : "🔊 아직 영어 목소리는 " + now + "개입니다. 음성을 설치한 뒤 브라우저를 새로고침해 주세요.");
+    }, 1200);
+  }
+  (function initVoiceHelp() {
+    if (voiceHelpBtn && !("speechSynthesis" in window)) voiceHelpBtn.hidden = true;
+    // 플랫폼별 안내 중 지금 쓰는 기기를 맨 위로 올리고 표시를 달아 줍니다.
+    var steps = document.getElementById("voiceHelpSteps");
+    if (steps) {
+      var plat = voiceHelpPlatform();
+      var nodes = steps.querySelectorAll("[data-platform]");
+      var matched = null;
+      for (var i = 0; i < nodes.length; i++) {
+        var isMine = nodes[i].getAttribute("data-platform") === plat;
+        var badge = nodes[i].querySelector(".voice-badge");
+        if (badge) badge.hidden = !isMine;
+        if (isMine) matched = nodes[i];
+      }
+      if (matched && steps.firstChild) steps.insertBefore(matched, steps.firstChild);
+    }
+    if (voiceHelpBtn) voiceHelpBtn.addEventListener("click", openVoiceHelp);
+    var closeBtn = document.getElementById("voiceHelpClose");
+    if (closeBtn) closeBtn.addEventListener("click", closeVoiceHelp);
+    var doneBtn = document.getElementById("voiceHelpDone");
+    if (doneBtn) doneBtn.addEventListener("click", closeVoiceHelp);
+    var recheckBtn = document.getElementById("voiceRecheck");
+    if (recheckBtn) recheckBtn.addEventListener("click", recheckTtsVoices);
+    if (voiceHelpModal) {
+      voiceHelpModal.addEventListener("click", function (e) { if (e.target === this) closeVoiceHelp(); });
+    }
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" || e.key === "Esc") closeVoiceHelp();
+    });
+    // 음성 목록이 갱신될 때마다(휴대폰은 첫 조작 이후) 버튼 상태와 안내를 최신으로 맞춥니다.
+    onTtsVoicesUpdated(function (list) { maybeNotifyLowVoices(updateVoiceHelpUI(list)); });
+    maybeNotifyLowVoices(updateVoiceHelpUI());
+  })();
 
   function cardHTML(u, w, idx) {
     var isLearned = !!learned[w[0]];
