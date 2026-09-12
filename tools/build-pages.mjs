@@ -570,8 +570,8 @@ function buildSitemap(units, lastmod, guides) {
     add(`${SITE}/guides/`, "monthly", "0.6");
     guides.forEach((g) => add(`${SITE}/guides/${g.slug}.html`, "monthly", "0.6"));
   }
-  add(`${SITE}/privacy.html`, "yearly", "0.3");
-  add(`${SITE}/terms.html`, "yearly", "0.3");
+  // privacy.html·terms.html 은 robots=noindex 이므로 사이트맵에 넣지 않는다.
+  // (noindex 페이지를 사이트맵에 제출하면 서치콘솔에서 오류로 보고된다.)
 
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${rows.join("\n")}\n</urlset>\n`;
 }

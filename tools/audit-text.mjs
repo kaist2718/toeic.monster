@@ -150,8 +150,38 @@ idioms.forEach((it, i) => {
 });
 (extra.frequency || []).forEach((w, i) => push(`extra.frequency[${i}]`, w[0], true));
 (extra.numbers || []).forEach((n, i) => push(`extra.numbers[${i}].audio`, n.audio, true));
-(extra.speakTemplates || []).forEach((t, i) => pushAll(`extra.speakTemplates[${i}].lines`, t.lines, true));
-(extra.writeTemplates || []).forEach((t, i) => push(`extra.writeTemplates[${i}].sample`, t.sample, true));
+(extra.speakTemplates || []).forEach((t, i) => {
+  push(`extra.speakTemplates[${i}].type`, t.type, false);
+  push(`extra.speakTemplates[${i}].ko`, t.ko, false);
+  pushAll(`extra.speakTemplates[${i}].lines`, t.lines, true);
+});
+(extra.writeTemplates || []).forEach((t, i) => {
+  push(`extra.writeTemplates[${i}].type`, t.type, false);
+  push(`extra.writeTemplates[${i}].ko`, t.ko, false);
+  pushAll(`extra.writeTemplates[${i}].structure`, t.structure, false);
+  push(`extra.writeTemplates[${i}].sample`, t.sample, true);
+});
+(extra.swFormat || []).forEach((r, i) => {
+  push(`extra.swFormat[${i}].task`, r.task, false);
+  push(`extra.swFormat[${i}].ko`, r.ko, false);
+  push(`extra.swFormat[${i}].time`, r.time, false);
+  pushAll(`extra.swFormat[${i}].points`, r.points, false);
+});
+(extra.speakDrills || []).forEach((d, i) => {
+  push(`extra.speakDrills[${i}].type`, d.type, false);
+  push(`extra.speakDrills[${i}].ko`, d.ko, false);
+  push(`extra.speakDrills[${i}].text`, d.text, true);
+  push(`extra.speakDrills[${i}].tip`, d.tip, false);
+});
+(extra.writeDrills || []).forEach((d, i) => {
+  push(`extra.writeDrills[${i}].type`, d.type, false);
+  push(`extra.writeDrills[${i}].ko`, d.ko, false);
+  pushAll(`extra.writeDrills[${i}].given`, d.given, true);
+  push(`extra.writeDrills[${i}].request`, d.request, true);
+  push(`extra.writeDrills[${i}].question`, d.question, true);
+  pushAll(`extra.writeDrills[${i}].outline`, d.outline, false);
+  push(`extra.writeDrills[${i}].sample`, d.sample, true);
+});
 (extra.situations || []).forEach((s, i) => {
   (s.lines || []).forEach((l, li) => push(`extra.situations[${i}].line${li}`, l[2] || l[1], true));
   (s.quiz || []).forEach((q, qi) => push(`extra.situations[${i}].q${qi}`, q.q, false));

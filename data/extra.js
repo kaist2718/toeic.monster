@@ -485,7 +485,118 @@ window.TOEIC_EXTRA = {
     { tag: "동의어 치환", prompt: "We 『look forward to』 working with your team. — look forward to와 의미가 가장 가까운 것은?", a: "anticipate with pleasure", opts: ["anticipate with pleasure", "forget about", "complain about", "put off"], why: "look forward to = ~을 기대하다" },
     { tag: "동의어 치환", prompt: "The store 『ran out of』 the advertised item. — ran out of와 의미가 가장 가까운 것은?", a: "used up", opts: ["used up", "stocked up on", "paid for", "counted on"], why: "run out of = 다 써 버리다, 떨어지다" },
     { tag: "동의어 치환", prompt: "The organizers had to 『call off』 the outdoor event. — call off와 의미가 가장 가까운 것은?", a: "cancel", opts: ["cancel", "confirm", "attend", "extend"], why: "call off = 취소하다 ≈ cancel" },
-    { tag: "동의어 치환", prompt: "Please 『go over』 the contract before signing. — go over와 의미가 가장 가까운 것은?", a: "review", opts: ["review", "ignore", "translate", "shorten"], why: "go over = 검토하다 ≈ review" }
+    { tag: "동의어 치환", prompt: "Please 『go over』 the contract before signing. — go over와 의미가 가장 가까운 것은?", a: "review", opts: ["review", "ignore", "translate", "shorten"], why: "go over = 검토하다 ≈ review" },
+    { tag: "동의어 치환", prompt: "The team managed to 『accomplish』 the sales goal ahead of schedule. — accomplish와 의미가 가장 가까운 것은?", a: "achieve", opts: ["achieve", "abandon", "postpone", "measure"], why: "accomplish = 달성하다 ≈ achieve" },
+    { tag: "동의어 치환", prompt: "We may need to 『adjust』 the delivery date for the Seoul order. — adjust와 의미가 가장 가까운 것은?", a: "modify", opts: ["modify", "remove", "copy", "reject"], why: "adjust = 조정하다 ≈ modify" },
+    { tag: "동의어 치환", prompt: "Could you 『clarify』 the payment terms in the contract? — clarify와 의미가 가장 가까운 것은?", a: "make clear", opts: ["make clear", "complicate", "translate", "shorten"], why: "clarify = 명확히 하다" },
+    { tag: "동의어 치환", prompt: "The event planner will 『coordinate』 the schedules of all speakers. — coordinate와 의미가 가장 가까운 것은?", a: "organize", opts: ["organize", "cancel", "attend", "record"], why: "coordinate = 조정하다, 조직하다 ≈ organize" },
+    { tag: "동의어 치환", prompt: "The company plans to 『establish』 a new research center in Daejeon. — establish와 의미가 가장 가까운 것은?", a: "set up", opts: ["set up", "close down", "rent out", "look into"], why: "establish = 설립하다 ≈ set up" },
+    { tag: "동의어 치환", prompt: "The retailer will 『expand』 its online store next year. — expand와 의미가 가장 가까운 것은?", a: "enlarge", opts: ["enlarge", "reduce", "divide", "repair"], why: "expand = 확장하다 ≈ enlarge" },
+    { tag: "동의어 치환", prompt: "Do not 『hesitate』 to contact us if you need assistance. — hesitate와 의미가 가장 가까운 것은?", a: "be reluctant", opts: ["be reluctant", "decide quickly", "agree fully", "arrive early"], why: "hesitate = 주저하다" },
+    { tag: "동의어 치환", prompt: "We 『guarantee』 that all parts will arrive within five days. — guarantee와 의미가 가장 가까운 것은?", a: "ensure", opts: ["ensure", "doubt", "risk", "delay"], why: "guarantee = 보증하다 ≈ ensure" },
+    { tag: "동의어 치환", prompt: "The new layout is a clear 『improvement』 over the old design. — improvement와 의미가 가장 가까운 것은?", a: "enhancement", opts: ["enhancement", "decline", "delay", "replacement"], why: "improvement = 개선 ≈ enhancement" },
+    { tag: "동의어 치환", prompt: "The conference room can 『accommodate』 up to sixty guests. — accommodate와 의미가 가장 가까운 것은?", a: "make room for", opts: ["make room for", "turn away", "charge for", "close off"], why: "accommodate = 수용하다" },
+    { tag: "동의어 치환", prompt: "A senior engineer will 『accompany』 the client on the factory tour. — accompany와 의미가 가장 가까운 것은?", a: "go along with", opts: ["go along with", "leave behind", "pay for", "write to"], why: "accompany = 동반하다" },
+    { tag: "동의어 치환", prompt: "Unused inventory will 『accumulate』 if we do not adjust production. — accumulate와 의미가 가장 가까운 것은?", a: "build up", opts: ["build up", "use up", "give away", "count again"], why: "accumulate = 축적하다 ≈ build up" },
+    { tag: "동의어 치환", prompt: "Please make sure there is 『adequate』 storage for the new stock. — adequate와 의미가 가장 가까운 것은?", a: "enough", opts: ["enough", "excessive", "unclear", "temporary"], why: "adequate = 충분한 ≈ enough" },
+    { tag: "동의어 치환", prompt: "Several department heads 『advocate』 a shorter approval process. — advocate와 의미가 가장 가까운 것은?", a: "support", opts: ["support", "oppose", "ignore", "delay"], why: "advocate = 지지하다 ≈ support" },
+    { tag: "동의어 치환", prompt: "Workers will 『assemble』 the units on the second floor. — assemble와 의미가 가장 가까운 것은?", a: "put together", opts: ["put together", "take apart", "sell out", "wear out"], why: "assemble = 조립하다, 모으다" },
+    { tag: "동의어 치환", prompt: "The safety committee will 『comprise』 eight members from three plants. — comprise와 의미가 가장 가까운 것은?", a: "consist of", opts: ["consist of", "differ from", "depend on", "result in"], why: "comprise = 구성하다" },
+    { tag: "동의어 치환", prompt: "Please 『confine』 your comments to the items on the agenda. — confine와 의미가 가장 가까운 것은?", a: "limit", opts: ["limit", "extend", "announce", "repeat"], why: "confine = 제한하다 ≈ limit" },
+    { tag: "동의어 치환", prompt: "The factory has reached its target for the third 『consecutive』 quarter. — consecutive와 의미가 가장 가까운 것은?", a: "in a row", opts: ["in a row", "occasionally", "in advance", "at random"], why: "consecutive = 연속적인" },
+    { tag: "동의어 치환", prompt: "Every member is expected to 『contribute』 to the discussion. — contribute와 의미가 가장 가까운 것은?", a: "add to", opts: ["add to", "take away", "ask for", "hold back"], why: "contribute to = 기여하다 ≈ add to" },
+    { tag: "동의어 치환", prompt: "Ms. Yoon will 『dedicate』 the next month to the audit. — dedicate와 의미가 가장 가까운 것은?", a: "devote", opts: ["devote", "abandon", "borrow", "delay"], why: "dedicate = 헌신하다 ≈ devote" },
+    { tag: "동의어 치환", prompt: "Managers should 『delegate』 routine tasks to their assistants. — delegate와 의미가 가장 가까운 것은?", a: "assign", opts: ["assign", "complete", "postpone", "inspect"], why: "delegate = 위임하다 ≈ assign" },
+    { tag: "동의어 치환", prompt: "The vendor will 『demonstrate』 the new scanner before delivery. — demonstrate와 의미가 가장 가까운 것은?", a: "show", opts: ["show", "hide", "copy", "question"], why: "demonstrate = 시연하다 ≈ show" },
+    { tag: "동의어 치환", prompt: "Most of our revenue will 『derive』 from overseas sales this year. — derive와 의미가 가장 가까운 것은?", a: "obtain", opts: ["obtain", "lose", "return", "estimate"], why: "derive = 얻다, 유래하다" },
+    { tag: "동의어 치환", prompt: "Service quality will 『deteriorate』 if we cut the staff further. — deteriorate와 의미가 가장 가까운 것은?", a: "get worse", opts: ["get worse", "improve steadily", "stay the same", "spread widely"], why: "deteriorate = 악화되다" },
+    { tag: "동의어 치환", prompt: "The auditor found a 『discrepancy』 between the two invoices. — discrepancy와 의미가 가장 가까운 것은?", a: "inconsistency", opts: ["inconsistency", "increase", "shortage", "approval"], why: "discrepancy = 불일치" },
+    { tag: "동의어 치환", prompt: "The new system will 『eliminate』 most manual entries. — eliminate와 의미가 가장 가까운 것은?", a: "remove", opts: ["remove", "add", "delay", "measure"], why: "eliminate = 제거하다 ≈ remove" },
+    { tag: "동의어 치환", prompt: "This coupon will 『entitle』 you to a free dessert. — entitle와 의미가 가장 가까운 것은?", a: "give the right", opts: ["give the right", "take away", "charge for", "ask about"], why: "entitle = 자격을 주다" },
+    { tag: "동의어 치환", prompt: "Recent figures 『indicate』 a steady rise in membership. — indicate와 의미가 가장 가까운 것은?", a: "suggest", opts: ["suggest", "deny", "hide", "repeat"], why: "indicate = 나타내다 ≈ suggest" },
+    { tag: "동의어 치환", prompt: "The firm will 『initiate』 the recall next Monday. — initiate와 의미가 가장 가까운 것은?", a: "begin", opts: ["begin", "finish", "cancel", "review"], why: "initiate = 시작하다 ≈ begin" },
+    { tag: "동의어 치환", prompt: "The training program is designed to 『maximize』 employee performance. — maximize와 의미가 가장 가까운 것은?", a: "get the most from", opts: ["get the most from", "reduce sharply", "give away", "measure again"], why: "maximize = 최대화하다" },
+    { tag: "동의어 치환", prompt: "The notice reminded members that two payments are still 『outstanding』. — outstanding와 의미가 가장 가까운 것은?", a: "unpaid", opts: ["unpaid", "completed", "discounted", "optional"], why: "outstanding = 미지불의" },
+    { tag: "동의어 치환", prompt: "Ms. Han is a 『prominent』 figure in the logistics industry. — prominent와 의미가 가장 가까운 것은?", a: "well known", opts: ["well known", "unknown", "temporary", "distant"], why: "prominent = 저명한" },
+    { tag: "동의어 치환", prompt: "Operations will 『resume』 as soon as the inspection ends. — resume와 의미가 가장 가까운 것은?", a: "start again", opts: ["start again", "stop for good", "slow down", "take over"], why: "resume = 재개하다" },
+    { tag: "동의어 치환", prompt: "The foundation will 『solicit』 donations from local businesses. — solicit와 의미가 가장 가까운 것은?", a: "ask for", opts: ["ask for", "refuse", "offer", "record"], why: "solicit = 요청하다, 구하다" },
+    { tag: "동의어 치환", prompt: "The east elevator is 『temporarily』 out of service. — temporarily와 의미가 가장 가까운 것은?", a: "for a short time", opts: ["for a short time", "permanently", "every day", "in secret"], why: "temporarily = 일시적으로" },
+    { tag: "동의어 치환", prompt: "Clear labels are 『vital』 for accurate shipping. — vital과 의미가 가장 가까운 것은?", a: "essential", opts: ["essential", "optional", "risky", "costly"], why: "vital = 필수적인 ≈ essential" },
+    { tag: "동의어 치환", prompt: "The new branch is 『accessible』 by subway and bus. — accessible과 의미가 가장 가까운 것은?", a: "easy to reach", opts: ["easy to reach", "closed to the public", "expensive to rent", "far from the city"], why: "accessible = 접근하기 쉬운" },
+    { tag: "동의어 치환", prompt: "Please suggest an 『alternative』 date for the workshop. — alternative와 의미가 가장 가까운 것은?", a: "other possible", opts: ["other possible", "final", "earlier", "secret"], why: "alternative = 대안의, 다른" },
+    { tag: "동의어 치환", prompt: "It became 『apparent』 that the shipment would arrive late. — apparent와 의미가 가장 가까운 것은?", a: "obvious", opts: ["obvious", "doubtful", "temporary", "costly"], why: "apparent = 명백한 ≈ obvious" },
+    { tag: "동의어 치환", prompt: "The supervisor will 『assign』 each trainee a mentor. — assign와 의미가 가장 가까운 것은?", a: "give", opts: ["give", "remove", "sell", "postpone"], why: "assign = 배정하다 ≈ give" },
+    { tag: "동의어 치환", prompt: "We should not 『assume』 that demand will stay the same. — assume와 의미가 가장 가까운 것은?", a: "suppose", opts: ["suppose", "prove", "deny", "measure"], why: "assume = 가정하다 ≈ suppose" },
+    { tag: "동의어 치환", prompt: "The branch was able to 『attain』 its annual target. — attain와 의미가 가장 가까운 것은?", a: "reach", opts: ["reach", "miss", "lower", "report"], why: "attain = 달성하다, 도달하다 ≈ reach" },
+    { tag: "동의어 치환", prompt: "The plant will 『automate』 the packaging line next year. — automate와 의미가 가장 가까운 것은?", a: "operate by machine", opts: ["operate by machine", "run by hand", "close down", "expand quickly"], why: "automate = 자동화하다" },
+    { tag: "동의어 치환", prompt: "Complimentary 『beverages』 will be served at the reception. — beverage와 의미가 가장 가까운 것은?", a: "drinks", opts: ["drinks", "snacks", "tickets", "seats"], why: "beverage = 음료" },
+    { tag: "동의어 치환", prompt: "Customers who buy in 『bulk』 receive a lower unit price. — in bulk와 의미가 가장 가까운 것은?", a: "in large amounts", opts: ["in large amounts", "in small amounts", "with cash only", "through the website"], why: "in bulk = 대량으로" },
+    { tag: "동의어 치환", prompt: "A 『cancellation』 fee applies within 24 hours of booking. — cancellation과 의미가 가장 가까운 것은?", a: "canceling the booking", opts: ["canceling the booking", "changing the room", "paying in full", "extending the stay"], why: "cancellation = 예약 취소" },
+    { tag: "동의어 치환", prompt: "Ms. Lim is 『capable』 of managing the whole project alone. — capable of와 의미가 가장 가까운 것은?", a: "able to", opts: ["able to", "eager to", "likely to", "careful to"], why: "be capable of = ~할 수 있는 ≈ be able to" },
+    { tag: "동의어 치환", prompt: "The proposal needs a more 『coherent』 structure. — coherent와 의미가 가장 가까운 것은?", a: "logical", opts: ["logical", "colorful", "expensive", "lengthy"], why: "coherent = 논리 정연한" },
+    { tag: "동의어 치환", prompt: "The award ceremony will 『commence』 at four in the afternoon. — commence와 의미가 가장 가까운 것은?", a: "begin", opts: ["begin", "end", "continue", "pause"], why: "commence = 시작하다 ≈ begin" },
+    { tag: "동의어 치환", prompt: "The airline will 『compensate』 passengers for the long delay. — compensate와 의미가 가장 가까운 것은?", a: "pay back", opts: ["pay back", "charge extra", "notify", "apologize to"], why: "compensate = 보상하다 ≈ pay back" },
+    { tag: "동의어 치환", prompt: "We are looking for a 『competent』 accountant for the branch. — competent와 의미가 가장 가까운 것은?", a: "skilled", opts: ["skilled", "friendly", "young", "talkative"], why: "competent = 유능한 ≈ skilled" },
+    { tag: "동의어 치환", prompt: "Please 『compile』 the survey results before Friday. — compile과 의미가 가장 가까운 것은?", a: "gather together", opts: ["gather together", "throw away", "translate", "publish"], why: "compile = 모아 정리하다" },
+    { tag: "동의어 치환", prompt: "Two 『concurrent』 sessions will run in the morning. — concurrent와 의미가 가장 가까운 것은?", a: "at the same time", opts: ["at the same time", "one after another", "on different days", "in the evening"], why: "concurrent = 동시에 일어나는" },
+    { tag: "동의어 치환", prompt: "Our sales forecast for next year is fairly 『conservative』. — conservative와 의미가 가장 가까운 것은?", a: "cautious", opts: ["cautious", "optimistic", "unrealistic", "detailed"], why: "conservative = 보수적인 ≈ cautious" },
+    { tag: "동의어 치환", prompt: "She has 『consistently』 met her monthly targets. — consistently와 의미가 가장 가까운 것은?", a: "without fail", opts: ["without fail", "only once", "rarely", "by accident"], why: "consistently = 꾸준히, 일관되게" },
+    { tag: "동의어 치환", prompt: "Please 『consult』 the legal team before signing the lease. — consult와 의미가 가장 가까운 것은?", a: "ask for advice from", opts: ["ask for advice from", "argue with", "pay back", "replace"], why: "consult = 상담하다" },
+    { tag: "동의어 치환", prompt: "Older machines 『consume』 far more electricity. — consume와 의미가 가장 가까운 것은?", a: "use up", opts: ["use up", "produce", "save", "store"], why: "consume = 소비하다 ≈ use up" },
+    { tag: "동의어 치환", prompt: "The hotel offers a 『convenient』 location near the station. — convenient와 의미가 가장 가까운 것은?", a: "easy to use", opts: ["easy to use", "hard to find", "far away", "very costly"], why: "convenient = 편리한" },
+    { tag: "동의어 치환", prompt: "The staff were 『courteous』 throughout our visit. — courteous와 의미가 가장 가까운 것은?", a: "polite", opts: ["polite", "late", "noisy", "strict"], why: "courteous = 예의 바른 ≈ polite" },
+    { tag: "동의어 치환", prompt: "Please attach your 『credentials』 to the application form. — credentials와 의미가 가장 가까운 것은?", a: "qualifications", opts: ["qualifications", "salary history", "travel plans", "home address"], why: "credentials = 자격 증명" },
+    { tag: "동의어 치환", prompt: "The bank will 『deduct』 the service fee from your account. — deduct와 의미가 가장 가까운 것은?", a: "subtract", opts: ["subtract", "add", "refund", "transfer"], why: "deduct = 공제하다 ≈ subtract" },
+    { tag: "동의어 치환", prompt: "Several customers reported the 『defective』 keyboards. — defective와 의미가 가장 가까운 것은?", a: "faulty", opts: ["faulty", "expensive", "popular", "lightweight"], why: "defective = 결함이 있는 ≈ faulty" },
+    { tag: "동의어 치환", prompt: "The shuttle will 『depart』 every thirty minutes. — depart와 의미가 가장 가까운 것은?", a: "leave", opts: ["leave", "arrive", "wait", "turn around"], why: "depart = 출발하다 ≈ leave" },
+    { tag: "동의어 치환", prompt: "Heavy use will 『deplete』 the reserve before winter. — deplete와 의미가 가장 가까운 것은?", a: "reduce greatly", opts: ["reduce greatly", "increase slowly", "protect fully", "measure again"], why: "deplete = 고갈시키다 ≈ reduce greatly" },
+    { tag: "동의어 치환", prompt: "Please 『discard』 any damaged samples before shipping. — discard와 의미가 가장 가까운 것은?", a: "throw away", opts: ["throw away", "keep safe", "label clearly", "count again"], why: "discard = 폐기하다 ≈ throw away" },
+    { tag: "동의어 치환", prompt: "The two firms settled a long 『dispute』 over the invoice. — dispute와 의미가 가장 가까운 것은?", a: "disagreement", opts: ["disagreement", "partnership", "schedule", "document"], why: "dispute = 분쟁, 논쟁" },
+    { tag: "동의어 치환", prompt: "All 『documentation』 must be submitted in English. — documentation과 의미가 가장 가까운 것은?", a: "official papers", opts: ["official papers", "verbal consent", "travel plans", "budget plan"], why: "documentation = 문서 자료" },
+    { tag: "동의어 치환", prompt: "The firm will 『donate』 part of the proceeds to charity. — donate와 의미가 가장 가까운 것은?", a: "give away", opts: ["give away", "sell off", "borrow", "invest"], why: "donate = 기부하다 ≈ give away" },
+    { tag: "동의어 치환", prompt: "Please avoid 『duplicate』 entries in the customer database. — duplicate와 의미가 가장 가까운 것은?", a: "repeated", opts: ["repeated", "missing", "secure", "temporary"], why: "duplicate = 중복된" },
+    { tag: "동의어 치환", prompt: "The brochure highlights the 『durable』 material of the case. — durable와 의미가 가장 가까운 것은?", a: "long lasting", opts: ["long lasting", "fragile", "colorful", "low priced"], why: "durable = 내구성 있는" },
+    { tag: "동의어 치환", prompt: "The new hires are 『eager』 to learn the system. — eager와 의미가 가장 가까운 것은?", a: "willing", opts: ["willing", "unable", "afraid", "reluctant"], why: "eager = 열망하는 ≈ willing" },
+    { tag: "동의어 치환", prompt: "The hybrid model is more 『economical』 than the older one. — economical와 의미가 가장 가까운 것은?", a: "cost saving", opts: ["cost saving", "faster", "heavier", "more popular"], why: "economical = 경제적인 ≈ cost saving" },
+    { tag: "동의어 치환", prompt: "I will 『enclose』 the signed contract with this letter. — enclose와 의미가 가장 가까운 것은?", a: "include", opts: ["include", "remove", "sign", "translate"], why: "enclose = 동봉하다 ≈ include" },
+    { tag: "동의어 치환", prompt: "The battery is known for its long 『endurance』. — endurance와 의미가 가장 가까운 것은?", a: "staying power", opts: ["staying power", "low price", "small size", "fast charge"], why: "endurance = 지구력, 오래 견디는 힘" },
+    { tag: "동의어 치환", prompt: "The new seminar will 『enrich』 the training program. — enrich와 의미가 가장 가까운 것은?", a: "improve", opts: ["improve", "shorten", "cancel", "copy"], why: "enrich = 풍부하게 하다 ≈ improve" },
+    { tag: "동의어 치환", prompt: "The 『entire』 shipment was inspected before shipping. — entire와 의미가 가장 가까운 것은?", a: "whole", opts: ["whole", "partial", "late", "damaged"], why: "entire = 전체의 ≈ whole" },
+    { tag: "동의어 치환", prompt: "The two models are 『equivalent』 in performance. — equivalent와 의미가 가장 가까운 것은?", a: "equal", opts: ["equal", "different", "optional", "costly"], why: "equivalent = 동등한 ≈ equal" },
+    { tag: "동의어 치환", prompt: "A valid photo ID is 『essential』 for building entry. — essential과 의미가 가장 가까운 것은?", a: "necessary", opts: ["necessary", "optional", "unusual", "risky"], why: "essential = 필수적인 ≈ necessary" },
+    { tag: "동의어 치환", prompt: "The contractor will 『estimate』 the repair cost today. — estimate와 의미가 가장 가까운 것은?", a: "calculate roughly", opts: ["calculate roughly", "pay in full", "delay", "approve"], why: "estimate = 추산하다, 견적을 내다" },
+    { tag: "동의어 치환", prompt: "The team delivered 『exceptional』 service to every guest. — exceptional와 의미가 가장 가까운 것은?", a: "outstanding", opts: ["outstanding", "average", "slow", "expensive"], why: "exceptional = 뛰어난 ≈ outstanding" },
+    { tag: "동의어 치환", prompt: "Your membership will 『expire』 at the end of March. — expire와 의미가 가장 가까운 것은?", a: "come to an end", opts: ["come to an end", "start again", "cost more", "transfer"], why: "expire = 만료되다 ≈ come to an end" },
+    { tag: "동의어 치환", prompt: "The store will 『extend』 its business hours in December. — extend와 의미가 가장 가까운 것은?", a: "lengthen", opts: ["lengthen", "shorten", "close early", "relocate"], why: "extend = 연장하다 ≈ lengthen" },
+    { tag: "동의어 치환", prompt: "The quarter showed 『extraordinary』 growth in online sales. — extraordinary와 의미가 가장 가까운 것은?", a: "remarkable", opts: ["remarkable", "slight", "negative", "expected"], why: "extraordinary = 놀라운 ≈ remarkable" },
+    { tag: "동의어 치환", prompt: "The factory will 『fabricate』 the frames locally. — fabricate와 의미가 가장 가까운 것은?", a: "manufacture", opts: ["manufacture", "import", "repair", "recycle"], why: "fabricate = 제조하다 ≈ manufacture" },
+    { tag: "동의어 치환", prompt: "A small 『fee』 is charged for express delivery. — fee와 의미가 가장 가까운 것은?", a: "charge", opts: ["charge", "discount", "refund", "deposit"], why: "fee = 수수료 ≈ charge" },
+    { tag: "동의어 치환", prompt: "We must 『fulfill』 the order before Friday. — fulfill와 의미가 가장 가까운 것은?", a: "carry out", opts: ["carry out", "cancel", "double", "return"], why: "fulfill = 이행하다 ≈ carry out" },
+    { tag: "동의어 치환", prompt: "Reliable power is 『fundamental』 to our operations. — fundamental와 의미가 가장 가까운 것은?", a: "basic", opts: ["basic", "optional", "temporary", "costly"], why: "fundamental = 근본적인 ≈ basic" },
+    { tag: "동의어 치환", prompt: "Please confirm that the coupon is 『genuine』. — genuine와 의미가 가장 가까운 것은?", a: "real", opts: ["real", "expired", "colorful", "free"], why: "genuine = 진짜의 ≈ real" },
+    { tag: "동의어 치환", prompt: "Prices will rise 『gradually』 over the next year. — gradually와 의미가 가장 가까운 것은?", a: "slowly", opts: ["slowly", "suddenly", "never", "equally"], why: "gradually = 점차적으로 ≈ slowly" },
+    { tag: "동의어 치환", prompt: "Ms. Choi will 『handle』 all customer complaints this week. — handle와 의미가 가장 가까운 것은?", a: "deal with", opts: ["deal with", "hand over", "put off", "write off"], why: "handle = 처리하다 ≈ deal with" },
+    { tag: "동의어 치환", prompt: "『Hazardous』 materials must be stored in a separate room. — hazardous와 의미가 가장 가까운 것은?", a: "dangerous", opts: ["dangerous", "fragile", "recycled", "frozen"], why: "hazardous = 위험한 ≈ dangerous" },
+    { tag: "동의어 치환", prompt: "The report was returned because of 『inadequate』 data. — inadequate와 의미가 가장 가까운 것은?", a: "not enough", opts: ["not enough", "too detailed", "misplaced", "outdated"], why: "inadequate = 불충분한" },
+    { tag: "동의어 치환", prompt: "The company offers an 『incentive』 for early completion. — incentive와 의미가 가장 가까운 것은?", a: "reward", opts: ["reward", "penalty", "warning", "deduction"], why: "incentive = 장려책 ≈ reward" },
+    { tag: "동의어 치환", prompt: "We apologize for any 『inconvenience』 caused by the delay. — inconvenience와 의미가 가장 가까운 것은?", a: "trouble", opts: ["trouble", "expense", "noise", "danger"], why: "inconvenience = 불편 ≈ trouble" },
+    { tag: "동의어 치환", prompt: "The annual safety 『inspection』 is scheduled for June. — inspection와 의미가 가장 가까운 것은?", a: "official check", opts: ["official check", "repair job", "staff meeting", "sales review"], why: "inspection = 점검 ≈ official check" },
+    { tag: "동의어 치환", prompt: "The manual will 『instruct』 users to back up their files. — instruct와 의미가 가장 가까운 것은?", a: "tell", opts: ["tell", "ask", "warn", "allow"], why: "instruct = 지시하다 ≈ tell" },
+    { tag: "동의어 치환", prompt: "The pipes are 『insulated』 against the cold. — insulated와 의미가 가장 가까운 것은?", a: "protected", opts: ["protected", "painted", "replaced", "measured"], why: "insulated = 단열된, 보호된" },
+    { tag: "동의어 치환", prompt: "The recruits completed an 『intensive』 two-week course. — intensive와 의미가 가장 가까운 것은?", a: "concentrated", opts: ["concentrated", "optional", "online", "self-paced"], why: "intensive = 집중적인 ≈ concentrated" },
+    { tag: "동의어 치환", prompt: "The 『landlord』 agreed to renew the office lease. — landlord와 의미가 가장 가까운 것은?", a: "property owner", opts: ["property owner", "tenant", "agent", "inspector"], why: "landlord = 임대인, 건물주" },
+    { tag: "동의어 치환", prompt: "After a 『lengthy』 discussion, the board approved the plan. — lengthy와 의미가 가장 가까운 것은?", a: "long", opts: ["long", "brief", "private", "heated"], why: "lengthy = 긴, 오래 걸리는 ≈ long" },
+    { tag: "동의어 치환", prompt: "Each customer is 『limited』 to two tickets. — limited와 의미가 가장 가까운 것은?", a: "restricted", opts: ["restricted", "entitled", "invited", "charged"], why: "be limited to = 제한되다 ≈ restricted" },
+    { tag: "동의어 치환", prompt: "The program rewards long-term customer 『loyalty』. — loyalty와 의미가 가장 가까운 것은?", a: "repeat business", opts: ["repeat business", "late payment", "new hiring", "product design"], why: "loyalty = 충성도, 계속 거래함" },
+    { tag: "동의어 치환", prompt: "The two banks will 『merge』 next quarter. — merge와 의미가 가장 가까운 것은?", a: "combine", opts: ["combine", "split up", "close down", "expand abroad"], why: "merge = 합병하다 ≈ combine" },
+    { tag: "동의어 치환", prompt: "The agreement was based on 『mutual』 trust. — mutual와 의미가 가장 가까운 것은?", a: "shared", opts: ["shared", "written", "temporary", "financial"], why: "mutual = 상호의, 공통의 ≈ shared" },
+    { tag: "동의어 치환", prompt: "Our main 『objective』 is to reduce customer waiting time. — objective와 의미가 가장 가까운 것은?", a: "goal", opts: ["goal", "budget", "risk", "method"], why: "objective = 목표 ≈ goal" },
+    { tag: "동의어 치환", prompt: "The error 『occurred』 during the final quality check. — occur와 의미가 가장 가까운 것은?", a: "happened", opts: ["happened", "ended", "worsened", "repeated"], why: "occur = 발생하다 ≈ happen" },
+    { tag: "동의어 치환", prompt: "Please give us the 『precise』 delivery date. — precise와 의미가 가장 가까운 것은?", a: "exact", opts: ["exact", "approximate", "earliest", "latest"], why: "precise = 정확한 ≈ exact" },
+    { tag: "동의어 치환", prompt: "Members may state a seating 『preference』 when booking. — preference와 의미가 가장 가까운 것은?", a: "choice", opts: ["choice", "complaint", "fee", "discount"], why: "preference = 선호 ≈ choice" },
+    { tag: "동의어 치환", prompt: "Visitors must sign in at the 『premises』 entrance. — premises와 의미가 가장 가까운 것은?", a: "building", opts: ["building", "parking lot", "website", "showroom"], why: "premises = 건물, 부지" },
+    { tag: "동의어 치환", prompt: "Applicants must demonstrate 『proficiency』 in spreadsheet software. — proficiency와 의미가 가장 가까운 것은?", a: "skill", opts: ["skill", "interest", "seniority", "attendance"], why: "proficiency = 능숙함 ≈ skill" },
+    { tag: "동의어 치환", prompt: "The warehouse still holds a 『surplus』 of last season's stock. — surplus와 의미가 가장 가까운 것은?", a: "extra amount", opts: ["extra amount", "shortage", "pending order", "discount rate"], why: "surplus = 잉여, 남는 양" }
   ],
 
   /* ============ 5. 30일 스프린트 커리큘럼 ============ */
@@ -600,7 +711,20 @@ window.TOEIC_EXTRA = {
     ["outstanding", "미지불의, 뛰어난", "형용사"], ["preliminary", "예비의", "형용사"], ["prohibit", "금지하다", "동사"],
     ["prominent", "저명한", "형용사"], ["resume", "재개하다", "동사"], ["solicit", "요청하다, 구하다", "동사"],
     ["temporarily", "일시적으로", "부사"], ["unanimous", "만장일치의", "형용사"], ["versatile", "다재다능한", "형용사"],
-    ["vital", "필수적인", "형용사"]
+    ["vital", "필수적인", "형용사"], ["accomplish", "달성하다", "동사"], ["acquisition", "인수", "명사"],
+    ["adjust", "조정하다", "동사"], ["advisor", "조언자", "명사"], ["affordable", "저렴한", "형용사"],
+    ["agenda", "안건", "명사"], ["annually", "매년", "부사"], ["applicant", "지원자", "명사"],
+    ["approval", "승인", "명사"], ["asset", "자산", "명사"], ["attendance", "참석", "명사"],
+    ["beneficial", "유익한", "형용사"], ["brochure", "안내 책자", "명사"], ["budget", "예산", "명사"],
+    ["candidate", "후보자", "명사"], ["capacity", "수용력", "명사"], ["category", "범주", "명사"],
+    ["certificate", "증명서", "명사"], ["clarify", "명확히 하다", "동사"], ["collaborate", "협업하다", "동사"],
+    ["commitment", "약속, 전념", "명사"], ["complimentary", "무료의", "형용사"], ["condition", "조건", "명사"],
+    ["conference", "회의", "명사"], ["consequence", "결과", "명사"], ["contract", "계약", "명사"],
+    ["convenient", "편리한", "형용사"], ["courtesy", "예의", "명사"], ["defect", "결함", "명사"],
+    ["deposit", "보증금", "명사"], ["documentation", "문서 자료", "명사"], ["enclose", "동봉하다", "동사"],
+    ["enroll", "등록하다", "동사"], ["enthusiastic", "열정적인", "형용사"], ["equipment", "장비", "명사"],
+    ["establish", "설립하다", "동사"], ["expand", "확장하다", "동사"], ["expertise", "전문성", "명사"],
+    ["furniture", "가구", "명사"], ["guarantee", "보증하다", "동사"]
   ],
 
   /* ============ 10. 숫자·금액 듣기 집중 ============ */
@@ -624,18 +748,60 @@ window.TOEIC_EXTRA = {
     { tag: "전화번호", audio: "Our fax number is two oh two, five five five, oh one zero one.", a: "202-555-0101", opts: ["202-555-0101", "212-555-0101", "202-555-0110", "202-505-0101"], why: "oh는 0을 의미합니다: 2-0-2 5-5-5 0-1-0-1" }
   ],
 
-  /* ============ 11. 말하기·쓰기 템플릿 ============ */
+  /* ============ 11. 말하기·쓰기 시험 구성과 템플릿 ============ */
+  /* 공식 구성은 ETS 안내를 기준으로 하며, audit-site 가 문항 수를 대조한다.
+     Speaking 11문항(약 20분, 0~200점) · Writing 8문항(약 60분, 0~200점) */
+  swFormat: [
+    { test: "Speaking", q: "1-2", task: "Read a text aloud", ko: "지문 낭독", time: "준비 45초, 낭독 45초", points: ["발음", "억양과 강세"] },
+    { test: "Speaking", q: "3-4", task: "Describe a picture", ko: "사진 묘사", time: "준비 45초, 말하기 30초", points: ["문법", "어휘", "일관성"] },
+    { test: "Speaking", q: "5-7", task: "Respond to questions", ko: "질문에 답하기", time: "문항 5와 6은 15초, 문항 7은 30초", points: ["내용 구성", "유창성"] },
+    { test: "Speaking", q: "8-10", task: "Respond to questions using information provided", ko: "제공된 정보 활용 답변", time: "정보 읽기 45초, 문항 8과 9는 15초, 문항 10은 30초", points: ["정보 정확성", "표현력"] },
+    { test: "Speaking", q: "11", task: "Express an opinion", ko: "의견 제시", time: "준비 45초, 말하기 60초", points: ["논리 전개", "근거 제시"] },
+    { test: "Writing", q: "1-5", task: "Write a sentence based on a picture", ko: "사진 보고 한 문장 쓰기", time: "제시된 두 단어를 모두 사용", points: ["문법", "사진과의 관련성"] },
+    { test: "Writing", q: "6-7", task: "Respond to a written request", ko: "이메일 답장 쓰기", time: "문항당 10분", points: ["과제 수행", "표현의 다양성"] },
+    { test: "Writing", q: "8", task: "Write an opinion essay", ko: "의견 에세이 쓰기", time: "최소 300단어", points: ["논리", "근거", "문장 다양성"] }
+  ],
   speakTemplates: [
-    { type: "자기소개 (Speaking 1번)", ko: "30초 자기소개", lines: ["Hello, my name is Jiwon Kim and I work as a marketing assistant at Hanaro.", "My main responsibilities include planning campaigns and analyzing customer data.", "In my free time, I enjoy hiking and learning new languages."] },
-    { type: "사진 묘사 (Speaking 2번)", ko: "사진 묘사 프레임", lines: ["This picture shows a busy office scene.", "In the center, a man is handing a document to his colleague.", "On the left, two people are looking at a computer screen, and in the background you can see shelves full of files."] },
-    { type: "의견 제시 (Speaking 4번)", ko: "찬반 의견 말하기", lines: ["In my opinion, working from home increases productivity for two reasons.", "First, employees save commuting time and can focus better.", "For example, our team finished the last project two weeks earlier than planned."] },
-    { type: "문제 해결 (Speaking 5번)", ko: "상황 해결 답변", lines: ["I would first apologize for the inconvenience and find out exactly what the customer needs.", "Then I would offer two possible solutions, such as a replacement or a full refund.", "Finally, I would follow up within 24 hours to make sure the problem is solved."] }
+    { type: "Q1-2 지문 낭독", ko: "공지문 낭독 프레임", lines: ["Attention, all staff. The employee parking lot will be closed for resurfacing from Monday through Wednesday.", "Please use the visitor lot behind the main building during this period. We apologize for any inconvenience."] },
+    { type: "Q3-4 사진 묘사", ko: "사진 묘사 프레임", lines: ["This picture shows a busy office scene.", "In the center, a man is handing a document to his colleague. On the left, two people are looking at a computer screen.", "In the background, you can see shelves full of files and a large window."] },
+    { type: "Q5-7 질문에 답하기", ko: "친숙한 주제 답변", lines: ["I usually start my day by checking emails and setting priorities for the morning.", "On busy days, I write a short list so that I do not forget important tasks.", "I also try to leave some time for unexpected requests from my team."] },
+    { type: "Q8-10 제공된 정보 활용", ko: "일정표 보고 답하기", lines: ["According to the schedule, the workshop begins at nine in the morning in Room 302.", "The registration desk opens thirty minutes earlier, so please arrive by eight thirty.", "If you need to change your session, contact the front desk before Friday."] },
+    { type: "Q11 의견 제시", ko: "찬반 의견 말하기", lines: ["In my opinion, working from home increases productivity for two reasons.", "First, employees save commuting time and can focus better on their tasks.", "For example, our team finished the last project two weeks earlier than planned."] }
   ],
   writeTemplates: [
-    { type: "이메일 (Writing 8번)", ko: "회의 일정 변경 안내", structure: ["인사 및 목적", "변경 내용 요약", "양해 요청 및 마무리"], sample: "Dear Mr. Lee, I am writing to let you know that the sales meeting has been moved from Tuesday to Thursday at 2 p.m. Please let me know if the new time works for you. Thank you for your understanding." },
-    { type: "이메일 (Writing 8번)", ko: "제품 불만 접수 및 사과", structure: ["사과", "문제 설명", "해결 방안 제시"], sample: "I sincerely apologize for the defect in the printer you purchased last week. We have arranged to send a replacement today at no extra cost. Please let us know if you need any further assistance." },
-    { type: "이메일 (Writing 8번)", ko: "가격 견적 요청", structure: ["인사", "요청 내용과 수량", "회신 기한"], sample: "Hello, we are interested in purchasing 200 units of your office chairs. Could you please send us a quote, including delivery costs, by the end of this week?" },
-    { type: "이메일 (Writing 8번)", ko: "행사 초대", structure: ["목적", "일시·장소", "참석 회신 요청"], sample: "We would like to invite you to our annual customer appreciation dinner on December 5 at 7 p.m. in the Skyline Ballroom. Please confirm your attendance by November 28." }
+    { type: "Q1-5 사진 묘사 문장", ko: "두 단어로 한 문장 완성", structure: ["제시된 두 단어를 모두 사용", "사진의 동작을 현재진행형으로", "장소나 대상을 덧붙여 완성"], sample: "The speaker is giving a presentation at a conference." },
+    { type: "Q1-5 사진 묘사 문장", ko: "사물 묘사 한 문장", structure: ["두 단어의 형태를 바꿔 사용", "수동태나 there is 구문 활용", "수량과 위치를 함께 표현"], sample: "Several boxes are stacked on a shelf in the warehouse." },
+    { type: "Q6-7 이메일 답장", ko: "회의 일정 변경 안내", structure: ["인사 및 목적", "변경 내용 요약", "양해 요청과 마무리"], sample: "Dear Mr. Lee, I am writing to let you know that the sales meeting has been moved from Tuesday to Thursday at 2 p.m. Please let me know if the new time works for you. Thank you for your understanding." },
+    { type: "Q6-7 이메일 답장", ko: "제품 불만 접수와 사과", structure: ["사과", "문제 설명", "해결 방안 제시"], sample: "I sincerely apologize for the defect in the printer you purchased last week. We have arranged to send a replacement today at no extra cost. Please let us know if you need any further assistance." },
+    { type: "Q6-7 이메일 답장", ko: "가격 견적 요청", structure: ["인사", "요청 내용과 수량", "회신 기한"], sample: "Hello, we are interested in purchasing 200 units of your office chairs. Could you please send us a quote, including delivery costs, by the end of this week?" },
+    { type: "Q8 의견 에세이", ko: "재택근무 확대 찬반", structure: ["서론: 입장 제시", "본론 1: 첫 번째 근거와 예시", "본론 2: 두 번째 근거와 예시", "결론: 요약과 재강조"], sample: "Many companies are now deciding how often employees should work from home. In my view, a hybrid schedule is the most practical choice. First, it reduces commuting time, which gives employees more hours for focused work. Second, it keeps teams connected because everyone meets in person at least twice a week. For these reasons, a hybrid schedule benefits both companies and their staff." },
+    { type: "Q8 의견 에세이", ko: "사내 교육 예산 확대", structure: ["서론: 배경과 입장", "본론: 비용 대비 효과", "반론 인정과 반박", "결론: 제안"], sample: "Some managers argue that training programs are too expensive to keep. I disagree, because skilled employees save far more money than the programs cost. Training reduces mistakes, shortens project time, and lowers turnover. Although the initial fee may look high, the return appears within a single year." }
+  ],
+
+  /* ============ 11-2. 말하기 유형별 연습 ============ */
+  speakDrills: [
+    { type: "Q1-2 지문 낭독", ko: "매장 영업시간 안내문", text: "Thank you for shopping at Greenway Market. Our store hours are from nine in the morning to ten at night on weekdays, and from ten to eight on Sundays.", tip: "45초 동안 문장 부호에서 끊어 읽고, 숫자와 요일은 또렷하게 발음하세요." },
+    { type: "Q1-2 지문 낭독", ko: "행사 안내 방송", text: "Welcome to the annual business forum. Please keep your badge visible at all times, and note that the keynote speech will begin promptly at ten.", tip: "고유명사와 시간 표현에서 강세를 살짝 눌러 주면 훨씬 자연스럽습니다." },
+    { type: "Q3-4 사진 묘사", ko: "회의실에서 발표하는 장면", text: "This picture shows a meeting room where a woman is presenting in front of a screen. Three colleagues are seated at the table and taking notes.", tip: "중심 인물, 주변 인물, 배경 순서로 30초 동안 이어서 말해 보세요." },
+    { type: "Q3-4 사진 묘사", ko: "물류 창고에서 상자를 옮기는 장면", text: "In this picture, two workers are carrying boxes in a large warehouse while a forklift is parked nearby.", tip: "진행형으로 동작을 묘사하고, 위치 표현 next to와 behind를 한 번씩 넣어 보세요." },
+    { type: "Q5-7 질문에 답하기", ko: "업무 루틴 질문", text: "How do you usually organize your tasks when you have several deadlines in the same week?", tip: "문항 5와 6은 15초, 문항 7은 30초입니다. 첫 문장에서 결론을 말하고 이유를 붙이세요." },
+    { type: "Q5-7 질문에 답하기", ko: "선호도 질문", text: "What do you enjoy most about working in a team, and why?", tip: "I enjoy ~ because ~ 구조로 시작하면 15초 안에 답을 끝낼 수 있습니다." },
+    { type: "Q8-10 제공된 정보 활용", ko: "워크숍 일정표", text: "According to the schedule, what time does the afternoon session start, and which room is it in?", tip: "일정표를 먼저 45초간 훑고 시간, 장소, 담당자 순으로 메모한 뒤 답하세요." },
+    { type: "Q8-10 제공된 정보 활용", ko: "고객센터 운영표", text: "I would like to know whether the customer center is open on Saturday afternoon.", tip: "문항 10은 두 번 들려줍니다. 질문의 핵심 명사 하나를 받아 답을 시작하세요." },
+    { type: "Q11 의견 제시", ko: "회의는 대면이 좋은가", text: "Some people believe that online meetings are more efficient than in-person meetings. What is your opinion and why?", tip: "준비 45초, 말하기 60초입니다. 입장, 근거 두 가지, 예시 하나, 마무리 순서로 구성하세요." },
+    { type: "Q11 의견 제시", ko: "직원 교육은 언제 해야 하나", text: "Should companies provide training during working hours or outside them? Explain your view with reasons.", tip: "한쪽 입장을 분명히 밝히고 반대 의견도 한 문장으로 인정해 주면 점수가 올라갑니다." }
+  ],
+
+  /* ============ 11-3. 쓰기 유형별 연습 ============ */
+  writeDrills: [
+    { type: "Q1-5 사진 묘사 문장", ko: "행사장에서 발표하는 장면", given: ["conference", "presentation"], sample: "The speaker is giving a presentation at a conference." },
+    { type: "Q1-5 사진 묘사 문장", ko: "창고에 상자가 쌓인 장면", given: ["warehouse", "stack"], sample: "Several boxes are stacked on a shelf in the warehouse." },
+    { type: "Q1-5 사진 묘사 문장", ko: "매장 앞 보도를 고치는 장면", given: ["sidewalk", "repair"], sample: "Workers are repairing the sidewalk in front of the store." },
+    { type: "Q6-7 이메일 답장", ko: "배송 지연에 답장하기", request: "Our order was supposed to arrive on Monday, but it has not been delivered yet. Could you tell us what happened and when we can expect it?", sample: "Dear Ms. Carter, Thank you for your message. I am sorry for the delay; a customs inspection held your shipment for two days. It will arrive by Thursday, and I will send you the tracking number today." },
+    { type: "Q6-7 이메일 답장", ko: "회의 참석 요청에 답장하기", request: "We are planning a product review meeting next Tuesday at three. Can you join us and bring the latest sales figures?", sample: "Thank you for the invitation. I can join the product review on Tuesday at three, and I will bring the latest sales figures for the second quarter." },
+    { type: "Q6-7 이메일 답장", ko: "환불 요청에 답장하기", request: "I would like to return the keyboard I bought last week because two keys do not work. Is a refund possible?", sample: "I apologize for the problem with your keyboard. A full refund is possible, and you can return the item using the prepaid label attached to this email." },
+    { type: "Q8 의견 에세이", ko: "재택근무를 늘려야 할까", question: "Some companies now allow employees to work from home several days a week. Do you think this change benefits companies?", sample: "Many companies have adopted remote work policies in recent years. In my opinion, this change benefits companies for two main reasons." },
+    { type: "Q8 의견 에세이", ko: "대학 교육은 실습 중심이어야 할까", question: "Should universities focus more on practical skills than on theory? State your opinion and support it with examples.", sample: "Universities should keep a balance between theory and practice. Practical courses help students find jobs, but theory gives them the tools to keep learning after they graduate." }
   ],
 
   /* ============ 12. 비즈니스 상황극 ============ */
@@ -821,6 +987,32 @@ window.TOEIC_EXTRA = {
         { h: "품사별 자리", list: ["관사·소유격·전치사 뒤 → 명사", "주어 뒤·조동사 뒤·to 뒤 → 동사(원형)", "명사 앞·be동사 뒤 → 형용사", "동사·형용사·문장 전체 수식 → 부사"] },
         { h: "빈출 어형 세트", list: ["success / succeed / successful / successfully", "decide / decision / decisive / decisively", "compete / competition / competitive / competitively", "analyze / analysis / analytical / analytically", "apply / application / applicant / applicable"] },
         { h: "주의할 함정", list: ["-ly로 끝나도 형용사인 경우가 있습니다: costly, friendly, timely", "명사와 형용사 형태가 같은 단어도 있습니다: available, reliable는 형용사만 있습니다.", "수식 대상이 사람이면 -ed, 사물이면 -ing: confused staff / confusing instructions"] }
+      ] },
+    { slug: "speaking-writing-guide", title: "TOEIC Speaking·Writing 유형 완전 정리", desc: "Speaking 11문항과 Writing 8문항의 공식 구성, 유형별 시간 배분과 답변 프레임을 한 페이지에 정리했습니다.",
+      sections: [
+        { h: "Speaking 11문항 구성", list: [
+          "문항 1~2 지문 낭독: 준비 45초, 낭독 45초. 발음과 억양·강세를 평가합니다.",
+          "문항 3~4 사진 묘사: 준비 45초, 말하기 30초. 문법·어휘·일관성을 평가합니다.",
+          "문항 5~7 질문에 답하기: 문항 5·6은 15초, 문항 7은 30초.",
+          "문항 8~10 제공된 정보 활용: 정보 읽기 45초, 문항 8·9는 15초, 문항 10은 30초입니다.",
+          "문항 11 의견 제시: 준비 45초, 말하기 60초. 근거 두 가지를 준비합니다."
+        ] },
+        { h: "Writing 8문항 구성", list: [
+          "문항 1~5 사진 보고 한 문장 쓰기: 제시된 두 단어를 모두 사용해야 합니다.",
+          "문항 6~7 이메일 답장: 문항당 10분이 주어지며 과제 수행과 표현의 다양성을 봅니다.",
+          "문항 8 의견 에세이: 최소 300단어를 권장하며 논리와 근거를 평가합니다."
+        ] },
+        { h: "유형별 답변 프레임", list: [
+          "낭독은 문장 부호에서 끊고, 숫자·요일·고유명사를 또렷하게 읽습니다.",
+          "사진 묘사는 중심 인물, 주변 인물, 배경 순서로 3문장을 준비합니다.",
+          "정보 활용 문항은 시간, 장소, 담당자 순으로 표를 먼저 표시해 둡니다.",
+          "의견 제시는 입장 한 문장, 근거 두 문장, 예시 한 문장, 마무리 한 문장으로 조립합니다.",
+          "이메일은 인사와 목적, 요청 처리, 마무리 세 문단으로 나누면 10분 안에 끝낼 수 있습니다."
+        ] },
+        { h: "점수와 시간", list: [
+          "Speaking은 약 20분, Writing은 약 60분이며 각각 0~200점으로 평가됩니다.",
+          "두 시험은 함께 또는 따로 응시할 수 있고, LC·RC와 합산하면 4기능 점수가 됩니다."
+        ] }
       ] }
   ],
 

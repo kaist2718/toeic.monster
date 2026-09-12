@@ -2,6 +2,18 @@
 
 toeic.monster 를 구글·네이버 검색에 노출시키기 위한 설정과, 반영 상태를 확인하는 방법을 정리합니다.
 
+> 아래 수치는 문서에 직접 적지 않고 `audit:counts` 블록으로 관리합니다.
+> `npm run audit:site` 가 이 블록과 실제 값을 대조하므로, 콘텐츠가 늘면 문서도 함께 갱신됩니다.
+
+<!-- audit:counts
+sitemap_urls = 43
+pages = 45
+units = 30
+vocab = 1000
+idioms = 126
+guides = 9
+-->
+
 ---
 
 ## 1. 한눈에 보기
@@ -11,7 +23,7 @@ toeic.monster 를 구글·네이버 검색에 노출시키기 위한 설정과, 
 | 구글 소유확인 | `index.html` 의 `google-site-verification` | 적용됨 |
 | 네이버 소유확인 | `index.html` 의 `naver-site-verification` | 적용됨 |
 | 크롤링 허용 | `robots.txt` (`Allow: /` + Sitemap 명시) | 적용됨 |
-| 사이트맵 | `sitemap.xml` (35개 URL) | 자동 생성 |
+| 사이트맵 | `sitemap.xml` (색인 대상 페이지만) | 자동 생성 |
 | 정적 단어 페이지 | `units/*.html` | 자동 생성 |
 | OG 이미지 | `og-image.png` (1200×630) | 생성됨 |
 | 구조화 데이터 | WebSite · LearningResource · FAQPage · BreadcrumbList · ItemList | 적용됨 |
@@ -33,9 +45,12 @@ toeic.monster 를 구글·네이버 검색에 노출시키기 위한 설정과, 
 ```
 units/index.html          주제별 단어장 허브 (30개 유닛 목록)
 units/unit-01.html ~ 30   유닛별 단어 전체 (1,000단어, 발음·예문·해석 포함)
-units/idioms.html         빈출 구동사·숙어 60선
+units/idioms.html         빈출 구동사·숙어 모음
 sitemap.xml               위 페이지들을 모두 포함해 재생성됨
 ```
+
+> `privacy.html`·`terms.html` 은 `robots=noindex` 이므로 **사이트맵에 넣지 않습니다.**
+> 색인 대상 페이지와 사이트맵이 어긋나면 `npm run audit:site` 가 실패합니다.
 
 각 페이지에는 `canonical`, OG/Twitter 메타, `LearningResource` + `BreadcrumbList` 구조화 데이터,
 이전/다음 유닛 링크가 들어갑니다. 홈 페이지의 유닛 섹션과 푸터에서 링크되어 크롤러가 발견할 수 있습니다.

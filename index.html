@@ -1315,6 +1315,17 @@
   .relation-card p { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
   .writing-area { width: 100%; min-height: 105px; resize: vertical; font: inherit; font-size: 13px; padding: 10px; border: 2px solid var(--border); border-radius: 9px; background: var(--input-bg); color: var(--text); }
   .writing-area:focus { border-color: var(--primary); outline: none; }
+  /* Speaking·Writing 시험 구성 표 */
+  .sw-list { display: grid; gap: 8px; }
+  .sw-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; background: var(--card); border: 1px solid var(--border); border-radius: 11px; padding: 10px 12px; font-size: 13px; }
+  .sw-task { font-weight: 800; color: var(--primary-dark); }
+  .sw-ko { color: var(--text-muted); }
+  .sw-time { margin-left: auto; font-size: 12.5px; font-weight: 700; color: var(--cyan); text-align: right; }
+  .sw-given { font-size: 13px; margin-bottom: 8px; }
+  .sw-given b { display: inline-block; background: var(--soft-cyan); color: var(--cyan); border-radius: 99px; padding: 2px 10px; font-size: 12.5px; }
+  .sw-sample { margin-top: 8px; }
+  .sw-sample summary { cursor: pointer; font-size: 12.5px; font-weight: 700; color: var(--primary); }
+  .sw-sample .tpl-sample { margin-top: 7px; }
   .practice-actions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 9px; }
   .practice-note { font-size: 12.5px; color: var(--text-muted); margin-top: 7px; }
   .prompt-list { display: flex; flex-direction: column; gap: 8px; }
@@ -2232,6 +2243,9 @@
       <button type="button" class="sn-chip" data-target="30일 스프린트">🏃 스프린트</button>
       <button type="button" class="sn-chip" data-target="매일 3문장 받아쓰기">🎧 받아쓰기</button>
       <button type="button" class="sn-chip" data-target="말하기·쓰기 템플릿">🗣 템플릿</button>
+      <button type="button" class="sn-chip" data-target="Speaking·Writing 시험 구성">🎤 S&W 구성</button>
+      <button type="button" class="sn-chip" data-target="Speaking 유형별 연습">🎙️ 스피킹 연습</button>
+      <button type="button" class="sn-chip" data-target="Writing 유형별 연습">✍️ 라이팅 연습</button>
       <button type="button" class="sn-chip" data-target="실전 도구">⏱ 실전 도구</button>
       <button type="button" class="sn-chip" data-target="전략 공략 가이드">📕 가이드</button>
       <button type="button" class="sn-chip" data-target="말하기·쓰기 연습">🗣️ 말하기·쓰기</button>
@@ -2676,9 +2690,27 @@
 
     <section class="home-section" aria-label="말하기·쓰기 템플릿">
       <h2 class="home-section-title">🗣 말하기·쓰기 템플릿</h2>
-      <p class="home-section-sub">TOEIC Speaking 유형별 문장과 Writing 8번 이메일 구조를 그대로 따라 써 보세요.</p>
+      <p class="home-section-sub">TOEIC Speaking 5개 유형과 Writing 3개 유형(문항 1~5·6~7·8번)의 문장 구조를 그대로 따라 써 보세요.</p>
       <div class="reading-grid" id="speakTplGrid"></div>
       <div class="reading-grid" id="writeTplGrid" style="margin-top:12px"></div>
+    </section>
+
+    <section class="home-section" aria-label="Speaking·Writing 시험 구성">
+      <h2 class="home-section-title">🎤 TOEIC Speaking·Writing 시험 구성</h2>
+      <p class="home-section-sub">Speaking 11문항(약 20분) · Writing 8문항(약 60분) · 각 0~200점. 문항 번호와 제한 시간은 공식 기준입니다.</p>
+      <div class="sw-list" id="swFormatBox"></div>
+    </section>
+
+    <section class="home-section" aria-label="Speaking 유형별 연습">
+      <h2 class="home-section-title">🎙️ Speaking 유형별 연습</h2>
+      <p class="home-section-sub">지문 낭독(1~2번)부터 사진 묘사·질문 답변·정보 활용·의견 제시(11번)까지 5개 유형을 고르게 연습합니다.</p>
+      <div class="reading-grid" id="speakDrillBox"></div>
+    </section>
+
+    <section class="home-section" aria-label="Writing 유형별 연습">
+      <h2 class="home-section-title">✍️ Writing 유형별 연습</h2>
+      <p class="home-section-sub">사진 보고 한 문장 쓰기(1~5번), 이메일 답장(6~7번), 의견 에세이(8번)를 실제 문항 순서대로 연습합니다.</p>
+      <div class="reading-grid" id="writeDrillBox"></div>
     </section>
 
     <section class="home-section" aria-label="실전 도구">
@@ -5891,7 +5923,11 @@
       { q: "광고: Early-bird registration ends on May 10. Members receive an additional 15% discount.", a: "회원은 추가 할인을 받는다", opts: ["등록은 5월 10일에 시작된다", "회원은 추가 할인을 받는다", "비회원만 등록할 수 있다", "행사가 15일간 열린다"], why: "Members receive an additional 15% discount라고 명시되어 있습니다." },
       { q: "공지문: The fitness center will introduce new yoga classes starting October 1. Members can reserve a spot up to 48 hours in advance through the mobile app.", a: "수업 48시간 전부터 앱으로 예약할 수 있다", opts: ["수업 당일에만 예약할 수 있다", "수업 48시간 전부터 앱으로 예약할 수 있다", "전화로만 예약할 수 있다", "비회원도 예약할 수 있다"], why: "up to 48 hours in advance와 through the mobile app이 단서입니다." },
       { q: "이메일: Please note that the deadline for submitting expense reports has been moved from the 25th to the 20th of each month.", a: "경비 보고서 마감일이 20일로 앞당겨졌다", opts: ["경비 보고서가 폐지된다", "경비 보고서 마감일이 20일로 앞당겨졌다", "마감일이 25일로 늦춰진다", "보고서를 매주 제출해야 한다"], why: "moved from the 25th to the 20th = 25일에서 20일로 앞당김." },
-      { q: "안내문: All employees must wear their ID badges at all times while on company premises. Visitors should sign in at the security desk and will be escorted by a staff member.", a: "경비 데스크에서 서명하고 직원의 안내를 받는다", opts: ["직접 건물을 돌아다닌다", "경비 데스크에서 서명하고 직원의 안내를 받는다", "출입증을 따로 구매한다", "방문은 허용되지 않는다"], why: "Visitors should sign in at the security desk and will be escorted가 단서입니다." }
+      { q: "안내문: All employees must wear their ID badges at all times while on company premises. Visitors should sign in at the security desk and will be escorted by a staff member.", a: "경비 데스크에서 서명하고 직원의 안내를 받는다", opts: ["직접 건물을 돌아다닌다", "경비 데스크에서 서명하고 직원의 안내를 받는다", "출입증을 따로 구매한다", "방문은 허용되지 않는다"], why: "Visitors should sign in at the security desk and will be escorted가 단서입니다." },
+      { q: "이메일: Please confirm your attendance by Thursday so that we can finalize the catering order for the workshop.", a: "목요일까지 참석 여부를 알려야 한다", opts: ["목요일까지 참석 여부를 알려야 한다", "케이터링 업체를 직접 고용한다", "워크숍을 취소한다", "금요일에 다시 연락한다"], why: "confirm your attendance by Thursday가 핵심 단서입니다." },
+      { q: "광고: Members who renew before December 31 receive an additional three months at no cost.", a: "12월 31일 전에 갱신하면 3개월을 무료로 받는다", opts: ["12월 31일 전에 갱신하면 3개월을 무료로 받는다", "회원 가입이 중단된다", "갱신 수수료가 인상된다", "3년 약정을 맺어야 한다"], why: "an additional three months at no cost가 무료 3개월을 뜻합니다." },
+      { q: "안내문: Passengers with oversized luggage should use the elevator on the west side of the lobby instead of the escalator.", a: "로비 서쪽 엘리베이터를 이용해야 한다", opts: ["로비 서쪽 엘리베이터를 이용해야 한다", "에스컬레이터를 두 번 이용한다", "짐을 미리 반납해야 한다", "로비에서 기다려야 한다"], why: "should use the elevator on the west side가 단서입니다." },
+      { q: "공지문: The parking garage will be repainted from August 3 to August 6, so only the ground floor will remain open.", a: "8월 3일부터 6일까지 1층만 이용할 수 있다", opts: ["8월 3일부터 6일까지 1층만 이용할 수 있다", "주차장이 영구 폐쇄된다", "주차 요금이 인상된다", "지하 주차장만 운영한다"], why: "only the ground floor will remain open이 단서입니다." }
     ]
   };
   var partBankState = {};
@@ -5975,7 +6011,11 @@
     { title: "제품 안내", type: "광고", text: "The FlexiDesk is now available in three colors. Orders placed before March 31 include free delivery and a two-year warranty. Visit our website for bulk-order pricing.", q: "3월 31일 전에 주문하면 어떤 혜택이 있는가?", a: "무료 배송과 2년 보증", opts: ["색상 추가", "무료 배송과 2년 보증", "대량 주문 가격만 제공"] },
     { title: "분기 리뷰 안내", type: "이메일", text: "The quarterly review meeting has been moved to Thursday at 2 p.m. in Conference Room B. Please bring the latest sales figures so that we can compare them with last quarter's results.", q: "참석자가 준비해야 할 것은?", a: "최신 매출 수치", opts: ["회의록 사본", "최신 매출 수치", "신분증", "노트북 충전기"] },
     { title: "지하철 운행 공지", type: "공지", text: "Line 3 will run on a modified schedule this weekend due to track maintenance. Trains will depart every 20 minutes instead of every 8 minutes. Please allow extra time for your trip.", q: "이번 주말 배차 간격은?", a: "20분", opts: ["8분", "20분", "30분", "10분"] },
-    { title: "채용 공고", type: "공고", text: "We are hiring a full-time customer support specialist. Applicants must have at least two years of experience and be available to work on weekends. Send your resume to hr@greenway.com by June 30.", q: "지원 자격으로 옳은 것은?", a: "2년 이상의 경력", opts: ["2년 이상의 경력", "주말 근무 불가", "대졸 이상", "자격증 필수"] }
+    { title: "채용 공고", type: "공고", text: "We are hiring a full-time customer support specialist. Applicants must have at least two years of experience and be available to work on weekends. Send your resume to hr@greenway.com by June 30.", q: "지원 자격으로 옳은 것은?", a: "2년 이상의 경력", opts: ["2년 이상의 경력", "주말 근무 불가", "대졸 이상", "자격증 필수"] },
+    { title: "배송 지연 안내", type: "이메일", text: "Dear customer, your order has been delayed because of heavy snow in the northern region. The new delivery date is January 8, and no additional shipping fee will be charged.", q: "배송이 지연된 이유는?", a: "북부 지역의 폭설", opts: ["북부 지역의 폭설", "주문 취소", "주소 오류", "결제 실패"] },
+    { title: "신입 사원 안내", type: "공지", text: "The new-hire orientation will take place on September 2 in the main auditorium. Please bring a photo ID and arrive fifteen minutes early so that your badge can be issued.", q: "참석자가 준비해야 할 것은?", a: "사진이 있는 신분증", opts: ["사진이 있는 신분증", "업무용 노트북", "사전 과제", "회사 명함"] },
+    { title: "구내식당 운영 변경", type: "공지", text: "Starting next Monday, the cafeteria will open at 11:30 a.m. and close at 2 p.m. because of the kitchen renovation. Vending machines on the third floor remain available all day.", q: "다음 주 월요일부터 식당 운영 시간은?", a: "오전 11시 30분부터 오후 2시까지", opts: ["오전 11시 30분부터 오후 2시까지", "오전 11시부터 오후 3시까지", "오전 9시부터 오후 5시까지", "하루 종일"] },
+    { title: "신제품 출시 광고", type: "광고", text: "The UltraBook Pro is now available at all retail partners. Customers who register their product online within thirty days receive an extra year of warranty coverage.", q: "추가 보증을 받으려면 어떻게 해야 하는가?", a: "30일 안에 온라인으로 제품을 등록한다", opts: ["30일 안에 온라인으로 제품을 등록한다", "매장에서 현금으로 결제한다", "별도 보험에 가입한다", "제품 리뷰를 작성한다"] }
   ];
   function renderReadings() {
     var grid = document.getElementById("readingGrid");
@@ -6538,6 +6578,40 @@
     }
   }
 
+  // ---------- Speaking·Writing 시험 구성·유형별 연습 ----------
+  function renderSwExtra() {
+    var fb = document.getElementById("swFormatBox");
+    if (fb) {
+      fb.innerHTML = (EXTRA.swFormat || []).map(function (r) {
+        return '<div class="sw-row"><span class="bank-label">' + esc(r.test) + ' ' + esc(r.q) + '번</span>' +
+          '<span class="sw-task">' + esc(r.task) + '</span>' +
+          '<span class="sw-ko">' + esc(r.ko) + '</span>' +
+          '<span class="sw-time">' + esc(r.time) + '</span>' +
+          '<span class="sw-points">' + (r.points || []).map(function (p) { return '<span class="tag tag-blue">' + esc(p) + '</span>'; }).join("") + '</span></div>';
+      }).join("");
+    }
+    var sb = document.getElementById("speakDrillBox");
+    if (sb) {
+      sb.innerHTML = (EXTRA.speakDrills || []).map(function (d) {
+        return '<article class="speaking-card"><span class="bank-label">' + esc(d.type) + '</span><h3>' + esc(d.ko) + '</h3>' +
+          '<div class="reading-passage">' + esc(d.text) + ttsBtn(d.text, "문장 듣기") + '</div>' +
+          '<p class="practice-note">' + esc(d.tip) + '</p></article>';
+      }).join("");
+    }
+    var wb = document.getElementById("writeDrillBox");
+    if (wb) {
+      wb.innerHTML = (EXTRA.writeDrills || []).map(function (d) {
+        var body = "";
+        if (d.given) body += '<div class="sw-given">주어진 단어: ' + d.given.map(function (w) { return '<b>' + esc(w) + '</b>'; }).join(" + ") + '</div>';
+        if (d.request) body += '<div class="reading-passage">' + esc(d.request) + ttsBtn(d.request, "요청 듣기") + '</div>';
+        if (d.question) body += '<div class="reading-passage">' + esc(d.question) + ttsBtn(d.question, "질문 듣기") + '</div>';
+        if (d.outline) body += '<div class="tpl-structure">구성: ' + d.outline.map(esc).join(" → ") + '</div>';
+        return '<article class="writing-card"><span class="bank-label">' + esc(d.type) + '</span><h3>' + esc(d.ko) + '</h3>' + body +
+          '<details class="sw-sample"><summary>예시 답안 보기</summary><div class="tpl-sample">' + esc(d.sample) + ttsBtn(d.sample, "예시 듣기") + '</div></details></article>';
+      }).join("");
+    }
+  }
+
   // ---------- 전략·공략 가이드 카드 ----------
   function renderGuides() {
     var grid = document.getElementById("guideCardGrid");
@@ -6802,6 +6876,7 @@
     renderSprint();
     renderDictation();
     renderTplExtra();
+    renderSwExtra();
     renderGuides();
     renderPace();
     renderBattle();
