@@ -240,6 +240,7 @@ python make_shorts.py --unit 1 --music assets/music/calm.mp3 --music-volume 0.2
 `9:16 / 1080×1920 / 30fps` 영상을 만들며, 한글·IPA 폰트를 자동 탐색합니다. 생성 전 `--dry-run`으로 계획을 확인할 수 있습니다.
 
 - **영어 음성 기본**: 단어·예문을 읽어 주는 TTS(edge-tts, 무료·인터넷 필요)가 기본 켜짐입니다. `--no-tts`로 끄면 앰비언트 사운드로 대체됩니다.
+- **목소리 선택**: 기본 목소리는 `default_voice`(기본 여성 `en-US-JennyNeural`)입니다. 설정 편집(메뉴 `9`)이나 쇼츠 생성 시 번호로 바꿀 수 있고, 직접 edge-tts 목소리 이름을 입력해도 됩니다. 남성은 `en-US-GuyNeural`·`en-GB-RyanNeural`, 여성은 `en-US-AriaNeural`·`en-GB-SoniaNeural` 등을 쓸 수 있습니다.
 - **무음 방지**: TTS·음악이 실패하거나 없어도 부드러운 앰비언트 사운드가 들어갑니다. `--no-ambient`로 끌 수 있습니다.
 - **네모(□) 방지**: fontTools cmap으로 글리프 존재를 확인해, 한글 폰트에 없는 IPA 기호 등은 자동으로 IPA 커버 폰트(Arial 등)로 대체합니다.
 
