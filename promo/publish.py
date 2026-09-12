@@ -1292,6 +1292,20 @@ def ask_int(prompt: str, default: int, minimum: int, maximum: int) -> int:
         warn(f"{minimum}~{maximum} 범위로 입력해 주세요.")
 
 
+def ask_voice(prompt: str, default: str) -> str:
+    """목소리를 번호로 고르거나 edge-tts 목소리 이름을 직접 입력합니다."""
+    log(f"\n{prompt} (엔터: {voice_label(default)})")
+    for i, (name, label) in enumerate(SHORTS_VOICES, 1):
+        log(f"  {i}. {name} — {label}")
+    log("  번호를 고르거나 목소리 이름을 직접 입력하세요.")
+    raw = ask_menu("목소리 번호/이름", default).strip()
+    if raw.isdigit():
+        idx = int(raw)
+        if 1 <= idx <= len(SHORTS_VOICES):
+            return SHORTS_VOICES[idx - 1][0]
+    return raw or default
+
+
 def choose_unit(default: int = 1) -> int:
     while True:
         raw = ask_menu("UNIT 번호(1~30)", str(default))
@@ -1813,6 +1827,31 @@ def remove_scheduled_task() -> None:
 # --------------------------------------------------------------------------- #
 # 쇼츠 생성기 선택지 (make_shorts 와의 순환 import 방지를 위해 런타임 import)
 # --------------------------------------------------------------------------- #
+# edge-tts 영어 목소리 후보 — (목소리 이름, 성별·억양 안내). --voice 값으로 그대로 전달됩니다.
+SHORTS_VOICES: list[tuple[str, str]] = [
+    ("en-US-JennyNeural", "여성 · 미국"),
+    ("en-US-AriaNeural", "여성 · 미국"),
+    ("en-US-MichelleNeural", "여성 · 미국"),
+    ("en-GB-SoniaNeural", "여성 · 영국"),
+    ("en-AU-NatashaNeural", "여성 · 호주"),
+    ("en-US-GuyNeural", "남성 · 미국"),
+    ("en-US-DavisNeural", "남성 · 미국"),
+    ("en-US-EricNeural", "남성 · 미국"),
+    ("en-US-SteffanNeural", "남성 · 미국"),
+    ("en-GB-RyanNeural", "남성 · 영국"),
+    ("en-AU-WilliamNeural", "남성 · 호주"),
+]
+DEFAULT_VOICE = "en-US-JennyNeural"
+
+
+def voice_label(name: str) -> str:
+    """목소리 이름에 성별·억양 안내를 붙여 돌려줍니다."""
+    for voice, label in SHORTS_VOICES:
+        if voice == name:
+            return f"{name} ({label})"
+    return name
+
+
 def make_short_choices() -> tuple[list[str], list[str]]:
     try:
         from make_shorts import THEMES, STYLE_NAMES  # type: ignore[import-not-found]
@@ -1853,6 +1892,7 @@ def configure_menu(cfg: dict) -> dict:
     if promo["default_style"] not in styles:
         promo["default_style"] = "classic"
     promo["default_tts"] = ask_yes_no("기본으로 TTS 추가", bool(promo.get("default_tts", False)))
+    promo["default_voice"] = ask_voice("기본 TTS 목소리", str(promo.get("default_voice", DEFAULT_VOICE) or DEFAULT_VOICE))
     promo["confirm_real_upload"] = ask_yes_no("실제 게시 전 확인 질문 사용", bool(promo.get("confirm_real_upload", True)))
     yt = cfg.setdefault("youtube", {})
     yt["enabled"] = ask_yes_no("YouTube 사용", bool(yt.get("enabled", True)))
@@ -1918,6 +1958,7 @@ def interactive_menu() -> None:
     if default_privacy not in ("public", "unlisted", "private"):
         default_privacy = "unlisted"
     default_tts = bool(promo_cfg.get("default_tts", False))
+    default_voice = str(promo_cfg.get("default_voice", DEFAULT_VOICE) or DEFAULT_VOICE)
     confirm_real_upload = bool(promo_cfg.get("confirm_real_upload", True))
     menu_default = "2"
     while True:
@@ -1983,6 +2024,7 @@ def interactive_menu() -> None:
             if default_privacy not in ("public", "unlisted", "private"):
                 default_privacy = "unlisted"
             default_tts = bool(promo_cfg.get("default_tts", False))
+            default_voice = str(promo_cfg.get("default_voice", DEFAULT_VOICE) or DEFAULT_VOICE)
             confirm_real_upload = bool(promo_cfg.get("confirm_real_upload", True))
             continue
         if action == "10":
@@ -2118,6 +2160,7 @@ def interactive_menu() -> None:
                        "--words", words, "--bg", theme, "--style", style]
             if ask_yes_no("영어 TTS를 추가할까요?", default_tts):
                 command.append("--tts")
+                command.extend(["--voice", ask_voice("TTS 목소리", default_voice)])
             else:
                 command.append("--no-tts")
             if ask_yes_no("배경음악을 추가할까요?(파일 경로 필요)", False):

@@ -129,6 +129,7 @@ python publish.py --remove-task
 
 - `default_unit`, `default_words`, `default_theme`, `default_style`: 생성 메뉴 기본값
 - `default_tts`: TTS 기본 선택 여부
+- `default_voice`: TTS 목소리(edge-tts 이름). 예: 여성 `en-US-JennyNeural`, 남성 `en-US-GuyNeural`. 생성 시 번호로 바꿀 수 있음
 - `default_privacy`: YouTube 기본 공개 범위. 처음에는 `unlisted` 권장
 - `confirm_real_upload`: 실제 게시 전 확인 질문 사용 여부. 안전을 위해 `true` 권장
 - `youtube.api_key`: 성과 수집(`--stats`) 전용 Google Cloud **API 키**. 공개 데이터 조회라 OAuth 없이 사용 가능
@@ -249,6 +250,7 @@ python make_shorts.py --unit 1 --music assets/music/calm.mp3 --music-volume 0.2
 | `--music` | 배경음악 mp3/wav 경로 (선택) |
 | `--music-volume` | 배경음악 볼륨 0~1 (기본 0.15) |
 | `--tts` / `--no-tts` | 영어 TTS 켜기(기본) / 끄기 |
+| `--voice` | TTS 목소리 (기본 `en-US-JennyNeural`). 여성: Jenny/Aria/Sonia, 남성: Guy/Davis/Ryan 등 |
 | `--no-ambient` | 기본 앰비언트 사운드 끄기 (무음 영상) |
 
 ## 7-1. 게시 성과 추적

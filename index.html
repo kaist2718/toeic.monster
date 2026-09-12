@@ -90,7 +90,7 @@
     {
       "@type": "Question",
       "name": "발음 듣기(TTS)가 안 될 때는 어떻게 하나요?",
-      "acceptedAnswer": { "@type": "Answer", "text": "브라우저의 음성 합성(TTS) 기능을 사용합니다. 크롬·엣지 등 최신 브라우저에서 가장 자연스럽게 들을 수 있어요. 시스템 음성 설정에서 영어 음성이 켜져 있는지 확인해 주세요." }
+      "acceptedAnswer": { "@type": "Answer", "text": "브라우저의 음성 합성(TTS) 기능을 사용합니다. 크롬·엣지 등 최신 브라우저에서 가장 자연스럽게 들을 수 있어요. 시스템 음성 설정에서 영어 음성이 켜져 있는지 확인해 주세요. 상단 목소리 목록에서 남성·여성 등 원하는 영어 음성을 골라 들을 수도 있습니다." }
     },
     {
       "@type": "Question",
@@ -264,6 +264,8 @@
   }
   .tts-rate:hover { background: var(--topbar-btn-hover); }
   .tts-rate option { color: var(--text); }
+  /* 발음 목소리 선택 — 브라우저에 설치된 영어 음성 목록 */
+  .tts-voice { max-width: 150px; text-overflow: ellipsis; }
   .btn {
     font-family: inherit;
     font-size: 13px;
@@ -1929,6 +1931,7 @@
     .progress-wrap { min-width: 130px; }
     .progress-label { font-size: 11px; }
     .btn { padding: 7px 10px; font-size: 12px; }
+    .tts-voice { max-width: 96px; font-size: 11.5px; padding: 7px 6px; }
     main, .searchbar { padding-left: 14px; padding-right: 14px; }
     .vocab-grid { grid-template-columns: 1fr; }
     .card { flex-direction: column; }
@@ -2069,6 +2072,10 @@
         <option value="0.85" selected>0.85×</option>
         <option value="1">1×</option>
         <option value="1.15">1.15×</option>
+      </select>
+      <label class="sr-only" for="ttsVoice">발음 목소리</label>
+      <select class="tts-rate tts-voice" id="ttsVoice" title="발음 목소리 선택" aria-label="발음 목소리 선택">
+        <option value="">자동</option>
       </select>
     </div>
     <button class="btn" id="btnTheme" title="다크 모드 전환" aria-label="다크 모드 전환">🌙</button>
@@ -2767,7 +2774,7 @@
         </details>
         <details class="faq-item">
           <summary>🔊 발음 듣기가 안 돼요</summary>
-          <p>브라우저의 음성 합성(TTS) 기능을 사용합니다. 크롬·엣지 등 최신 브라우저에서 가장 자연스럽게 들을 수 있어요. 시스템 음성 설정에서 영어 음성이 켜져 있는지 확인해 주세요.</p>
+          <p>브라우저의 음성 합성(TTS) 기능을 사용합니다. 크롬·엣지 등 최신 브라우저에서 가장 자연스럽게 들을 수 있어요. 시스템 음성 설정에서 영어 음성이 켜져 있는지 확인해 주세요. 상단 목소리 목록에서 남성·여성 등 원하는 영어 음성을 골라 들을 수도 있습니다.</p>
         </details>
         <details class="faq-item">
           <summary>📱 스마트폰에서 앱처럼 쓸 수 있나요?</summary>
@@ -3275,10 +3282,16 @@
   // ---------- TTS(음성 합성) 공통 ----------
   // 브라우저에 설치된 음성 중 영어 음성을 골라 씁니다. (기본 음성이 한국어일 때 무음/오발음 방지)
   var TTS_VOICE = null;
-  function pickEnglishVoice() {
-    if (!("speechSynthesis" in window)) return null;
-    var voices = [];
-    try { voices = window.speechSynthesis.getVoices() || []; } catch (e) { voices = []; }
+  // 사용자가 고른 목소리(voiceURI). 비어 있으면 영어 음성을 자동으로 고릅니다.
+  var TTS_VOICE_URI = "";
+  try { TTS_VOICE_URI = localStorage.getItem("toeic1000_ttsvoice") || ""; } catch (e) {}
+  function allVoices() {
+    if (!("speechSynthesis" in window)) return [];
+    try { return window.speechSynthesis.getVoices() || []; } catch (e) { return []; }
+  }
+  // 자동 선택: en-US → en-GB → en-AU → en-CA → en … 순서로 영어 음성을 고릅니다.
+  function pickAutoVoice() {
+    var voices = allVoices();
     if (!voices.length) return null;
     var prefer = ["en-us", "en-gb", "en-au", "en-ca", "en"];
     for (var p = 0; p < prefer.length; p++) {
@@ -3289,11 +3302,40 @@
     }
     return voices.filter(function (v) { return /^en/i.test(v.lang || ""); })[0] || null;
   }
+  // 사용자가 고른 음성이 있으면 그것을, 없거나 사라졌으면 자동 선택을 씁니다.
+  function pickEnglishVoice() {
+    var voices = allVoices();
+    if (TTS_VOICE_URI) {
+      var chosen = voices.filter(function (v) { return v.voiceURI === TTS_VOICE_URI; })[0];
+      if (chosen) return chosen;
+    }
+    return pickAutoVoice();
+  }
+  // 헤더의 목소리 목록을 브라우저에 설치된 영어 음성으로 채웁니다.
+  function fillVoiceSelect() {
+    var sel = document.getElementById("ttsVoice");
+    if (!sel) return;
+    var list = allVoices().filter(function (v) { return /^en/i.test(v.lang || ""); });
+    if (!list.length) return; // 아직 음성 목록이 준비되지 않았으면 그대로 둡니다
+    var auto = pickAutoVoice();
+    var html = '<option value="">자동' + (auto && auto.name ? " (" + esc(auto.name) + ")" : "") + "</option>";
+    for (var i = 0; i < list.length; i++) {
+      var v = list[i];
+      var label = (v.name || v.voiceURI) + (v.lang ? " · " + v.lang : "");
+      html += '<option value="' + escapeAttr(v.voiceURI) + '">' + esc(label) + "</option>";
+    }
+    sel.innerHTML = html;
+    sel.value = TTS_VOICE_URI;
+    if (sel.value !== TTS_VOICE_URI) sel.value = ""; // 저장된 음성이 없으면 자동으로 표시
+  }
   if ("speechSynthesis" in window) {
     TTS_VOICE = pickEnglishVoice();
     // 일부 브라우저는 음성 목록을 비동기로 채우므로, 준비되면 다시 고릅니다.
     try {
-      window.speechSynthesis.onvoiceschanged = function () { TTS_VOICE = pickEnglishVoice(); };
+      window.speechSynthesis.onvoiceschanged = function () {
+        TTS_VOICE = pickEnglishVoice();
+        fillVoiceSelect();
+      };
     } catch (e) {}
   }
   // 사용자 설정: 발음 듣기 켜기/끄기 + 재생 속도 (localStorage 에 저장)
@@ -3369,10 +3411,11 @@
     if (!clean || !/[A-Za-z]/.test(clean)) return;
     highlightSpeak(text);
     var u = new SpeechSynthesisUtterance(clean);
-    u.lang = "en-US";
     u.rate = rate || TTS_RATE;
     if (!TTS_VOICE) TTS_VOICE = pickEnglishVoice();
     if (TTS_VOICE) u.voice = TTS_VOICE;
+    // 고른 음성의 언어를 그대로 씁니다. (en-GB 등 고른 음성이 무시되지 않도록)
+    u.lang = (TTS_VOICE && TTS_VOICE.lang) ? TTS_VOICE.lang : "en-US";
     u.onend = function () { clearTTSHighlight(); };
     u.onerror = function () { clearTTSHighlight(); };
     try { window.speechSynthesis.cancel(); } catch (e) {}
@@ -3389,9 +3432,10 @@
     speak(b.getAttribute("data-say") || "");
   });
 
-  // 발음 듣기 토글 · 속도 컨트롤 (헤더)
+  // 발음 듣기 토글 · 속도·목소리 컨트롤 (헤더)
   var ttsToggleBtn = document.getElementById("btnTts");
   var ttsRateSel = document.getElementById("ttsRate");
+  var ttsVoiceSel = document.getElementById("ttsVoice");
   function applyTtsUI() {
     if (ttsToggleBtn) {
       ttsToggleBtn.textContent = TTS_ENABLED ? "🔊" : "🔇";
@@ -3400,6 +3444,8 @@
       ttsToggleBtn.title = TTS_ENABLED ? "발음 듣기 끄기" : "발음 듣기 켜기";
     }
     if (ttsRateSel) ttsRateSel.value = String(TTS_RATE);
+    if (ttsVoiceSel) ttsVoiceSel.value = TTS_VOICE_URI;
+    fillVoiceSelect();
   }
   if (ttsToggleBtn) ttsToggleBtn.addEventListener("click", function () {
     TTS_ENABLED = !TTS_ENABLED;
@@ -3416,6 +3462,16 @@
     if (r && r > 0.3 && r < 2) TTS_RATE = r;
     try { localStorage.setItem("toeic1000_ttsrate", String(TTS_RATE)); } catch (e) {}
     showToast("🔊 재생 속도 " + TTS_RATE + "×");
+  });
+  if (ttsVoiceSel) ttsVoiceSel.addEventListener("change", function () {
+    TTS_VOICE_URI = this.value || "";
+    try { localStorage.setItem("toeic1000_ttsvoice", TTS_VOICE_URI); } catch (e) {}
+    TTS_VOICE = pickEnglishVoice();
+    if (TTS_VOICE && TTS_VOICE_URI) {
+      showToast("🔊 목소리: " + (TTS_VOICE.name || TTS_VOICE.lang || "선택한 음성"));
+    } else {
+      showToast("🔊 목소리: 자동" + (TTS_VOICE && TTS_VOICE.name ? " (" + TTS_VOICE.name + ")" : ""));
+    }
   });
   applyTtsUI();
 
