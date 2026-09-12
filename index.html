@@ -2355,7 +2355,7 @@
     <section class="home-section" aria-label="Part 1·2 LC 유형 훈련">
       <div class="section-head"><div>
         <h2 class="home-section-title">🎧 Part 1·2 LC 유형 훈련</h2>
-        <p class="home-section-sub">질문–응답과 숫자·시간 합정을 듣고 고르는 실전 리스닝 훈련입니다.</p>
+        <p class="home-section-sub">질문–응답과 숫자·시간 함정을 듣고 고르는 실전 리스닝 훈련입니다.</p>
       </div><button type="button" class="btn quiz-btn" id="lc12Start">🔄 8문제 시작</button></div>
       <div id="lc12Box"></div>
     </section>
@@ -3341,12 +3341,32 @@
     if (ttsHlEl) ttsHlEl.classList.add("tts-speaking");
   }
 
+  // TTS로 읽기 전에 문장을 다듬습니다.
+  // 표 구분자·화살표·빈칸·한글처럼 영어 음성이 어색하게 읽는 요소를 말로 바꾸거나 제거합니다.
+  function ttsClean(text) {
+    var s = String(text == null ? "" : text);
+    s = s.replace(/[|｜]/g, ", ");          // 표 구분자: {쉬어 읽기}
+    s = s.replace(/[→➔➜]/g, " to ");       // 범위·방향
+    s = s.replace(/[←]/g, ", ");
+    s = s.replace(/[~〜]|\u301C/g, " to "); // 범위 (3~5 → three to five)
+    s = s.replace(/[·•※★☆◈■□●○◆◇]/g, " ");
+    s = s.replace(/…/g, ", ");
+    s = s.replace(/\s*＿{2,}\s*/g, " blank "); // 빈칸은 blank로 읽습니다
+    s = s.replace(/\s*_{2,}\s*/g, " blank ");
+    // 한글·한자는 영어 음성으로 읽으면 어색하므로 제거합니다 (예: "공지문: ..."의 라벨).
+    s = s.replace(/[\u3131-\u318E\uAC00-\uD7A3\u4E00-\u9FFF]+/g, " ");
+    s = s.replace(/\s{2,}/g, " ");
+    s = s.replace(/^[\s,;:.!?\-]+/, "");
+    s = s.replace(/\s+([,.;:!?])/g, "$1");
+    return s.trim();
+  }
+
   function speakTTS(text, rate) {
     if (!TTS_ENABLED) { showToast("🔇 발음 듣기가 꺼져 있어요. 상단 🔊 버튼으로 켜 주세요."); return; }
     if (!("speechSynthesis" in window) || typeof SpeechSynthesisUtterance === "undefined") return;
-    // 빈칸(＿＿＿＿, ____)은 잠깐 쉬는 소리로 바꿔 읽습니다.
-    var clean = String(text == null ? "" : text).replace(/＿{2,}/g, " ... ").replace(/_{2,}/g, " ... ").trim();
-    if (!clean) return;
+    var clean = ttsClean(text);
+    // 읽을 영어가 없으면(예: 한글만 있는 문장) 영어 음성으로 읽지 않습니다.
+    if (!clean || !/[A-Za-z]/.test(clean)) return;
     highlightSpeak(text);
     var u = new SpeechSynthesisUtterance(clean);
     u.lang = "en-US";
@@ -5809,7 +5829,7 @@
     var s = PART6_SETS[p6Idx];
     var text = esc(s.text).replace(/__\((\d+)\)__/g, '<span class="p6-blank">($1)</span>');
     var html = '<div class="reading-card"><span class="bank-label">Part 6 · ' + esc(s.type) + '</span><h3>' + esc(s.title) + '</h3>';
-    html += '<div class="reading-passage p6-text">' + text + ttsBtn(s.text.replace(/__\(\d+\)__/g, " blank "), "지문 듣기") + '</div>';
+    html += '<div class="reading-passage p6-text">' + text + ttsBtn(s.text.replace(/\s*__\((\d+)\)__\s*/g, " blank "), "지문 듣기") + '</div>';
     html += '<div class="practice-actions"><button type="button" class="btn quiz-btn" id="p6Next">🔄 다른 지문</button></div>';
     s.blanks.forEach(function (b) {
       html += '<div class="p6-q"><p class="reading-q">(' + b.n + ') 빈칸에 알맞은 것은?</p><div class="bank-options">';

@@ -244,7 +244,52 @@ node tools/build-pages.mjs     → ✅ 유닛 30 · 숙어 126 · 가이드 8 + 
 
 ---
 
-## 7. 실행 체크리스트
+## 7. 문구·맞춤법·TTS 점검 (4차)
+
+화면에 보이는 문자열 **8,376개**(그중 TTS 낭독 대상 **3,058개**)를 전수 점검했다.
+반복 점검을 위해 `tools/audit-text.mjs` 를 추가했다.
+
+### 7-1. TTS 낭독 품질 개선
+
+영어 음성(en-US)으로 읽을 때 어색하거나 누락되던 요소를 `ttsClean()` 함수로 한곳에서 정리하도록 바꿨다.
+
+| 입력 | 이전 낭독 | 개선 후 |
+| --- | --- | --- |
+| `$5 | Express: 1-2 days` (표 지문) | 세로줄을 읽거나 건너뜀 | `$5, Express: 1-2 days` |
+| `공지문: The east entrance ...` (Part 7 문항) | 한글 라벨을 영어 음성으로 읽어 어색함 | 라벨 제거 후 영어 문장만 낭독 |
+| `3~5 business days` | 물결표를 읽지 못함 | `3 to 5 business days` |
+| `_____` / `＿＿＿＿` (빈칸) | 기호를 그대로 읽음 | `blank` 로 낭독 (Part 6와 동일 규칙으로 통일) |
+| 한글만 있는 문자열 | 영어 음성이 의미 없이 읽음 | 낭독 생략(영어가 없으면 재생하지 않음) |
+| `…`, `·`, `※` | 불필요한 기호 낭독 | 제거 또는 쉬는 호흡으로 대체 |
+
+### 7-2. 찾아서 고친 오류
+
+| 유형 | 내용 |
+| --- | --- |
+| 한글 오타 | `숫자·시간 합정` → `숫자·시간 함정` (Part 1·2 LC 섹션 설명) |
+| 영문 철자 | 데이터 8,376개 문자열에서 비즈니스 빈출 오타(receive·separate·maintenance 등) 0건 |
+| 한글 맞춤법 | 자주 틀리는 표기 사전(할수있·됬·몇일·역활·웬지 등) 위반 0건 |
+| 공백·구두점 | 연속 공백, 구두점 앞 공백, 중복 단어 0건 (Part 6 빈칸 치환의 이중 공백 포함) |
+| 전각 문자 | 전각 영숫자·물음표 혼용 0건 |
+
+### 7-3. 표기 결정 사항
+
+- `쉐도잉` : 외래어 표기법상 `섀도잉`이 원칙이지만, 학습자 검색어 사용률이 압도적으로 높아 **검색 친화 표기 `쉐도잉`으로 통일**했다(3곳 모두 동일).
+- `email` : 사이트 전체 8곳 모두 하이픈 없는 `email` 로 통일됐다.
+- 빈칸 낭독은 `blank` 로 통일했다(기존에는 Part 6만 `blank`, 나머지는 무음 처리).
+
+### 7-4. 검증 결과
+
+```
+node tools/audit-text.mjs      → ✅ 맞춤법·표기·TTS 점검 모두 통과 (8,376개 문자열)
+node tools/audit-content.mjs   → ✅ 중복·형식·표기 점검 모두 통과
+node tools/build-pages.mjs     → ✅ 유닛 30 · 숙어 126 · 가이드 8 + 허브 1 · sitemap 44 URL
+index.html 인라인 스크립트 문법 오류 0 · 중복 id 0
+```
+
+---
+
+## 8. 실행 체크리스트
 
 - [x] `node tools/build-pages.mjs` 재실행 → `units/`, `guides/`, `sitemap.xml` 갱신 완료
 - [x] 신규 섹션의 `aria-label`을 `.section-nav` 칩에 추가 완료
@@ -254,9 +299,11 @@ node tools/build-pages.mjs     → ✅ 유닛 30 · 숙어 126 · 가이드 8 + 
 - [x] 어휘 총량(1,000개) 표기 실제값과 일치 확인 (유닛 단어를 늘리지 않았으므로 표기 유지)
 - [x] `id="dictCheck"` 중복 → 받아쓰기 섹션을 `dictCheckDaily` 로 분리 완료
 - [x] 신규 섹션 문항 확대 방법 문서화 — `data/extra.js` 의 `transitions`·`prepositions` 배열에 항목만 추가
+- [x] 맞춤법·오타·TTS 점검 — `tools/audit-text.mjs` 로 문자열 8,376개 전수 검사, 위반 0건
+- [x] TTS 낭독 품질 개선 — `ttsClean()` 으로 표 구분자·한글 라벨·물결표·빈칸·이중 공백 정리
 
 ### 다음에 할 일 (백로그)
 
 - [ ] 동의어 치환 200문항 · 빈도 어휘 200개까지 데이터 확충 (구조는 완비)
 - [ ] Part 2·5 LC/RC 오답 이유 태그를 세분화해 대시보드 추천 정확도 향상
-- [ ] 커밋 전 `node tools/audit-content.mjs && node tools/build-pages.mjs` 를 습관화
+- [ ] 커밋 전 `node tools/audit-content.mjs && node tools/audit-text.mjs && node tools/build-pages.mjs` 를 습관화
