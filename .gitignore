@@ -14,5 +14,8 @@ __pycache__/
 *.pyc# 생성된 쇼츠 영상 (make_shorts.py 산출물 — 재생성 가능)
 promo/assets/
 
+# 생성된 인쇄용 워크북 (make_workbook.py 산출물 — 재생성 가능)
+workbook/
+
 # Windows 실행 부산물
 promo/*.log

@@ -11,7 +11,8 @@
  * 산출물(커밋 대상):
  *   units/index.html        — 주제별 단어장 허브
  *   units/unit-01..30.html  — 유닛별 단어 목록 (1000단어 전체)
- *   units/idioms.html       — 빈출 구동사·숙어 60선
+ *   units/idioms.html       — 빈출 구동사·숙어 모음
+ *   guides/*.html           — 파트별 전략·공략 가이드 (data/extra.js)
  *   sitemap.xml             — 위 페이지들을 포함한 전체 사이트맵
  *
  * 외부 의존성 없음(Node 내장 모듈만 사용). 여러 번 실행해도 결과가 같습니다.
@@ -60,11 +61,13 @@ function loadVocab() {
     vm.runInContext(read(file), sandbox, { filename: file, timeout: 5000 });
   }
   vm.runInContext(read("data/idioms.js"), sandbox, { filename: "data/idioms.js", timeout: 5000 });
+  vm.runInContext(read("data/extra.js"), sandbox, { filename: "data/extra.js", timeout: 5000 });
   const vocab = sandbox.window.VOCAB_UNITS || {};
   const idioms = sandbox.window.VOCAB_IDIOMS || [];
+  const extra = sandbox.window.TOEIC_EXTRA || {};
   if (!Object.keys(vocab).length) throw new Error("어휘 데이터를 읽지 못했습니다.");
   if (!idioms.length) throw new Error("숙어 데이터를 읽지 못했습니다.");
-  return { vocab, idioms };
+  return { vocab, idioms, extra };
 }
 
 /** 데이터가 마지막으로 바뀐 날짜(git 기준). 재실행 시 결과가 같도록 고정값을 쓴다. */
@@ -159,7 +162,7 @@ footer.ft a:hover{text-decoration:underline}
 footer.ft p{margin-top:8px}
 `;
 
-function page({ title, description, canonical, ld, body }) {
+function page({ title, description, canonical, ld, body, footerNav }) {
   return `<!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -203,7 +206,7 @@ ${body}
 </main>
 <footer class="ft wrap">
   <nav>
-    <a href="../">홈</a><a href="./">주제별 단어장</a><a href="idioms.html">빈출 구동사·숙어</a><a href="../privacy.html">개인정보처리방침</a><a href="../terms.html">이용약관</a>
+    ${footerNav || `<a href="../">홈</a><a href="./">주제별 단어장</a><a href="idioms.html">빈출 구동사·숙어</a><a href="../privacy.html">개인정보처리방침</a><a href="../terms.html">이용약관</a>`}
   </nav>
   <p>👾 toeic.monster · TOEIC 어휘 무료 학습 사이트 · 학습 기록은 브라우저에만 저장됩니다</p>
 </footer>
@@ -361,7 +364,7 @@ ${units
   <ul class="unitlist">
     <li><a href="idioms.html">
       <b>구동사·숙어</b>
-      <span>💡 빈출 구동사·숙어 60선</span>
+      <span>💡 빈출 구동사·숙어 모음</span>
       <em>뜻과 예문, 해석까지</em>
     </a></li>
   </ul>`;
@@ -437,10 +440,115 @@ ${items}
 }
 
 /* ------------------------------------------------------------------ */
+/* 6-2. 전략·공략 가이드 (data/extra.js)                                */
+/* ------------------------------------------------------------------ */
+
+const GUIDE_FOOTER =
+  '<a href="../">홈</a><a href="../units/">주제별 단어장</a><a href="index.html">전략·공략 가이드</a>' +
+  '<a href="../privacy.html">개인정보처리방침</a><a href="../terms.html">이용약관</a>';
+
+function buildGuidesHub(guides) {
+  const canonical = `${SITE}/guides/`;
+  const description =
+    "Part 5 문법, Part 6 장문 공란, Part 7 복수 지문, Part 2 함정 유형, 어휘 30일 커리큘럼, LC 숫자 함정까지 파트별 공략법을 정리했습니다.";
+  const title = "TOEIC 파트별 전략·공략 가이드 | toeic.monster";
+
+  const ld = jsonLd({
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: "TOEIC 파트별 전략·공략 가이드",
+    description,
+    url: canonical,
+    inLanguage: "ko",
+    isPartOf: { "@type": "WebSite", name: "toeic.monster", url: `${SITE}/` },
+  });
+
+  const body = `  <nav class="crumb" aria-label="breadcrumb">
+    <a href="../">toeic.monster</a> › <span>전략·공략 가이드</span>
+  </nav>
+
+  <h1>TOEIC 파트별 전략·공략 가이드</h1>
+  <p class="lead">${esc(description)}</p>
+  <a class="cta" href="../">🃏 단어·퀴즈로 바로 학습하기</a>
+
+  <h2 class="sec">가이드 목록</h2>
+  <ul class="unitlist">
+${guides
+  .map(
+    (g) => `    <li><a href="${g.slug}.html">
+      <b>가이드</b>
+      <span>${esc(g.title)}</span>
+      <em>${esc(g.desc)}</em>
+    </a></li>`,
+  )
+  .join("\n")}
+  </ul>`;
+
+  return { file: "guides/index.html", html: page({ title, description, canonical, ld, body, footerNav: GUIDE_FOOTER }) };
+}
+
+function buildGuidePage(g) {
+  const canonical = `${SITE}/guides/${g.slug}.html`;
+  const title = `${g.title} | toeic.monster`;
+  const description = g.desc;
+
+  const ld = jsonLd({
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "LearningResource",
+        name: g.title,
+        description,
+        url: canonical,
+        inLanguage: "ko",
+        learningResourceType: "전략 가이드",
+        educationalUse: "self-study",
+        provider: { "@type": "Organization", name: "toeic.monster", url: `${SITE}/` },
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "toeic.monster", item: `${SITE}/` },
+          { "@type": "ListItem", position: 2, name: "전략·공략 가이드", item: `${SITE}/guides/` },
+          { "@type": "ListItem", position: 3, name: g.title, item: canonical },
+        ],
+      },
+    ],
+  });
+
+  const sections = (g.sections || [])
+    .map(
+      (s) =>
+        `  <h2 class="sec">${esc(s.h)}</h2>\n  <ol class="words">\n` +
+        (s.list || []).map((li) => `    <li><span class="w-mean">${esc(li)}</span></li>`).join("\n") +
+        `\n  </ol>`,
+    )
+    .join("\n");
+
+  const body = `  <nav class="crumb" aria-label="breadcrumb">
+    <a href="../">toeic.monster</a> › <a href="./">전략·공략 가이드</a> › <span>${esc(g.title)}</span>
+  </nav>
+
+  <h1>${esc(g.title)}</h1>
+  <p class="lead">${esc(g.desc)}</p>
+  <a class="cta" href="../">🃏 단어·퀴즈로 바로 학습하기</a>
+
+${sections}
+
+  <nav class="pager" aria-label="이동">
+    <span></span>
+    <a class="mid" href="./">📕 가이드 전체 보기</a>
+    <span></span>
+  </nav>`;
+
+  return { file: `guides/${g.slug}.html`, html: page({ title, description, canonical, ld, body, footerNav: GUIDE_FOOTER }) };
+}
+
+/* ------------------------------------------------------------------ */
 /* 7. 사이트맵                                                         */
 /* ------------------------------------------------------------------ */
 
-function buildSitemap(units, lastmod) {
+function buildSitemap(units, lastmod, guides) {
   const rows = [];
   const add = (loc, changefreq, priority, date) => {
     rows.push(
@@ -457,6 +565,10 @@ function buildSitemap(units, lastmod) {
   add(`${SITE}/units/`, "weekly", "0.9");
   units.forEach((u) => add(unitUrl(u.id), "monthly", "0.7"));
   add(`${SITE}/units/idioms.html`, "monthly", "0.7");
+  if (guides && guides.length) {
+    add(`${SITE}/guides/`, "monthly", "0.6");
+    guides.forEach((g) => add(`${SITE}/guides/${g.slug}.html`, "monthly", "0.6"));
+  }
   add(`${SITE}/privacy.html`, "yearly", "0.3");
   add(`${SITE}/terms.html`, "yearly", "0.3");
 
@@ -469,7 +581,8 @@ function buildSitemap(units, lastmod) {
 
 function main() {
   const meta = loadUnitMeta();
-  const { vocab, idioms } = loadVocab();
+  const { vocab, idioms, extra } = loadVocab();
+  const guides = Array.isArray(extra.guides) ? extra.guides : [];
   const lastmod = lastModified();
 
   const units = meta
@@ -493,12 +606,23 @@ function main() {
   const idiomsPage = buildIdiomsPage(idioms);
   write(hub.file, hub.html);
   write(idiomsPage.file, idiomsPage.html);
-  write("sitemap.xml", buildSitemap(units, lastmod));
+
+  guides.forEach((g) => {
+    const gp = buildGuidePage(g);
+    write(gp.file, gp.html);
+  });
+  if (guides.length) {
+    const gh = buildGuidesHub(guides);
+    write(gh.file, gh.html);
+  }
+
+  write("sitemap.xml", buildSitemap(units, lastmod, guides));
 
   const words = units.reduce((n, u) => n + u.words.length, 0);
   console.log(`✅ 정적 페이지 생성 완료`);
   console.log(`   · 유닛 페이지 ${written}개 (단어 ${words.toLocaleString("en-US")}개)`);
   console.log(`   · 허브 1개 · 숙어 페이지 1개 (숙어 ${idioms.length}개)`);
+  console.log(`   · 가이드 페이지 ${guides.length}개 + 허브 1개`);
   console.log(`   · sitemap.xml 갱신 (lastmod ${lastmod})`);
 }
 

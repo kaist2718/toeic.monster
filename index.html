@@ -80,7 +80,7 @@
     {
       "@type": "Question",
       "name": "TOEIC 어휘 학습 사이트 이용료가 있나요?",
-      "acceptedAnswer": { "@type": "Answer", "text": "모든 기능이 무료입니다. 회원가입이나 결제 없이 바로 학습할 수 있어요." }
+      "acceptedAnswer": { "@type": "Answer", "text": "웹에서 제공하는 학습 기능(단어장·암기카드·퀴즈·시험 모드·오답노트)은 모두 무료입니다. 회원가입이나 결제 없이 바로 학습할 수 있어요. 인쇄용 워크북처럼 웹 밖에서 쓰는 부가 자료는 별도로 제공될 수 있습니다." }
     },
     {
       "@type": "Question",
@@ -1204,6 +1204,57 @@
   .bank-opt.wrong { border-color: #fa5252; background: var(--wrong-bg); }
   .bank-feedback { min-height: 20px; font-size: 12.5px; font-weight: 700; margin-top: 7px; color: var(--primary); }
   .reading-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+  /* Part 7 복수 지문 */
+  .dr-head { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; flex-wrap: wrap; }
+  .dr-title { font-size: 15px; font-weight: 800; }
+  .dr-passages { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
+  .dr-passages .reading-passage b { display: block; font-size: 12px; color: var(--primary); margin-bottom: 4px; }
+  .dr-passages .reading-passage .dr-text { display: inline; }
+
+  /* ---------- 신규 확장 섹션 ---------- */
+  .p6-text { line-height: 1.9; }
+  .p6-blank { display: inline-block; min-width: 74px; text-align: center; background: var(--soft-blue); border-radius: 6px; padding: 0 6px; font-weight: 800; color: var(--primary); }
+  .p6-q { margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--border); }
+  .freq-search { margin-bottom: 10px; }
+  .freq-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; }
+  .freq-item { display: flex; align-items: center; gap: 6px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 9px 12px; font-size: 13.5px; }
+  .freq-word { color: var(--primary-dark); font-size: 15px; }
+  .freq-pos { font-size: 11px; color: var(--cyan); background: var(--soft-cyan); border-radius: 99px; padding: 1px 7px; }
+  .freq-mean { color: var(--text-muted); margin-left: auto; text-align: right; }
+  .sprint-list { list-style: none; display: grid; gap: 7px; }
+  .sprint-item { display: flex; align-items: center; gap: 10px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 9px 12px; font-size: 13px; }
+  .sprint-item.next { border-color: var(--primary); box-shadow: var(--shadow-sm); }
+  .sprint-day { flex: 0 0 42px; font-weight: 800; color: var(--primary); font-size: 12px; }
+  .sprint-title { flex: 0 0 150px; font-weight: 700; }
+  .sprint-focus { flex: 1; color: var(--text-muted); font-size: 12.5px; }
+  .sprint-pct { flex: 0 0 46px; text-align: right; font-weight: 700; }
+  .dict-row { display: flex; gap: 8px; align-items: center; margin: 6px 0; }
+  .dict-row .dict-input { flex: 1; }
+  .dict-no { flex: 0 0 20px; font-weight: 800; color: var(--primary); }
+  .pace-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 10px; }
+  .pace-box { background: var(--soft-blue); border-radius: 10px; padding: 12px; text-align: center; }
+  .pace-box b { display: block; font-size: 22px; color: var(--primary); }
+  .pace-box span { font-size: 12px; color: var(--text-muted); }
+  .battle-head { display: flex; justify-content: space-between; gap: 10px; font-weight: 800; margin-bottom: 8px; }
+  .battle-head .p1 { color: var(--primary); }
+  .battle-head .p2 { color: var(--cyan); }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+  .cal-cell { aspect-ratio: 1 / 1; border-radius: 6px; background: var(--soft-blue); display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(--text-muted); }
+  .cal-cell.l1 { background: #d3f9d8; color: #166534; }
+  .cal-cell.l2 { background: #a9e9bd; color: #166534; }
+  .cal-cell.l3 { background: #51cf66; color: #fff; }
+  .cal-cell.l4 { background: #2f9e44; color: #fff; }
+  body.dark .cal-cell.l1 { background: #1e3526; color: #69db7c; }
+  body.dark .cal-cell.l2 { background: #245c34; color: #8ce99a; }
+  body.dark .cal-cell.l3 { background: #2f9e44; color: #fff; }
+  body.dark .cal-cell.l4 { background: #37b24d; color: #fff; }
+  .guide-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+  .guide-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; }
+  .guide-card h3 { font-size: 15px; margin-bottom: 6px; }
+  .guide-card p { font-size: 12.5px; color: var(--text-muted); margin-bottom: 10px; }
+  .guide-card a { font-weight: 800; font-size: 13px; text-decoration: none; }
+  .tpl-structure { font-size: 12.5px; color: var(--text-muted); margin: 6px 0; }
+  .tpl-sample { background: var(--soft-blue); border-radius: 10px; padding: 10px 12px; font-size: 13px; }
   .reading-card h3, .writing-card h3, .speaking-card h3, .dday-card h3 { font-size: 15px; margin-bottom: 7px; }
   .reading-passage { background: var(--soft-blue); border-radius: 10px; padding: 12px 14px; font-size: 13px; line-height: 1.7; margin-bottom: 10px; }
   .reading-q { font-size: 13px; font-weight: 800; margin: 8px 0; }
@@ -2101,6 +2152,18 @@
       <button type="button" class="sn-chip" data-target="Part 미니 문제은행">🧪 문제은행</button>
       <button type="button" class="sn-chip" data-target="문맥·연어 학습">🔗 연어</button>
       <button type="button" class="sn-chip" data-target="리딩 미니 지문">📖 리딩</button>
+      <button type="button" class="sn-chip" data-target="Part 7 복수 지문">🔎 복수 지문</button>
+      <button type="button" class="sn-chip" data-target="Part 6 장문 공란">📝 Part 6</button>
+      <button type="button" class="sn-chip" data-target="동의어 치환 훈련">🔤 치환</button>
+      <button type="button" class="sn-chip" data-target="연결어·접속부사 훈련">🔗 연결어</button>
+      <button type="button" class="sn-chip" data-target="전치사 콜로케이션 훈련">🧷 전치사</button>
+      <button type="button" class="sn-chip" data-target="LC 심화 훈련">🖼 Part 1</button>
+      <button type="button" class="sn-chip" data-target="빈도순 기출 어휘">📈 빈도 어휘</button>
+      <button type="button" class="sn-chip" data-target="30일 스프린트">🏃 스프린트</button>
+      <button type="button" class="sn-chip" data-target="매일 3문장 받아쓰기">🎧 받아쓰기</button>
+      <button type="button" class="sn-chip" data-target="말하기·쓰기 템플릿">🗣 템플릿</button>
+      <button type="button" class="sn-chip" data-target="실전 도구">⏱ 실전 도구</button>
+      <button type="button" class="sn-chip" data-target="전략 공략 가이드">📕 가이드</button>
       <button type="button" class="sn-chip" data-target="말하기·쓰기 연습">🗣️ 말하기·쓰기</button>
       <button type="button" class="sn-chip" data-target="시험 D-day 플랜">📅 D-day</button>
       <button type="button" class="sn-chip" data-target="TOEIC 시험 안내">📋 TOEIC 정보</button>
@@ -2218,6 +2281,8 @@
           <div class="practice-actions">
             <button type="button" class="btn quiz-btn" id="dlAllCsv">📦 전체 단어 CSV</button>
             <button type="button" class="btn quiz-btn" id="dlLearnedCsv">✅ 학습 완료 CSV</button>
+            <button type="button" class="btn quiz-btn" id="dlAnkiTsv">🃏 Anki용 TSV</button>
+            <button type="button" class="btn quiz-btn" id="dlWrongCsv">📕 오답 단어 CSV</button>
           </div>
         </article>
         <article class="speaking-card">
@@ -2469,6 +2534,105 @@
       <div class="reading-grid" id="readingGrid"></div>
     </section>
 
+    <section class="home-section" aria-label="Part 7 복수 지문">
+      <h2 class="home-section-title">🔎 Part 7 복수 지문(이중 지문)</h2>
+      <p class="home-section-sub">두 지문을 함께 읽고 연계 문제를 풀어 보세요. 실제 Part 7 후반부의 핵심 유형입니다.</p>
+      <div class="reading-grid" id="doubleReadingGrid"></div>
+    </section>
+
+    <section class="home-section" aria-label="Part 6 장문 공란">
+      <h2 class="home-section-title">📝 Part 6 장문 공란</h2>
+      <p class="home-section-sub">한 지문에 4개의 빈칸이 있는 Part 6 유형입니다. 문법과 문맥을 함께 판단해 보세요.</p>
+      <div id="part6Box"></div>
+    </section>
+
+    <section class="home-section" aria-label="동의어 치환 훈련">
+      <div class="section-head"><div>
+        <h2 class="home-section-title">🔤 동의어 치환(Paraphrase) 훈련</h2>
+        <p class="home-section-sub">Part 7 정답의 핵심은 같은 뜻을 다른 표현으로 바꾸는 능력입니다.</p>
+      </div><button type="button" class="btn quiz-btn" id="paraStart">🔄 8문제 시작</button></div>
+      <div id="paraBox"></div>
+    </section>
+
+    <section class="home-section" aria-label="연결어·접속부사 훈련">
+      <div class="section-head"><div>
+        <h2 class="home-section-title">🔗 연결어·접속부사 훈련</h2>
+        <p class="home-section-sub">therefore·however·despite처럼 문장을 잇는 표현은 Part 5·6의 단골 문제입니다.</p>
+      </div><button type="button" class="btn quiz-btn" id="transStart">🔄 8문제 시작</button></div>
+      <div id="transBox"></div>
+    </section>
+
+    <section class="home-section" aria-label="전치사 콜로케이션 훈련">
+      <div class="section-head"><div>
+        <h2 class="home-section-title">🧷 전치사 콜로케이션 훈련</h2>
+        <p class="home-section-sub">동사·형용사 뒤에 붙는 전치사 하나로 정답이 갈립니다. comply with, eligible for처럼 한 덩어리로 익히세요.</p>
+      </div><button type="button" class="btn quiz-btn" id="prepStart">🔄 8문제 시작</button></div>
+      <div id="prepBox"></div>
+    </section>
+
+    <section class="home-section" aria-label="LC 심화 훈련">
+      <div class="section-head"><div>
+        <h2 class="home-section-title">🎧 LC 심화: Part 1 묘사 · 숫자·금액</h2>
+        <p class="home-section-sub">사진 묘사 유형과 숫자 함정을 각각 집중 훈련합니다.</p>
+      </div></div>
+      <div class="reading-grid">
+        <article class="speaking-card"><h3>🖼 Part 1 사진 묘사</h3><div class="practice-actions"><button type="button" class="btn quiz-btn" id="part1Start">▶ 8문제 시작</button></div><div id="part1Box"></div></article>
+        <article class="speaking-card"><h3>🔊 숫자·금액 듣기</h3><div class="practice-actions"><button type="button" class="btn quiz-btn" id="numStart">▶ 10문제 시작</button></div><div id="numBox"></div></article>
+      </div>
+    </section>
+
+    <section class="home-section" aria-label="빈도순 기출 어휘">
+      <h2 class="home-section-title">📈 빈도순 기출 어휘</h2>
+      <p class="home-section-sub">유닛과 별개로, 시험에 반복 출제되는 어휘를 빈도 감각으로 훑어보세요.</p>
+      <input type="text" class="dict-input freq-search" id="freqSearch" aria-label="빈도 어휘 검색" placeholder="🔍 단어·뜻 검색" autocomplete="off">
+      <div class="freq-grid" id="freqGrid"></div>
+    </section>
+
+    <section class="home-section" aria-label="30일 스프린트">
+      <div class="section-head"><div>
+        <h2 class="home-section-title">🏃 30일 스프린트 커리큘럼</h2>
+        <p class="home-section-sub">하루 1유닛씩 30일 완주 코스입니다. 진행률은 학습 기록에서 자동 계산됩니다.</p>
+      </div></div>
+      <div id="sprintBox"></div>
+    </section>
+
+    <section class="home-section" aria-label="매일 3문장 받아쓰기">
+      <div class="section-head"><div>
+        <h2 class="home-section-title">🎧 매일 3문장 받아쓰기</h2>
+        <p class="home-section-sub">매일 바뀌는 3문장을 듣고 그대로 입력해 보세요. 철자와 듣기 정확도를 함께 올립니다.</p>
+      </div></div>
+      <div id="dictBox"></div>
+    </section>
+
+    <section class="home-section" aria-label="말하기·쓰기 템플릿">
+      <h2 class="home-section-title">🗣 말하기·쓰기 템플릿</h2>
+      <p class="home-section-sub">TOEIC Speaking 유형별 문장과 Writing 8번 이메일 구조를 그대로 따라 써 보세요.</p>
+      <div class="reading-grid" id="speakTplGrid"></div>
+      <div class="reading-grid" id="writeTplGrid" style="margin-top:12px"></div>
+    </section>
+
+    <section class="home-section" aria-label="실전 도구">
+      <h2 class="home-section-title">⏱ 실전 도구: 시간 배분 코치 · 2인 대결</h2>
+      <p class="home-section-sub">시험장 시간 관리와 재미 요소를 한곳에 모았습니다.</p>
+      <div class="reading-grid">
+        <article class="speaking-card"><h3>⏱ 시간 배분 코치</h3>
+          <input type="number" class="dict-input" id="paceMinutes" min="1" placeholder="남은 시간 (분)" aria-label="남은 시간(분)" style="margin-bottom:8px">
+          <input type="number" class="dict-input" id="paceQuestions" min="1" placeholder="남은 문항 수" aria-label="남은 문항 수">
+          <div id="paceResult" style="margin-top:10px"></div>
+        </article>
+        <article class="speaking-card"><h3>⚔️ 2인 대결 퀴즈</h3>
+          <div class="practice-actions"><button type="button" class="btn quiz-btn" id="battleStart">▶ 대결 시작</button></div>
+          <div id="battleBox"></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="home-section" aria-label="전략 공략 가이드">
+      <h2 class="home-section-title">📕 전략·공략 가이드</h2>
+      <p class="home-section-sub">파트별 공략법을 별도 페이지로 정리했습니다. 검색으로도 찾아올 수 있어요.</p>
+      <div class="guide-grid" id="guideCardGrid"></div>
+    </section>
+
     <section class="home-section" aria-label="말하기·쓰기 연습">
       <h2 class="home-section-title">🗣️ 말하기·쓰기 확장 연습</h2>
       <p class="home-section-sub">TOEIC Speaking·Writing을 대비하는 짧은 출력 연습입니다. 답변은 서버에 전송되지 않습니다.</p>
@@ -2484,7 +2648,7 @@
       <h2 class="home-section-title">📅 시험 D-day 학습 플랜</h2>
       <p class="home-section-sub">시험 날짜를 저장하면 남은 기간에 맞는 복습량을 추천합니다.</p>
       <div class="dday-grid"><article class="dday-card"><h3>시험 날짜 설정</h3><label class="sr-only" for="examDateInput">시험 날짜</label>
-<input type="date" class="dday-input" id="examDateInput" aria-label="시험 날짜"><div class="practice-actions"><button type="button" class="btn quiz-btn" id="saveExamDate">저장</button><button type="button" class="btn quiz-btn" id="clearExamDate">초기화</button></div></article><article class="dday-card"><h3>오늘의 계획</h3><div id="ddayResult"></div></article></div>
+<input type="date" class="dday-input" id="examDateInput" aria-label="시험 날짜"><div class="practice-actions"><button type="button" class="btn quiz-btn" id="saveExamDate">저장</button><button type="button" class="btn quiz-btn" id="clearExamDate">초기화</button></div></article><article class="dday-card"><h3>오늘의 계획</h3><div id="ddayResult"></div></article><article class="dday-card"><h3>날짜별 학습 계획</h3><div id="ddayPlanBox"></div></article></div>
     </section>
 
     <section class="home-section" aria-label="TOEIC 시험 안내">
@@ -2595,7 +2759,7 @@
       <div class="faq-list">
         <details class="faq-item">
           <summary>💰 이용료가 있나요?</summary>
-          <p>모든 기능이 무료입니다. 회원가입이나 결제 없이 바로 학습할 수 있어요.</p>
+          <p>웹에서 제공하는 학습 기능(단어장·암기카드·퀴즈·시험 모드·오답노트)은 모두 무료입니다. 회원가입이나 결제 없이 바로 학습할 수 있어요. 인쇄용 워크북처럼 웹 밖에서 쓰는 부가 자료는 별도로 제공될 수 있습니다.</p>
         </details>
         <details class="faq-item">
           <summary>🔒 내 학습 기록은 어디에 저장되나요?</summary>
@@ -2622,7 +2786,7 @@
 
     <section class="cta-banner">
       <h2>지금 바로 첫 단어를 외워볼까요?</h2>
-      <p>무료 · 회원가입 없음 · 학습 데이터는 브라우저에만 저장</p>
+      <p>웹 학습 기능 전체 무료 · 회원가입 없음 · 학습 데이터는 브라우저에만 저장</p>
       <button type="button" class="btn-hero" id="homeCtaStart">🎯 오늘의 퀴즈 시작하기</button>
     </section>
   </div>
@@ -2930,6 +3094,7 @@
 <script src="data/unit29.js"></script>
 <script src="data/unit30.js"></script>
 <script src="data/idioms.js"></script>
+<script src="data/extra.js"></script>
 
 <script>
 (function () {
@@ -3924,7 +4089,26 @@
     ["to부정사의 목적", "We hired an expert to solve the problem.", "'~하기 위해서'는 to + 동사원형이 목적을 나타내요."],
     ["빈도 부사", "The manager usually reviews the report on Fridays.", "always·usually·often은 be동사 뒤, 일반동사 앞에 놓여요."],
     ["동명사 주어", "Working remotely has become more common.", "동사가 주어 자리에 오면 -ing형(동명사)을 써요."],
-    ["such as / for example", "Please bring documents such as a passport and ID.", "예시를 들 때 such as + 명사 목록을 사용해요."]
+    ["such as / for example", "Please bring documents such as a passport and ID.", "예시를 들 때 such as + 명사 목록을 사용해요."],
+    ["가정법 현재: 동사원형", "The manager insisted that the report be submitted today.", "insist·recommend·suggest + that + 주어 + 동사원형(원형)을 써요."],
+    ["부정어 도치: Not until", "Not until noon did the shipment arrive.", "Not until·Only when이 문장 앞에 오면 조동사가 주어 앞으로 도치돼요."],
+    ["관계부사: where / when / why", "This is the office where the interviews take place.", "장소=where, 시간=when, 이유=why로 이어 두 문장을 하나로 만들어요."],
+    ["분사구문", "Facing a tight deadline, the team worked overtime.", "접속사와 주어가 같으면 생략하고 분사(-ing / -ed)로 시작해요."],
+    ["명사절 접속사: what vs that", "Please let me know what time the meeting starts.", "what은 '~하는 것'으로 불완전한 절을, that은 완전한 절을 이끌어요."],
+    ["so that: 목적과 결과", "The instructions were written so that everyone could follow them.", "so that + 주어 + 조동사 = ~하도록(목적)을 나타내요."],
+    ["much vs many", "We do not have much time. / There were many applicants.", "불가산명사는 much, 가산 복수명사는 many로 수량을 표현해요."],
+    ["another / other / the other", "Please send another copy. / The other candidates are waiting.", "another=하나 더, (the) other=나머지, others=다른 것들로 구분해요."],
+    ["used to vs be used to", "She used to work downtown. / She is used to working late.", "used to + 동사원형=과거 습관, be used to + -ing=~에 익숙하다예요."],
+    ["by vs until", "Submit the form by Friday. / The office is open until six.", "by는 완료 기한(~까지), until은 상태가 계속되는 시점(~동안)이에요."],
+    ["접속부사: however / therefore", "The plan was costly; however, we approved it.", "however=그러나(대조), therefore=그러므로(결과)로 접속사가 아니라 부사예요."],
+    ["가정법 과거", "If I had more time, I would review the contract.", "현재 사실의 반대는 If + 과거형, 주절에 would + 동사원형을 씁니다."],
+    ["사역동사: make / have / let", "The manager had the team revise the report.", "make·have·let + 목적어 + 동사원형으로 '~하게 하다'를 나타냅니다."],
+    ["지각동사", "I saw the technician check the equipment.", "see·hear·watch + 목적어 + 동사원형(전체 동작) / -ing(진행 중)이에요."],
+    ["관계대명사 목적격 생략", "The report (which) she submitted was excellent.", "목적격 관계대명사는 뒤에 주어+동사가 오면 생략할 수 있어요."],
+    ["some vs any", "We have some extra copies. / Do you have any questions?", "긍정문은 some, 부정문·의문문은 any를 주로 씁니다."],
+    ["현재완료 vs 과거시제", "She has worked here for five years. / She worked here in 2020.", "기간의 지속은 현재완료, 끝난 과거 시점은 과거시제를 써요."],
+    ["the 비교급, the 비교급", "The earlier you book, the cheaper the tickets are.", "'~하면 할수록 더 ~하다'는 the + 비교급 + 주어 + 동사 구조입니다."],
+    ["It is ~ that 강조", "It was the manager that approved the request.", "강조하고 싶은 말을 It is와 that 사이에 넣어 강조할 수 있어요."]
   ];
   function renderGrammarTip() {
     var card = document.getElementById("grammarTipCard");
@@ -4038,7 +4222,39 @@
     { pair: "economic / economical", tag: "경제 / 절약",
       a: { en: "The report covers the current economic situation.", ko: "그 보고서는 현재 경제 상황을 다룬다." },
       b: { en: "This model is more economical to maintain.", ko: "이 모델은 유지비가 더 경제적이다." },
-      tip: "economic은 '경제의', economical은 '비용이 절약되는'이에요." }
+      tip: "economic은 '경제의', economical은 '비용이 절약되는'이에요." },
+    { pair: "sensible / sensitive", tag: "분별 있는 / 민감한",
+      a: { en: "It was a sensible decision to book the tickets early.", ko: "티켓을 일찍 예약한 것은 분별 있는 결정이었다." },
+      b: { en: "Some customers are sensitive to price changes.", ko: "일부 고객은 가격 변화에 민감하다." },
+      tip: "sensible은 '분별 있는', sensitive는 '민감한'이에요." },
+    { pair: "considerable / considerate", tag: "상당한 / 사려 깊은",
+      a: { en: "The project required a considerable amount of time.", ko: "그 프로젝트는 상당한 시간이 필요했다." },
+      b: { en: "It was considerate of you to inform us in advance.", ko: "미리 알려 주시다니 사려 깊으셨어요." },
+      tip: "considerable은 '상당한', considerate는 '사려 깊은'이에요." },
+    { pair: "respectful / respectable", tag: "존중하는 / 훌륭한",
+      a: { en: "Please be respectful to all clients and colleagues.", ko: "모든 고객과 동료를 존중해 주세요." },
+      b: { en: "The company reported respectable quarterly earnings.", ko: "그 회사는 훌륭한 분기 실적을 보고했다." },
+      tip: "respectful은 '존중하는', respectable은 '존경할 만한·훌륭한'이에요." },
+    { pair: "historic / historical", tag: "역사적인 / 역사상의",
+      a: { en: "The two firms signed a historic agreement.", ko: "그 두 회사는 역사적인 협약을 맺었다." },
+      b: { en: "The museum displays historical documents from the 1900s.", ko: "그 박물관은 1900년대의 역사 문서를 전시한다." },
+      tip: "historic은 '역사적으로 중요한', historical은 '역사와 관련된'이에요." },
+    { pair: "continual / continuous", tag: "반복되는 / 끊임없는",
+      a: { en: "The team faced continual delays during construction.", ko: "그 팀은 공사 중 반복되는 지연에 직면했다." },
+      b: { en: "The machine requires a continuous supply of water.", ko: "그 기계는 끊임없는 물 공급을 필요로 한다." },
+      tip: "continual은 '간간이 반복되는', continuous는 '끊이지 않고 계속되는'이에요." },
+    { pair: "borrow / lend", tag: "빌리다 / 빌려주다",
+      a: { en: "May I borrow your laptop for the presentation?", ko: "발표를 위해 노트북을 빌려도 될까요?" },
+      b: { en: "The bank agreed to lend the company two million dollars.", ko: "은행은 그 회사에 200만 달러를 빌려주기로 했다." },
+      tip: "borrow는 '빌리다(받는 쪽)', lend는 '빌려주다(주는 쪽)'예요." },
+    { pair: "remember / remind", tag: "기억하다 / 상기시키다",
+      a: { en: "Please remember to sign the visitor log.", ko: "방문자 명부에 서명하는 것을 잊지 마세요." },
+      b: { en: "The system will remind you to renew your password.", ko: "그 시스템이 비밀번호 갱신을 상기시켜 줄 것이다." },
+      tip: "remember는 스스로 기억하다, remind는 남에게 상기시키다예요." },
+    { pair: "device / devise", tag: "장치 / 고안하다",
+      a: { en: "This device measures the office temperature.", ko: "이 장치는 사무실 온도를 측정한다." },
+      b: { en: "The team devised a new marketing strategy.", ko: "그 팀은 새로운 마케팅 전략을 고안했다." },
+      tip: "device는 '장치'(명사), devise는 '고안하다'(동사)예요." }
   ];
   function renderConfusables() {
     var grid = document.getElementById("confuseGrid");
@@ -4066,7 +4282,19 @@
     { type: "어근", part: "-duct", mean: "이끌다 (lead)", words: "produce · conduct · reduce", ex: "The company will conduct a survey." },
     { type: "어근", part: "-spect", mean: "보다 (look)", words: "inspect · prospect · aspect", ex: "The equipment is inspected every month." },
     { type: "어근", part: "-port", mean: "나르다 (carry)", words: "import · export · report", ex: "Exports increased by twelve percent." },
-    { type: "어미", part: "-able / -ible", mean: "~할 수 있는", words: "available · reliable · flexible", ex: "The schedule is flexible for next week." }
+    { type: "어미", part: "-able / -ible", mean: "~할 수 있는", words: "available · reliable · flexible", ex: "The schedule is flexible for next week." },
+    { type: "접두사", part: "bi-", mean: "둘, 두 개", words: "bilingual · bimonthly · biannual", ex: "Our newsletter is published bimonthly." },
+    { type: "접두사", part: "co-", mean: "함께, 공동으로", words: "coworker · cooperate · coordinate", ex: "Departments must cooperate on this project." },
+    { type: "접두사", part: "mis-", mean: "잘못, 나쁘게", words: "misunderstand · misplaced · mistake", ex: "The shipment was sent to a wrong address by mistake." },
+    { type: "접두사", part: "multi-", mean: "많은, 다수의", words: "multinational · multiple · multimedia", ex: "She manages multiple accounts at once." },
+    { type: "접두사", part: "out-", mean: "밖으로, 능가하여", words: "outdated · outsource · outperform", ex: "Our sales outperformed the market average." },
+    { type: "접두사", part: "sub-", mean: "아래, 하위", words: "subsidiary · subtitle · submit", ex: "The company opened a subsidiary in Singapore." },
+    { type: "접두사", part: "super-", mean: "위, 초월", words: "supervisor · superior · supervise", ex: "A supervisor will inspect the warehouse today." },
+    { type: "어근", part: "-dict", mean: "말하다 (say)", words: "predict · dictate · contradict", ex: "Analysts predict strong demand this year." },
+    { type: "어근", part: "-fer", mean: "옮기다 (carry)", words: "transfer · offer · prefer", ex: "The funds will be transferred tomorrow." },
+    { type: "어근", part: "-ject", mean: "던지다 (throw)", words: "project · reject · inject", ex: "The board decided to reject the proposal." },
+    { type: "어근", part: "-miss / -mit", mean: "보내다 (send)", words: "submit · dismiss · transmit", ex: "Please submit your timesheet by Friday." },
+    { type: "어근", part: "-scrib / -script", mean: "쓰다 (write)", words: "describe · subscribe · manuscript", ex: "Please describe the problem in detail." }
   ];
   function renderWordParts() {
     var grid = document.getElementById("wordpartGrid");
@@ -4398,7 +4626,25 @@
     { phrase: "conduct a survey", ko: "설문조사를 하다", ex: "We conducted a survey of our customers last week.", exKo: "우리는 지난주에 고객을 대상으로 설문조사를 했다." },
     { phrase: "submit a proposal", ko: "제안서를 제출하다", ex: "Please submit a proposal by the end of the week.", exKo: "이번 주 말까지 제안서를 제출해 주세요." },
     { phrase: "place an order", ko: "주문하다", ex: "We placed an order for fifty laptops.", exKo: "우리는 노트북 50대를 주문했다." },
-    { phrase: "exceed expectations", ko: "기대를 뛰어넘다", ex: "The results exceeded our expectations.", exKo: "그 결과는 우리의 기대를 뛰어넘었다." }
+    { phrase: "exceed expectations", ko: "기대를 뛰어넘다", ex: "The results exceeded our expectations.", exKo: "그 결과는 우리의 기대를 뛰어넘었다." },
+    { phrase: "take a break", ko: "휴식을 취하다", ex: "Let's take a short break before the next session.", exKo: "다음 세션 전에 잠시 휴식을 취합시다." },
+    { phrase: "draw attention", ko: "관심을 끌다", ex: "The colorful display drew a lot of attention.", exKo: "그 화려한 전시는 많은 관심을 끌었다." },
+    { phrase: "make progress", ko: "진전을 이루다", ex: "We have made good progress on the project.", exKo: "우리는 프로젝트에서 좋은 진전을 이루었다." },
+    { phrase: "keep a record", ko: "기록을 남기다", ex: "Please keep a record of all customer calls.", exKo: "모든 고객 통화 기록을 남겨 주세요." },
+    { phrase: "offer a discount", ko: "할인을 제공하다", ex: "The store offers a discount to members.", exKo: "그 매장은 회원에게 할인을 제공한다." },
+    { phrase: "pay attention to", ko: "~에 주의를 기울이다", ex: "Please pay attention to the safety instructions.", exKo: "안전 지침에 주의를 기울여 주세요." },
+    { phrase: "give a presentation", ko: "발표하다", ex: "Each candidate will give a short presentation.", exKo: "각 지원자가 짧은 발표를 할 것입니다." },
+    { phrase: "hold a meeting", ko: "회의를 열다", ex: "The department holds a meeting every Monday.", exKo: "그 부서는 매주 월요일 회의를 연다." },
+    { phrase: "set a budget", ko: "예산을 책정하다", ex: "We set a budget for the next quarter.", exKo: "우리는 다음 분기 예산을 책정했다." },
+    { phrase: "meet requirements", ko: "요구 사항을 충족하다", ex: "The proposal meets all the requirements.", exKo: "그 제안서는 모든 요구 사항을 충족한다." },
+    { phrase: "attend a conference", ko: "학회·회의에 참석하다", ex: "Three managers will attend the conference in Busan.", exKo: "세 명의 매니저가 부산 학회에 참석할 것이다." },
+    { phrase: "provide information", ko: "정보를 제공하다", ex: "The website provides information about our services.", exKo: "그 웹사이트는 우리 서비스에 대한 정보를 제공한다." },
+    { phrase: "solve a problem", ko: "문제를 해결하다", ex: "The team solved the problem within an hour.", exKo: "그 팀은 한 시간 안에 문제를 해결했다." },
+    { phrase: "reduce costs", ko: "비용을 줄이다", ex: "We must reduce costs to stay competitive.", exKo: "경쟁력을 유지하려면 비용을 줄여야 한다." },
+    { phrase: "approve a request", ko: "요청을 승인하다", ex: "The supervisor approved her request for leave.", exKo: "관리자가 그녀의 휴가 요청을 승인했다." },
+    { phrase: "sign a contract", ko: "계약서에 서명하다", ex: "Both parties signed the contract yesterday.", exKo: "양측은 어제 계약서에 서명했다." },
+    { phrase: "gain a competitive advantage", ko: "경쟁 우위를 확보하다", ex: "New technology helped us gain a competitive advantage.", exKo: "신기술이 경쟁 우위를 확보하는 데 도움이 되었다." },
+    { phrase: "make an appointment", ko: "예약하다", ex: "I would like to make an appointment for next week.", exKo: "다음 주로 예약하고 싶습니다." }
   ];
   function buildColloQuestions() {
     var phrases = COLLOCATIONS.map(function (c) { return c.phrase; });
@@ -4448,12 +4694,18 @@
     { tag: "Part 2 질문·응답", audio: "Why was the shipment delayed?", a: "Because of the heavy snow.", opts: ["Because of the heavy snow.", "It leaves at noon.", "Yes, it was delivered.", "About fifty boxes."], why: "Why에는 이유로 답합니다.", ko: "배송이 왜 지연됐나요? — 폭설 때문입니다." },
     { tag: "Part 2 질문·응답", audio: "How long will the maintenance take?", a: "About two hours.", opts: ["About two hours.", "At the front desk.", "Yes, please.", "Mr. Lee did it."], why: "How long에는 기간으로 답합니다.", ko: "정비에 얼마나 걸리나요? — 두 시간 정도입니다." },
     { tag: "Part 2 질문·응답", audio: "Would you like to join the workshop?", a: "I'd love to, but I have a deadline.", opts: ["I'd love to, but I have a deadline.", "It is on the second floor.", "Yes, she works here.", "Last Tuesday."], why: "제안에는 수락·거절 의사로 답합니다.", ko: "워크숍에 참여하시겠어요? — 그러고 싶지만 마감이 있어요." },
-    { tag: "숫자·시간 합정", audio: "The flight departs at a quarter to nine.", a: "8:45", opts: ["8:45", "9:15", "9:45", "8:15"], why: "a quarter to nine = 9시 15분 전 = 8시 45분", ko: "비행기는 8시 45분에 출발한다." },
-    { tag: "숫자·시간 합정", audio: "The invoice is due in fifteen days.", a: "15일 후", opts: ["15일 후", "5일 후", "50일 후", "2주 전"], why: "in fifteen days = 15일 후", ko: "청구서는 15일 후가 기한이다." },
-    { tag: "숫자·시간 합정", audio: "Please submit the form by the 30th of next month.", a: "다음 달 30일", opts: ["다음 달 30일", "이번 달 13일", "다음 달 3일", "이번 달 30일"], why: "the 30th of next month = 다음 달 30일", ko: "다음 달 30일까지 서식을 제출해 주세요." },
-    { tag: "숫자·시간 합정", audio: "The discount is thirteen percent off the original price.", a: "13%", opts: ["13%", "30%", "3%", "33%"], why: "thirteen(13)과 thirty(30)은 발음이 다릅니다.", ko: "정가에서 13% 할인됩니다." },
-    { tag: "숫자·시간 합정", audio: "The conference runs from Tuesday to Thursday.", a: "화요일~목요일", opts: ["화요일~목요일", "목요일~화요일", "화요일~수요일", "수요일~금요일"], why: "from A to B = A부터 B까지", ko: "회의는 화요일부터 목요일까지 열린다." },
-    { tag: "숫자·시간 합정", audio: "Our office is on the fourteenth floor.", a: "14층", opts: ["14층", "4층", "40층", "15층"], why: "fourteenth = 14번째", ko: "우리 사무실은 14층에 있다." }
+    { tag: "숫자·시간 함정", audio: "The flight departs at a quarter to nine.", a: "8:45", opts: ["8:45", "9:15", "9:45", "8:15"], why: "a quarter to nine = 9시 15분 전 = 8시 45분", ko: "비행기는 8시 45분에 출발한다." },
+    { tag: "숫자·시간 함정", audio: "The invoice is due in fifteen days.", a: "15일 후", opts: ["15일 후", "5일 후", "50일 후", "2주 전"], why: "in fifteen days = 15일 후", ko: "청구서는 15일 후가 기한이다." },
+    { tag: "숫자·시간 함정", audio: "Please submit the form by the 30th of next month.", a: "다음 달 30일", opts: ["다음 달 30일", "이번 달 13일", "다음 달 3일", "이번 달 30일"], why: "the 30th of next month = 다음 달 30일", ko: "다음 달 30일까지 서식을 제출해 주세요." },
+    { tag: "숫자·시간 함정", audio: "The discount is thirteen percent off the original price.", a: "13%", opts: ["13%", "30%", "3%", "33%"], why: "thirteen(13)과 thirty(30)은 발음이 다릅니다.", ko: "정가에서 13% 할인됩니다." },
+    { tag: "숫자·시간 함정", audio: "The conference runs from Tuesday to Thursday.", a: "화요일~목요일", opts: ["화요일~목요일", "목요일~화요일", "화요일~수요일", "수요일~금요일"], why: "from A to B = A부터 B까지", ko: "회의는 화요일부터 목요일까지 열린다." },
+    { tag: "숫자·시간 함정", audio: "Our office is on the fourteenth floor.", a: "14층", opts: ["14층", "4층", "40층", "15층"], why: "fourteenth = 14번째", ko: "우리 사무실은 14층에 있다." },
+    { tag: "Part 2 질문·응답", audio: "How often do you visit the branch office?", a: "Twice a month.", opts: ["Twice a month.", "For two hours.", "In the main lobby.", "Yes, I visited."], why: "How often에는 빈도를 나타내는 표현으로 답합니다.", ko: "지사에 얼마나 자주 가나요? — 한 달에 두 번이요." },
+    { tag: "Part 2 질문·응답", audio: "Could you send me the invoice again?", a: "Sure, I will email it right away.", opts: ["Sure, I will email it right away.", "It was about two hundred dollars.", "Yes, the office is closed.", "I met him last week."], why: "요청에는 수락·행동 약속으로 답합니다.", ko: "청구서를 다시 보내 주시겠어요? — 네, 바로 이메일로 보내 드리겠습니다." },
+    { tag: "Part 2 질문·응답", audio: "Should we take a taxi or the subway?", a: "Let's take the subway to save time.", opts: ["Let's take the subway to save time.", "Yes, I took it yesterday.", "It is on the third floor.", "About twenty minutes ago."], why: "A or B 선택 의문문에는 둘 중 하나를 고르는 답이 자연스럽습니다.", ko: "택시를 탈까요, 지하철을 탈까요? — 시간을 아끼려면 지하철을 타죠." },
+    { tag: "숫자·시간 함정", audio: "The total comes to three hundred fifty dollars.", a: "$350", opts: ["$350", "$315", "$3,150", "$530"], why: "three hundred fifty = 350입니다.", ko: "합계는 350달러입니다." },
+    { tag: "숫자·시간 함정", audio: "Please dial extension two oh four.", a: "204", opts: ["204", "244", "214", "240"], why: "내선 번호는 숫자를 하나씩 읽습니다: two-oh-four = 204", ko: "내선 번호 204번을 눌러 주세요." },
+    { tag: "숫자·시간 함정", audio: "The order number is double seven four three.", a: "7743", opts: ["7743", "7473", "7734", "7474"], why: "double seven = 77, 뒤에 four three = 43 → 7743", ko: "주문 번호는 7743입니다." }
   ];
   function buildLc12Questions() {
     return LC_TRAINING.map(function (c) {
@@ -4508,8 +4760,32 @@
       ],
       qs: [
         { q: "예약 일시는?", a: "목요일 오후 4시", opts: ["목요일 오후 4시", "화요일 오전 4시", "목요일 오전 10시", "금요일 오후 4시"], why: "Thursday at 4 p.m." },
-        { q: "몇 분 일찍 도착해야 하나?", a: "10분", opts: ["10분", "20분", "30분", "5분"], why: "arrive ten minutes early" },
-        { q: "일정 변경은 언제까지 연락해야 하나?", a: "최소 24시간 전", opts: ["최소 24시간 전", "당일 아침", "최소 2시간 전", "언제든 가능"], why: "at least 24 hours in advance" }
+        { q: "몇 분 일찍 도착해야 하나?", a: "10분", opts: ["10분", "20분", "30분", "5분"], why: "arrive ten minutes early" },        { q: "일정 변경은 언제까지 연락해야 하나?", a: "최소 24시간 전", opts: ["최소 24시간 전", "당일 아침", "최소 2시간 전", "언제든 가능"], why: "at least 24 hours in advance" }
+      ]
+    },
+    { title: "은행 대출 상담", kind: "대화",
+      lines: [
+        "W: Good morning. I would like to apply for a small business loan.",
+        "M: Certainly. Could you tell me how long you have been in business?",
+        "W: About three years. I can provide the financial statements.",
+        "M: Great. The interest rate will depend on your credit history."
+      ],
+      qs: [
+        { q: "여성이 신청하려는 것은?", a: "소규모 사업 대출", opts: ["소규모 사업 대출", "신용카드 발급", "계좌 개설", "환전 서비스"], why: "apply for a small business loan이라고 말했습니다." },
+        { q: "남성이 물어본 것은?", a: "사업을 한 기간", opts: ["사업을 한 기간", "직원 수", "매출 규모", "사업장 위치"], why: "how long you have been in business = 사업 기간" },
+        { q: "금리를 결정하는 요인은?", a: "신용 기록", opts: ["신용 기록", "사업 규모", "직원 수", "거래 은행"], why: "depend on your credit history" }
+      ] },
+    { title: "호텔 예약 변경", kind: "대화",
+      lines: [
+        "M: Hello, I have a reservation for a double room on May 12.",
+        "W: May I have your confirmation number, please?",
+        "M: Yes, it is 48213. I need to change the dates to May 14.",
+        "W: No problem. There is no change fee for the first modification."
+      ],
+      qs: [
+        { q: "남성이 요청한 것은?", a: "예약 날짜 변경", opts: ["예약 날짜 변경", "객실 업그레이드", "조식 추가", "예약 취소"], why: "change the dates to May 14라고 말했습니다." },
+        { q: "여성이 요청한 정보는?", a: "예약 확인 번호", opts: ["예약 확인 번호", "신용카드 번호", "전화번호", "여권 번호"], why: "May I have your confirmation number" },
+        { q: "첫 번째 변경에 대한 수수료는?", a: "없다", opts: ["없다", "20달러", "1박 요금", "10%"], why: "no change fee for the first modification" }
       ] }
   ];
   var p34Idx = 0;
@@ -4566,7 +4842,11 @@
     { root: "혁신", forms: ["innovation", "innovate", "innovative", "innovatively"], ex: "They introduced an innovative design." },
     { root: "정확", forms: ["accuracy", "accurate", "accurately"], ex: "Please record the figures accurately." },
     { root: "다양", forms: ["variety", "vary", "various", "variously"], ex: "We received various suggestions." },
-    { root: "지원", forms: ["application", "apply", "applicant", "applicable"], ex: "Please submit your application by Friday." }
+    { root: "지원", forms: ["application", "apply", "applicant", "applicable"], ex: "Please submit your application by Friday." },
+    { root: "의사소통", forms: ["communication", "communicate", "communicative", "communicatively"], ex: "Good communication skills are essential for teamwork." },
+    { root: "투자", forms: ["investment", "invest", "investor", "investing"], ex: "The company made a large investment in new equipment." },
+    { root: "평가", forms: ["evaluation", "evaluate", "evaluator", "evaluative"], ex: "Managers evaluate employee performance twice a year." },
+    { root: "신뢰", forms: ["reliance", "rely", "reliable", "reliably"], ex: "Our customers rely on fast delivery." }
   ];
   function renderWordFamilies() {
     var grid = document.getElementById("wordfamilyGrid");
@@ -4587,7 +4867,13 @@
     { prompt: "We received ＿＿＿＿ suggestions from customers.", a: "various", opts: ["variety", "vary", "various", "variously"], why: "명사 suggestions를 수식하는 형용사", ex: "We received various suggestions from customers.", exKo: "우리는 고객들로부터 다양한 제안을 받았다." },
     { prompt: "Please submit your ＿＿＿＿ by Friday.", a: "application", opts: ["application", "apply", "applicant", "applicable"], why: "소유격 your 뒤에는 명사 application", ex: "Please submit your application by Friday.", exKo: "금요일까지 지원서를 제출해 주세요." },
     { prompt: "The report provides ＿＿＿＿ data on sales.", a: "accurate", opts: ["accuracy", "accurate", "accurately", "accurateness"], why: "명사 data를 수식하는 형용사", ex: "The report provides accurate data on sales.", exKo: "그 보고서는 정확한 매출 데이터를 제공한다." },
-    { prompt: "Our team will ＿＿＿＿ in the global market.", a: "compete", opts: ["competition", "compete", "competitive", "competitively"], why: "조동사 will 뒤에는 동사원형", ex: "Our team will compete in the global market.", exKo: "우리 팀은 글로벌 시장에서 경쟁할 것이다." }
+    { prompt: "Our team will ＿＿＿＿ in the global market.", a: "compete", opts: ["competition", "compete", "competitive", "competitively"], why: "조동사 will 뒤에는 동사원형", ex: "Our team will compete in the global market.", exKo: "우리 팀은 글로벌 시장에서 경쟁할 것이다." },
+    { prompt: "Good ＿＿＿＿ skills are essential for teamwork.", a: "communication", opts: ["communicate", "communication", "communicative", "communicatively"], why: "형용사 Good의 수식을 받는 명사 자리", ex: "Good communication skills are essential for teamwork.", exKo: "좋은 의사소통 능력은 팀워크에 필수적이다." },
+    { prompt: "We ＿＿＿＿ with our overseas partners every week.", a: "communicate", opts: ["communicate", "communication", "communicative", "communicatively"], why: "주어 We 뒤에는 동사원형(현재)", ex: "We communicate with our overseas partners every week.", exKo: "우리는 매주 해외 파트너와 소통한다." },
+    { prompt: "The board approved a large ＿＿＿＿ in renewable energy.", a: "investment", opts: ["invest", "investment", "investor", "investing"], why: "형용사 large 뒤에는 명사 investment", ex: "The board approved a large investment in renewable energy.", exKo: "이사회는 재생 에너지에 대한 대규모 투자를 승인했다." },
+    { prompt: "Managers will ＿＿＿＿ each employee's performance twice a year.", a: "evaluate", opts: ["evaluate", "evaluation", "evaluator", "evaluative"], why: "조동사 will 뒤에는 동사원형", ex: "Managers will evaluate each employee's performance twice a year.", exKo: "관리자는 매년 두 번 각 직원의 성과를 평가할 것이다." },
+    { prompt: "Our customers ＿＿＿＿ on fast delivery and clear communication.", a: "rely", opts: ["rely", "reliance", "reliable", "reliably"], why: "복수 주어 뒤 현재시제 동사원형 rely", ex: "Our customers rely on fast delivery and clear communication.", exKo: "우리 고객들은 빠른 배송과 명확한 소통에 의존한다." },
+    { prompt: "The equipment is ＿＿＿＿ and rarely breaks down.", a: "reliable", opts: ["rely", "reliance", "reliable", "reliably"], why: "be동사 뒤 보어 자리에는 형용사", ex: "The equipment is reliable and rarely breaks down.", exKo: "그 장비는 믿을 만하고 좀처럼 고장 나지 않는다." }
   ];
   function buildWfQuestions() {
     return WF_QUESTIONS.map(function (q) {
@@ -4609,7 +4895,17 @@
     { a: "right", b: "light", aKo: "오른쪽", bKo: "빛", tip: "/r/ vs /l/ 첫소리" },
     { a: "glass", b: "grass", aKo: "유리", bKo: "잔디", tip: "/l/ vs /r/ 두 번째 소리" },
     { a: "dessert", b: "desert", aKo: "디저트", bKo: "사막", tip: "강세 위치: de-SSERT vs DE-sert" },
-    { a: "affect", b: "effect", aKo: "영향을 주다", bKo: "효과", tip: "첫 모음 /ə/ vs /ɪ/ — 뜻이 완전히 다릅니다" }
+    { a: "affect", b: "effect", aKo: "영향을 주다", bKo: "효과", tip: "첫 모음 /ə/ vs /ɪ/ — 뜻이 완전히 다릅니다" },
+    { a: "hat", b: "hot", aKo: "모자", bKo: "뜨거운", tip: "/æ/ vs /ɑː/ — 입을 얼마나 크게 벌리느냐의 차이" },
+    { a: "think", b: "sink", aKo: "생각하다", bKo: "싱크대", tip: "/θ/ 혀를 이 사이에 vs /s/ 혀를 잇몸 뒤에" },
+    { a: "vote", b: "boat", aKo: "투표하다", bKo: "보트", tip: "/v/ 아랫입술 진동 vs /b/ 입술을 다물고 터뜨리기" },
+    { a: "staff", b: "stuff", aKo: "직원", bKo: "물건", tip: "/æ/ vs /ʌ/ — 시험에 자주 나오는 구분" },
+    { a: "suit", b: "suite", aKo: "정장", bKo: "스위트룸", tip: "suit는 /suːt/, suite는 /swiːt/로 발음이 다릅니다" },
+    { a: "quiet", b: "quite", aKo: "조용한", bKo: "꽤", tip: "/ˈkwaɪət/ 2음절 vs /kwaɪt/ 1음절" },
+    { a: "lose", b: "loose", aKo: "잃다", bKo: "느슨한", tip: "/luːz/ 유성음 vs /luːs/ 무성음 — 끝소리가 달라요" },
+    { a: "expect", b: "except", aKo: "기대하다", bKo: "~을 제외하고", tip: "첫 모음 /ɪ/ vs /e/ — 철자보다 소리를 기억하세요" },
+    { a: "contact", b: "contract", aKo: "연락하다", bKo: "계약", tip: "강세는 앞, 가운데 소리 /tækt/ vs /trækt/" },
+    { a: "price", b: "prize", aKo: "가격", bKo: "상", tip: "마지막 소리 /s/ vs /z/" }
   ];
   function buildMpQuestions() {
     var words = [];
@@ -4640,7 +4936,15 @@
     { word: "conference", root: "con(함께) + fer(나르다)", tip: "함께 모이다 → 회의·학회", ex: "The conference was held in Seoul." },
     { word: "postpone", root: "post(뒤) + pone(놓다)", tip: "뒤로 놓다 → 연기하다", ex: "The meeting was postponed until Friday." },
     { word: "substitute", root: "sub(대신) + stitute(세우다)", tip: "대신 세우다 → 대체하다", ex: "You can substitute olive oil for butter." },
-    { word: "collaborate", root: "co(함께) + labor(일하다)", tip: "함께 일하다 → 협업하다", ex: "Our teams collaborate on every project." }
+    { word: "collaborate", root: "co(함께) + labor(일하다)", tip: "함께 일하다 → 협업하다", ex: "Our teams collaborate on every project." },
+    { word: "increase", root: "in(안으로) + crease(자라다)", tip: "안으로 자라나다 → 증가하다", ex: "Sales increased by ten percent last quarter." },
+    { word: "inspire", root: "in(안에) + spire(숨쉬다)", tip: "안에 숨을 불어넣다 → 고무하다", ex: "Her speech inspired the whole team." },
+    { word: "influence", root: "in(안으로) + flu(흐르다)", tip: "안으로 흘러들다 → 영향을 미치다", ex: "The campaign influenced customer choices." },
+    { word: "contract", root: "con(함께) + tract(끌다)", tip: "함께 끌어당겨 묶다 → 계약", ex: "Both parties signed the contract yesterday." },
+    { word: "attract", root: "at(향해) + tract(끌다)", tip: "향해 끌어당기다 → 끌어모으다", ex: "The sale attracted many new customers." },
+    { word: "expand", root: "ex(밖으로) + pand(펼치다)", tip: "밖으로 펼치다 → 확장하다", ex: "The company plans to expand into Asia." },
+    { word: "manufacture", root: "manu(손) + fact(만들다)", tip: "손으로 만들다 → 제조하다", ex: "The parts are manufactured in Vietnam." },
+    { word: "revenue", root: "re(다시) + ven(오다)", tip: "다시 들어오는 것 → 수익", ex: "Annual revenue grew by fifteen percent." }
   ];
   function renderMnemonics() {
     var grid = document.getElementById("mnemonicGrid");
@@ -4662,7 +4966,10 @@
     { cat: "감사", ko: "협조 감사", lines: ["Thank you for your prompt response and continued support.", "I really appreciate your help with this matter."] },
     { cat: "제품 문의", ko: "제품 가격 문의", lines: ["I am writing to inquire about the availability of the new model.", "Could you send us a price quote for bulk orders?"] },
     { cat: "사내 안내", ko: "휴무 안내", lines: ["This is a reminder that the office will be closed on Monday for maintenance.", "Please back up your files before leaving on Friday."] },
-    { cat: "후속 확인", ko: "계약 후속 확인", lines: ["I am following up on our conversation last week regarding the contract.", "Please let me know if there is anything else you need from us."] }
+    { cat: "후속 확인", ko: "계약 후속 확인", lines: ["I am following up on our conversation last week regarding the contract.", "Please let me know if there is anything else you need from us."] },
+    { cat: "불만 대응", ko: "주문 오류 사과", lines: ["We sincerely apologize for the error in your recent order.", "A corrected shipment will be sent today at no additional charge."] },
+    { cat: "회의 후속", ko: "회의 요약 공유", lines: ["Thank you for attending today's meeting. Here is a brief summary of the key decisions.", "Please let me know if we missed anything important."] },
+    { cat: "납품 지연", ko: "납품 지연 안내", lines: ["We regret to inform you that the delivery will be delayed by three days due to a supplier issue.", "We will notify you as soon as the items are shipped."] }
   ];
   function renderTemplates() {
     var grid = document.getElementById("templateGrid");
@@ -4768,7 +5075,7 @@
       var h = Math.max(4, Math.round(day.n / maxAct * 80));
       return '<div class="week-bar" style="height:' + h + 'px"><span class="val">' + (day.n || "") + '</span><span>' + day.label + '</span></div>';
     }).join("");
-    var typeLabels = { en2ko: "단어→뜻", ko2en: "뜻→단어", blank: "빈칸", listen_word: "LC 단어", listen_sent: "LC 예문", listen_dict: "받아쓰기", diag: "실력 진단", mock_LC: "모의 LC", mock_RC: "모의 RC", mini: "미니 테스트", collo: "콜로케이션", ctx: "문맥 어휘", lc12: "LC 1·2", part34: "Part 3·4", wf: "단어 패밀리", mp: "최소대립쌍", confuse_dict: "혼동어휘 받아쓰기", speed: "스피드 어휘", mix_confuse: "혼동어휘", mix_part: "어근" };
+    var typeLabels = { en2ko: "단어→뜻", ko2en: "뜻→단어", blank: "빈칸", listen_word: "LC 단어", listen_sent: "LC 예문", listen_dict: "받아쓰기", diag: "실력 진단", mock_LC: "모의 LC", mock_RC: "모의 RC", mini: "미니 테스트", collo: "콜로케이션", ctx: "문맥 어휘", lc12: "LC 1·2", part34: "Part 3·4", wf: "단어 패밀리", mp: "최소대립쌍", confuse_dict: "혼동어휘 받아쓰기", speed: "스피드 어휘", mix_confuse: "혼동어휘", mix_part: "어근", double_reading: "복수 지문" };
     var rows = [], totalQ = 0, totalC = 0;
     Object.keys(typeLabels).forEach(function (k) {
       var s = quizStats[k];
@@ -4780,6 +5087,9 @@
     var weak = rows.length ? rows[0] : null;
     var coach = pct >= 80 ? "거의 완성 단계예요! 오답 단어만 정리해도 점수가 오릅니다. 🏆" : pct >= 40 ? "절반을 향해 가고 있어요. 하루 1유닛씩 꾸준히 이어가 봅시다. 💪" : "지금은 양을 채우는 시기입니다. 오늘의 단어부터 시작해 보세요. 🌱";
     var weakMsg = weak ? "가장 약한 유형은 <b>" + esc(weak.label) + "</b> (" + weak.pct + "%)입니다. 해당 섹션을 먼저 복습해 보세요." : "아직 유형별 기록이 없어요. 퀴즈·리스닝을 한 번씩 풀어 보세요.";
+    var catStats2 = categoryStats();
+    var catRows = Object.keys(catStats2).map(function (c) { var s = catStats2[c], n = s.c + s.w; return { c: c, pct: n ? Math.round(s.c / n * 100) : 0, n: n }; }).sort(function (a, b) { return a.pct - b.pct; });
+    var catMsg = catRows.length ? "영역별 정답률(낮은 순): " + catRows.map(function (r) { return esc(r.c) + " " + r.pct + "%"; }).join(" · ") : "";
     box.innerHTML =
       '<div class="report-grid">' +
       '<div class="dash-card"><h3>📚 학습 진행률</h3><div class="big">' + pct + '%</div><p class="muted">' + learnedN + " / " + totalCount + ' 단어</p></div>' +
@@ -4788,7 +5098,7 @@
       '<div class="dash-card"><h3>🎯 퀴즈 정확도</h3><div class="big">' + (totalQ ? Math.round(totalC / totalQ * 100) : 0) + '%</div><p class="muted">총 ' + totalQ + '문제</p></div>' +
       '</div>' +
       '<div class="dash-card"><h3>최근 7일 학습 활동</h3><div class="week-bars">' + bars + '</div></div>' +
-      '<div class="listen-script" style="margin-top:10px">🧭 ' + coach + '<br>' + weakMsg + '</div>';
+      '<div class="listen-script" style="margin-top:10px">🧭 ' + coach + '<br>' + weakMsg + (catMsg ? '<br>' + catMsg : '') + '</div>';
   }
   var reportPrintEl = document.getElementById("reportPrint");
   if (reportPrintEl) reportPrintEl.addEventListener("click", function () { try { window.print(); } catch (e) {} });
@@ -4934,6 +5244,32 @@
         { q: "빈칸에 들어갈 단어는?", a: "stress", opts: ["stress", "medicine", "diet", "exercise"] },
         { q: "의사의 조언으로 알맞은 것은?", a: "충분히 쉬기", opts: ["충분히 쉬기", "운동 시작하기", "약 두 배 복용", "회의 연기하기"] }
       ]
+    },
+    {
+      title: "배송 지연 문의", theme: "🚚 Logistics",
+      lines: [
+        ["C", "I ordered a printer last week, but it has not arrived yet.", "I ordered a printer last week, but it has not arrived yet."],
+        ["S", "I apologize for the ＿＿＿＿. Let me check the tracking number.", "I apologize for the delay. Let me check the tracking number."],
+        ["C", "The order was supposed to arrive on Monday.", "The order was supposed to arrive on Monday."],
+        ["S", "I see the issue. We will ship a ＿＿＿＿ today at no extra cost.", "I see the issue. We will ship a replacement today at no extra cost."]
+      ],
+      quiz: [
+        { q: "빈칸에 들어갈 단어는?", a: "delay", opts: ["delay", "discount", "receipt", "budget"] },
+        { q: "'no extra cost'의 의미로 알맞은 것은?", a: "추가 비용 없음", opts: ["추가 비용 없음", "무료 반품", "즉시 환불", "할인 적용"] }
+      ]
+    },
+    {
+      title: "면접 일정 조정", theme: "🧑‍💼 Hiring",
+      lines: [
+        ["HR", "We would like to ＿＿＿＿ an interview for next Tuesday.", "We would like to schedule an interview for next Tuesday."],
+        ["A", "Tuesday morning works for me. What time should I come in?", "Tuesday morning works for me. What time should I come in?"],
+        ["HR", "How about ten o'clock? Please bring a copy of your ＿＿＿＿.", "How about ten o'clock? Please bring a copy of your resume."],
+        ["A", "Sure. I will also prepare my portfolio.", "Sure. I will also prepare my portfolio."]
+      ],
+      quiz: [
+        { q: "빈칸에 들어갈 단어는?", a: "resume", opts: ["resume", "receipt", "invoice", "agenda"] },
+        { q: "면접 시간으로 제안된 것은?", a: "오전 10시", opts: ["오전 10시", "오후 2시", "오전 9시", "오후 4시"] }
+      ]
     }
   ];
   var dialogueIdx = -1;
@@ -5000,17 +5336,41 @@
     "5": [
       { q: "The new policy will _____ improve customer satisfaction.", a: "significantly", opts: ["significant", "significantly", "significance", "signify"], why: "동사 improve를 수식하므로 부사 significantly가 정답입니다." },
       { q: "Each employee _____ required to complete the training.", a: "is", opts: ["are", "is", "be", "being"], why: "Each는 단수 취급하므로 단수 동사 is를 씁니다." },
-      { q: "Please submit the application _____ Friday.", a: "by", opts: ["at", "by", "on", "for"], why: "by Friday는 금요일까지라는 마감 기한을 나타냅니다." }
+      { q: "Please submit the application _____ Friday.", a: "by", opts: ["at", "by", "on", "for"], why: "by Friday는 금요일까지라는 마감 기한을 나타냅니다." },
+      { q: "All visitors are required to _____ at the front desk before entering.", a: "register", opts: ["register", "registration", "registered", "registering"], why: "be required to 뒤에는 동사원형 register가 옵니다." },
+      { q: "The new software is _____ easier to use than the previous version.", a: "far", opts: ["far", "more", "most", "very"], why: "비교급은 far·much·even으로 강조합니다." },
+      { q: "The company is looking for a candidate _____ has experience in logistics.", a: "who", opts: ["who", "which", "whom", "whose"], why: "선행사 a candidate가 사람이고 뒤에 동사가 있으므로 주격 who입니다." },
+      { q: "Please make sure that all documents are _____ before the meeting.", a: "prepared", opts: ["prepare", "preparing", "prepared", "preparation"], why: "documents가 준비되는 대상이므로 be + 과거분사(prepared)를 씁니다." },
+      { q: "If the payment _____ by Friday, a late fee will be charged.", a: "is not received", opts: ["does not receive", "is not received", "will not receive", "has not received"], why: "주어 the payment는 받는 쪽이므로 수동태 is not received가 맞습니다." },
+      { q: "_____ the heavy traffic, the team arrived on time.", a: "Despite", opts: ["Although", "Despite", "Because", "Unless"], why: "뒤에 명사구 the heavy traffic이 있으므로 전치사 despite를 씁니다." },
+      { q: "The workshop is designed _____ new employees learn the system quickly.", a: "to help", opts: ["help", "to help", "helping", "helps"], why: "be designed to + 동사원형은 목적을 나타냅니다." },
+      { q: "Ms. Park is the _____ of the three candidates for the manager position.", a: "most qualified", opts: ["qualified", "more qualified", "most qualified", "qualifying"], why: "the + 최상급 + of the three 구조입니다." },
+      { q: "The annual report was completed _____ schedule despite the staff shortage.", a: "ahead of", opts: ["ahead of", "in front of", "previous to", "instead of"], why: "ahead of schedule = 예정보다 앞서." },
+      { q: "The _____ instructions confused several new employees.", a: "confusing", opts: ["confuse", "confused", "confusing", "confusion"], why: "지침이 사람을 헷갈리게 하는 주체이므로 현재분사 confusing입니다." },
+      { q: "The shipment was delayed; _____, the customer was notified immediately.", a: "therefore", opts: ["therefore", "however", "otherwise", "whereas"], why: "앞 내용의 결과를 나타내는 therefore가 맞습니다." },
+      { q: "The board recommended that the policy _____ revised before July.", a: "be", opts: ["is", "be", "was", "being"], why: "recommend that + 주어 + 동사원형(be) 구조입니다." },
+      { q: "If the company _____ more storage space, it would accept the order.", a: "had", opts: ["has", "had", "will have", "having"], why: "가정법 과거는 If + 과거형(had)을 씁니다." },
+      { q: "Ms. Han had the assistant _____ the figures before the meeting.", a: "verify", opts: ["verify", "verifies", "verified", "verifying"], why: "사역동사 have + 목적어 + 동사원형 구조입니다." },
+      { q: "The seminar is intended for employees _____ are new to the department.", a: "who", opts: ["who", "which", "whom", "whose"], why: "선행사 employees가 사람이고 뒤에 동사가 있으므로 주격 who입니다." },
+      { q: "Please note that the office will be closed _____ the holiday weekend.", a: "during", opts: ["during", "since", "by", "until"], why: "특정 기간 동안을 나타내는 전치사 during이 맞습니다." }
     ],
     "6": [
       { q: "The conference has been _____ until next month due to construction.", a: "postponed", opts: ["postponing", "postponed", "postpone", "postpones"], why: "conference가 연기되는 대상이므로 수동태 has been postponed가 자연스럽습니다." },
       { q: "The new brochure is designed to be both attractive and _____.", a: "informative", opts: ["inform", "information", "informative", "informed"], why: "both A and B 병렬 구조이므로 attractive와 같은 형용사 informative가 필요합니다." },
-      { q: "_____ the heavy rain, the outdoor event continued as planned.", a: "Despite", opts: ["Despite", "Although", "Because", "Therefore"], why: "뒤에 명사구 the heavy rain이 있으므로 despite가 정답입니다." }
+      { q: "_____ the heavy rain, the outdoor event continued as planned.", a: "Despite", opts: ["Despite", "Although", "Because", "Therefore"], why: "뒤에 명사구 the heavy rain이 있으므로 despite가 정답입니다." },
+      { q: "Due to the increased demand, we recommend that customers _____ their orders early.", a: "place", opts: ["place", "places", "placing", "placed"], why: "recommend that + 주어 + 동사원형 구조입니다." },
+      { q: "The seminar will cover a wide _____ of topics, from budgeting to leadership.", a: "range", opts: ["range", "number", "amount", "piece"], why: "a wide range of = 다양한 범위의." },
+      { q: "Please be advised that the elevator will be _____ for maintenance on Tuesday.", a: "temporarily closed", opts: ["temporarily closed", "temporary close", "temporary closing", "temporarily closing"], why: "be + 부사 + 과거분사(수동) 형태입니다." },
+      { q: "Our customer service team is available 24 hours a day to _____ any questions.", a: "answer", opts: ["answer", "reply", "respond", "tell"], why: "answer a question이 올바른 연어입니다(reply/respond는 to가 필요)." },
+      { q: "The revised schedule will take _____ on the first of next month.", a: "effect", opts: ["effect", "affect", "effective", "effectively"], why: "take effect = 시행되다." }
     ],
     "7": [
       { q: "공지문: The east entrance will be closed from 6 to 8 p.m. for maintenance. Visitors should use the west entrance.", a: "서쪽 입구를 이용해야 한다", opts: ["동쪽 입구를 이용해야 한다", "서쪽 입구를 이용해야 한다", "방문 시간이 변경된다", "정비가 취소된다"], why: "공지문은 동쪽 입구 폐쇄 시간 동안 서쪽 입구를 이용하라고 안내합니다." },
       { q: "이메일: Please send the revised invoice before noon so that our accounting team can process the payment today.", a: "수정된 청구서를 정오 전까지 보내기", opts: ["결제를 다음 주로 미루기", "수정된 청구서를 정오 전까지 보내기", "회계팀에 새 직원을 고용하기", "청구서를 폐기하기"], why: "before noon과 process the payment today가 핵심 단서입니다." },
-      { q: "광고: Early-bird registration ends on May 10. Members receive an additional 15% discount.", a: "회원은 추가 할인을 받는다", opts: ["등록은 5월 10일에 시작된다", "회원은 추가 할인을 받는다", "비회원만 등록할 수 있다", "행사가 15일간 열린다"], why: "Members receive an additional 15% discount라고 명시되어 있습니다." }
+      { q: "광고: Early-bird registration ends on May 10. Members receive an additional 15% discount.", a: "회원은 추가 할인을 받는다", opts: ["등록은 5월 10일에 시작된다", "회원은 추가 할인을 받는다", "비회원만 등록할 수 있다", "행사가 15일간 열린다"], why: "Members receive an additional 15% discount라고 명시되어 있습니다." },
+      { q: "공지문: The fitness center will introduce new yoga classes starting October 1. Members can reserve a spot up to 48 hours in advance through the mobile app.", a: "수업 48시간 전부터 앱으로 예약할 수 있다", opts: ["수업 당일에만 예약할 수 있다", "수업 48시간 전부터 앱으로 예약할 수 있다", "전화로만 예약할 수 있다", "비회원도 예약할 수 있다"], why: "up to 48 hours in advance와 through the mobile app이 단서입니다." },
+      { q: "이메일: Please note that the deadline for submitting expense reports has been moved from the 25th to the 20th of each month.", a: "경비 보고서 마감일이 20일로 앞당겨졌다", opts: ["경비 보고서가 폐지된다", "경비 보고서 마감일이 20일로 앞당겨졌다", "마감일이 25일로 늦춰진다", "보고서를 매주 제출해야 한다"], why: "moved from the 25th to the 20th = 25일에서 20일로 앞당김." },
+      { q: "안내문: All employees must wear their ID badges at all times while on company premises. Visitors should sign in at the security desk and will be escorted by a staff member.", a: "경비 데스크에서 서명하고 직원의 안내를 받는다", opts: ["직접 건물을 돌아다닌다", "경비 데스크에서 서명하고 직원의 안내를 받는다", "출입증을 따로 구매한다", "방문은 허용되지 않는다"], why: "Visitors should sign in at the security desk and will be escorted가 단서입니다." }
     ]
   };
   var partBankState = {};
@@ -5062,7 +5422,23 @@
     ["available", "이용 가능한", "accessible · obtainable", "unavailable · occupied", "available online / available upon request"],
     ["efficient", "효율적인", "effective · productive", "inefficient · wasteful", "efficient system / energy-efficient"],
     ["revenue", "수익", "income · earnings", "expense · loss", "generate revenue / annual revenue"],
-    ["submit", "제출하다", "hand in · provide", "withhold · withdraw", "submit an application / submit a report"]
+    ["submit", "제출하다", "hand in · provide", "withhold · withdraw", "submit an application / submit a report"],
+    ["reduce", "줄이다", "decrease · cut", "increase · raise", "reduce costs / reduce risk"],
+    ["postpone", "연기하다", "delay · put off", "advance · bring forward", "postpone a meeting / postpone the launch"],
+    ["approve", "승인하다", "authorize · endorse", "reject · deny", "approve a proposal / approve the budget"],
+    ["inform", "알리다", "notify · advise", "conceal · withhold", "inform customers / inform the staff of"],
+    ["ensure", "보장하다", "guarantee · secure", "endanger · jeopardize", "ensure quality / ensure safety"],
+    ["assist", "돕다", "help · aid", "hinder · obstruct", "assist customers / assist with the task"],
+    ["significant", "상당한, 중요한", "substantial · considerable", "minor · trivial", "a significant increase / significant progress"],
+    ["reluctant", "꺼리는", "unwilling · hesitant", "eager · willing", "reluctant to accept / reluctant to change"],
+    ["mandatory", "의무적인", "compulsory · required", "optional · voluntary", "mandatory training / a mandatory meeting"],
+    ["verify", "확인하다", "confirm · validate", "assume · overlook", "verify the details / verify an identity"],
+    ["allocate", "할당하다", "assign · distribute", "withhold · retain", "allocate resources / allocate a budget"],
+    ["retain", "보유하다", "keep · preserve", "release · discard", "retain staff / retain a copy"],
+    ["waive", "면제하다", "forgive · drop", "impose · charge", "waive a fee / waive the penalty"],
+    ["comply", "준수하다", "conform · adhere", "violate · breach", "comply with regulations / comply with a request"],
+    ["sufficient", "충분한", "adequate · enough", "insufficient · inadequate", "sufficient funds / sufficient time"],
+    ["tentative", "잠정적인", "provisional · preliminary", "final · confirmed", "a tentative schedule / a tentative agreement"]
   ];
   function renderRelations() {
     var grid = document.getElementById("relationGrid");
@@ -5075,7 +5451,10 @@
   var READING_MINI = [
     { title: "사내 공지", type: "공지", text: "The elevator in Building B will be unavailable this Friday morning. Employees attending the 10 a.m. workshop should use the stairs or the elevator in Building A.", q: "10시 워크숍 참석자는 무엇을 해야 하는가?", a: "다른 엘리베이터나 계단을 이용한다", opts: ["워크숍을 취소한다", "다른 엘리베이터나 계단을 이용한다", "빌딩 B에서 기다린다"] },
     { title: "고객 이메일", type: "이메일", text: "Thank you for contacting Greenway Travel. Your reservation has been confirmed for June 18. Please arrive at least 30 minutes before departure to collect your boarding pass.", q: "고객은 언제 도착해야 하는가?", a: "출발 30분 전", opts: ["예약일 다음 날", "출발 30분 전", "6월 18일 오후"] },
-    { title: "제품 안내", type: "광고", text: "The FlexiDesk is now available in three colors. Orders placed before March 31 include free delivery and a two-year warranty. Visit our website for bulk-order pricing.", q: "3월 31일 전에 주문하면 어떤 혜택이 있는가?", a: "무료 배송과 2년 보증", opts: ["색상 추가", "무료 배송과 2년 보증", "대량 주문 가격만 제공"] }
+    { title: "제품 안내", type: "광고", text: "The FlexiDesk is now available in three colors. Orders placed before March 31 include free delivery and a two-year warranty. Visit our website for bulk-order pricing.", q: "3월 31일 전에 주문하면 어떤 혜택이 있는가?", a: "무료 배송과 2년 보증", opts: ["색상 추가", "무료 배송과 2년 보증", "대량 주문 가격만 제공"] },
+    { title: "분기 리뷰 안내", type: "이메일", text: "The quarterly review meeting has been moved to Thursday at 2 p.m. in Conference Room B. Please bring the latest sales figures so that we can compare them with last quarter's results.", q: "참석자가 준비해야 할 것은?", a: "최신 매출 수치", opts: ["회의록 사본", "최신 매출 수치", "신분증", "노트북 충전기"] },
+    { title: "지하철 운행 공지", type: "공지", text: "Line 3 will run on a modified schedule this weekend due to track maintenance. Trains will depart every 20 minutes instead of every 8 minutes. Please allow extra time for your trip.", q: "이번 주말 배차 간격은?", a: "20분", opts: ["8분", "20분", "30분", "10분"] },
+    { title: "채용 공고", type: "공고", text: "We are hiring a full-time customer support specialist. Applicants must have at least two years of experience and be available to work on weekends. Send your resume to hr@greenway.com by June 30.", q: "지원 자격으로 옳은 것은?", a: "2년 이상의 경력", opts: ["2년 이상의 경력", "주말 근무 불가", "대졸 이상", "자격증 필수"] }
   ];
   function renderReadings() {
     var grid = document.getElementById("readingGrid");
@@ -5095,12 +5474,113 @@
     });
   }
 
+  // ---------- 11) Part 7 복수 지문(이중 지문) ----------
+  var DOUBLE_READING = [
+    { title: "신제품 주문과 주문 확인", type: "이메일 + 주문서",
+      passages: [
+        { label: "지문 1 · 이메일", text: "Dear Mr. Alvarez, Thank you for your interest in our ergonomic chairs. Please find the quote for 40 units attached. Orders placed before April 15 qualify for a 12% discount and free assembly." },
+        { label: "지문 2 · 주문 확인서", text: "Order No. 77120 | Item: ErgoFlex Chair | Quantity: 40 | Unit price: $180 | Requested delivery: April 22 | Assembly: not included | Discount applied: none" }
+      ],
+      qs: [
+        { q: "할인을 받으려면 언제까지 주문해야 하는가?", a: "4월 15일 이전", opts: ["4월 15일 이전", "4월 22일 이전", "3월 15일 이전", "주문 즉시"], why: "Orders placed before April 15 qualify for a 12% discount" },
+        { q: "주문 확인서에 따르면 배송 요청일은?", a: "4월 22일", opts: ["4월 15일", "4월 22일", "5월 22일", "4월 2일"], why: "Requested delivery: April 22" },
+        { q: "두 지문을 종합할 때 이 주문에 대한 설명으로 옳은 것은?", a: "할인이 적용되지 않았다", opts: ["할인이 적용되지 않았다", "조립이 무료로 포함된다", "수량이 40개 미만이다", "배송이 4월 15일이다"], why: "주문서에 Discount applied: none으로 표시되어 있습니다." }
+      ] },
+    { title: "채용 공고와 지원 절차", type: "공고 + 안내문",
+      passages: [
+        { label: "지문 1 · 채용 공고", text: "Junior Accountant — Greenway Finance. Requirements: a bachelor's degree in accounting, at least one year of experience, and proficiency in Excel. Application deadline: May 30. Contact: jobs@greenway.com" },
+        { label: "지문 2 · 지원 안내문", text: "All applicants must complete an online aptitude test before the interview. Test links are sent within three business days after the application deadline." }
+      ],
+      qs: [
+        { q: "지원 요건으로 언급되지 않은 것은?", a: "회계 자격증", opts: ["회계학 학사 학위", "1년 이상 경력", "Excel 활용 능력", "회계 자격증"], why: "자격증은 공고에 언급되지 않았습니다." },
+        { q: "적성 검사 링크는 언제 발송되는가?", a: "지원 마감 후 3영업일 이내", opts: ["지원 마감 후 3영업일 이내", "면접 당일", "지원서 제출 즉시", "채용 확정 후"], why: "within three business days after the application deadline" },
+        { q: "지원 마감일은?", a: "5월 30일", opts: ["5월 30일", "6월 30일", "5월 3일", "3월 30일"], why: "Application deadline: May 30" }
+      ] },
+    { title: "연례 컨퍼런스 안내와 일정", type: "안내문 + 일정표",
+      passages: [
+        { label: "지문 1 · 행사 안내", text: "The Annual Sales Conference will be held at the Riverside Hotel on September 8. Registration opens at 8:30 a.m. All attendees must present a photo ID at the entrance. Lunch is provided." },
+        { label: "지문 2 · 행사 일정표", text: "09:00 Opening Speech | 10:30 Workshop A (Marketing) and Workshop B (Finance) | 12:30 Lunch | 14:00 Panel Discussion | 16:00 Closing Remarks" }
+      ],
+      qs: [
+        { q: "입장 시 필요한 것은?", a: "사진이 있는 신분증", opts: ["사진이 있는 신분증", "초대장", "등록 영수증", "회원 카드"], why: "must present a photo ID at the entrance" },
+        { q: "12시 30분에 예정된 것은?", a: "점심 식사", opts: ["점심 식사", "패널 토론", "폐회", "기조 연설"], why: "12:30 Lunch" },
+        { q: "10시 30분에 진행되는 것은?", a: "워크숍 A와 B", opts: ["워크숍 A와 B", "기조 연설", "패널 토론", "폐회식"], why: "10:30 Workshop A and Workshop B" }
+      ] },
+    { title: "주문 취소 요청과 취소 정책", type: "이메일 + 정책",
+      passages: [
+        { label: "지문 1 · 고객 이메일", text: "Hello, I would like to cancel order 5581 placed yesterday. The estimated delivery is next Monday, but I no longer need the item." },
+        { label: "지문 2 · 취소 정책", text: "Cancellations made within 24 hours of purchase are fully refunded. After 24 hours, a 10% processing fee applies. Customized items cannot be canceled." }
+      ],
+      qs: [
+        { q: "고객이 요청한 것은?", a: "주문 취소", opts: ["주문 취소", "배송지 변경", "환불 거부", "상품 교환"], why: "I would like to cancel order 5581" },
+        { q: "구매 후 24시간 이내에 취소하면?", a: "전액 환불", opts: ["전액 환불", "10% 수수료 부과", "교환만 가능", "취소 불가"], why: "within 24 hours of purchase are fully refunded" },
+        { q: "취소할 수 없는 품목은?", a: "맞춤 제작 품목", opts: ["맞춤 제작 품목", "할인 품목", "주말 주문 품목", "배송 중 품목"], why: "Customized items cannot be canceled." }
+      ] }
+  ];
+  var drIdx = 0;
+  function renderDoubleReading(forceRandom) {
+    var box = document.getElementById("doubleReadingGrid");
+    if (!box) return;
+    if (forceRandom || drIdx < 0) drIdx = Math.floor(Math.random() * DOUBLE_READING.length);
+    if (drIdx >= DOUBLE_READING.length) drIdx = 0;
+    var s = DOUBLE_READING[drIdx];
+    var html = '<div class="reading-card dr-card">';
+    html += '<div class="dr-head"><span class="bank-label">' + esc((s.level ? s.level + ' · ' : '') + s.type) + '</span><span class="dr-title">' + esc(s.title) + '</span></div>';
+    html += '<div class="dr-passages">';
+    s.passages.forEach(function (p) {
+      html += '<div class="reading-passage"><b>' + esc(p.label) + '</b><div class="dr-text">' + esc(p.text) + ttsBtn(p.text, "지문 듣기") + '</div></div>';
+    });
+    html += '</div>';
+    html += '<div class="practice-actions"><button type="button" class="btn quiz-btn" id="drPlay">🔊 두 지문 듣기</button><button type="button" class="btn quiz-btn" id="drNext">🔄 다른 세트</button></div>';
+    html += '<div id="drQs">';
+    s.qs.forEach(function (q, qi) {
+      html += '<div class="dialogue-q"><p class="dialogue-qtext">Q' + (qi + 1) + ". " + esc(q.q) + '</p>';
+      q.opts.forEach(function (o) { html += '<button type="button" class="quiz-opt p34-opt" data-qi="' + qi + '" data-a="' + escapeAttr(q.a) + '">' + esc(o) + '</button>'; });
+      html += '<div class="quiz-feedback" id="drFb' + qi + '"></div></div>';
+    });
+    html += '</div></div>';
+    box.innerHTML = html;
+    var play = document.getElementById("drPlay");
+    if (play) play.addEventListener("click", function () {
+      var t = 0;
+      s.passages.forEach(function (p) {
+        setTimeout(function () { speak(p.text); }, t);
+        t += Math.max(2500, p.text.length * 90);
+      });
+    });
+    var nx = document.getElementById("drNext");
+    if (nx) nx.addEventListener("click", function () { drIdx = (drIdx + 1) % DOUBLE_READING.length; renderDoubleReading(false); });
+    box.querySelectorAll(".p34-opt").forEach(function (b) {
+      b.addEventListener("click", function () {
+        if (b.disabled) return;
+        var qi = parseInt(b.getAttribute("data-qi"), 10);
+        var a = b.getAttribute("data-a");
+        var ok = b.textContent === a;
+        box.querySelectorAll('[data-qi="' + qi + '"]').forEach(function (o) {
+          o.disabled = true;
+          if (o.getAttribute("data-a") === o.textContent) o.classList.add("correct");
+        });
+        if (!ok) b.classList.add("wrong");
+        recordStat("double_reading", ok);
+        var fb = document.getElementById("drFb" + qi);
+        var q = s.qs[qi];
+        if (fb) fb.innerHTML = (ok ? "정답입니다! 🎉" : "오답입니다. 정답: <b>" + esc(a) + "</b>") +
+          '<div class="practice-note">💡 ' + esc(q.why || "") + '</div>';
+      });
+    });
+  }
+
   var SPEAKING_PROMPTS = [
     ["Describe a useful office tool.", "convenient, improve"],
     ["What do you usually do before a meeting?", "agenda, prepare"],
     ["Explain how to handle a customer complaint.", "listen, solution"],
     ["What is one benefit of working in a team?", "cooperate, efficient"],
-    ["Describe a product you would recommend.", "feature, reliable"]
+    ["Describe a product you would recommend.", "feature, reliable"],
+    ["Describe your typical workday.", "routine, prioritize"],
+    ["What do you do to stay organized?", "schedule, checklist"],
+    ["Explain how to prepare for an important exam.", "review, practice"],
+    ["Describe a time you solved a problem at work.", "solution, improve"],
+    ["What are the advantages of online shopping?", "convenient, compare"]
   ];
   var speakingPromptIdx = 0;
   function renderSpeakingPrompt() {
@@ -5118,7 +5598,11 @@
     ["회의 시간이 변경되었다고 동료에게 알리세요.", "Please note that the meeting time has been changed. I will send the updated agenda shortly."],
     ["고객의 문의에 답변하겠다고 정중히 안내하세요.", "Thank you for your inquiry. We will get back to you as soon as possible."],
     ["보고서 제출이 늦어질 수 있다고 알리세요.", "I am writing to let you know that the report may be delayed."],
-    ["도움을 준 동료에게 감사하세요.", "Thank you for your help. I really appreciate your prompt response."]
+    ["도움을 준 동료에게 감사하세요.", "Thank you for your help. I really appreciate your prompt response."],
+    ["제품 배송 지연을 사과하세요.", "We sincerely apologize for the delay in shipping your order. A replacement will arrive by Friday."],
+    ["회의 참석을 정중히 요청하세요.", "We would like to invite you to a brief meeting on Thursday to review the project plan."],
+    ["제품 가격 견적을 문의하세요.", "Could you please send us a price quote for two hundred units?"],
+    ["동료의 승진을 축하하세요.", "Congratulations on your promotion. We look forward to working with you in your new role."]
   ];
   var writingPromptIdx = dayOfYearNow() % WRITING_PROMPTS.length;
   function renderWritingPrompt() {
@@ -5143,7 +5627,12 @@
     "We look forward to hearing from you soon.",
     "The updated report is available on the company website.",
     "Could you send me the revised schedule by Friday?",
-    "Our customer service team will follow up shortly."
+    "Our customer service team will follow up shortly.",
+    "Thank you for your patience during the delay.",
+    "Please note that the office will be closed on Monday.",
+    "We would like to remind you to submit your timesheet.",
+    "The new policy takes effect at the beginning of next month.",
+    "I appreciate your help with the presentation yesterday."
   ];
   var shadowingIdx = 0;
   var shadowingVisible = false;
@@ -5183,9 +5672,9 @@
     ddayInput.addEventListener("change", renderDday);
   }
   var saveExamDate = document.getElementById("saveExamDate");
-  if (saveExamDate) saveExamDate.addEventListener("click", function () { try { localStorage.setItem("toeic1000_examdate", ddayInput.value); } catch (e) {} renderDday(); showToast("📅 시험 날짜를 저장했습니다."); });
+  if (saveExamDate) saveExamDate.addEventListener("click", function () { try { localStorage.setItem("toeic1000_examdate", ddayInput.value); } catch (e) {} renderDday(); renderDdayPlan(); showToast("📅 시험 날짜를 저장했습니다."); });
   var clearExamDate = document.getElementById("clearExamDate");
-  if (clearExamDate) clearExamDate.addEventListener("click", function () { ddayInput.value = ""; try { localStorage.removeItem("toeic1000_examdate"); } catch (e) {} renderDday(); });
+  if (clearExamDate) clearExamDate.addEventListener("click", function () { ddayInput.value = ""; try { localStorage.removeItem("toeic1000_examdate"); } catch (e) {} renderDday(); renderDdayPlan(); });
 
   var localResourceLink = document.querySelector(".resource-local-link");
   if (localResourceLink) localResourceLink.addEventListener("click", function (e) {
@@ -5301,6 +5790,415 @@
   var miniQuizStart = document.getElementById("miniQuizStart");
   if (miniQuizStart) miniQuizStart.addEventListener("click", startMiniQuiz);
 
+  // ================= 신규 확장 콘텐츠 (data/extra.js) =================
+  var EXTRA = window.TOEIC_EXTRA || {};
+  if (EXTRA.part7 && EXTRA.part7.length) DOUBLE_READING = DOUBLE_READING.concat(EXTRA.part7);
+  if (EXTRA.situations && EXTRA.situations.length) DIALOGUES = DIALOGUES.concat(EXTRA.situations);
+  if (EXTRA.stories && EXTRA.stories.length) MNEMONICS = MNEMONICS.concat(EXTRA.stories);
+  if (EXTRA.traps && EXTRA.traps.length) LC_TRAINING = LC_TRAINING.concat(EXTRA.traps);
+
+  // ---------- Part 6 장문 공란 ----------
+  var PART6_SETS = EXTRA.part6 || [];
+  var p6Idx = 0;
+  function renderPart6(forceRandom) {
+    var box = document.getElementById("part6Box");
+    if (!box) return;
+    if (!PART6_SETS.length) { box.innerHTML = '<p class="practice-note">Part 6 데이터를 불러오지 못했습니다.</p>'; return; }
+    if (forceRandom || p6Idx < 0) p6Idx = Math.floor(Math.random() * PART6_SETS.length);
+    if (p6Idx >= PART6_SETS.length) p6Idx = 0;
+    var s = PART6_SETS[p6Idx];
+    var text = esc(s.text).replace(/__\((\d+)\)__/g, '<span class="p6-blank">($1)</span>');
+    var html = '<div class="reading-card"><span class="bank-label">Part 6 · ' + esc(s.type) + '</span><h3>' + esc(s.title) + '</h3>';
+    html += '<div class="reading-passage p6-text">' + text + ttsBtn(s.text.replace(/__\(\d+\)__/g, " blank "), "지문 듣기") + '</div>';
+    html += '<div class="practice-actions"><button type="button" class="btn quiz-btn" id="p6Next">🔄 다른 지문</button></div>';
+    s.blanks.forEach(function (b) {
+      html += '<div class="p6-q"><p class="reading-q">(' + b.n + ') 빈칸에 알맞은 것은?</p><div class="bank-options">';
+      b.opts.forEach(function (o) { html += '<button type="button" class="bank-opt" data-b="' + b.n + '" data-a="' + escapeAttr(b.a) + '">' + esc(o) + '</button>'; });
+      html += '</div><div class="bank-feedback" id="p6Fb' + b.n + '"></div></div>';
+    });
+    html += '</div>';
+    box.innerHTML = html;
+    var nx = document.getElementById("p6Next");
+    if (nx) nx.addEventListener("click", function () { p6Idx = (p6Idx + 1) % PART6_SETS.length; renderPart6(false); });
+    box.querySelectorAll(".bank-opt").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        if (btn.disabled) return;
+        var bn = parseInt(btn.getAttribute("data-b"), 10);
+        var a = btn.getAttribute("data-a");
+        var ok = btn.textContent === a;
+        box.querySelectorAll('[data-b="' + bn + '"]').forEach(function (o) {
+          o.disabled = true;
+          if (o.getAttribute("data-a") === o.textContent) o.classList.add("correct");
+        });
+        if (!ok) btn.classList.add("wrong");
+        recordStat("part6", ok);
+        var b = s.blanks.filter(function (x) { return x.n === bn; })[0];
+        var fb = document.getElementById("p6Fb" + bn);
+        if (fb) fb.innerHTML = (ok ? "정답입니다! 🎉" : "오답입니다. 정답: <b>" + esc(a) + "</b>") + '<div class="practice-note">💡 ' + esc(b ? b.why : "") + '</div>';
+      });
+    });
+  }
+
+  // ---------- 동의어 치환 ----------
+  var paraQuiz = makeMiniQuiz({
+    boxId: "paraBox", title: "동의어 치환", statKey: "para", count: 8,
+    build: function () {
+      return (EXTRA.paraphrase || []).map(function (p) {
+        return { tag: p.tag, prompt: p.prompt, answer: p.a, options: shuffleArr(p.opts.slice()), why: p.why };
+      });
+    },
+    emptyHint: "시작 버튼을 누르면 동의어 치환 8문제가 나옵니다."
+  });
+  wireMiniQuiz("paraStart", paraQuiz);
+
+  // ---------- 연결어·접속부사 ----------
+  var transQuiz = makeMiniQuiz({
+    boxId: "transBox", title: "연결어", statKey: "trans", count: 8,
+    build: function () {
+      return (EXTRA.transitions || []).map(function (t) {
+        return { tag: t.tag, prompt: t.prompt, answer: t.a, options: shuffleArr(t.opts.slice()), why: t.why };
+      });
+    },
+    emptyHint: "시작 버튼을 누르면 연결어·접속부사 8문제가 나옵니다."
+  });
+  wireMiniQuiz("transStart", transQuiz);
+
+  // ---------- 전치사 콜로케이션 ----------
+  var prepQuiz = makeMiniQuiz({
+    boxId: "prepBox", title: "전치사", statKey: "prep", count: 8,
+    build: function () {
+      return (EXTRA.prepositions || []).map(function (t) {
+        return { tag: t.tag, prompt: t.prompt, answer: t.a, options: shuffleArr(t.opts.slice()), why: t.why };
+      });
+    },
+    emptyHint: "시작 버튼을 누르면 전치사 콜로케이션 8문제가 나옵니다."
+  });
+  wireMiniQuiz("prepStart", prepQuiz);
+
+  // ---------- Part 1 사진 묘사 ----------
+  var part1Quiz = makeMiniQuiz({
+    boxId: "part1Box", title: "Part 1 묘사", statKey: "part1", count: 8,
+    build: function () {
+      return (EXTRA.part1 || []).map(function (p) {
+        return { tag: "Part 1 묘사", passageHtml: "<b>🖼 장면</b> " + esc(p.scene), prompt: p.q, answer: p.a, options: shuffleArr(p.opts.slice()), why: p.why };
+      });
+    },
+    emptyHint: "시작 버튼을 누르면 Part 1 묘사 8문제가 나옵니다."
+  });
+  wireMiniQuiz("part1Start", part1Quiz);
+
+  // ---------- 숫자·금액 듣기 ----------
+  var numQuiz = makeMiniQuiz({
+    boxId: "numBox", title: "숫자·금액", statKey: "num", count: 10, autoPlay: true,
+    build: function () {
+      return (EXTRA.numbers || []).map(function (n) {
+        return { tag: n.tag, audio: n.audio, prompt: "🔊 들리는 숫자·금액을 고르세요.", answer: n.a, options: shuffleArr(n.opts.slice()), why: n.why, autoPlay: true, example: n.audio, exampleKo: "" };
+      });
+    },
+    emptyHint: "시작 버튼을 누르면 숫자·금액 10문제가 나옵니다."
+  });
+  wireMiniQuiz("numStart", numQuiz);
+
+  // ---------- 빈도순 기출 어휘 ----------
+  function renderFrequency(filter) {
+    var grid = document.getElementById("freqGrid");
+    if (!grid) return;
+    var q = (filter || "").trim().toLowerCase();
+    var list = (EXTRA.frequency || []).filter(function (w) {
+      if (!q) return true;
+      return (w[0] + " " + w[1]).toLowerCase().indexOf(q) !== -1;
+    });
+    if (!list.length) { grid.innerHTML = '<p class="practice-note">검색 결과가 없습니다.</p>'; return; }
+    grid.innerHTML = list.map(function (w) {
+      return '<div class="freq-item"><b class="freq-word">' + esc(w[0]) + '</b><span class="freq-pos">' + esc(w[2]) + '</span><span class="freq-mean">' + esc(w[1]) + '</span>' + ttsBtn(w[0], "발음 듣기") + '</div>';
+    }).join("");
+  }
+  var freqSearchEl = document.getElementById("freqSearch");
+  if (freqSearchEl) freqSearchEl.addEventListener("input", function () { renderFrequency(this.value); });
+
+  // ---------- 30일 스프린트 커리큘럼 ----------
+  function unitProgressOf(id) {
+    var u = null;
+    all.forEach(function (x) { if (x.id === id) u = x; });
+    if (!u) return null;
+    var d = u.words.filter(function (w) { return learned[w[0]]; }).length;
+    return { u: u, done: d, total: u.words.length, pct: u.words.length ? Math.round(d / u.words.length * 100) : 0 };
+  }
+  function renderSprint() {
+    var box = document.getElementById("sprintBox");
+    if (!box) return;
+    var list = EXTRA.sprint || [];
+    if (!list.length) { box.innerHTML = '<p class="practice-note">스프린트 데이터를 불러오지 못했습니다.</p>'; return; }
+    var nextFound = false;
+    var html = '<ol class="sprint-list">';
+    list.forEach(function (d) {
+      var p = unitProgressOf(d.unit);
+      var pct = p ? p.pct : 0;
+      var isNext = false;
+      if (!nextFound && pct < 100) { isNext = true; nextFound = true; }
+      html += '<li class="sprint-item' + (isNext ? " next" : "") + '">' +
+        '<span class="sprint-day">D' + d.day + '</span>' +
+        '<span class="sprint-title">UNIT ' + d.unit + (p ? " " + esc(p.u.title) : "") + '</span>' +
+        '<span class="sprint-focus">' + esc(d.focus) + '</span>' +
+        '<span class="sprint-pct">' + pct + '%</span>' +
+        '<button type="button" class="btn quiz-btn sprint-go" data-unit="' + d.unit + '">학습</button></li>';
+    });
+    html += '</ol>';
+    box.innerHTML = html;
+    box.querySelectorAll(".sprint-go").forEach(function (b) {
+      b.addEventListener("click", function () {
+        showListView();
+        var sec = document.getElementById("unit-" + b.getAttribute("data-unit"));
+        if (sec) sec.scrollIntoView({ behavior: "smooth" });
+      });
+    });
+  }
+
+  // ---------- 매일 3문장 받아쓰기 ----------
+  var DICT_LIST = EXTRA.dictation || [];
+  function dictToday() {
+    var n = DICT_LIST.length;
+    if (!n) return [];
+    var start = (dayOfYearNow() * 3) % n;
+    return [DICT_LIST[start % n], DICT_LIST[(start + 1) % n], DICT_LIST[(start + 2) % n]];
+  }
+  function renderDictation() {
+    var box = document.getElementById("dictBox");
+    if (!box) return;
+    var sents = dictToday();
+    if (!sents.length) { box.innerHTML = '<p class="practice-note">받아쓰기 데이터를 불러오지 못했습니다.</p>'; return; }
+    var html = '<div class="practice-actions"><button type="button" class="btn quiz-btn" id="dictPlay">🔊 3문장 듣기</button><button type="button" class="btn quiz-btn" id="dictCheckDaily">✅ 채점</button></div>';
+    sents.forEach(function (s, i) {
+      html += '<div class="dict-row"><span class="dict-no">' + (i + 1) + '</span><input type="text" class="dict-input dict-line" data-i="' + i + '" aria-label="받아쓰기 ' + (i + 1) + '번" placeholder="들리는 문장을 입력하세요" autocomplete="off"><button type="button" class="btn quiz-btn dict-play" data-i="' + i + '">🔊</button></div>';
+    });
+    html += '<div class="practice-note" id="dictFeedback"></div>';
+    box.innerHTML = html;
+    var playAll = document.getElementById("dictPlay");
+    if (playAll) playAll.addEventListener("click", function () {
+      var tt = 0;
+      sents.forEach(function (s) { setTimeout(function () { speak(s); }, tt); tt += Math.max(2000, s.length * 110); });
+    });
+    box.querySelectorAll(".dict-play").forEach(function (b) {
+      b.addEventListener("click", function () { var s = sents[parseInt(b.getAttribute("data-i"), 10)]; if (s) speak(s); });
+    });
+    var check = document.getElementById("dictCheckDaily");
+    if (check) check.addEventListener("click", function () {
+      var total = 0;
+      box.querySelectorAll(".dict-line").forEach(function (inp) {
+        var i = parseInt(inp.getAttribute("data-i"), 10);
+        var score = cdScore(inp.value || "", sents[i]);
+        total += score;
+        inp.style.borderColor = score >= 90 ? "var(--green)" : score >= 60 ? "var(--accent)" : "#fa5252";
+      });
+      var avg = Math.round(total / sents.length);
+      recordStat("dictation", avg >= 80);
+      var fb = document.getElementById("dictFeedback");
+      if (fb) fb.innerHTML = "평균 일치도 <b>" + avg + "%</b> · " + (avg >= 90 ? "완벽해요! 🎉" : avg >= 60 ? "거의 다 왔어요. 다시 들어 보세요. 💪" : "정답을 확인하고 다시 시도해 보세요. 🌱") +
+        '<div class="listen-script">' + sents.map(function (s, i) { return (i + 1) + ". " + esc(s) + ttsBtn(s, "듣기"); }).join("<br>") + '</div>';
+    });
+  }
+
+  // ---------- 말하기·쓰기 템플릿 ----------
+  function renderTplExtra() {
+    var sg = document.getElementById("speakTplGrid");
+    if (sg) {
+      sg.innerHTML = (EXTRA.speakTemplates || []).map(function (t) {
+        return '<article class="reading-card"><span class="bank-label">' + esc(t.type) + '</span><h3>' + esc(t.ko) + '</h3>' +
+          t.lines.map(function (l) { return '<div class="reading-passage template-line">' + esc(l) + ttsBtn(l, "문장 듣기") + '</div>'; }).join("") + '</article>';
+      }).join("");
+    }
+    var wg = document.getElementById("writeTplGrid");
+    if (wg) {
+      wg.innerHTML = (EXTRA.writeTemplates || []).map(function (t) {
+        return '<article class="reading-card"><span class="bank-label">' + esc(t.type) + '</span><h3>' + esc(t.ko) + '</h3>' +
+          '<div class="tpl-structure">구성: ' + t.structure.map(esc).join(" → ") + '</div>' +
+          '<div class="tpl-sample">' + esc(t.sample) + ttsBtn(t.sample, "예시 듣기") + '</div></article>';
+      }).join("");
+    }
+  }
+
+  // ---------- 전략·공략 가이드 카드 ----------
+  function renderGuides() {
+    var grid = document.getElementById("guideCardGrid");
+    if (!grid) return;
+    grid.innerHTML = (EXTRA.guides || []).map(function (g) {
+      return '<article class="guide-card"><h3>' + esc(g.title) + '</h3><p>' + esc(g.desc) + '</p><a href="guides/' + esc(g.slug) + '.html">가이드 읽기 ↗</a></article>';
+    }).join("");
+  }
+
+  // ---------- 시간 배분 코치 ----------
+  function renderPace() {
+    var box = document.getElementById("paceResult");
+    if (!box) return;
+    var mEl = document.getElementById("paceMinutes"), qEl = document.getElementById("paceQuestions");
+    var mins = parseFloat(mEl ? mEl.value : "") || 0;
+    var qs = parseFloat(qEl ? qEl.value : "") || 0;
+    if (!mins || !qs) { box.innerHTML = '<p class="practice-note">남은 시간(분)과 문항 수를 입력하면 문항당 권장 시간이 계산됩니다.</p>'; return; }
+    var sec = Math.round(mins * 60 / qs);
+    box.innerHTML = '<div class="pace-grid">' +
+      '<div class="pace-box"><b>' + sec + '초</b><span>문항당 권장 시간</span></div>' +
+      '<div class="pace-box"><b>' + (Math.round(mins / qs * 10) / 10) + '분</b><span>문항당(분)</span></div>' +
+      '<div class="pace-box"><b>' + mins + '분</b><span>총 가용 시간</span></div>' +
+      '</div><div class="listen-script" style="margin-top:10px">⏱ Part 5는 문항당 20~25초, Part 7 단일 지문은 35~45초, 복수 지문 세트는 2분 30초를 목표로 하세요.</div>';
+  }
+  var paceM = document.getElementById("paceMinutes");
+  if (paceM) paceM.addEventListener("input", renderPace);
+  var paceQ = document.getElementById("paceQuestions");
+  if (paceQ) paceQ.addEventListener("input", renderPace);
+
+  // ---------- 2인 대결 퀴즈 ----------
+  var battle = { on: false, idx: 0, per: 5, q: [], s1: 0, s2: 0, answered: false };
+  function battleStart() {
+    var pool = allWords().slice();
+    if (!pool.length) return;
+    shuffleArr(pool);
+    battle.q = pool.slice(0, 10).map(function (w) {
+      var answer = w[3], opts = [answer], att = 0;
+      while (opts.length < 4 && att < 500) { att++; var d = pool[Math.floor(Math.random() * pool.length)][3]; if (opts.indexOf(d) === -1) opts.push(d); }
+      shuffleArr(opts);
+      return { word: w[0], answer: answer, options: opts };
+    });
+    battle.on = true; battle.idx = 0; battle.s1 = 0; battle.s2 = 0; battle.answered = false;
+    renderBattle();
+  }
+  function renderBattle() {
+    var box = document.getElementById("battleBox");
+    if (!box) return;
+    if (!battle.on) { box.innerHTML = '<p class="practice-note">시작 버튼을 누르면 1번 플레이어부터 5문제씩 번갈아 풀어요. 점수가 높은 사람이 승리합니다.</p>'; return; }
+    if (battle.idx >= battle.q.length) {
+      var win = battle.s1 === battle.s2 ? "무승부! 🤝" : (battle.s1 > battle.s2 ? "1번 플레이어 승리! 🏆" : "2번 플레이어 승리! 🏆");
+      box.innerHTML = '<div class="quiz-result"><div class="score">' + battle.s1 + " : " + battle.s2 + '</div><p>' + win + '</p><button class="btn quiz-btn" id="battleRestart">🔁 다시 대결</button></div>';
+      var rb = document.getElementById("battleRestart");
+      if (rb) rb.addEventListener("click", battleStart);
+      return;
+    }
+    var cur = battle.idx < battle.per ? 1 : 2;
+    var q = battle.q[battle.idx];
+    box.innerHTML = '<div class="bank-card"><div class="battle-head"><span class="p1">P1 ' + battle.s1 + '</span><span>🎯 ' + (battle.idx + 1) + ' / ' + battle.q.length + ' · 플레이어 ' + cur + '</span><span class="p2">' + battle.s2 + ' P2</span></div>' +
+      '<div class="bank-q">' + esc(q.word) + ttsBtn(q.word, "발음 듣기") + '</div><div class="bank-options">' +
+      q.options.map(function (o) { return '<button type="button" class="bank-opt">' + esc(o) + '</button>'; }).join("") +
+      '</div><div class="bank-feedback" id="battleFb"></div></div>';
+    box.querySelectorAll(".bank-opt").forEach(function (b) {
+      b.addEventListener("click", function () {
+        if (battle.answered) return;
+        battle.answered = true;
+        var ok = b.textContent === q.answer;
+        if (cur === 1) { if (ok) battle.s1++; } else { if (ok) battle.s2++; }
+        recordStat("battle", ok);
+        box.querySelectorAll(".bank-opt").forEach(function (o) { o.disabled = true; if (o.textContent === q.answer) o.classList.add("correct"); });
+        if (!ok) b.classList.add("wrong");
+        var fb = document.getElementById("battleFb");
+        fb.textContent = (ok ? "정답! 🎉 " : "오답! 정답: " + q.answer + " ") + "다음으로 넘어갑니다.";
+        var next = document.createElement("button");
+        next.type = "button"; next.className = "btn quiz-btn"; next.style.marginTop = "10px"; next.textContent = "다음 ▶";
+        next.addEventListener("click", function () { battle.idx++; battle.answered = false; renderBattle(); });
+        fb.appendChild(next);
+      });
+    });
+  }
+  var battleBtn = document.getElementById("battleStart");
+  if (battleBtn) battleBtn.addEventListener("click", battleStart);
+
+  // ---------- 오답 유형 자동 분류 ----------
+  var STAT_CATEGORY = {
+    en2ko: "어휘", ko2en: "어휘", mini: "어휘", speed: "어휘", collo: "연어", ctx: "문맥", para: "동의어",
+    listen_word: "리스닝", listen_sent: "리스닝", listen_dict: "리스닝", lc12: "리스닝", part34: "리스닝", num: "리스닝", dictation: "리스닝", mp: "발음",
+    part_5: "문법", part_6: "문맥", part_7: "독해", part6: "문맥", reading: "독해", double_reading: "독해", part1: "묘사",
+    trans: "연결어", prep: "전치사",
+    blank: "문법·어휘", wf: "어형", confuse_dict: "철자", mix_confuse: "혼동어휘", mix_part: "어근", diag: "진단", mock_LC: "모의", mock_RC: "모의", battle: "대결"
+  };
+  function categoryStats() {
+    var cat = {};
+    Object.keys(quizStats).forEach(function (k) {
+      var c = STAT_CATEGORY[k] || "기타";
+      var s = quizStats[k] || { c: 0, w: 0 };
+      var n = (s.c || 0) + (s.w || 0);
+      if (!n) return;
+      cat[c] = cat[c] || { c: 0, w: 0 };
+      cat[c].c += s.c || 0; cat[c].w += s.w || 0;
+    });
+    return cat;
+  }
+
+  // ---------- 28일 학습 캘린더 ----------
+  function renderCalendar() {
+    var box = document.getElementById("dashCalendar");
+    if (!box) return;
+    var cells = [], maxN = 1;
+    for (var i = 27; i >= 0; i--) {
+      var d = new Date(); d.setDate(d.getDate() - i);
+      var k = d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
+      var n = weeklyLog[k] || 0;
+      if (n > maxN) maxN = n;
+      cells.push({ label: (d.getMonth() + 1) + "/" + d.getDate(), n: n });
+    }
+    function lvl(n) { if (!n) return 0; var r = n / maxN; return r > 0.75 ? 4 : r > 0.5 ? 3 : r > 0.25 ? 2 : 1; }
+    box.innerHTML = '<div class="cal-grid">' + cells.map(function (c) {
+      return '<div class="cal-cell l' + lvl(c.n) + '" title="' + c.label + ' · ' + c.n + '회">' + (c.n || "") + '</div>';
+    }).join("") + '</div><p class="muted" style="margin-top:8px">최근 28일 활동 · 연속 학습 ' + streakInfo.count + '일 · 7일 목표: 매일 1회 이상</p>';
+  }
+
+  // ---------- D-day 역산 커리큘럼 ----------
+  function renderDdayPlan() {
+    var box = document.getElementById("ddayPlanBox");
+    if (!box) return;
+    var raw = "";
+    try { raw = localStorage.getItem("toeic1000_examdate") || ""; } catch (e) {}
+    if (!raw) { box.innerHTML = '<p class="practice-note">위에서 시험 날짜를 저장하면 날짜별 학습 계획이 생성됩니다.</p>'; return; }
+    var target = new Date(raw + "T00:00:00");
+    if (isNaN(target.getTime())) { box.innerHTML = '<p class="practice-note">시험 날짜를 확인해 주세요.</p>'; return; }
+    var now = new Date();
+    var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    var days = Math.round((target - today) / 86400000);
+    if (days <= 0) { box.innerHTML = '<p class="practice-note">시험이 임박했거나 지났습니다. 마지막 점검으로 오답·복습 단어를 우선 정리하세요.</p>'; return; }
+    var learnedN = Object.keys(learned).filter(function (k) { return learned[k]; }).length;
+    var remaining = Math.max(0, totalCount - learnedN);
+    var perDay = Math.max(10, Math.ceil(remaining / days));
+    var pending = all.filter(function (u) { return u.words.some(function (w) { return !learned[w[0]]; }); });
+    var show = Math.min(days, 14);
+    var html = '';
+    for (var i = 0; i < show; i++) {
+      var u = pending.length ? pending[i % pending.length] : null;
+      html += '<li class="sprint-item"><span class="sprint-day">D-' + (days - i) + '</span>' +
+        '<span class="sprint-title">' + (i + 1) + '일차</span>' +
+        '<span class="sprint-focus">' + (u ? ("UNIT " + u.id + " " + esc(u.title)) : "전체 복습") + '</span>' +
+        '<span class="sprint-pct">' + perDay + '개</span></li>';
+    }
+    box.innerHTML = '<p class="practice-note">남은 단어 ' + remaining + '개 · 하루 약 <b>' + perDay + '</b>개 · 시험까지 ' + days + '일</p><ol class="sprint-list">' + html + '</ol>';
+  }
+
+  // ---------- 내보내기 강화 (Anki · 오답 CSV) ----------
+  function downloadBlob(name, text, type) {
+    var blob = new Blob(["\ufeff" + text], { type: type });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+  function downloadAnkiTsv() {
+    var rows = allWords().map(function (w) { return [w[0], w[3], w[4] + " / " + w[5]].join("\t"); });
+    if (!rows.length) { showToast("단어 데이터가 없습니다."); return; }
+    downloadBlob("toeic_anki_deck.txt", rows.join("\n"), "text/plain;charset=utf-8;");
+    showToast("📥 Anki용 TSV를 내보냈습니다. (단어 · 뜻 · 예문)");
+  }
+  function downloadWrongCsv() {
+    var rows = [["word", "meaning", "wrong_count", "example"]];
+    Object.keys(wrongSet).forEach(function (w) {
+      var info = allWords().filter(function (x) { return x[0] === w; })[0];
+      if (!info) return;
+      rows.push([info[0], info[3], String(wrongCount[w] || 0), info[4]]);
+    });
+    if (rows.length === 1) { showToast("오답 단어가 아직 없습니다. 퀴즈를 풀면 쌓입니다!"); return; }
+    var csv = rows.map(function (r) { return r.map(function (v) { return '"' + String(v).replace(/"/g, '""') + '"'; }).join(","); }).join("\r\n");
+    downloadBlob("toeic_wrong_words.csv", csv, "text/csv;charset=utf-8;");
+    showToast("📥 오답 단어 CSV를 내보냈습니다.");
+  }
+  var ankiBtn = document.getElementById("dlAnkiTsv");
+  if (ankiBtn) ankiBtn.addEventListener("click", downloadAnkiTsv);
+  var wrongCsvBtn = document.getElementById("dlWrongCsv");
+  if (wrongCsvBtn) wrongCsvBtn.addEventListener("click", downloadWrongCsv);
+
   function renderExtendedHome() {
     renderPartBank("5");
     renderRelations();
@@ -5310,6 +6208,8 @@
     renderBadges();
     renderMixQuiz();
     renderPart34(false);
+    renderDoubleReading(false);
+    renderPart6(false);
     renderWordFamilies();
     renderMnemonics();
     renderTemplates();
@@ -5318,7 +6218,15 @@
     renderWritingPrompt();
     renderShadowing();
     renderDday();
+    renderDdayPlan();
     renderMiniQuiz();
+    renderFrequency("");
+    renderSprint();
+    renderDictation();
+    renderTplExtra();
+    renderGuides();
+    renderPace();
+    renderBattle();
   }
   function renderHome() {
     activeView = "homeView";
@@ -6515,6 +7423,13 @@
     } else {
       wrongHtml = '<p style="font-size:13px;color:var(--text-muted)">오답이 없어요! 🎉</p>';
     }
+    var catStats = categoryStats();
+    var catHtml = "";
+    Object.keys(catStats).sort(function (a, b) { return (catStats[a].c / (catStats[a].c + catStats[a].w)) - (catStats[b].c / (catStats[b].c + catStats[b].w)); }).forEach(function (c) {
+      var s = catStats[c], n = s.c + s.w, p = n ? Math.round(s.c / n * 100) : 0;
+      catHtml += '<div class="bar-row"><span class="bar-label">' + esc(c) + '</span><div class="bar-track"><div class="bar-fill" style="width:' + p + '%"></div></div><span class="bar-pct">' + p + "%</span></div>";
+    });
+    if (!catHtml) catHtml = '<p style="font-size:13px;color:var(--text-muted)">퀴즈를 풀면 영역별(어휘·문법·리스닝·독해) 정답률이 분류됩니다.</p>';
     document.getElementById("dashBox").innerHTML =
       '<div class="dash-grid">' +
       '<div class="dash-card"><h3>📚 학습 진행률</h3><div class="big">' + learnedN + ' <span style="font-size:15px;color:var(--text-muted)">/ ' + totalCount + "</span></div><div class=\"bar-row\"><div class=\"bar-track\"><div class=\"bar-fill\" style=\"width:" + pct + "%\"></div></div><span class=\"bar-pct\">" + pct + "%</span></div></div>" +
@@ -6528,9 +7443,12 @@
       '<div class="dash-card"><h3>📈 유형별 정답률</h3>' + typeHtml + "</div>" +
       '<div class="dash-card"><h3>📅 최근 7일 학습 활동</h3><div class="week-bars">' + weekHtml + "</div></div>" +
       '<div class="dash-card"><h3>⚠️ 자주 틀린 단어</h3>' + wrongHtml + "</div>" +
+      '<div class="dash-card"><h3>🧭 오답 유형 분류</h3>' + catHtml + "</div>" +
+      '<div class="dash-card"><h3>🗓 28일 학습 캘린더</h3><div id="dashCalendar"></div></div>' +
       "</div>";
     var srsBtn = document.getElementById("dashSrs");
     if (srsBtn) srsBtn.addEventListener("click", enterSrs);
+    renderCalendar();
   }
 
   function enterDash() {
