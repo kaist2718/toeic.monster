@@ -1,0 +1,19 @@
+{
+  "name": "toeic-monster",
+  "version": "1.0.0",
+  "private": true,
+  "description": "toeic.monster — 발음·예문으로 외우는 TOEIC 필수 어휘 1,000 정적 사이트",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "audit": "npm run audit:content && npm run audit:text",
+    "audit:content": "node tools/audit-content.mjs",
+    "audit:text": "node tools/audit-text.mjs",
+    "build": "node tools/build-pages.mjs",
+    "check": "npm run audit && npm run build",
+    "verify": "git diff --exit-code -- units guides sitemap.xml",
+    "check:ci": "npm run check && npm run verify"
+  }
+}

@@ -306,4 +306,28 @@ index.html 인라인 스크립트 문법 오류 0 · 중복 id 0
 
 - [ ] 동의어 치환 200문항 · 빈도 어휘 200개까지 데이터 확충 (구조는 완비)
 - [ ] Part 2·5 LC/RC 오답 이유 태그를 세분화해 대시보드 추천 정확도 향상
-- [ ] 커밋 전 `node tools/audit-content.mjs && node tools/audit-text.mjs && node tools/build-pages.mjs` 를 습관화
+- [ ] 커밋 전 `npm run check` 를 습관화 (아래 9번 참고)
+
+---
+
+## 9. 개발 명령 (package.json)
+
+콘텐츠를 수정한 뒤 아래 명령으로 한 번에 점검·빌드할 수 있습니다. 외부 의존성은 없습니다(Node 18+).
+
+| 명령 | 하는 일 |
+| --- | --- |
+| `npm run audit:content` | 중복·형식·“정답이 보기에 없는 문항”·교차 중복·표기 불일치 점검 |
+| `npm run audit:text` | 맞춤법·영문 철자·공백·전각문자·TTS 낭독 기호 점검 |
+| `npm run audit` | 위 두 감사를 연속 실행 |
+| `npm run build` | `units/`·`guides/`·`sitemap.xml` 정적 페이지 재생성 |
+| **`npm run check`** | **감사 2종 + 빌드를 한 번에 (커밋 전 권장)** |
+| `npm run verify` | 생성 파일(`units/`·`guides/`·`sitemap.xml`)이 HEAD와 달라지면 실패 |
+| `npm run check:ci` | `check` + `verify` — **생성물 커밋 누락 감지** |
+
+```bash
+npm run check      # 커밋 전 기본 점검
+npm run check:ci   # 소스만 바꾸고 build를 안 돌린 경우까지 잡아냄
+```
+
+> `check:ci` 는 실패 시 "어느 생성 파일이 달라졌는지"를 git diff로 보여줍니다. 그대로 `git add` 하여 같이 커밋하면 됩니다.
+> 감사 도구는 문제가 있으면 종료 코드 1을 반환하므로 Git 훅·CI에서 그대로 사용할 수 있습니다.
