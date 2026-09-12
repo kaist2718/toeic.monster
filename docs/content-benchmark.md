@@ -335,7 +335,7 @@ index.html 인라인 스크립트 문법 오류 0 · 중복 id 0
 | `npm run test` | TTS 음성 선택 로직 회귀 테스트 (`tools/test-tts-voice.mjs`) |
 | `npm run build` | `units/`·`guides/`·`sitemap.xml` 정적 페이지 재생성 |
 | **`npm run check`** | **감사 2종 + 테스트 + 빌드를 한 번에 (커밋 전 권장)** |
-| `npm run verify` | 생성 파일(`units/`·`guides/`·`sitemap.xml`)이 HEAD와 달라지면 실패 |
+| `npm run verify` | 생성 파일(`units/`·`guides/`·`sitemap.xml`)이 HEAD와 다르거나 커밋되지 않았으면 실패 (`sitemap.xml` 의 `<lastmod>` 는 커밋 시점에 따라 달라지므로 비교에서 제외) |
 | `npm run check:ci` | `check` + `verify` — **생성물 커밋 누락 감지** |
 
 ```bash

@@ -105,6 +105,7 @@ Speaking·Writing 구성은 ETS 공식 안내를 기준으로 하며, `data/extr
 | Part 7 단일 지문 | 리딩 미니 지문 6 → **10**, 문제은행 Part 7 6 → **10** |
 | SEO 페이지 | 가이드 8 → **9** (`guides/speaking-writing-guide.html` 신규) |
 | 감사 범위 | 문자열 점검 8,714 → **9,630개** (TTS 대상 3,098 → 3,180개) |
+| 생성물 검증 수정 | `npm run verify` 가 `git diff` 대신 `tools/verify-generated.mjs` 를 쓰도록 교체 — 커밋 직후 `sitemap.xml` 의 `<lastmod>` 가 달라져 **CI 가 영구히 실패하던 문제** 해결 (아래 9-1) |
 
 ---
 
@@ -201,3 +202,20 @@ npm run check:ci       # 생성물 커밋 누락까지 감지
 - `check` 가 실패하면 로그의 `npm run verify` 출력에서 **어느 생성 파일이 달라졌는지** 바로 볼 수 있습니다.
   그대로 `git add` 후 다시 커밋하면 됩니다.
 - 같은 브랜치에 연속 푸시하면 앞선 실행은 자동 취소됩니다(`concurrency`).
+
+### 9-1. `verify` 를 교체한 이유 (중요)
+
+기존 `verify` 는 `git diff --exit-code -- units guides sitemap.xml` 이었습니다. 그런데 `sitemap.xml` 의 `<lastmod>` 는
+**`data`·`index.html` 을 마지막으로 건드린 커밋 날짜**에서 나옵니다(`tools/build-pages.mjs` 의 `lastModified()`).
+
+```
+① 빌드 실행  →  lastmod = “마지막 커밋 날짜” (예: 09-12)
+② 커밋 생성  →  이제 “마지막 커밋 날짜”가 09-13 으로 바뀜
+③ 빌드 재실행 →  lastmod = 09-13  →  커밋된 파일(09-12)과 달라짐
+④ verify 실패 — 내용은 완전히 같은데도 실패
+```
+
+빌드 결과 자체는 결정적(재실행해도 동일)이지만, **커밋이라는 사건이 입력을 바꾸기 때문에**
+이 비교는 커밋 직후·CI 에서 항상 실패합니다. 그래서 `<lastmod>` 만 비교에서 빼고
+`tools/verify-generated.mjs` 로 검증하도록 바꿨습니다. 실제로 잡아야 할 것은
+“생성물을 커밋하지 않은 경우”이지 “날짜가 하루 달라진 경우”가 아니기 때문입니다.
