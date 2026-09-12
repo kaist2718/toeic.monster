@@ -221,10 +221,11 @@ ${body}
 
 function wordItem(w) {
   const [word, ipa, kpron, mean, ex, exKo, exPron] = w;
+  // 영어 단어·발음기호·예문에는 lang="en" 을 붙여 화면 낭독기가 영어로 읽게 합니다.
   return `      <li>
-        <div class="w-row"><span class="w-word">${esc(word)}</span><span class="w-ipa">${esc(ipa)}</span><span class="w-kr">${esc(kpron)}</span></div>
+        <div class="w-row"><span class="w-word" lang="en">${esc(word)}</span><span class="w-ipa" lang="en">${esc(ipa)}</span><span class="w-kr">${esc(kpron)}</span></div>
         <p class="w-mean">${esc(mean)}</p>
-        <p class="w-ex">${esc(ex)}</p>
+        <p class="w-ex" lang="en">${esc(ex)}</p>
         <p class="w-expron">${esc(exPron || "")}</p>
         <p class="w-exko">${esc(exKo)}</p>
       </li>`;
@@ -409,9 +410,9 @@ function buildIdiomsPage(idioms) {
   const items = idioms
     .map(
       (it) => `      <li>
-        <div class="w-row"><span class="w-word">${esc(it[0])}</span></div>
+        <div class="w-row"><span class="w-word" lang="en">${esc(it[0])}</span></div>
         <p class="w-mean">${esc(it[1])}</p>
-        <p class="w-ex">${esc(it[2])}</p>
+        <p class="w-ex" lang="en">${esc(it[2])}</p>
         <p class="w-exko">${esc(it[3])}</p>
       </li>`,
     )

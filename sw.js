@@ -1,17 +1,33 @@
 /* toeic.monster Service Worker - 오프라인 학습 지원 */
-var CACHE_NAME = "toeic-monster-v3";
+var CACHE_NAME = "toeic-monster-v4";
 var CORE_ASSETS = [
   "./",
   "./index.html",
   "./manifest.webmanifest",
-  "./icon.svg"
+  "./icon.svg",
+  "./units/",
+  "./units/index.html",
+  "./guides/",
+  "./guides/index.html"
 ];
 
-// 설치: 핵심 에셋 캐시 (데이터 유닛은 첫 방문 시점에 캐시)
+// 어휘 데이터. index.html 이 첫 화면에서 바로 내려받는 파일들이라
+// 설치 단계에서 미리 캐시해 두면 다음 방문부터는 오프라인에서도 즉시 열립니다.
+var DATA_ASSETS = ["data/idioms.js", "data/extra.js"];
+for (var i = 1; i <= 30; i++) {
+  DATA_ASSETS.push("data/unit" + (i < 10 ? "0" + i : i) + ".js");
+}
+
+// 설치: 핵심 에셋 + 어휘 데이터 캐시
+// 일부 파일이 없더라도(부분 배포 등) 설치 자체는 실패하지 않게 개별적으로 담습니다.
 self.addEventListener("install", function (event) {
   event.waitUntil(
     caches.open(CACHE_NAME).then(function (cache) {
-      return cache.addAll(CORE_ASSETS);
+      return Promise.all(
+        CORE_ASSETS.concat(DATA_ASSETS).map(function (url) {
+          return cache.add(url).catch(function () {});
+        })
+      );
     }).then(function () {
       return self.skipWaiting();
     })
@@ -30,6 +46,11 @@ self.addEventListener("activate", function (event) {
       return self.clients.claim();
     })
   );
+});
+
+// 새 버전으로 바로 전환하고 싶을 때 페이지에서 보내는 신호
+self.addEventListener("message", function (event) {
+  if (event.data && event.data.type === "SKIP_WAITING") self.skipWaiting();
 });
 
 // 요청 전략

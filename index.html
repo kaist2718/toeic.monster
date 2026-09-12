@@ -45,6 +45,7 @@
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon.svg">
 <!-- 방문자 분석 (Umami Cloud — 쿠키 미사용, 개인정보 미수집) -->
+<link rel="preconnect" href="https://cloud.umami.is" crossorigin>
 <script async defer src="https://cloud.umami.is/script.js" data-website-id="04c3b8cf-c418-4a70-8549-9f21e09b8cbf"></script>
 <script type="application/ld+json">
 {
@@ -249,8 +250,30 @@
   }
   .topbar-actions { display: flex; gap: 8px; }
   .tts-ctrl { display: flex; align-items: center; gap: 6px; }
+  .tts-options { display: flex; align-items: center; gap: 6px; }
   .tts-ctrl .btn { padding: 8px 10px; }
   .tts-ctrl .btn.muted { background: rgba(0,0,0,.32); }
+  /* 발음 정지 버튼 — 재생 중일 때만 나타납니다 */
+  #btnTtsStop { font-size: 12px; }
+  #btnTtsStop[hidden] { display: none; }
+  /* 모바일 메뉴로 옮겨 담는 목소리·속도 묶음 */
+  .tts-menu-group { display: grid; gap: 6px; }
+  .tts-menu-group .tts-menu-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-muted);
+  }
+  .tts-menu-group .tts-options { flex-direction: column; align-items: stretch; gap: 6px; }
+  .tts-menu-group .tts-rate {
+    width: 100%;
+    max-width: none;
+    min-height: 44px;
+    font-size: 13.5px;
+    padding: 10px 12px;
+    background: var(--soft-blue);
+    color: var(--text);
+    text-align: left;
+  }
   .tts-rate {
     font-family: inherit;
     font-size: 12.5px;
@@ -1931,7 +1954,11 @@
     .progress-wrap { min-width: 130px; }
     .progress-label { font-size: 11px; }
     .btn { padding: 7px 10px; font-size: 12px; }
+    /* 손가락으로 누르기 편하도록 최소 터치 영역(약 40px)을 보장합니다. */
+    .topbar .btn, .menu-toggle { min-height: 40px; }
     .tts-voice { max-width: 96px; font-size: 11.5px; padding: 7px 6px; }
+    /* iOS 사파리는 입력 글자가 16px 미만이면 초점을 줄 때 화면을 확대합니다. */
+    .searchbar input, .dict-input, .quiz-head select, .dday-input { font-size: 16px; }
     main, .searchbar { padding-left: 14px; padding-right: 14px; }
     .vocab-grid { grid-template-columns: 1fr; }
     .card { flex-direction: column; }
@@ -1996,6 +2023,13 @@
     }
     .topbar-actions .btn:hover,
     .topbar-actions .btn.active { background: var(--primary-solid); color: #fff; }
+    .topbar-actions .btn { min-height: 44px; }
+    /* 모바일에서는 목소리·속도 선택을 드롭다운 안에 넣어 너비를 넓게 씁니다. */
+    .tts-menu-group {
+      padding-bottom: 8px;
+      margin-bottom: 4px;
+      border-bottom: 1px solid var(--border);
+    }
   }
   .skip-link {
     position: absolute;
@@ -2066,17 +2100,20 @@
     </div>
     <div class="tts-ctrl" role="group" aria-label="발음 듣기 설정">
       <button class="btn" id="btnTts" title="발음 듣기 켜기/끄기" aria-label="발음 듣기 켜기/끄기" aria-pressed="true">🔊</button>
-      <label class="sr-only" for="ttsRate">발음 속도</label>
-      <select class="tts-rate" id="ttsRate" title="발음 속도">
-        <option value="0.7">0.7×</option>
-        <option value="0.85" selected>0.85×</option>
-        <option value="1">1×</option>
-        <option value="1.15">1.15×</option>
-      </select>
-      <label class="sr-only" for="ttsVoice">발음 목소리</label>
-      <select class="tts-rate tts-voice" id="ttsVoice" title="발음 목소리 선택" aria-label="발음 목소리 선택">
-        <option value="">자동</option>
-      </select>
+      <button class="btn" id="btnTtsStop" title="발음 정지" aria-label="발음 정지" hidden>⏹</button>
+      <div class="tts-options" id="ttsOptions">
+        <label class="sr-only" for="ttsRate">발음 속도</label>
+        <select class="tts-rate" id="ttsRate" title="발음 속도">
+          <option value="0.7">0.7×</option>
+          <option value="0.85" selected>0.85×</option>
+          <option value="1">1×</option>
+          <option value="1.15">1.15×</option>
+        </select>
+        <label class="sr-only" for="ttsVoice">발음 목소리</label>
+        <select class="tts-rate tts-voice" id="ttsVoice" title="발음 목소리 선택" aria-label="발음 목소리 선택">
+          <option value="">자동</option>
+        </select>
+      </div>
     </div>
     <button class="btn" id="btnTheme" title="다크 모드 전환" aria-label="다크 모드 전환">🌙</button>
     <button class="btn menu-toggle" id="btnMenu" aria-label="메뉴 열기" aria-expanded="false">☰</button>
@@ -3317,58 +3354,130 @@
   // 사용자가 고른 목소리(voiceURI). 비어 있으면 영어 음성을 자동으로 고릅니다.
   var TTS_VOICE_URI = "";
   try { TTS_VOICE_URI = localStorage.getItem("toeic1000_ttsvoice") || ""; } catch (e) {}
+  // 고른 음성이 없을 때 쓸 기본 언어(마지막으로 쓴 음성의 언어를 기억)
+  var TTS_LANG = "en-US";
+  try { TTS_LANG = localStorage.getItem("toeic1000_ttslang") || "en-US"; } catch (e) {}
+  // 모바일 브라우저는 음성 목록을 첫 사용자 조작 이후에 채우거나, 여러 번에 나눠서 줍니다.
+  // 그래서 "한 번만" 채우지 않고 목록이 준비될 때까지 다시 확인합니다.
+  var ttsVoiceWatch = null;
+  var ttsVoiceWatchTries = 0;
+  var TTS_VOICE_WATCH_MAX = 40; // 0.25초 × 40 = 최대 10초
+
   function allVoices() {
     if (!("speechSynthesis" in window)) return [];
     try { return window.speechSynthesis.getVoices() || []; } catch (e) { return []; }
   }
+  // lang 표기는 브라우저마다 en-US / en_US / en-uk 처럼 조금씩 달라서 정규화해 비교합니다.
+  function voiceLang(v) {
+    return String((v && v.lang) || "").replace(/_/g, "-").toLowerCase();
+  }
+  function isEnglishVoice(v) {
+    var l = voiceLang(v);
+    return l === "en" || l.indexOf("en-") === 0;
+  }
+  function englishVoices() {
+    return allVoices().filter(isEnglishVoice);
+  }
+  // 모바일 사파리 등은 voiceURI 가 세션마다 달라질 수 있어 이름으로도 한 번 더 찾습니다.
+  function findVoiceByURI(uri) {
+    if (!uri) return null;
+    var voices = allVoices();
+    for (var i = 0; i < voices.length; i++) {
+      if (voices[i].voiceURI === uri) return voices[i];
+    }
+    for (var j = 0; j < voices.length; j++) {
+      if (voices[j].name === uri) return voices[j];
+    }
+    return null;
+  }
   // 자동 선택: en-US → en-GB → en-AU → en-CA → en … 순서로 영어 음성을 고릅니다.
   function pickAutoVoice() {
-    var voices = allVoices();
+    var voices = englishVoices();
     if (!voices.length) return null;
     var prefer = ["en-us", "en-gb", "en-au", "en-ca", "en"];
     for (var p = 0; p < prefer.length; p++) {
-      var hit = voices.filter(function (v) {
-        return String(v.lang || "").toLowerCase().replace("_", "-").indexOf(prefer[p]) === 0;
-      })[0];
-      if (hit) return hit;
+      for (var i = 0; i < voices.length; i++) {
+        if (prefer[p] === "en" ? isEnglishVoice(voices[i]) : voiceLang(voices[i]).indexOf(prefer[p]) === 0) {
+          return voices[i];
+        }
+      }
     }
-    return voices.filter(function (v) { return /^en/i.test(v.lang || ""); })[0] || null;
+    return voices[0];
   }
   // 사용자가 고른 음성이 있으면 그것을, 없거나 사라졌으면 자동 선택을 씁니다.
+  // 재생 직전에 매번 다시 조회해 "고른 목소리가 기본 음성으로 재생"되는 문제를 막습니다.
   function pickEnglishVoice() {
-    var voices = allVoices();
-    if (TTS_VOICE_URI) {
-      var chosen = voices.filter(function (v) { return v.voiceURI === TTS_VOICE_URI; })[0];
-      if (chosen) return chosen;
-    }
-    return pickAutoVoice();
+    return findVoiceByURI(TTS_VOICE_URI) || pickAutoVoice();
   }
   // 헤더의 목소리 목록을 브라우저에 설치된 영어 음성으로 채웁니다.
   function fillVoiceSelect() {
     var sel = document.getElementById("ttsVoice");
     if (!sel) return;
-    var list = allVoices().filter(function (v) { return /^en/i.test(v.lang || ""); });
+    var list = englishVoices();
     if (!list.length) return; // 아직 음성 목록이 준비되지 않았으면 그대로 둡니다
     var auto = pickAutoVoice();
     var html = '<option value="">자동' + (auto && auto.name ? " (" + esc(auto.name) + ")" : "") + "</option>";
     for (var i = 0; i < list.length; i++) {
       var v = list[i];
       var label = (v.name || v.voiceURI) + (v.lang ? " · " + v.lang : "");
-      html += '<option value="' + escapeAttr(v.voiceURI) + '">' + esc(label) + "</option>";
+      html += '<option value="' + escapeAttr(v.voiceURI || v.name || "") + '">' + esc(label) + "</option>";
     }
     sel.innerHTML = html;
     sel.value = TTS_VOICE_URI;
-    if (sel.value !== TTS_VOICE_URI) sel.value = ""; // 저장된 음성이 없으면 자동으로 표시
+    // 저장된 음성이 이 브라우저에 없으면 자동으로 되돌립니다.
+    if (TTS_VOICE_URI && sel.value !== TTS_VOICE_URI) {
+      TTS_VOICE_URI = "";
+      try { localStorage.removeItem("toeic1000_ttsvoice"); } catch (e) {}
+      sel.value = "";
+    }
+    sel.title = "발음 목소리 선택 (영어 음성 " + list.length + "개)";
+  }
+  // 목록과 현재 선택을 최신 음성 기준으로 다시 계산합니다.
+  function refreshTtsVoices() {
+    TTS_VOICE = pickEnglishVoice();
+    if (!englishVoices().length) return false;
+    fillVoiceSelect();
+    return true;
+  }
+  // 음성 목록이 준비될 때까지 짧은 간격으로 다시 확인합니다(모바일 대응).
+  function watchTtsVoices() {
+    if (!("speechSynthesis" in window)) return;
+    if (refreshTtsVoices()) return;
+    if (ttsVoiceWatch) return;
+    ttsVoiceWatchTries = 0;
+    ttsVoiceWatch = setInterval(function () {
+      ttsVoiceWatchTries++;
+      if (refreshTtsVoices() || ttsVoiceWatchTries >= TTS_VOICE_WATCH_MAX) {
+        clearInterval(ttsVoiceWatch);
+        ttsVoiceWatch = null;
+      }
+    }, 250);
   }
   if ("speechSynthesis" in window) {
-    TTS_VOICE = pickEnglishVoice();
     // 일부 브라우저는 음성 목록을 비동기로 채우므로, 준비되면 다시 고릅니다.
     try {
-      window.speechSynthesis.onvoiceschanged = function () {
-        TTS_VOICE = pickEnglishVoice();
-        fillVoiceSelect();
-      };
+      window.speechSynthesis.onvoiceschanged = function () { refreshTtsVoices(); };
     } catch (e) {}
+    watchTtsVoices();
+    // 모바일 사파리·안드로이드 크롬은 첫 사용자 조작 뒤에야 전체 음성 목록을 내어 줍니다.
+    // 조작이 들어오면 목록을 다시 확인하고, 아직 비어 있으면 무음 재생으로 TTS 잠금을 풉니다.
+    var ttsUnlocked = false;
+    var unlockTts = function () {
+      if (ttsUnlocked) return;
+      ttsUnlocked = true;
+      if (!englishVoices().length) {
+        try {
+          var u = new SpeechSynthesisUtterance("");
+          u.volume = 0;
+          window.speechSynthesis.speak(u);
+        } catch (e) {}
+      }
+      refreshTtsVoices();
+      watchTtsVoices();
+    };
+    document.addEventListener("pointerdown", unlockTts, { passive: true });
+    document.addEventListener("touchstart", unlockTts, { passive: true });
+    document.addEventListener("keydown", unlockTts);
   }
   // 사용자 설정: 발음 듣기 켜기/끄기 + 재생 속도 (localStorage 에 저장)
   var TTS_ENABLED = true;
@@ -3383,6 +3492,35 @@
   var TTS_HL_SELECTORS = ".ex-text,.fc-ex,.wod-ex,.idiom-ex,.gt-ex,.quote-en,.reading-passage,.bank-q,.quiz-q,.listen-script,.dialogue-text,.dialogue-line,.w,.wod-word,.idiom-en";
   var ttsHlTimer = null;
   var ttsHlEl = null;
+  // cancel() 직후 재생을 미룰 때 쓰는 타이머(모바일에서 기본 음성으로 새는 현상 방지)
+  var ttsSpeakTimer = null;
+  // 현재 발성이 진행 중인지 · 마지막으로 읽은 문장(같은 버튼을 다시 누르면 정지)
+  var ttsActive = false;
+  var ttsLastNorm = "";
+  // 취소된 발성의 onend/onerror 가 뒤늦게 도착해 새 발성 상태를 망가뜨리지 않게 하는 토큰
+  var ttsToken = 0;
+  function setTtsStopVisible(on) {
+    var b = document.getElementById("btnTtsStop");
+    if (b) b.hidden = !on;
+  }
+  // 발성 중단 — 정지 버튼·Esc·같은 문장 재클릭에서 공통으로 씁니다.
+  function stopSpeak() {
+    ttsActive = false;
+    ttsToken++;
+    if (ttsSpeakTimer) { clearTimeout(ttsSpeakTimer); ttsSpeakTimer = null; }
+    try { if ("speechSynthesis" in window) window.speechSynthesis.cancel(); } catch (e) {}
+    setTtsStopVisible(false);
+    clearTTSHighlight();
+  }
+  function finishSpeak() {
+    ttsActive = false;
+    setTtsStopVisible(false);
+    clearTTSHighlight();
+  }
+  function isSpeakingNow() {
+    if (ttsActive) return true;
+    try { return !!(window.speechSynthesis && window.speechSynthesis.speaking); } catch (e) { return false; }
+  }
   function normSpeak(s) {
     return String(s == null ? "" : s)
       .replace(/[_＿]{2,}/g, " ")
@@ -3442,26 +3580,54 @@
     // 읽을 영어가 없으면(예: 한글만 있는 문장) 영어 음성으로 읽지 않습니다.
     if (!clean || !/[A-Za-z]/.test(clean)) return;
     highlightSpeak(text);
+    // 같은 문장을 다시 누르면 정지할 수 있도록 마지막 문장을 기억합니다.
+    ttsActive = true;
+    ttsLastNorm = normSpeak(text);
+    setTtsStopVisible(true);
+    // 재생 직전에 현재 음성 목록에서 고른 음성을 다시 찾습니다.
+    // (모바일에서는 첫 재생 전까지 목록이 비어 있어, 미리 담아 둔 음성 객체가 무시되곤 합니다)
+    var voice = pickEnglishVoice();
+    if (voice) TTS_VOICE = voice;
     var u = new SpeechSynthesisUtterance(clean);
     u.rate = rate || TTS_RATE;
-    if (!TTS_VOICE) TTS_VOICE = pickEnglishVoice();
-    if (TTS_VOICE) u.voice = TTS_VOICE;
-    // 고른 음성의 언어를 그대로 씁니다. (en-GB 등 고른 음성이 무시되지 않도록)
-    u.lang = (TTS_VOICE && TTS_VOICE.lang) ? TTS_VOICE.lang : "en-US";
-    u.onend = function () { clearTTSHighlight(); };
-    u.onerror = function () { clearTTSHighlight(); };
-    try { window.speechSynthesis.cancel(); } catch (e) {}
-    window.speechSynthesis.speak(u);
-    // 안전장치: onend 가 오지 않는 환경에서도 하이라이트를 해제합니다.
+    if (voice) {
+      u.voice = voice;
+      // 고른 음성의 언어를 그대로 씁니다. (en-GB 등 고른 음성이 무시되지 않도록)
+      u.lang = voice.lang || TTS_LANG;
+    } else {
+      u.lang = TTS_LANG;
+    }
+    // 취소된 이전 발성의 콜백이 늦게 와도 무시하도록 토큰을 붙입니다.
+    ttsToken++;
+    var myToken = ttsToken;
+    u.onend = function () { if (myToken === ttsToken) finishSpeak(); };
+    u.onerror = function () { if (myToken === ttsToken) finishSpeak(); };
+    var synth = window.speechSynthesis;
+    var wasSpeaking = false;
+    try { wasSpeaking = !!(synth.speaking || synth.pending); } catch (e) {}
+    try { synth.cancel(); } catch (e) {}
+    var start = function () { try { synth.speak(u); } catch (e) {} };
+    if (ttsSpeakTimer) { clearTimeout(ttsSpeakTimer); ttsSpeakTimer = null; }
+    // 안드로이드 크롬·iOS 사파리에서는 cancel() 직후 speak()를 부르면 새 발성이 무시되거나
+    // 기본 목소리로 재생되는 경우가 있어, 재생 중이었다면 아주 잠깐 쉬었다가 재생합니다.
+    if (wasSpeaking) {
+      ttsSpeakTimer = setTimeout(function () { ttsSpeakTimer = null; start(); }, 120);
+    } else {
+      start();
+    }
+    // 안전장치: onend 가 오지 않는 환경에서도 하이라이트와 정지 버튼을 정리합니다.
     if (ttsHlTimer) clearTimeout(ttsHlTimer);
-    ttsHlTimer = setTimeout(clearTTSHighlight, Math.max(2000, clean.length * 120));
+    ttsHlTimer = setTimeout(function () { if (myToken === ttsToken) finishSpeak(); }, Math.max(2000, clean.length * 120));
   }
   function speak(text) { speakTTS(text, TTS_RATE); }
   // 예문 듣기 버튼(위임 처리): data-say 속성의 문장을 읽습니다.
+  // 재생 중인 문장을 다시 누르면 정지합니다(토글).
   document.addEventListener("click", function (e) {
     var b = e.target && e.target.closest ? e.target.closest(".js-tts") : null;
     if (!b) return;
-    speak(b.getAttribute("data-say") || "");
+    var text = b.getAttribute("data-say") || "";
+    if (isSpeakingNow() && ttsLastNorm && normSpeak(text) === ttsLastNorm) { stopSpeak(); return; }
+    speak(text);
   });
 
   // 발음 듣기 토글 · 속도·목소리 컨트롤 (헤더)
@@ -3499,11 +3665,23 @@
     TTS_VOICE_URI = this.value || "";
     try { localStorage.setItem("toeic1000_ttsvoice", TTS_VOICE_URI); } catch (e) {}
     TTS_VOICE = pickEnglishVoice();
+    if (TTS_VOICE) {
+      TTS_LANG = TTS_VOICE.lang || TTS_LANG;
+      try { localStorage.setItem("toeic1000_ttslang", TTS_LANG); } catch (e) {}
+    }
     if (TTS_VOICE && TTS_VOICE_URI) {
       showToast("🔊 목소리: " + (TTS_VOICE.name || TTS_VOICE.lang || "선택한 음성"));
+      // 고른 목소리를 바로 들어볼 수 있게 짧은 예문을 읽어 줍니다.
+      if (TTS_ENABLED) speakTTS("This is a sample sentence. Let us study for the TOEIC test.", TTS_RATE);
     } else {
       showToast("🔊 목소리: 자동" + (TTS_VOICE && TTS_VOICE.name ? " (" + TTS_VOICE.name + ")" : ""));
     }
+  });
+  // 발음 정지 버튼 · Esc 키로도 멈출 수 있습니다.
+  var ttsStopBtn = document.getElementById("btnTtsStop");
+  if (ttsStopBtn) ttsStopBtn.addEventListener("click", stopSpeak);
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && isSpeakingNow()) stopSpeak();
   });
   applyTtsUI();
 
@@ -3514,15 +3692,16 @@
     var li = '<div class="card ' + (isLearned ? "learned" : "") + (isFav ? " fav" : "") + '" data-word="' + escapeAttr(w[0]) + '">';
     li += '<div class="card-check"><input type="checkbox" title="외웠어요" aria-label="' + esc(w[0]) + ' 외운 단어로 표시" ' + (isLearned ? "checked" : "") + '></div>';
     li += '<div class="card-word">';
-    li += '<div class="w">' + (u.icon ? '<span class="unit-emoji">' + u.icon + '</span>' : '') + esc(w[0]) + '</div>';
-    li += '<div class="ipa">' + esc(w[1]) + '</div>';
+    // 영어 단어·발음기호·예문에는 lang="en" 을 붙여 화면 낭독기가 영어로 읽게 합니다.
+    li += '<div class="w" lang="en">' + (u.icon ? '<span class="unit-emoji">' + u.icon + '</span>' : '') + esc(w[0]) + '</div>';
+    li += '<div class="ipa" lang="en">' + esc(w[1]) + '</div>';
     li += '<div><span class="kpron">' + esc(w[2]) + '</span>';
     li += '<button class="speak" title="발음 듣기" aria-label="' + esc(w[0]) + ' 발음 듣기">🔊</button>';
     li += '<button class="fav-btn" title="내 단어장에 추가" aria-label="' + esc(w[0]) + ' 내 단어장에 추가" aria-pressed="' + (isFav ? "true" : "false") + '">' + (isFav ? "★" : "☆") + '</button></div>';
     li += '</div>';
     li += '<div class="card-body">';
     li += '<div class="mean">' + esc(w[3]) + (wc ? ' <span class="badge-wrong">🔁 오답 ' + wc + '회</span>' : '') + '</div>';
-    li += '<div class="ex"><span class="ex-text">' + esc(w[4]) + '</span> <button class="speak ex-speak" title="예문 듣기" aria-label="' + esc(w[0]) + ' 예문 듣기">🔊</button></div>';
+    li += '<div class="ex"><span class="ex-text" lang="en">' + esc(w[4]) + '</span> <button class="speak ex-speak" title="예문 듣기" aria-label="' + esc(w[0]) + ' 예문 듣기">🔊</button></div>';
     li += '<div class="ex-pron">' + esc(w[6]) + '</div>';
     li += '<div class="ex-ko">' + esc(w[5]) + '</div>';
     li += '</div></div>';
@@ -3709,7 +3888,12 @@
     });
     BTN_IDS.forEach(function (b) {
       var el = document.getElementById(b);
-      if (el) el.classList.toggle("active", b === btnId);
+      if (!el) return;
+      var on = b === btnId;
+      el.classList.toggle("active", on);
+      // 화면 낭독기 사용자에게 "현재 보고 있는 화면"을 알려 줍니다.
+      if (on) el.setAttribute("aria-current", "page");
+      else el.removeAttribute("aria-current");
     });
     var sb = document.querySelector(".searchbar");
     if (sb) sb.style.display = viewId === "homeView" ? "none" : "";
@@ -4015,6 +4199,36 @@
     if (e.target.closest(".topbar-actions .btn")) closeMenu();
     else if (!topActionsEl.contains(e.target) && e.target !== menuBtn) closeMenu();
   });
+
+  // ---------- 모바일: 목소리·속도 선택을 드롭다운 메뉴 안으로 ----------
+  // 좁은 화면에서 헤더가 복잡해지고 select 가 너무 좁아지는 문제를 해결합니다.
+  (function () {
+    var ctrl = document.querySelector(".tts-ctrl");
+    var opts = document.getElementById("ttsOptions");
+    if (!ctrl || !opts || !topActionsEl) return;
+    var group = document.createElement("div");
+    group.className = "tts-menu-group";
+    var label = document.createElement("span");
+    label.className = "tts-menu-label";
+    label.textContent = "🔊 발음 목소리 · 속도";
+    group.appendChild(label);
+    var mq = window.matchMedia ? window.matchMedia("(max-width: 1023px)") : null;
+    var place = function () {
+      var compact = mq ? mq.matches : window.innerWidth <= 1023;
+      if (compact) {
+        if (opts.parentNode !== group) group.appendChild(opts);
+        if (group.parentNode !== topActionsEl) topActionsEl.insertBefore(group, topActionsEl.firstChild);
+      } else {
+        if (opts.parentNode !== ctrl) ctrl.appendChild(opts);
+        if (group.parentNode) group.parentNode.removeChild(group);
+      }
+    };
+    place();
+    if (mq) {
+      if (mq.addEventListener) mq.addEventListener("change", place);
+      else if (mq.addListener) mq.addListener(place);
+    }
+  })();
 
   // ---------- 홈 랜딩 ----------
   function goUnit(id) {
@@ -6210,6 +6424,9 @@
   // ---------- 오답 유형 자동 분류 ----------
   var STAT_CATEGORY = {
     en2ko: "어휘", ko2en: "어휘", mini: "어휘", speed: "어휘", collo: "연어", ctx: "문맥", para: "동의어",
+    // 퀴즈·시험 모드는 유형 select 값이 접두사로 붙어 저장됩니다(quiz_en2ko 등).
+    quiz_en2ko: "어휘", quiz_ko2en: "어휘", quiz_blank: "문법·어휘",
+    exam_en2ko: "어휘", exam_ko2en: "어휘", exam_blank: "문법·어휘",
     listen_word: "리스닝", listen_sent: "리스닝", listen_dict: "리스닝", lc12: "리스닝", part34: "리스닝", num: "리스닝", dictation: "리스닝", mp: "발음",
     part_5: "문법", part_6: "문맥", part_7: "독해", part6: "문맥", reading: "독해", double_reading: "독해", part1: "묘사",
     trans: "연결어", prep: "전치사",
@@ -6226,6 +6443,60 @@
       cat[c].c += s.c || 0; cat[c].w += s.w || 0;
     });
     return cat;
+  }
+  // 영역별 약점을 "바로 그 자리에서" 훈련할 수 있도록 섹션·시작 버튼을 연결합니다.
+  var CATEGORY_DRILLS = {
+    "어휘": { target: "스피드 어휘 60초", start: "speedStart" },
+    "연어": { target: "빈출 콜로케이션 드릴", start: "colloStart" },
+    "문맥": { target: "문맥 속 어휘", start: "ctxStart" },
+    "동의어": { target: "동의어 치환 훈련", start: "paraStart" },
+    "연결어": { target: "연결어·접속부사 훈련", start: "transStart" },
+    "전치사": { target: "전치사 콜로케이션 훈련", start: "prepStart" },
+    "문법": { target: "Part 미니 문제은행", start: null },
+    "문법·어휘": { target: "Part 미니 문제은행", start: null },
+    "리스닝": { target: "Part 1·2 LC 유형 훈련", start: "lc12Start" },
+    "독해": { target: "Part 7 복수 지문", start: null },
+    "묘사": { target: "LC 심화 훈련", start: "part1Start" },
+    "발음": { target: "최소대립쌍 발음 구별", start: "mpStart" },
+    "어형": { target: "단어 패밀리", start: "wfStart" },
+    "혼동어휘": { target: "빠른 학습 도구", start: "mixQuizStart" },
+    "어근": { target: "빠른 학습 도구", start: "mixQuizStart" },
+    "철자": { target: "말하기·쓰기 연습", start: "cdPlay" },
+    "진단": { view: "btnDiag" },
+    "모의": { view: "btnMock" },
+    "대결": { target: "실전 도구", start: "battleStart" }
+  };
+  // 표본이 min개 이상인 영역 중 정답률이 가장 낮은 곳을 고릅니다.
+  function weakestCategory(min) {
+    var cat = categoryStats();
+    var worst = null;
+    Object.keys(cat).forEach(function (c) {
+      var s = cat[c], n = (s.c || 0) + (s.w || 0);
+      if (n < (min || 4)) return;
+      var p = s.c / n;
+      if (!worst || p < worst.p) worst = { name: c, p: p, n: n };
+    });
+    return worst;
+  }
+  // 추천 영역의 훈련 화면으로 바로 이동합니다.
+  function goToCategoryDrill(cat) {
+    var cfg = CATEGORY_DRILLS[cat];
+    if (!cfg) { showToast("추천 훈련을 찾지 못했어요."); return; }
+    var sec = cfg.target ? document.querySelector('.home-section[aria-label="' + cfg.target + '"]') : null;
+    if (!sec) {
+      var vb = cfg.view ? document.getElementById(cfg.view) : null;
+      if (vb) vb.click();
+      else showToast("해당 훈련 화면을 열 수 없어요.");
+      return;
+    }
+    var scrollAndStart = function () {
+      sec.scrollIntoView({ behavior: "smooth", block: "start" });
+      if (!cfg.start) return;
+      var sb = document.getElementById(cfg.start);
+      if (sb) setTimeout(function () { sb.click(); }, 360);
+    };
+    if (activeView === "homeView") scrollAndStart();
+    else { showHome(); setTimeout(scrollAndStart, 60); }
   }
 
   // ---------- 28일 학습 캘린더 ----------
@@ -6862,7 +7133,18 @@
   // ---------- PWA 서비스워커 등록 ----------
   if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) {
     window.addEventListener("load", function () {
-      navigator.serviceWorker.register("./sw.js").catch(function () {});
+      navigator.serviceWorker.register("./sw.js").then(function (reg) {
+        // 새 버전이 준비되면 다음 방문 때 적용되도록 미리 알려 줍니다.
+        reg.addEventListener("updatefound", function () {
+          var nw = reg.installing;
+          if (!nw) return;
+          nw.addEventListener("statechange", function () {
+            if (nw.state === "installed" && navigator.serviceWorker.controller) {
+              showToast("✨ 새 버전이 준비됐어요. 새로고침하면 적용됩니다.");
+            }
+          });
+        });
+      }).catch(function () {});
     });
   }
 
@@ -7538,6 +7820,16 @@
       catHtml += '<div class="bar-row"><span class="bar-label">' + esc(c) + '</span><div class="bar-track"><div class="bar-fill" style="width:' + p + '%"></div></div><span class="bar-pct">' + p + "%</span></div>";
     });
     if (!catHtml) catHtml = '<p style="font-size:13px;color:var(--text-muted)">퀴즈를 풀면 영역별(어휘·문법·리스닝·독해) 정답률이 분류됩니다.</p>';
+    // 가장 약한 영역을 찾아 바로 훈련할 수 있는 버튼을 보여 줍니다.
+    var weak = weakestCategory(4);
+    var weakHtml;
+    if (weak) {
+      weakHtml = '<div class="big">' + esc(weak.name) + " " + Math.round(weak.p * 100) + '%</div>' +
+        '<p style="font-size:12px;color:var(--text-muted)">' + weak.n + '문항 기준 · 가장 약한 영역이에요</p>' +
+        (CATEGORY_DRILLS[weak.name] ? '<button class="btn quiz-btn" id="dashDrill" style="margin-top:8px">약점 훈련 열기</button>' : "");
+    } else {
+      weakHtml = '<p style="font-size:13px;color:var(--text-muted)">퀴즈를 한 영역에서 4문항 이상 풀면 가장 약한 곳을 추천해 드려요.</p>';
+    }
     document.getElementById("dashBox").innerHTML =
       '<div class="dash-grid">' +
       '<div class="dash-card"><h3>📚 학습 진행률</h3><div class="big">' + learnedN + ' <span style="font-size:15px;color:var(--text-muted)">/ ' + totalCount + "</span></div><div class=\"bar-row\"><div class=\"bar-track\"><div class=\"bar-fill\" style=\"width:" + pct + "%\"></div></div><span class=\"bar-pct\">" + pct + "%</span></div></div>" +
@@ -7548,6 +7840,7 @@
       '<div class="dash-card"><h3>🔥 연속 학습</h3><div class="big">' + streakInfo.count + '</div><p style="font-size:12px;color:var(--text-muted)">일 · 오늘 ' + daily.count + "/" + DAILY_GOAL + "</p></div>" +
       "</div>" +
       '<div class="dash-grid">' +
+      '<div class="dash-card"><h3>🎯 다음 학습 추천</h3>' + weakHtml + "</div>" +
       '<div class="dash-card"><h3>📈 유형별 정답률</h3>' + typeHtml + "</div>" +
       '<div class="dash-card"><h3>📅 최근 7일 학습 활동</h3><div class="week-bars">' + weekHtml + "</div></div>" +
       '<div class="dash-card"><h3>⚠️ 자주 틀린 단어</h3>' + wrongHtml + "</div>" +
@@ -7556,6 +7849,8 @@
       "</div>";
     var srsBtn = document.getElementById("dashSrs");
     if (srsBtn) srsBtn.addEventListener("click", enterSrs);
+    var drillBtn = document.getElementById("dashDrill");
+    if (drillBtn && weak) drillBtn.addEventListener("click", function () { goToCategoryDrill(weak.name); });
     renderCalendar();
   }
 
@@ -7582,15 +7877,22 @@
   });
 
   // ---------- 초기화 ----------
+  // 첫 화면에 바로 필요한 것만 먼저 그리고,
+  // 홈의 확장 섹션(훈련 도구·허브 등 약 40개)은 브라우저가 한가해질 때 그립니다.
+  // 이렇게 하면 첫 화면이 뜨는 시간과 첫 입력까지 걸리는 시간이 줄어듭니다.
+  function scheduleExtendedHome() {
+    if (window.requestIdleCallback) window.requestIdleCallback(function () { renderExtendedHome(); }, { timeout: 2500 });
+    else setTimeout(renderExtendedHome, 250);
+  }
   collectUnits();
   syncLevelButtons();
   renderUnits("");
-  renderExtendedHome();
   updateProgress();
   updateWrongBadge();
   updateDailyUI();
   updateStreakUI();
   showHome();
+  scheduleExtendedHome();
 
   // ---------- 딥링크 ----------
   // 유닛 정적 페이지(units/unit-NN.html)와 검색엔진 SearchAction 이 넘겨주는
