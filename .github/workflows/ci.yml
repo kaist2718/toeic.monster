@@ -36,7 +36,7 @@ jobs:
           node-version: ${{ matrix.node }}
 
       # check      = audit:content + audit:text + audit:site + test + build
-      # verify     = units/ · guides/ · sitemap.xml 이 HEAD와 달라지면 실패
+      # verify     = units/ · guides/ · grammar/ · sitemap.xml 이 HEAD와 달라지면 실패
       #              (소스만 고치고 build 를 돌리지 않은 커밋을 잡아냅니다)
       - name: 감사 · 테스트 · 빌드 · 생성물 검증
         run: npm run check:ci

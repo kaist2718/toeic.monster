@@ -4,7 +4,7 @@
  *
  * 콘텐츠를 추가한 뒤 아래를 자동 점검합니다.
  *   1) data/*.js 어휘·숙어·확장 콘텐츠의 형식과 중복
- *   2) index.html 안의 학습 배열(콜로케이션·혼동어휘·문법 팁 등)의 중복
+ *   2) index.html 안의 학습 배열(콜로케이션·혼동어휘·문법 팁 등)과 문법 교재(grammar)의 중복·형식
  *   3) 정답이 보기에 없는 문항(오타성 버그)
  *   4) data/extra.js 와 index.html 배열 사이의 중복 항목
  *   5) 사이트에 표기한 어휘 총량과 실제 데이터 수 일치 여부
@@ -21,6 +21,9 @@ import vm from "node:vm";
 import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+
+/** 단계별 문법 교재 데이터 파일 — build-pages.mjs 와 같은 목록을 씁니다. */
+const GRAMMAR_FILES = ["data/grammar-basic.js", "data/grammar-intermediate.js", "data/grammar-advanced.js"];
 const read = (p) => fs.readFileSync(path.join(ROOT, p), "utf8");
 
 const problems = [];
@@ -38,13 +41,14 @@ function loadData() {
     const file = `data/unit${String(i).padStart(2, "0")}.js`;
     vm.runInContext(read(file), sandbox, { filename: file, timeout: 5000 });
   }
-  for (const file of ["data/idioms.js", "data/extra.js"]) {
+  for (const file of ["data/idioms.js", "data/extra.js", ...GRAMMAR_FILES]) {
     vm.runInContext(read(file), sandbox, { filename: file, timeout: 5000 });
   }
   return {
     vocab: sandbox.window.VOCAB_UNITS || {},
     idioms: sandbox.window.VOCAB_IDIOMS || [],
     extra: sandbox.window.TOEIC_EXTRA || {},
+    grammar: sandbox.window.GRAMMAR_BOOKS || [],
   };
 }
 
@@ -134,7 +138,7 @@ function checkAnswerInOptions(label, arr) {
 /* 4. 점검                                                             */
 /* ------------------------------------------------------------------ */
 
-const { vocab, idioms, extra } = loadData();
+const { vocab, idioms, extra, grammar } = loadData();
 
 // 4-1. 유닛 어휘
 const unitIds = Object.keys(vocab).map(Number).sort((a, b) => a - b);
@@ -187,6 +191,61 @@ checkAnswerInOptions("extra.prepositions", extra.prepositions);
 (extra.guides || []).forEach((g) => {
   if (!g.slug || !g.title || !Array.isArray(g.sections)) fail(`extra.guides: 형식이 불완전한 가이드 — ${g.slug || g.title}`);
 });
+
+// 4-3-1. 단계별 문법 교재 (data/grammar-*.js)
+const grammarIds = dupes(grammar.map((b) => b && b.id));
+if (grammarIds.length) fail(`data/grammar-*.js: 교재 id가 중복입니다 — ${grammarIds.join(", ")}`);
+const grammarLevels = dupes(grammar.map((b) => b && b.level));
+if (grammarLevels.length) fail(`data/grammar-*.js: 단계 이름이 중복입니다 — ${grammarLevels.join(", ")}`);
+const allChapterTitles = [];
+grammar.forEach((b) => {
+  const where = `data/grammar-*.js[${b && b.id ? b.id : "?"}]`;
+  if (!b || !b.id || !b.title || !Array.isArray(b.chapters) || !b.chapters.length) {
+    fail(`${where}: 교재 형식이 불완전합니다(id·title·chapters 필수).`);
+    return;
+  }
+  if (b.desc.length < 40 || b.desc.length > 170) {
+    fail(`${where}: desc 길이가 부적절합니다(${b.desc.length}자, 권장 40~170).`);
+  }
+  // 과 번호는 1부터 빠짐없이 이어져야 목차·앵커가 어긋나지 않습니다.
+  const nos = b.chapters.map((c) => c.no);
+  const expected = b.chapters.map((_, i) => i + 1);
+  if (nos.join(",") !== expected.join(",")) {
+    fail(`${where}: 과 번호가 1부터 순서대로가 아닙니다 — ${nos.join(", ")}`);
+  }
+  b.chapters.forEach((c, ci) => {
+    const cw = `${where} ${c.no}과`;
+    if (!c.title || !c.summary || !Array.isArray(c.points) || !c.points.length) {
+      fail(`${cw}: title·summary·points 가 필요합니다.`);
+      return;
+    }
+    if (c.no !== ci + 1) fail(`${cw}: 과 번호와 순서가 다릅니다(위치 ${ci + 1}).`);
+    allChapterTitles.push(c.title);
+    c.points.forEach((p, pi) => {
+      if (!p.h || !p.body) fail(`${cw} 개념 ${pi + 1}: h·body 가 필요합니다.`);
+      if (p.table && (!Array.isArray(p.table.head) || !Array.isArray(p.table.rows))) {
+        fail(`${cw} 개념 ${pi + 1}: table 형식이 잘못되었습니다.`);
+      }
+      if (p.table && p.table.rows.some((r) => !Array.isArray(r) || r.length !== p.table.head.length)) {
+        fail(`${cw} 개념 ${pi + 1}: 표의 열 수가 머리행과 다릅니다.`);
+      }
+      (p.examples || []).forEach((e, ei) => {
+        if (!e.en || !e.ko) fail(`${cw} 개념 ${pi + 1} 예문 ${ei + 1}: en·ko 가 필요합니다.`);
+      });
+    });
+    if (!Array.isArray(c.practice) || !c.practice.length) {
+      fail(`${cw}: 연습 문제가 없습니다.`);
+    }
+    checkAnswerInOptions(`${cw} 연습`, c.practice);
+    (c.practice || []).forEach((q, qi) => {
+      if (!q.q || !q.why) fail(`${cw} 연습 ${qi + 1}: 문제·해설이 필요합니다.`);
+      if (!Array.isArray(q.opts) || q.opts.length < 2) fail(`${cw} 연습 ${qi + 1}: 보기가 2개 미만입니다.`);
+      if (dupes(q.opts || []).length) fail(`${cw} 연습 ${qi + 1}: 보기에 중복 항목이 있습니다.`);
+    });
+  });
+});
+const crossChapter = dupes(allChapterTitles);
+if (crossChapter.length) fail(`data/grammar-*.js: 과 제목이 중복입니다 — ${crossChapter.join(", ")}`);
 
 // 4-4. index.html 배열
 const ARRAYS = [
@@ -260,6 +319,11 @@ console.log(`   · 유닛 ${unitIds.length}개 / 어휘 ${totalWords.toLocaleStr
 console.log(`   · 숙어 ${idioms.length}개`);
 console.log(`   · 확장 콘텐츠: ${Object.entries(extra).filter(([, v]) => Array.isArray(v)).map(([k, v]) => `${k} ${v.length}`).join(", ")}`);
 console.log(`   · index.html 배열: ${Object.entries(inHtml).map(([k, v]) => `${k} ${v.length}`).join(", ")}`);
+if (grammar.length) {
+  const ch = grammar.reduce((n, b) => n + b.chapters.length, 0);
+  const q = grammar.reduce((n, b) => n + b.chapters.reduce((m, c) => m + c.practice.length, 0), 0);
+  console.log(`   · 문법 교재: ${grammar.map((b) => `${b.level} ${b.chapters.length}과`).join(", ")} (총 ${ch}과 · 연습 ${q}문항)`);
+}
 if (partBank) console.log(`   · PART_BANK: ${Object.entries(partBank).map(([k, v]) => `Part ${k} ${v.length}문항`).join(", ")}`);
 if (notes.length) {
   console.log("\nℹ️  참고 (실패 아님)");

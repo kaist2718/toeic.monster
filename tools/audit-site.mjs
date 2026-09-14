@@ -3,7 +3,7 @@
  * toeic.monster 사이트 감사 도구 (링크 · 메타 · 사이트맵 · 문서 수치)
  *
  * 기존 감사가 "콘텐츠 내용"을 본다면, 이 도구는 "사이트 구조"를 봅니다.
- *   1) 내부 링크·앵커 무결성 (index.html · units/*.html · guides/*.html)
+ *   1) 내부 링크·앵커 무결성 (index.html · units/*.html · guides/*.html · grammar/*.html)
  *   2) HTML 중복 id
  *   3) 정적 자산(src·link) 파일 존재 여부
  *   4) 메타 태그(description·canonical·OG·twitter)와 구조화 데이터(JSON-LD) 형식
@@ -26,6 +26,9 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SITE = "https://toeic.monster";
 const CHECK_EXTERNAL = process.argv.includes("--external");
 
+/** 단계별 문법 교재 데이터 파일 — build-pages.mjs 와 같은 목록을 씁니다. */
+const GRAMMAR_FILES = ["data/grammar-basic.js", "data/grammar-intermediate.js", "data/grammar-advanced.js"];
+
 const read = (p) => fs.readFileSync(path.join(ROOT, p), "utf8");
 const has = (p) => fs.existsSync(path.join(ROOT, p));
 
@@ -45,17 +48,18 @@ function loadData() {
     const f = `data/unit${String(i).padStart(2, "0")}.js`;
     vm.runInContext(read(f), sandbox, { filename: f, timeout: 5000 });
   }
-  for (const f of ["data/idioms.js", "data/extra.js"]) {
+  for (const f of ["data/idioms.js", "data/extra.js", ...GRAMMAR_FILES]) {
     vm.runInContext(read(f), sandbox, { filename: f, timeout: 5000 });
   }
   return {
     vocab: sandbox.window.VOCAB_UNITS || {},
     idioms: sandbox.window.VOCAB_IDIOMS || [],
     extra: sandbox.window.TOEIC_EXTRA || {},
+    grammar: sandbox.window.GRAMMAR_BOOKS || [],
   };
 }
 
-const { vocab, idioms, extra } = loadData();
+const { vocab, idioms, extra, grammar } = loadData();
 const unitIds = Object.keys(vocab);
 const totalWords = unitIds.reduce((sum, id) => sum + vocab[id].length, 0);
 
@@ -65,7 +69,7 @@ const totalWords = unitIds.reduce((sum, id) => sum + vocab[id].length, 0);
 
 const pages = [];
 for (const f of fs.readdirSync(ROOT).filter((f) => f.endsWith(".html"))) pages.push(f);
-for (const dir of ["units", "guides"]) {
+for (const dir of ["units", "guides", "grammar"]) {
   for (const f of fs.readdirSync(path.join(ROOT, dir)).filter((f) => f.endsWith(".html"))) {
     pages.push(`${dir}/${f}`);
   }
@@ -171,6 +175,39 @@ for (const page of pages) {
     const target = resolveLocal(page, m[1]);
     if (!target || target.external || target.sameFile) continue;
     if (!has(target.file)) fail(`${page}: 연결 파일이 없습니다 — "${m[1]}"`);
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* 3-3. 홈 섹션 이동 메뉴(칩) ↔ 섹션 1:1 일치                           */
+/* ------------------------------------------------------------------ */
+
+// 칩은 aria-label 로 섹션을 찾습니다. 라벨이 바뀌면 이동이 조용히 실패하므로,
+// "가리키는 섹션이 없는 칩"과 "메뉴에서 닿을 수 없는 섹션"을 함께 잡습니다.
+if (srcOf["index.html"]) {
+  const homeSrc = srcOf["index.html"];
+  const navStart = homeSrc.indexOf('class="section-nav');
+  if (navStart === -1) {
+    fail("index.html: 섹션 이동 메뉴(.section-nav)를 찾지 못했습니다.");
+  } else {
+    const nav = homeSrc.slice(navStart, homeSrc.indexOf("</nav>", navStart));
+    const chipTargets = [...nav.matchAll(/class="sn-chip" data-target="([^"]+)"/g)].map((m) => m[1]);
+    const homeLabels = [...homeSrc.matchAll(/<section\b[^>]*class="home-section"[^>]*aria-label="([^"]+)"/g)].map(
+      (m) => m[1],
+    );
+    const labelSet = new Set(homeLabels);
+    const chipSet = new Set(chipTargets);
+
+    const dupChips = [...new Set(chipTargets.filter((x, i) => chipTargets.indexOf(x) !== i))];
+    if (dupChips.length) fail(`index.html: 섹션 메뉴 칩이 중복입니다 — ${dupChips.join(", ")}`);
+
+    const orphanChips = chipTargets.filter((t) => !labelSet.has(t));
+    if (orphanChips.length) fail(`index.html: 이동 대상 섹션이 없는 칩 — ${orphanChips.join(", ")}`);
+
+    const unreachable = homeLabels.filter((l) => !chipSet.has(l));
+    if (unreachable.length) fail(`index.html: 메뉴에서 이동할 수 없는 섹션 — ${unreachable.join(", ")}`);
+
+    note(`홈 섹션 ${homeLabels.length}개 · 섹션 메뉴 칩 ${chipTargets.length}개(모두 연결됨)`);
   }
 }
 
@@ -296,6 +333,12 @@ const ACTUAL = {
   vocab: totalWords,
   idioms: idioms.length,
   guides: (extra.guides || []).length,
+  grammar_books: grammar.length,
+  grammar_chapters: grammar.reduce((n, b) => n + (b.chapters || []).length, 0),
+  grammar_quizzes: grammar.reduce(
+    (n, b) => n + (b.chapters || []).reduce((m, c) => m + (c.practice || []).length, 0),
+    0,
+  ),
   paraphrase: countOf("paraphrase"),
   frequency: countOf("frequency"),
   part1: countOf("part1"),

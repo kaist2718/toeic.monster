@@ -13,10 +13,13 @@ idioms = 126
 guides = 9
 paraphrase = 200
 frequency = 200
+grammar_books = 3
+grammar_chapters = 36
+grammar_quizzes = 108
 speaking_questions = 11
 writing_questions = 8
-sitemap_urls = 43
-pages = 45
+sitemap_urls = 48
+pages = 50
 -->
 
 ---
@@ -27,10 +30,11 @@ pages = 45
 | --- | --- |
 | 어휘 | 30개 주제 유닛 · 1,000단어 (발음기호·한글 발음·예문·예문 발음·해석) |
 | 숙어 | 126개 구동사·숙어 |
+| 문법 | 기초·중급·고급 교재 3권 (36과 · 연습 108문항) |
 | 학습 모드 | 암기 카드 · 퀴즈 · 실전 시험 · SRS 복습 · 오답노트 · 대시보드 · 배지 · 주간 리포트 |
 | 확장 콘텐츠 | Part 1·2·3·4·5·6·7 문제, 이중·삼중 지문, 동의어 치환, 연결어·전치사 드릴, 빈도순 어휘, 30일 스프린트, 받아쓰기 |
 | 4기능 | TOEIC Speaking 5개 유형 · Writing 3개 유형 (공식 구성 기준) |
-| 정적 산출물 | `units/*.html` · `guides/*.html` · `sitemap.xml` (빌드 스크립트 자동 생성) |
+| 정적 산출물 | `units/*.html` · `guides/*.html` · `grammar/*.html` · `sitemap.xml` (빌드 스크립트 자동 생성) |
 | 감사 게이트 | 콘텐츠 · 문구 · **사이트 구조** 3종 + TTS 회귀 테스트 |
 | 배포 도구 | `promo/` (블로그·숏폼 발행 스크립트), 수익화 계획은 `docs/monetization-plan.md` (미구현) |
 
@@ -44,7 +48,7 @@ pages = 45
 | `npm run audit:text` | 화면에 보이는 모든 문자열의 맞춤법·영문 철자·공백·전각 문자·TTS 낭독 기호 |
 | `npm run audit:site` | **내부 링크·앵커, 정적 자산, HTML 중복 id, 메타·JSON-LD, 사이트맵 일치, 문서 수치** |
 | `npm run audit:external` | 위 항목 + 외부 링크 HTTP 상태 (네트워크 필요) |
-| `npm run test` | TTS 음성 선택 로직 회귀 테스트 |
+| `npm run test` | TTS 음성 선택 로직 + 문법 문제 풀이 연동 회귀 테스트 |
 | `npm run check` | 감사 3종 + 테스트 + 빌드 (커밋 전 권장) |
 | `npm run check:ci` | `check` + 생성물 커밋 누락 감지(`verify`) |
 
@@ -104,6 +108,9 @@ Speaking·Writing 구성은 ETS 공식 안내를 기준으로 하며, `data/extr
 | 백로그 | 동의어 치환 89 → **200**, 빈도순 기출 어휘 160 → **200** |
 | Part 7 단일 지문 | 리딩 미니 지문 6 → **10**, 문제은행 Part 7 6 → **10** |
 | SEO 페이지 | 가이드 8 → **9** (`guides/speaking-writing-guide.html` 신규) |
+| 문법 교재 | `data/grammar-{basic,intermediate,advanced}.js` 신설 → `grammar/` **3권 + 허브·한 장 요약** (36과 · 연습 108문항) |
+| 문법 학습 연동 | 교재 예문 발음(정적 페이지 TTS), 앱 내 **문법 문제 풀이**(단계별 기록 → 대시보드 '문법' 영역) + **문법 오답노트**(localStorage), 홈 배치를 '오늘의 문법 팁' 뒤로 이동 |
+| UI/UX 점검 | `docs/ux-review.md` 신설 — 홈 섹션·칩 계측, 다크 모드 누락, 터치 영역 등 14건 점검(P1 3 · P2 7 · P3 4). 정적 페이지 다크 모드 · 홈 목차 주제별 접기 · 해시 진입 · `prefers-reduced-motion` · 전역 초점 표시 · 표 가로 스크롤 · 문항 수 선택 · `맨 위로` 버튼까지 수정 완료 |
 | 감사 범위 | 문자열 점검 8,714 → **9,630개** (TTS 대상 3,098 → 3,180개) |
 | 생성물 검증 수정 | `npm run verify` 가 `git diff` 대신 `tools/verify-generated.mjs` 를 쓰도록 교체 — 커밋 직후 `sitemap.xml` 의 `<lastmod>` 가 달라져 **CI 가 영구히 실패하던 문제** 해결 (아래 9-1) |
 

@@ -1,5 +1,5 @@
 /* toeic.monster Service Worker - 오프라인 학습 지원 */
-var CACHE_NAME = "toeic-monster-v4";
+var CACHE_NAME = "toeic-monster-v6";
 var CORE_ASSETS = [
   "./",
   "./index.html",
@@ -8,12 +8,21 @@ var CORE_ASSETS = [
   "./units/",
   "./units/index.html",
   "./guides/",
-  "./guides/index.html"
+  "./guides/index.html",
+  "./grammar/",
+  "./grammar/index.html",
+  "./grammar/cheatsheet.html"
 ];
 
 // 어휘 데이터. index.html 이 첫 화면에서 바로 내려받는 파일들이라
 // 설치 단계에서 미리 캐시해 두면 다음 방문부터는 오프라인에서도 즉시 열립니다.
-var DATA_ASSETS = ["data/idioms.js", "data/extra.js"];
+var DATA_ASSETS = [
+  "data/idioms.js",
+  "data/extra.js",
+  "data/grammar-basic.js",
+  "data/grammar-intermediate.js",
+  "data/grammar-advanced.js"
+];
 for (var i = 1; i <= 30; i++) {
   DATA_ASSETS.push("data/unit" + (i < 10 ? "0" + i : i) + ".js");
 }

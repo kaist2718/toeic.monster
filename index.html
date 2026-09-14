@@ -684,6 +684,7 @@
     font-family: inherit;
     font-size: 14px;
     font-weight: 600;
+    min-height: 44px; /* 모바일 터치 영역 확보 */
     padding: 9px 10px;
     border: 2px solid var(--border);
     border-radius: 8px;
@@ -1800,17 +1801,57 @@
   /* 모의고사 약점 바 */
   .bar-fill.weak { background: #fa5252; }
 
-  /* 섹션 빠른 이동 내비게이션 */
-  .section-nav {
-    display: flex;
-    gap: 8px;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-x: contain;
-    padding-bottom: 6px;
-    margin: -16px 0 22px;
-    scrollbar-width: thin;
+  /* 섹션 빠른 이동 내비게이션 — 주제별 묶음 + 접기(가로 스크롤 제거) */
+  .section-nav { margin: -8px 0 20px; }
+  .sn-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .sn-hint { font-size: 11.5px; font-weight: 800; color: var(--text-muted); }
+  .sn-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .sn-groups {
+    display: grid;
+    gap: 10px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
   }
+  /* hidden 속성이 display:grid 를 이기지 못하므로 명시합니다. */
+  .sn-groups[hidden] { display: none; }
+  .sn-group { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+  .sn-group-label {
+    flex: 0 0 100%;
+    font-size: 11.5px;
+    font-weight: 800;
+    color: var(--text-muted);
+    letter-spacing: -.2px;
+  }
+  .sn-toggle {
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 800;
+    border: 1px dashed var(--border);
+    border-radius: 99px;
+    background: transparent;
+    color: var(--primary);
+    padding: 7px 13px;
+    cursor: pointer;
+    transition: background .15s, border-color .15s;
+  }
+  .sn-toggle:hover { background: var(--soft-blue); border-style: solid; }
+  .sn-current {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--primary);
+    background: var(--soft-blue);
+    border-radius: 99px;
+    padding: 4px 10px;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .sn-current:empty { display: none; }
+  .sn-toggle-ico { display: inline-block; transition: transform .15s; }
+  .sn-toggle[aria-expanded="true"] .sn-toggle-ico { transform: rotate(180deg); }
+  .sn-chip.active { border-color: var(--primary-solid); background: var(--soft-blue); color: var(--primary); }
   .sn-chip {
     font-family: inherit;
     font-size: 12.5px;
@@ -1989,7 +2030,7 @@
     .topbar h1 { font-size: 16px; }
     .progress-wrap { min-width: 130px; }
     .progress-label { font-size: 11px; }
-    .btn { padding: 7px 10px; font-size: 12px; }
+    .btn { padding: 7px 10px; font-size: 12px; min-height: 40px; }
     /* 손가락으로 누르기 편하도록 최소 터치 영역(약 40px)을 보장합니다. */
     .topbar .btn, .menu-toggle { min-height: 40px; }
     .tts-voice { max-width: 96px; font-size: 11.5px; padding: 7px 6px; }
@@ -2094,7 +2135,9 @@
     white-space: nowrap;
     border: 0;
   }
-  .btn:focus-visible, .lvl-btn:focus-visible, .quiz-opt:focus-visible, .speak:focus-visible, .fav-btn:focus-visible, .fc-card:focus-visible, input:focus-visible, select:focus-visible {
+  /* 키보드 사용자에게 항상 보이는 초점 표시(칩·탭·오답 보기 등 모든 조작 요소 포함) */
+  a:focus-visible, button:focus-visible, summary:focus-visible, select:focus-visible,
+  input:focus-visible, [tabindex]:focus-visible, .fc-card:focus-visible {
     outline: 3px solid var(--accent);
     outline-offset: 2px;
   }
@@ -2121,6 +2164,29 @@
     transform: translateX(-50%) translateY(0);
     opacity: 1;
   }
+  /* 긴 홈(52섹션)에서 위로 돌아가는 부동 버튼 */
+  .to-top {
+    position: fixed;
+    right: 18px;
+    bottom: 18px;
+    z-index: 280;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--primary);
+    font-size: 20px;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(0,0,0,.18);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .to-top:hover { border-color: var(--primary); }
+  .to-top[hidden] { display: none; }
+  @media print { .to-top { display: none !important; } }
 </style>
 </head>
 <body>
@@ -2208,26 +2274,47 @@
     </section>
 
     <nav class="section-nav print-hide" aria-label="섹션 빠른 이동">
+      <div class="sn-bar">
+        <span class="sn-hint">바로 가기</span>
+        <div class="sn-row">
       <button type="button" class="sn-chip" data-target="오늘의 학습">☀️ 오늘의 학습</button>
       <button type="button" class="sn-chip" data-target="학습 성취 배지">🏅 배지</button>
       <button type="button" class="sn-chip" data-target="오늘의 단어">🃏 오늘의 단어</button>
       <button type="button" class="sn-chip" data-target="오늘의 문법 팁">📐 문법 팁</button>
-      <button type="button" class="sn-chip" data-target="오늘의 대화문">🎧 대화문</button>
+      <button type="button" class="sn-chip" data-target="문법 교재 3단계">📘 문법 교재</button>
+      <button type="button" class="sn-chip" data-target="문법 문제 풀이">✏️ 문법 문제</button>
       <button type="button" class="sn-chip" data-target="학습 모드">🧩 학습 모드</button>
-      <button type="button" class="sn-chip" data-target="주제별 유닛">📚 유닛</button>
+      <button type="button" class="sn-chip" data-target="오늘의 대화문">🎧 대화문</button>
+        </div>
+        <button type="button" class="sn-toggle" id="snToggle" aria-expanded="false" aria-controls="snMore">🗂 전체 목차 <span class="sn-toggle-ico">▾</span></button>
+        <span class="sn-current" id="snCurrent" aria-hidden="true"></span>
+      </div>
+      <div class="sn-groups" id="snMore" hidden>
+        <div class="sn-group">
+          <span class="sn-group-label">어휘 익히기</span>
+        <button type="button" class="sn-chip" data-target="주제별 유닛">📚 유닛</button>
       <button type="button" class="sn-chip" data-target="빈출 구동사·숙어">💡 구동사</button>
       <button type="button" class="sn-chip" data-target="자주 헷갈리는 혼동 어휘">🤔 혼동 어휘</button>
       <button type="button" class="sn-chip" data-target="접두사·어근으로 단어 확장">🧩 어근</button>
       <button type="button" class="sn-chip" data-target="빈출 콜로케이션 드릴">🧱 콜로케이션</button>
       <button type="button" class="sn-chip" data-target="문맥 속 어휘">🔍 문맥 어휘</button>
-      <button type="button" class="sn-chip" data-target="Part 1·2 LC 유형 훈련">🎧 LC 1·2</button>
+        </div>
+        <div class="sn-group">
+          <span class="sn-group-label">파트별 훈련</span>
+        <button type="button" class="sn-chip" data-target="Part 1·2 LC 유형 훈련">🎧 LC 1·2</button>
       <button type="button" class="sn-chip" data-target="Part 3·4 미니 세트">🗣️ Part 3·4</button>
       <button type="button" class="sn-chip" data-target="단어 패밀리">🌳 단어 패밀리</button>
       <button type="button" class="sn-chip" data-target="최소대립쌍 발음 구별">👂 최소대립쌍</button>
       <button type="button" class="sn-chip" data-target="어원·연상 암기 팁">🧠 어원 팁</button>
-      <button type="button" class="sn-chip" data-target="비즈니스 이메일·회의 표현">📧 비즈니스</button>
+        </div>
+        <div class="sn-group">
+          <span class="sn-group-label">말하기·쓰기</span>
+        <button type="button" class="sn-chip" data-target="비즈니스 이메일·회의 표현">📧 비즈니스</button>
       <button type="button" class="sn-chip" data-target="스피드 어휘 60초">⚡ 스피드</button>
-      <button type="button" class="sn-chip" data-target="주간 학습 리포트">📈 리포트</button>
+        </div>
+        <div class="sn-group">
+          <span class="sn-group-label">실전·학습 관리</span>
+        <button type="button" class="sn-chip" data-target="주간 학습 리포트">📈 리포트</button>
       <button type="button" class="sn-chip" data-target="학습 자료 허브">🌐 자료 허브</button>
       <button type="button" class="sn-chip" data-target="점수별 학습 로드맵">🗺️ 로드맵</button>
       <button type="button" class="sn-chip" data-target="Part 미니 문제은행">🧪 문제은행</button>
@@ -2253,6 +2340,13 @@
       <button type="button" class="sn-chip" data-target="TOEIC 시험 안내">📋 TOEIC 정보</button>
       <button type="button" class="sn-chip" data-target="쉬어가는 코너">☕ 명언</button>
       <button type="button" class="sn-chip" data-target="자주 묻는 질문">❓ FAQ</button>
+        <button type="button" class="sn-chip" data-target="시험 당일 체크리스트">✅ 당일 체크</button>
+        <button type="button" class="sn-chip" data-target="추천 학습 루틴">🔁 루틴</button>
+        <button type="button" class="sn-chip" data-target="암기 과학">🧠 암기 과학</button>
+        <button type="button" class="sn-chip" data-target="빠른 학습 도구">🧰 빠른 도구</button>
+        <button type="button" class="sn-chip" data-target="학습 특징">✨ 특징</button>
+        </div>
+      </div>
     </nav>
 
     <section class="home-section" id="today-section" aria-label="오늘의 학습">
@@ -2293,9 +2387,44 @@
           <h2 class="home-section-title">📐 오늘의 문법 팁</h2>
           <p class="home-section-sub">매일 하나씩, 토익 Part 5·6 빈출 문법을 익혀 보세요.</p>
         </div>
-        <button type="button" class="btn quiz-btn" id="grammarTipMore">📘 문법 가이드</button>
+        <button type="button" class="btn quiz-btn" id="grammarTipMore">📐 필수 문법 보기</button>
       </div>
       <div class="grammar-tip-card" id="grammarTipCard"></div>
+    </section>
+
+    <section class="home-section" aria-label="문법 교재 3단계">
+      <h2 class="home-section-title">📘 문법 교재 3단계</h2>
+      <p class="home-section-sub">오늘의 문법 팁이 마음에 안 잡혔다면, 기초부터 차례대로 쌓아 보세요. 과마다 개념·형태 표·예문·흔한 실수·연습 문제를 담았습니다.</p>
+      <div class="guide-grid" id="grammarBookGrid"></div>
+      <p class="today-sub">바로가기: <a href="grammar/basic.html">기초 영문법</a> · <a href="grammar/intermediate.html">중급 영문법</a> · <a href="grammar/advanced.html">고급 영문법</a> · <a href="grammar/cheatsheet.html">한 장 요약</a></p>
+    </section>
+
+    <section class="home-section" id="grammar-quiz" aria-label="문법 문제 풀이">
+      <div class="section-head">
+        <div>
+          <h2 class="home-section-title">✏️ 문법 문제 풀이</h2>
+          <p class="home-section-sub">문법 교재의 과별 연습 문제를 앱에서 바로 풀어 보세요. 결과는 대시보드 '문법' 영역에 쌓이고, 틀린 문제는 아래 오답노트에 모입니다.</p>
+        </div>
+        <a class="btn" href="grammar/cheatsheet.html" target="_blank" rel="noopener">🧾 한 장 요약</a>
+      </div>
+      <div class="quiz-head">
+        <label class="sr-only" for="grammarLevelSel">문법 단계</label>
+        <select id="grammarLevelSel"></select>
+        <label class="sr-only" for="grammarCountSel">문항 수</label>
+        <select id="grammarCountSel">
+          <option value="5">5문항</option>
+          <option value="8" selected>8문항</option>
+          <option value="10">10문항</option>
+          <option value="20">20문항</option>
+          <option value="0">전체 문항</option>
+        </select>
+        <button type="button" class="btn quiz-btn" id="grammarStart">▶ 문법 문제 시작</button>
+        <button type="button" class="btn" id="grammarWrongOnly">📕 오답만 다시 풀기</button>
+        <button type="button" class="btn" id="grammarClearWrong" hidden>🗑 오답노트 비우기</button>
+        <span class="muted" id="grammarWrongCount"></span>
+      </div>
+      <div id="grammarBox"></div>
+      <div id="grammarWrongBox"></div>
     </section>
 
     <section class="home-section" aria-label="학습 모드">
@@ -3242,6 +3371,8 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+<button type="button" class="to-top print-hide" id="toTop" aria-label="맨 위로" title="맨 위로" hidden>↑</button>
+
 <!-- 단어 데이터 (30개 유닛) -->
 <script src="data/unit01.js"></script>
 <script src="data/unit02.js"></script>
@@ -3275,6 +3406,9 @@
 <script src="data/unit30.js"></script>
 <script src="data/idioms.js"></script>
 <script src="data/extra.js"></script>
+<script src="data/grammar-basic.js"></script>
+<script src="data/grammar-intermediate.js"></script>
+<script src="data/grammar-advanced.js"></script>
 
 <script>
 (function () {
@@ -3944,6 +4078,13 @@
   }
   function escapeAttr(s) {
     return esc(s);
+  }
+
+  // 부드러운 스크롤은 prefers-reduced-motion 을 존중합니다(모션 감소 설정이면 즉시 이동).
+  var reduceMotion = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  function scrollToEl(el, block) {
+    if (!el) return;
+    el.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: block || "start" });
   }
 
   // 예문 등 문장 옆에 붙이는 🔊 듣기 버튼 (data-say 문장을 TTS로 재생)
@@ -5105,7 +5246,8 @@
     function start() {
       var list = (typeof opts.build === "function" ? opts.build() : (opts.questions || [])).slice();
       shuffleArr(list);
-      st.q = list.slice(0, opts.count || list.length);
+      var rawCount = typeof opts.count === "function" ? opts.count() : opts.count;
+      st.q = list.slice(0, rawCount || list.length);
       st.idx = 0; st.correct = 0; st.answered = false; st.done = false;
       render();
     }
@@ -5138,7 +5280,9 @@
       var q = st.q[st.idx];
       var ok = btn.textContent === q.answer;
       if (ok) st.correct++;
-      recordStat(opts.statKey || "mini", ok);
+      // statKey 를 함수로 주면 문항마다 기록 영역을 바꿀 수 있습니다(문법 교재 단계별 기록 등).
+      recordStat(typeof opts.statKey === "function" ? opts.statKey() : (opts.statKey || "mini"), ok);
+      if (typeof opts.onAnswer === "function") { try { opts.onAnswer(q, ok); } catch (e) {} }
       var box = document.getElementById(opts.boxId);
       box.querySelectorAll(".bank-opt").forEach(function (o) {
         o.disabled = true;
@@ -5165,6 +5309,139 @@
     if (b) b.addEventListener("click", quiz.start);
     quiz.render();
   }
+
+  // ---------- 문법 문제 풀이 (문법 교재 연습 문제 연동) ----------
+  var GRAMMAR_BOOKS = window.GRAMMAR_BOOKS || [];
+  // 틀린 문항은 단계·과·해설까지 함께 저장해 두었다가 그대로 다시 풀 수 있게 합니다.
+  var grammarWrong = storeObject("toeic1000_grammarwrong");
+  function saveGrammarWrong() {
+    try { localStorage.setItem("toeic1000_grammarwrong", JSON.stringify(grammarWrong)); } catch (e) {}
+  }
+  function grammarLevelValue() {
+    var sel = document.getElementById("grammarLevelSel");
+    return (sel && sel.value) || "all";
+  }
+  /** 한 번에 풀 문항 수(0 이면 전체). */
+  function grammarCountValue() {
+    var sel = document.getElementById("grammarCountSel");
+    var n = sel ? parseInt(sel.value, 10) : 8;
+    return (isNaN(n) || n <= 0) ? 0 : n;
+  }
+  /** 선택한 단계의 연습 문제 수(문항을 만들지 않고 개수만 셉니다). */
+  function grammarCount(level) {
+    var n = 0;
+    GRAMMAR_BOOKS.forEach(function (b) {
+      if (level && level !== "all" && b.id !== level) return;
+      (b.chapters || []).forEach(function (c) { n += (c.practice || []).length; });
+    });
+    return n;
+  }
+  /** 교재의 과별 연습 문제를 퀴즈 형식으로 바꿔 줍니다. */
+  function grammarQuestions(level) {
+    var out = [];
+    GRAMMAR_BOOKS.forEach(function (b) {
+      if (level && level !== "all" && b.id !== level) return;
+      (b.chapters || []).forEach(function (c) {
+        (c.practice || []).forEach(function (q, qi) {
+          out.push({
+            id: b.id + "-c" + c.no + "-q" + (qi + 1),
+            tag: b.level + " " + c.no + "과",
+            prompt: q.q,
+            options: shuffleArr((q.opts || []).slice()),
+            answer: q.a,
+            why: q.why
+          });
+        });
+      });
+    });
+    return out;
+  }
+  var grammarWrongOnly = false;
+  function grammarWrongQuestions() {
+    return Object.keys(grammarWrong).map(function (k) { return grammarWrong[k]; });
+  }
+  var grammarQuiz = makeMiniQuiz({
+    boxId: "grammarBox",
+    title: "문법",
+    count: function () { return grammarCountValue(); },
+    statKey: function () { return "grammar_" + grammarLevelValue(); },
+    build: function () { return grammarWrongOnly ? grammarWrongQuestions() : grammarQuestions(grammarLevelValue()); },
+    emptyHint: "단계를 고르고 시작 버튼을 누르면 교재 연습 문제가 나옵니다.",
+    onAnswer: function (q, ok) {
+      if (!q || !q.id) return;
+      if (ok) delete grammarWrong[q.id];
+      else grammarWrong[q.id] = { id: q.id, tag: q.tag, prompt: q.prompt, options: q.options, answer: q.answer, why: q.why };
+      saveGrammarWrong();
+      renderGrammarWrongNote();
+    }
+  });
+  function startGrammarQuiz(wrongOnly) {
+    grammarWrongOnly = !!wrongOnly;
+    if (grammarWrongOnly && !grammarWrongQuestions().length) {
+      showToast("오답으로 저장된 문법 문제가 아직 없어요.");
+      return;
+    }
+    grammarQuiz.start();
+    var sec = document.querySelector('.home-section[aria-label="문법 문제 풀이"]');
+    if (sec) scrollToEl(sec, "start");
+  }
+  function renderGrammarLevelSelect() {
+    var sel = document.getElementById("grammarLevelSel");
+    if (!sel) return;
+    var html = '<option value="all">전체 단계 (' + grammarCount("all") + '문항)</option>';
+    var ico = { "초급": "🟢", "중급": "🟡", "고급": "🔴" };
+    GRAMMAR_BOOKS.forEach(function (b) {
+      html += '<option value="' + esc(b.id) + '">' + (ico[b.level] || "🟡") + " " + esc(b.level) + " " + esc(b.title) +
+        " (" + grammarCount(b.id) + '문항)</option>';
+    });
+    sel.innerHTML = html;
+  }
+  function renderGrammarWrongNote() {
+    var box = document.getElementById("grammarWrongBox");
+    if (!box) return;
+    var keys = Object.keys(grammarWrong);
+    var cnt = document.getElementById("grammarWrongCount");
+    var clearBtn = document.getElementById("grammarClearWrong");
+    if (cnt) cnt.textContent = keys.length ? "저장된 오답 " + keys.length + "문항" : "";
+    if (clearBtn) clearBtn.hidden = !keys.length;
+    if (!keys.length) {
+      box.innerHTML = '<p class="practice-note">틀린 문법 문제는 여기에 모여 브라우저에만 저장됩니다. 맞히면 목록에서 자동으로 빠집니다.</p>';
+      return;
+    }
+    box.innerHTML = '<div class="bank-card"><span class="bank-label">문법 오답노트 · ' + keys.length + '문항</span>' +
+      keys.map(function (k, i) {
+        var w = grammarWrong[k];
+        // 빈칸을 정답으로 채운 완성 문장을 낭독해 줄 수 있게 합니다.
+        var filled = String(w.prompt || "").replace(/_{2,}/g, " " + w.answer + " ").replace(/\s+/g, " ").trim();
+        return '<div style="margin-top:10px"><p class="bank-q">' + (i + 1) + ". " + esc(w.prompt) + '</p>' +
+          '<p class="practice-note">정답: <b>' + esc(w.answer) + '</b> · ' + esc(w.tag) + ttsBtn(filled, "완성 문장 듣기") + '</p>' +
+          '<p class="practice-note">💡 ' + esc(w.why) + '</p></div>';
+      }).join("") + '</div>';
+  }
+  var grammarStartBtn = document.getElementById("grammarStart");
+  if (grammarStartBtn) grammarStartBtn.addEventListener("click", function () { startGrammarQuiz(false); });
+  var grammarWrongBtn = document.getElementById("grammarWrongOnly");
+  if (grammarWrongBtn) grammarWrongBtn.addEventListener("click", function () { startGrammarQuiz(true); });
+  var grammarClearBtn = document.getElementById("grammarClearWrong");
+  if (grammarClearBtn) grammarClearBtn.addEventListener("click", function () {
+    if (!Object.keys(grammarWrong).length) return;
+    grammarWrong = {};
+    try { localStorage.removeItem("toeic1000_grammarwrong"); } catch (e) {}
+    renderGrammarWrongNote();
+    showToast("문법 오답노트를 비웠습니다.");
+  });
+  var grammarLevelSelEl = document.getElementById("grammarLevelSel");
+  if (grammarLevelSelEl) grammarLevelSelEl.addEventListener("change", function () {
+    grammarWrongOnly = false;
+    grammarQuiz.render();
+  });
+  var grammarCountSelEl = document.getElementById("grammarCountSel");
+  if (grammarCountSelEl) grammarCountSelEl.addEventListener("change", function () {
+    grammarWrongOnly = false;
+    grammarQuiz.render();
+  });
+  renderGrammarLevelSelect();
+  renderGrammarWrongNote();
 
   // ---------- 1) 빈출 콜로케이션 ----------
   var COLLOCATIONS = [
@@ -5661,8 +5938,47 @@
     var chip = e.target.closest(".sn-chip");
     if (!chip) return;
     var sec = document.querySelector('.home-section[aria-label="' + chip.getAttribute("data-target") + '"]');
-    if (sec) sec.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (sec) scrollToEl(sec, "start");
   });
+
+  // 섹션 메뉴: 자주 쓰는 8개만 먼저 보여 주고, 나머지는 주제별로 접어 둡니다.
+  // 넓은 화면에서는 스크롤 부담이 적으므로 전체를 펼친 상태로 시작합니다.
+  var snToggle = document.getElementById("snToggle");
+  var snMore = document.getElementById("snMore");
+  function setSnExpanded(on) {
+    if (!snToggle || !snMore) return;
+    snToggle.setAttribute("aria-expanded", on ? "true" : "false");
+    snMore.hidden = !on;
+  }
+  if (snToggle && snMore) {
+    var wideScreen = false;
+    try { wideScreen = window.matchMedia("(min-width: 900px)").matches; } catch (e) {}
+    setSnExpanded(wideScreen);
+    snToggle.addEventListener("click", function () {
+      setSnExpanded(snToggle.getAttribute("aria-expanded") !== "true");
+    });
+  }
+
+  // 지금 보고 있는 섹션의 칩을 강조해, 긴 페이지에서도 위치를 알 수 있게 합니다.
+  var snChips = [].slice.call(document.querySelectorAll(".sn-chip"));
+  if ("IntersectionObserver" in window && snChips.length) {
+    var chipByTarget = {};
+    snChips.forEach(function (c) { chipByTarget[c.getAttribute("data-target")] = c; });
+    var snObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        var matched = chipByTarget[en.target.getAttribute("aria-label")];
+        if (!matched) return;
+        snChips.forEach(function (c) { c.classList.remove("active"); c.removeAttribute("aria-current"); });
+        matched.classList.add("active");
+        matched.setAttribute("aria-current", "true");
+        // 접힌 목차 안에 있는 섹션이면 칩이 안 보이므로, 현재 위치를 글자로도 알려 줍니다.
+        var cur = document.getElementById("snCurrent");
+        if (cur) cur.textContent = "지금: " + en.target.getAttribute("aria-label");
+      });
+    }, { rootMargin: "-15% 0px -75% 0px" });
+    [].slice.call(document.querySelectorAll("#homeView .home-section")).forEach(function (s) { snObserver.observe(s); });
+  }
 
   function dayOfYearNow() {
     var nowD = new Date();
@@ -6241,7 +6557,7 @@
   if (localResourceLink) localResourceLink.addEventListener("click", function (e) {
     e.preventDefault();
     var target = document.getElementById("today-section");
-    if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (target) scrollToEl(target, "start");
   });
 
   // ---------- 단어장 CSV 내보내기 ----------
@@ -6510,7 +6826,7 @@
       b.addEventListener("click", function () {
         showListView();
         var sec = document.getElementById("unit-" + b.getAttribute("data-unit"));
-        if (sec) sec.scrollIntoView({ behavior: "smooth" });
+        if (sec) scrollToEl(sec);
       });
     });
   }
@@ -6612,6 +6928,28 @@
     }
   }
 
+  // ---------- 문법 교재 3단계 카드 ----------
+  function renderGrammarBooks() {
+    var grid = document.getElementById("grammarBookGrid");
+    if (!grid) return;
+    var ico = { "초급": "🟢", "중급": "🟡", "고급": "🔴" };
+    var cards = (window.GRAMMAR_BOOKS || []).map(function (b) {
+      var unit = (b.chapters || []).length;
+      var qs = (b.chapters || []).reduce(function (n, c) { return n + ((c.practice || []).length); }, 0);
+      return '<article class="guide-card"><h3>' + (ico[b.level] || "🟡") + ' ' + esc(b.title) +
+        ' <span class="tag tag-blue">' + esc(b.level) + ' · ' + esc(b.cefr) + '</span></h3>' +
+        '<p>' + esc(b.subtitle) + ' · ' + unit + '과 · 연습 ' + qs + '문항</p>' +
+        '<a href="grammar/' + esc(b.id) + '.html">교재 열기 ↗</a></article>';
+    });
+    cards.push('<article class="guide-card"><h3>📘 문법 교재 허브</h3>' +
+      '<p>세 단계 교재의 목차와 학습 순서를 한 페이지에서 확인할 수 있어요.</p>' +
+      '<a href="grammar/">교재 전체 보기 ↗</a></article>');
+    cards.push('<article class="guide-card"><h3>🧾 문법 한 장 요약</h3>' +
+      '<p>36과의 핵심 개념과 형태를 한 페이지에 모았습니다. 인쇄해 두고 시험 전 복습용으로 쓰세요.</p>' +
+      '<a href="grammar/cheatsheet.html">한 장 요약 열기 ↗</a></article>');
+    grid.innerHTML = cards.join("");
+  }
+
   // ---------- 전략·공략 가이드 카드 ----------
   function renderGuides() {
     var grid = document.getElementById("guideCardGrid");
@@ -6702,6 +7040,8 @@
     exam_en2ko: "어휘", exam_ko2en: "어휘", exam_blank: "문법·어휘",
     listen_word: "리스닝", listen_sent: "리스닝", listen_dict: "리스닝", lc12: "리스닝", part34: "리스닝", num: "리스닝", dictation: "리스닝", mp: "발음",
     part_5: "문법", part_6: "문맥", part_7: "독해", part6: "문맥", reading: "독해", double_reading: "독해", part1: "묘사",
+    // 문법 교재 문제 풀이는 단계별 키로 쌓이지만 대시보드에는 '문법' 한 영역으로 묶습니다.
+    grammar_all: "문법", grammar_basic: "문법", grammar_intermediate: "문법", grammar_advanced: "문법",
     trans: "연결어", prep: "전치사",
     blank: "문법·어휘", wf: "어형", confuse_dict: "철자", mix_confuse: "혼동어휘", mix_part: "어근", diag: "진단", mock_LC: "모의", mock_RC: "모의", battle: "대결"
   };
@@ -6725,7 +7065,7 @@
     "동의어": { target: "동의어 치환 훈련", start: "paraStart" },
     "연결어": { target: "연결어·접속부사 훈련", start: "transStart" },
     "전치사": { target: "전치사 콜로케이션 훈련", start: "prepStart" },
-    "문법": { target: "Part 미니 문제은행", start: null },
+    "문법": { target: "문법 문제 풀이", start: "grammarStart" },
     "문법·어휘": { target: "Part 미니 문제은행", start: null },
     "리스닝": { target: "Part 1·2 LC 유형 훈련", start: "lc12Start" },
     "독해": { target: "Part 7 복수 지문", start: null },
@@ -6763,7 +7103,7 @@
       return;
     }
     var scrollAndStart = function () {
-      sec.scrollIntoView({ behavior: "smooth", block: "start" });
+      scrollToEl(sec, "start");
       if (!cfg.start) return;
       var sb = document.getElementById(cfg.start);
       if (sb) setTimeout(function () { sb.click(); }, 360);
@@ -6877,6 +7217,8 @@
     renderDictation();
     renderTplExtra();
     renderSwExtra();
+    renderGrammarBooks();
+    renderGrammarWrongNote();
     renderGuides();
     renderPace();
     renderBattle();
@@ -8039,7 +8381,7 @@
     } else if (e.target.id === "diagGoUnit") {
       showListView();
       var sec = document.getElementById("unit-" + (recommend ? recommend.id : 1));
-      if (sec) sec.scrollIntoView({ behavior: "smooth" });
+      if (sec) scrollToEl(sec);
     }
   });
 
@@ -8213,6 +8555,70 @@
   var savedTheme = "light";
   try { savedTheme = localStorage.getItem("toeic1000_theme") || "light"; } catch (e) {}
   setTheme(savedTheme);
+
+  // ---------- 해시 진입 (정적 교재 페이지 → 앱의 특정 섹션) ----------
+  // 교재 페이지의 "앱에서 이 교재 문제 풀기" 가 ../#grammar-quiz-basic 형태로 들어옵니다.
+  // 해시를 모르면 아무 일도 하지 않고, aria-label 을 직접 쓴 경우(#문법 문제 풀이)도 받아 줍니다.
+  var HASH_TARGETS = {
+    "units": { section: "주제별 유닛" },
+    "quiz": { section: "학습 모드" },
+    "grammar-books": { section: "문법 교재 3단계" },
+    "cheatsheet": { section: "문법 교재 3단계" },
+    "grammar-quiz": { section: "문법 문제 풀이" },
+    "grammar-quiz-basic": { section: "문법 문제 풀이", level: "basic" },
+    "grammar-quiz-intermediate": { section: "문법 문제 풀이", level: "intermediate" },
+    "grammar-quiz-advanced": { section: "문법 문제 풀이", level: "advanced" },
+    "dashboard": { section: "주간 학습 리포트" }
+  };
+  function goToHash(hash) {
+    var key = "";
+    try { key = decodeURIComponent(String(hash || "").replace(/^#/, "")).trim(); } catch (e) { key = ""; }
+    if (!key) return false;
+    var cfg = HASH_TARGETS[key];
+    var sec = document.querySelector('.home-section[aria-label="' + (cfg ? cfg.section : key) + '"]');
+    if (!sec) return false;
+    if (activeView !== "homeView") showHome();
+    if (cfg && cfg.level) {
+      var sel = document.getElementById("grammarLevelSel");
+      if (sel) { sel.value = cfg.level; grammarWrongOnly = false; grammarQuiz.render(); }
+    }
+    scrollToEl(sec, "start");
+    // 문제 풀이 링크(#grammar-quiz-*)는 교재를 읽다 넘어온 흐름이므로 바로 시작합니다.
+    if (cfg && cfg.level) setTimeout(function () { startGrammarQuiz(false); }, 420);
+    return true;
+  }
+  // 교재 페이지는 ?level=basic#grammar-quiz 형태로 들어옵니다(단계 지정 + 바로 풀이).
+  function applyLevelQuery() {
+    var matched = /[?&]level=(basic|intermediate|advanced)\b/.exec(location.search || "");
+    if (!matched) return false;
+    var sel = document.getElementById("grammarLevelSel");
+    if (!sel) return false;
+    sel.value = matched[1];
+    grammarWrongOnly = false;
+    grammarQuiz.render();
+    if (/#grammar-quiz/.test(location.hash || "")) {
+      setTimeout(function () { startGrammarQuiz(false); }, 420);
+      return true;
+    }
+    return false;
+  }
+  window.addEventListener("hashchange", function () { goToHash(location.hash); });
+  // 긴 홈에서 스크롤이 깊어지면 돌아가는 버튼을 보여 줍니다.
+  (function initToTop() {
+    var btn = document.getElementById("toTop");
+    if (!btn) return;
+    function sync() { btn.hidden = (window.pageYOffset || document.documentElement.scrollTop || 0) < 700; }
+    window.addEventListener("scroll", sync, { passive: true });
+    btn.addEventListener("click", function () {
+      window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
+    });
+    sync();
+  })();
+  // 초기 렌더(오늘의 학습 등)가 끝난 뒤에 이동해야 위치가 어긋나지 않습니다.
+  setTimeout(function () {
+    var started = applyLevelQuery();
+    if (!started) goToHash(location.hash);
+  }, 0);
 })();
 </script>
 </body>

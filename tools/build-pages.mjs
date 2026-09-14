@@ -13,6 +13,7 @@
  *   units/unit-01..30.html  — 유닛별 단어 목록 (1000단어 전체)
  *   units/idioms.html       — 빈출 구동사·숙어 모음
  *   guides/*.html           — 파트별 전략·공략 가이드 (data/extra.js)
+ *   grammar/*.html          — 기초·중급·고급 문법 교재 (data/grammar-*.js)
  *   sitemap.xml             — 위 페이지들을 포함한 전체 사이트맵
  *
  * 외부 의존성 없음(Node 내장 모듈만 사용). 여러 번 실행해도 결과가 같습니다.
@@ -28,6 +29,9 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SITE = "https://toeic.monster";
 const OUT_DIR = path.join(ROOT, "units");
 const OG_IMAGE = SITE + "/og-image.png";
+
+/** 단계별 문법 교재 데이터 파일 — index.html 과 감사 도구도 같은 목록을 씁니다. */
+const GRAMMAR_FILES = ["data/grammar-basic.js", "data/grammar-intermediate.js", "data/grammar-advanced.js"];
 
 const read = (p) => fs.readFileSync(path.join(ROOT, p), "utf8");
 const write = (p, s) => {
@@ -60,14 +64,17 @@ function loadVocab() {
     const file = `data/unit${String(i).padStart(2, "0")}.js`;
     vm.runInContext(read(file), sandbox, { filename: file, timeout: 5000 });
   }
-  vm.runInContext(read("data/idioms.js"), sandbox, { filename: "data/idioms.js", timeout: 5000 });
-  vm.runInContext(read("data/extra.js"), sandbox, { filename: "data/extra.js", timeout: 5000 });
+  for (const file of ["data/idioms.js", "data/extra.js", GRAMMAR_FILES].flat()) {
+    vm.runInContext(read(file), sandbox, { filename: file, timeout: 5000 });
+  }
   const vocab = sandbox.window.VOCAB_UNITS || {};
   const idioms = sandbox.window.VOCAB_IDIOMS || [];
   const extra = sandbox.window.TOEIC_EXTRA || {};
+  const grammar = sandbox.window.GRAMMAR_BOOKS || [];
   if (!Object.keys(vocab).length) throw new Error("어휘 데이터를 읽지 못했습니다.");
   if (!idioms.length) throw new Error("숙어 데이터를 읽지 못했습니다.");
-  return { vocab, idioms, extra };
+  if (!grammar.length) throw new Error("문법 교재 데이터를 읽지 못했습니다.");
+  return { vocab, idioms, extra, grammar };
 }
 
 /** 데이터가 마지막으로 바뀐 날짜(git 기준). 재실행 시 결과가 같도록 고정값을 쓴다. */
@@ -114,12 +121,14 @@ const unitUrl = (id) => `${SITE}/units/${unitPath(id)}`;
 /* ------------------------------------------------------------------ */
 
 const CSS = `
-:root{--primary:#3b5bdb;--primary-dark:#2f4bb8;--bg:#f6f7fb;--card:#fff;--text:#212529;--muted:#5f6673;--border:#e5e7eb;--accent:#f59f00;--kpron-text:#8a5a00;--soft:#eef2ff;--cyan:#0b7285;--kpron-bg:#fff8e6}
+/* 색 토큰은 index.html 과 이름을 맞춰, 앱에서 고른 다크 테마가 정적 페이지에도 그대로 적용되게 합니다. */
+:root{--primary:#3b5bdb;--primary-dark:#2f4bb8;--primary-solid:#3b5bdb;--primary-solid-hover:#2f4bb8;--topbar-bg:#3b5bdb;--bg:#f6f7fb;--card:#fff;--text:#212529;--muted:#5f6673;--border:#e5e7eb;--accent:#f59f00;--kpron-text:#8a5a00;--soft:#eef2ff;--cyan:#0b7285;--kpron-bg:#fff8e6;--ex-text:#495057;--correct-bg:#d3f9d8;--green-text:#166534;--warn-bg:#fff3bf;--warn-text:#7a5c00;--wrong-bg:#ffe3e3;--red-text:#b02a2a}
+html.dark-pending{--primary:#8ba3ff;--primary-dark:#93a5ff;--primary-solid:#3d51c4;--primary-solid-hover:#33429f;--topbar-bg:#3d51c4;--bg:#10141b;--card:#1a1f2a;--text:#e6e9ef;--muted:#98a1b0;--border:#2c3442;--accent:#ffc93d;--kpron-text:#ffc93d;--soft:#232c44;--cyan:#6fd3e8;--kpron-bg:#3a3020;--ex-text:#c9d1dc;--correct-bg:#1e3526;--green-text:#51cf66;--warn-bg:#3a3318;--warn-text:#ffd43b;--wrong-bg:#3a2326;--red-text:#ff8787}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:"Pretendard Variable",Pretendard,"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:var(--bg);color:var(--text);line-height:1.7}
 a{color:var(--primary)}
 .wrap{max-width:880px;margin:0 auto;padding:0 20px}
-header.bar{background:var(--primary);color:#fff}
+header.bar{background:var(--topbar-bg);color:#fff}
 header.bar .wrap{padding:14px 20px;display:flex;flex-wrap:wrap;align-items:baseline;gap:10px}
 header.bar a{color:#fff;text-decoration:none;font-weight:800;font-size:20px;letter-spacing:-.5px}
 header.bar small{opacity:.88;font-size:12.5px}
@@ -130,12 +139,12 @@ main{padding:0 0 30px}
 h1{font-size:25px;line-height:1.4;letter-spacing:-.5px;color:var(--primary-dark)}
 h2.sec{font-size:17px;margin:26px 0 12px;color:var(--text)}
 .lead{font-size:14px;color:var(--muted);margin:8px 0 14px}
-.cta{display:inline-block;background:var(--primary);color:#fff;text-decoration:none;font-weight:700;font-size:14px;border-radius:10px;padding:11px 18px;margin:2px 0 6px}
-.cta:hover{background:var(--primary-dark)}
+.cta{display:inline-block;background:var(--primary-solid);color:#fff;text-decoration:none;font-weight:700;font-size:14px;border-radius:10px;padding:11px 18px;margin:2px 0 6px}
+.cta:hover{background:var(--primary-solid-hover)}
 h1 .lvl{font-size:12px;font-weight:700;border-radius:99px;padding:3px 10px;vertical-align:3px;margin-left:6px}
-.lvl-easy{background:#d3f9d8;color:#166534}
-.lvl-mid{background:#fff3bf;color:#7a5c00}
-.lvl-hard{background:#ffe3e3;color:#b02a2a}
+.lvl-easy{background:var(--correct-bg);color:var(--green-text)}
+.lvl-mid{background:var(--warn-bg);color:var(--warn-text)}
+.lvl-hard{background:var(--wrong-bg);color:var(--red-text)}
 ol.words{list-style:none;display:grid;gap:12px;margin-top:6px}
 ol.words li{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:15px 17px}
 .w-row{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;margin-bottom:5px}
@@ -143,7 +152,7 @@ ol.words li{background:var(--card);border:1px solid var(--border);border-radius:
 .w-ipa{font-size:13px;color:var(--muted)}
 .w-kr{font-size:13.5px;font-weight:700;color:var(--kpron-text);background:var(--kpron-bg);border-radius:6px;padding:1px 7px}
 .w-mean{font-size:15px;font-weight:700;margin-bottom:6px}
-.w-ex{font-size:13.5px;font-style:italic;color:#495057}
+.w-ex{font-size:13.5px;font-style:italic;color:var(--ex-text)}
 .w-expron{font-size:12.5px;font-weight:600;color:var(--cyan)}
 .w-exko{font-size:12.5px;color:var(--muted)}
 .pager{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:center;margin-top:28px;font-size:14px;font-weight:700}
@@ -160,9 +169,67 @@ footer.ft{border-top:1px solid var(--border);margin-top:34px;padding-top:16px;fo
 footer.ft a{margin-right:12px;text-decoration:none}
 footer.ft a:hover{text-decoration:underline}
 footer.ft p{margin-top:8px}
+/* 문법 교재 */
+.book-cover{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px 22px;margin:14px 0 22px}
+.book-cover .bc-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-top:14px}
+.book-cover .bc-meta div{background:var(--soft);border-radius:10px;padding:10px 12px}
+.book-cover .bc-meta b{display:block;font-size:11.5px;color:var(--muted);font-weight:700;margin-bottom:3px}
+.book-cover .bc-meta span{font-size:13px;color:var(--text)}
+.book-cover h2{font-size:15px;margin:16px 0 8px;color:var(--primary-dark)}
+.book-cover ul{margin:0;padding-left:18px;font-size:13.5px;color:var(--muted)}
+.book-cover li{margin-bottom:4px}
+.toc{list-style:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px;margin-top:8px}
+.toc a{display:block;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:11px 14px;text-decoration:none;color:var(--text)}
+.toc a:hover{border-color:var(--primary)}
+.toc b{display:block;font-size:11.5px;color:var(--primary);letter-spacing:.3px;margin-bottom:3px}
+.toc span{font-size:14px;font-weight:700}
+.gram{margin:30px 0 0;padding-top:6px}
+.gram-head{display:flex;align-items:baseline;gap:10px;border-bottom:2px solid var(--border);padding-bottom:8px;margin-bottom:10px}
+.gram-no{flex:0 0 auto;background:var(--primary-solid);color:#fff;font-size:12px;font-weight:800;border-radius:6px;padding:3px 8px}
+.gram-head h2{font-size:19px;color:var(--primary-dark);letter-spacing:-.3px}
+.gram-sum{font-size:14px;color:var(--muted);margin:6px 0 16px}
+.g-point{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:15px 17px;margin-bottom:12px}
+.g-point h3{font-size:15.5px;color:var(--text);margin-bottom:6px}
+.g-point p{font-size:13.5px;color:var(--text);line-height:1.75}
+.g-note{font-size:12.5px;color:var(--muted);background:var(--soft);border-radius:8px;padding:8px 11px;margin-top:8px}
+.gtable-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:10px 0 4px;padding-bottom:2px}
+.gtable{width:100%;min-width:340px;border-collapse:collapse;font-size:13px;margin:0}
+.gtable th,.gtable td{border:1px solid var(--border);padding:7px 10px;text-align:left;vertical-align:top}
+.gtable th{background:var(--soft);white-space:nowrap}
+@media (max-width:520px){.gtable{font-size:12.5px}.gtable th,.gtable td{padding:6px 8px}}
+.gex{margin:9px 0 0;padding-left:12px;border-left:3px solid var(--soft)}
+.gex .en{font-size:13.5px;font-weight:600;color:var(--text)}
+.gex .ko{font-size:12.5px;color:var(--muted)}
+.gmistake{background:var(--card);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:13px 16px;margin-bottom:12px}
+.gmistake h3{font-size:14px;margin-bottom:6px}
+.gmistake ul{margin:0;padding-left:18px;font-size:13px;color:var(--muted)}
+.gmistake li{margin-bottom:4px}
+.gquiz{background:var(--card);border:1px solid var(--border);border-left:4px solid var(--primary);border-radius:12px;padding:13px 16px;margin-bottom:10px}
+.gquiz h3{font-size:14px;margin-bottom:6px}
+.gquiz-q{font-size:13.5px;font-weight:600;margin-bottom:7px}
+.gquiz-opts{list-style:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:6px;margin:0}
+.gquiz-opts li{background:var(--soft);border-radius:8px;padding:7px 10px;font-size:13px}
+.gquiz details{margin-top:9px}
+.gquiz summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--primary)}
+.gquiz .gquiz-a{font-size:12.5px;color:var(--muted);margin-top:6px}
+.gquiz .gquiz-a b{color:var(--text)}
+.gex-speak{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;margin-left:5px;border:1px solid var(--border);border-radius:50%;background:var(--card);color:var(--cyan);cursor:pointer;font-size:11px;line-height:1;vertical-align:1px}
+.gex-speak[hidden]{display:none}
+.gex-speak:hover{background:var(--soft)}
+.gex-speak:active{transform:scale(.93)}
+.gex-speak.speaking{background:var(--soft);border-color:var(--primary);box-shadow:0 0 0 3px var(--soft)}
+.cheat-grid{list-style:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(285px,1fr));gap:10px;margin-top:8px}
+.cheat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px}
+.cheat-card b{display:block;font-size:11.5px;color:var(--primary);letter-spacing:.3px;margin-bottom:3px}
+.cheat-card .cheat-title{display:block;font-size:14.5px;font-weight:800;margin-bottom:5px}
+.cheat-card p{font-size:12.5px;color:var(--muted);margin-bottom:6px}
+.cheat-card ul{margin:0 0 8px;padding-left:16px;font-size:12.5px;color:var(--text)}
+.cheat-card li{margin-bottom:3px}
+.cheat-card a{font-size:12.5px;font-weight:700;text-decoration:none}
+@media print{header.bar,footer.ft,.pager,.cta,.cheat-card a{display:none}body{background:#fff}.wrap{max-width:none;padding:0}.cheat-grid{grid-template-columns:1fr 1fr}.cheat-card{border-color:#bbb;page-break-inside:avoid}}
 `;
 
-function page({ title, description, canonical, ld, body, footerNav }) {
+function page({ title, description, canonical, ld, body, footerNav, bodyScript }) {
   return `<!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -189,6 +256,19 @@ function page({ title, description, canonical, ld, body, footerNav }) {
 <meta name="twitter:image" content="${OG_IMAGE}">
 <link rel="icon" href="../icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="../icon.svg">
+<script>
+  // 앱(index.html)에서 고른 테마를 정적 페이지에도 첫 페인트 전에 적용해,
+  // 다크 모드 사용자가 흰 화면을 번쩍 보지 않게 합니다.
+  (function () {
+    try {
+      if ((localStorage.getItem("toeic1000_theme") || "light") === "dark") {
+        document.documentElement.classList.add("dark-pending");
+        var m = document.querySelector('meta[name="theme-color"]');
+        if (m) m.setAttribute("content", "#10141b");
+      }
+    } catch (e) {}
+  })();
+</script>
 <style>${CSS}</style>
 <script type="application/ld+json">
 ${ld}
@@ -209,10 +289,85 @@ ${body}
     ${footerNav || `<a href="../">홈</a><a href="./">주제별 단어장</a><a href="idioms.html">빈출 구동사·숙어</a><a href="../privacy.html">개인정보처리방침</a><a href="../terms.html">이용약관</a>`}
   </nav>
   <p>👾 toeic.monster · TOEIC 어휘 무료 학습 사이트 · 학습 기록은 브라우저에만 저장됩니다</p>
-</footer>
+</footer>${bodyScript ? "\n" + bodyScript : ""}
 </body>
 </html>
 `;
+}
+
+/**
+ * 정적 문법 페이지용 예문 듣기 버튼 스크립트.
+ *
+ * index.html 의 TTS 설정(목소리·속도·언어)을 localStorage 로 공유해,
+ * 앱에서 고른 목소리가 교재 페이지에서도 그대로 쓰입니다.
+ */
+const TTS_SCRIPT = `<script>
+(function () {
+  function eachButton(fn) {
+    Array.prototype.forEach.call(document.querySelectorAll(".gex-speak"), fn);
+  }
+  // 브라우저가 음성 합성을 지원하지 않으면 동작하지 않는 버튼을 남기지 않습니다.
+  var synth = window.speechSynthesis;
+  if (!synth || typeof SpeechSynthesisUtterance === "undefined") {
+    eachButton(function (b) { b.hidden = true; });
+    return;
+  }
+  var VOICE_URI = "", LANG = "en-US", RATE = 0.95;
+  try {
+    VOICE_URI = localStorage.getItem("toeic1000_ttsvoice") || "";
+    LANG = localStorage.getItem("toeic1000_ttslang") || "en-US";
+    var savedRate = parseFloat(localStorage.getItem("toeic1000_ttsrate"));
+    if (savedRate) RATE = savedRate;
+  } catch (e) {}
+
+  function norm(s) { return String(s || "").replace(/_/g, "-").toLowerCase(); }
+  function listVoices() { try { return synth.getVoices() || []; } catch (e) { return []; } }
+  // 저장된 목소리가 없거나 기기에 없으면 영어 음성으로 자동 대체합니다.
+  function pickVoice() {
+    var v = listVoices(), i;
+    for (i = 0; i < v.length; i++) if (v[i].voiceURI === VOICE_URI) return v[i];
+    for (i = 0; i < v.length; i++) if (norm(v[i].lang).indexOf("en") === 0) return v[i];
+    return null;
+  }
+
+  var current = null;
+  function clearHl() {
+    Array.prototype.forEach.call(document.querySelectorAll(".gex-speak.speaking"), function (b) {
+      b.classList.remove("speaking");
+    });
+  }
+  function stop() { try { synth.cancel(); } catch (e) {} current = null; clearHl(); }
+
+  function speak(btn) {
+    var text = btn.getAttribute("data-say") || "";
+    if (!text) return;
+    if (current === btn) { stop(); return; }
+    stop();
+    var u = new SpeechSynthesisUtterance(text);
+    u.lang = LANG || "en-US";
+    var v = pickVoice();
+    if (v) { u.voice = v; u.lang = v.lang || u.lang; }
+    u.rate = RATE;
+    u.onend = u.onerror = function () { if (current === btn) { current = null; clearHl(); } };
+    current = btn;
+    btn.classList.add("speaking");
+    try { synth.speak(u); } catch (e) { current = null; clearHl(); }
+  }
+
+  eachButton(function (btn) {
+    btn.addEventListener("click", function () { speak(btn); });
+  });
+  // Esc 키로도 정지합니다(index.html 과 같은 규칙).
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") stop(); });
+  // 목록이 늦게 채워지는 브라우저를 위해 재생 직전마다 조회하므로 별도 보정은 필요 없습니다.
+  window.addEventListener("pagehide", stop);
+})();
+</script>`;
+
+/** 📘 버튼을 예문 옆에 붙입니다(듣기 대상 문장은 data-say 에 담습니다). */
+function speakBtn(text) {
+  // 같은 문장이 여러 번 나오므로, 낭독기에서 어떤 문장인지 구분되도록 문장을 라벨에 넣습니다.
+  return ` <button type="button" class="gex-speak" data-say="${esc(text)}" aria-label="예문 듣기: ${esc(text)}" title="예문 듣기">🔊</button>`;
 }
 
 /* ------------------------------------------------------------------ */
@@ -546,10 +701,308 @@ ${sections}
 }
 
 /* ------------------------------------------------------------------ */
+/* 6-3. 단계별 문법 교재 (data/grammar-*.js)                            */
+/* ------------------------------------------------------------------ */
+
+const GRAMMAR_FOOTER =
+  '<a href="../">홈</a><a href="../units/">주제별 단어장</a><a href="index.html">문법 교재</a>' +
+  '<a href="../guides/">전략·공략 가이드</a><a href="../privacy.html">개인정보처리방침</a><a href="../terms.html">이용약관</a>';
+
+/** 과 번호에 붙는 앵커 id — 목차 링크와 감사(앵커 검증)가 함께 씁니다. */
+const chapterAnchor = (no) => `ch-${String(no).padStart(2, "0")}`;
+
+function buildGrammarHub(books) {
+  const canonical = `${SITE}/grammar/`;
+  const totalCh = books.reduce((n, b) => n + b.chapters.length, 0);
+  const totalQ = books.reduce(
+    (n, b) => n + b.chapters.reduce((m, c) => m + (c.practice || []).length, 0),
+    0,
+  );
+  const title = `영문법 교재 3단계 — 기초·중급·고급 | toeic.monster`;
+  const description = `be동사부터 분사구문·도치까지, 기초·중급·고급 3단계 영문법 교재 ${totalCh}과와 연습 문제 ${totalQ}문항을 예문·형태 표와 함께 무료로 정리했습니다.`;
+
+  const ld = jsonLd({
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "CollectionPage",
+        name: "영문법 교재 3단계 — 기초·중급·고급",
+        description,
+        url: canonical,
+        inLanguage: "ko",
+        isPartOf: { "@type": "WebSite", name: "toeic.monster", url: `${SITE}/` },
+      },
+      {
+        "@type": "ItemList",
+        name: "단계별 영문법 교재",
+        numberOfItems: books.length,
+        itemListElement: books.map((b, i) => ({
+          "@type": "ListItem",
+          position: i + 1,
+          name: `${b.level} ${b.title}`,
+          url: `${SITE}/grammar/${b.id}.html`,
+        })),
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "toeic.monster", item: `${SITE}/` },
+          { "@type": "ListItem", position: 2, name: "문법 교재", item: canonical },
+        ],
+      },
+    ],
+  });
+
+  const body = `  <nav class="crumb" aria-label="breadcrumb">
+    <a href="../">toeic.monster</a> › <span>문법 교재</span>
+  </nav>
+
+  <h1>영문법 교재 3단계 — 기초·중급·고급</h1>
+  <p class="lead">${esc(description)}</p>
+  <a class="cta" href="../">🃏 단어·퀴즈로 바로 학습하기</a>
+  <a class="cta" href="cheatsheet.html">🧾 한 장 요약으로 보기</a>
+
+  <h2 class="sec">교재 목록</h2>
+  <ul class="unitlist">
+${books
+  .map(
+    (b) => `    <li><a href="${b.id}.html">
+      <b>${LEVEL_ICON[b.level] || "🟡"} ${esc(b.level)} · CEFR ${esc(b.cefr || "")}</b>
+      <span>${esc(b.title)}</span>
+      <em>${esc(b.subtitle)} · ${b.chapters.length}과</em>
+    </a></li>`,
+  )
+  .join("\n")}
+  </ul>
+
+  <h2 class="sec">학습 순서</h2>
+  <ol class="words">
+    <li><span class="w-mean">기초 영문법으로 문장의 뼈대와 기본 시제를 먼저 정리합니다.</span></li>
+    <li><span class="w-mean">중급 영문법에서 완료시제·수동태·관계사·준동사를 익힙니다.</span></li>
+    <li><span class="w-mean">고급 영문법으로 도치·강조·문어체 표현을 다듬습니다.</span></li>
+  </ol>`;
+
+  return { file: "grammar/index.html", html: page({ title, description, canonical, ld, body, footerNav: GRAMMAR_FOOTER }) };
+}
+
+function grammarPoint(p) {
+  const table = p.table
+    ? `\n      <div class="gtable-wrap">\n      <table class="gtable">\n        <thead><tr>${(p.table.head || [])
+        .map((h) => `<th>${esc(h)}</th>`)
+        .join("")}</tr></thead>\n        <tbody>${(p.table.rows || [])
+        .map((r) => `<tr>${r.map((c) => `<td>${esc(c)}</td>`).join("")}</tr>`)
+        .join("")}</tbody>\n      </table>\n      </div>`
+    : "";
+  const examples = (p.examples || [])
+    .map(
+      (e) =>
+        `\n      <div class="gex"><div class="en" lang="en">${esc(e.en)}${speakBtn(e.en)}</div><div class="ko">${esc(e.ko)}</div></div>`,
+    )
+    .join("");
+  const note = p.note ? `\n      <p class="g-note">💡 ${esc(p.note)}</p>` : "";
+  return `    <div class="g-point">
+      <h3>${esc(p.h)}</h3>
+      <p>${esc(p.body)}</p>${table}${examples}${note}
+    </div>`;
+}
+
+function grammarChapter(c) {
+  const points = (c.points || []).map(grammarPoint).join("\n");
+  const mistakes = (c.mistakes || []).length
+    ? `\n    <div class="gmistake">
+      <h3>⚠️ 자주 틀리는 포인트</h3>
+      <ul>${c.mistakes.map((m) => `<li>${esc(m)}</li>`).join("")}</ul>
+    </div>`
+    : "";
+  const practice = (c.practice || []).length
+    ? `\n    <div class="gquiz">
+      <h3>✏️ 연습 문제 ${c.practice.length}문항</h3>${c.practice
+        .map(
+          (q, i) => `\n      <div class="gquiz-item">
+        <p class="gquiz-q">${i + 1}. ${esc(q.q)}</p>
+        <ol class="gquiz-opts">${(q.opts || []).map((o) => `<li>${esc(o)}</li>`).join("")}</ol>
+        <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: ${esc(q.a)}</b><br>${esc(q.why)}</p></details>
+      </div>`,
+        )
+        .join("")}
+    </div>`
+    : "";
+
+  return `  <section class="gram" id="${chapterAnchor(c.no)}">
+    <div class="gram-head"><span class="gram-no">${String(c.no).padStart(2, "0")}과</span><h2>${esc(c.title)}</h2></div>
+    <p class="gram-sum">${esc(c.summary)}</p>
+${points}${mistakes}${practice}
+  </section>`;
+}
+
+function buildGrammarBook(book, books) {
+  const canonical = `${SITE}/grammar/${book.id}.html`;
+  const title = `${book.title} — ${book.subtitle} | toeic.monster`;
+  const description = book.desc;
+  const idx = books.findIndex((b) => b.id === book.id);
+  const prev = books[idx - 1];
+  const next = books[idx + 1];
+
+  const ld = jsonLd({
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "LearningResource",
+        name: `${book.title} — ${book.subtitle}`,
+        description,
+        url: canonical,
+        inLanguage: "ko",
+        learningResourceType: "문법 교재",
+        educationalUse: "self-study",
+        educationalLevel: book.cefr,
+        teaches: book.chapters.map((c) => c.title),
+        isPartOf: { "@type": "CollectionPage", name: "영문법 교재 3단계", url: `${SITE}/grammar/` },
+        provider: { "@type": "Organization", name: "toeic.monster", url: `${SITE}/` },
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "toeic.monster", item: `${SITE}/` },
+          { "@type": "ListItem", position: 2, name: "문법 교재", item: `${SITE}/grammar/` },
+          { "@type": "ListItem", position: 3, name: book.title, item: canonical },
+        ],
+      },
+    ],
+  });
+
+  const toc = book.chapters
+    .map(
+      (c) => `    <li><a href="#${chapterAnchor(c.no)}">
+      <b>${String(c.no).padStart(2, "0")}과</b>
+      <span>${esc(c.title)}</span>
+    </a></li>`,
+    )
+    .join("\n");
+
+  const pager = [
+    prev ? `<a href="${prev.id}.html">← ${esc(prev.level)} ${esc(prev.title)}</a>` : `<span></span>`,
+    `<a class="mid" href="./">📘 문법 교재 전체 보기</a>`,
+    next ? `<a href="${next.id}.html">${esc(next.level)} ${esc(next.title)} →</a>` : `<span></span>`,
+  ].join("\n    ");
+
+  const body = `  <nav class="crumb" aria-label="breadcrumb">
+    <a href="../">toeic.monster</a> › <a href="./">문법 교재</a> › <span>${esc(book.title)}</span>
+  </nav>
+
+  <h1>${esc(book.title)}<span class="lvl ${LEVEL_CLASS[book.level] || "lvl-mid"}">${LEVEL_ICON[book.level] || "🟡"} ${esc(book.level)}</span></h1>
+  <p class="lead">${esc(book.subtitle)} · 총 ${book.chapters.length}과</p>
+
+  <div class="book-cover">
+    <h2>이 교재의 목표</h2>
+    <p>${esc(book.goal)}</p>
+    <div class="bc-meta">
+      <div><b>CEFR</b><span>${esc(book.cefr || "")}</span></div>
+      <div><b>대상</b><span>${esc(book.audience)}</span></div>
+      <div><b>분량</b><span>${book.chapters.length}과 · 연습 문제 ${book.chapters.reduce((n, c) => n + (c.practice || []).length, 0)}문항</span></div>
+    </div>
+    <h2>이렇게 학습하세요</h2>
+    <ul>${(book.howto || []).map((h) => `<li>${esc(h)}</li>`).join("")}</ul>
+  </div>
+
+  <a class="cta" href="cheatsheet.html">🧾 한 장 요약 보기</a>
+  <a class="cta" href="../index.html?level=${book.id}#grammar-quiz">✏️ 앱에서 이 교재 문제 풀기</a>
+  <p class="lead">🔊 를 누르면 예문 발음을 들을 수 있습니다(앱에서 고른 목소리·속도를 그대로 사용).</p>
+
+  <h2 class="sec">목차</h2>
+  <ul class="toc">
+${toc}
+  </ul>
+
+${book.chapters.map(grammarChapter).join("\n\n")}
+
+  <nav class="pager" aria-label="교재 이동">
+    ${pager}
+  </nav>`;
+
+  return {
+    file: `grammar/${book.id}.html`,
+    html: page({ title, description, canonical, ld, body, footerNav: GRAMMAR_FOOTER, bodyScript: TTS_SCRIPT }),
+  };
+}
+
+function buildGrammarCheatsheet(books) {
+  const canonical = `${SITE}/grammar/cheatsheet.html`;
+  const chapters = books.reduce((n, b) => n + b.chapters.length, 0);
+  const title = `영문법 한 장 요약 — ${chapters}과 핵심 정리 | toeic.monster`;
+  const description = `기초·중급·고급 문법 ${chapters}과의 핵심 개념을 한 페이지에 요약했습니다. 인쇄해 두고 시험 전 복습용으로 활용하세요.`;
+
+  const ld = jsonLd({
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "LearningResource",
+        name: `영문법 한 장 요약 — ${chapters}과 핵심 정리`,
+        description,
+        url: canonical,
+        inLanguage: "ko",
+        learningResourceType: "요약 정리",
+        educationalUse: "self-study",
+        teaches: books.reduce((a, b) => a.concat(b.chapters.map((c) => c.title)), []),
+        isPartOf: { "@type": "CollectionPage", name: "영문법 교재 3단계", url: `${SITE}/grammar/` },
+        provider: { "@type": "Organization", name: "toeic.monster", url: `${SITE}/` },
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "toeic.monster", item: `${SITE}/` },
+          { "@type": "ListItem", position: 2, name: "문법 교재", item: `${SITE}/grammar/` },
+          { "@type": "ListItem", position: 3, name: "한 장 요약", item: canonical },
+        ],
+      },
+    ],
+  });
+
+  const sections = books
+    .map(
+      (b) => `  <h2 class="sec">${LEVEL_ICON[b.level] || "🟡"} ${esc(b.level)} · ${esc(b.title)} (CEFR ${esc(b.cefr || "")})</h2>
+  <ul class="cheat-grid">
+${b.chapters
+  .map(
+    (c) => `    <li class="cheat-card">
+      <b>${String(c.no).padStart(2, "0")}과</b>
+      <span class="cheat-title">${esc(c.title)}</span>
+      <p>${esc(c.summary)}</p>
+      <ul>${(c.points || []).map((p) => `<li>${esc(p.h)}</li>`).join("")}</ul>
+      <a href="${b.id}.html#${chapterAnchor(c.no)}">교재에서 자세히 보기 →</a>
+    </li>`,
+  )
+  .join("\n")}
+  </ul>`,
+    )
+    .join("\n\n");
+
+  const body = `  <nav class="crumb" aria-label="breadcrumb">
+    <a href="../">toeic.monster</a> › <a href="./">문법 교재</a> › <span>한 장 요약</span>
+  </nav>
+
+  <h1>영문법 한 장 요약 — ${chapters}과 핵심 정리</h1>
+  <p class="lead">기초·중급·고급 ${chapters}과의 개념과 형태를 한 페이지에 모았습니다. 브라우저 인쇄(Ctrl+P)로 저장해 두고 시험 전 복습용으로 쓰세요.</p>
+  <a class="cta" href="./">📘 문법 교재 전체 보기</a>
+
+${sections}
+
+  <nav class="pager" aria-label="이동">
+    <span></span>
+    <a class="mid" href="./">📘 문법 교재 전체 보기</a>
+    <span></span>
+  </nav>`;
+
+  return {
+    file: "grammar/cheatsheet.html",
+    html: page({ title, description, canonical, ld, body, footerNav: GRAMMAR_FOOTER }),
+  };
+}
+
+/* ------------------------------------------------------------------ */
 /* 7. 사이트맵                                                         */
 /* ------------------------------------------------------------------ */
 
-function buildSitemap(units, lastmod, guides) {
+function buildSitemap(units, lastmod, guides, grammar) {
   const rows = [];
   const add = (loc, changefreq, priority, date) => {
     rows.push(
@@ -570,6 +1023,11 @@ function buildSitemap(units, lastmod, guides) {
     add(`${SITE}/guides/`, "monthly", "0.6");
     guides.forEach((g) => add(`${SITE}/guides/${g.slug}.html`, "monthly", "0.6"));
   }
+  if (grammar && grammar.length) {
+    add(`${SITE}/grammar/`, "monthly", "0.8");
+    grammar.forEach((b) => add(`${SITE}/grammar/${b.id}.html`, "monthly", "0.8"));
+    add(`${SITE}/grammar/cheatsheet.html`, "monthly", "0.7");
+  }
   // privacy.html·terms.html 은 robots=noindex 이므로 사이트맵에 넣지 않는다.
   // (noindex 페이지를 사이트맵에 제출하면 서치콘솔에서 오류로 보고된다.)
 
@@ -582,7 +1040,7 @@ function buildSitemap(units, lastmod, guides) {
 
 function main() {
   const meta = loadUnitMeta();
-  const { vocab, idioms, extra } = loadVocab();
+  const { vocab, idioms, extra, grammar } = loadVocab();
   const guides = Array.isArray(extra.guides) ? extra.guides : [];
   const lastmod = lastModified();
 
@@ -617,13 +1075,27 @@ function main() {
     write(gh.file, gh.html);
   }
 
-  write("sitemap.xml", buildSitemap(units, lastmod, guides));
+  grammar.forEach((b) => {
+    const gp = buildGrammarBook(b, grammar);
+    write(gp.file, gp.html);
+  });
+  if (grammar.length) {
+    const gh = buildGrammarHub(grammar);
+    write(gh.file, gh.html);
+    const cs = buildGrammarCheatsheet(grammar);
+    write(cs.file, cs.html);
+  }
+
+  write("sitemap.xml", buildSitemap(units, lastmod, guides, grammar));
 
   const words = units.reduce((n, u) => n + u.words.length, 0);
+  const chapters = grammar.reduce((n, b) => n + b.chapters.length, 0);
+  const quizzes = grammar.reduce((n, b) => n + b.chapters.reduce((m, c) => m + (c.practice || []).length, 0), 0);
   console.log(`✅ 정적 페이지 생성 완료`);
   console.log(`   · 유닛 페이지 ${written}개 (단어 ${words.toLocaleString("en-US")}개)`);
   console.log(`   · 허브 1개 · 숙어 페이지 1개 (숙어 ${idioms.length}개)`);
   console.log(`   · 가이드 페이지 ${guides.length}개 + 허브 1개`);
+  console.log(`   · 문법 교재 ${grammar.length}권 + 허브 1개 + 한 장 요약 (${chapters}과 · 연습 문제 ${quizzes}문항)`);
   console.log(`   · sitemap.xml 갱신 (lastmod ${lastmod})`);
 }
 

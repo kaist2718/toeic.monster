@@ -14,6 +14,7 @@ idioms = 126
 guides = 9
 paraphrase = 200
 frequency = 200
+grammar_books = 3
 -->
 
 ---
