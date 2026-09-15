@@ -196,6 +196,45 @@ section("[6] 음성 목록이 끝내 없으면 폴링을 멈춤", () => {
   ok(ctx.timers.size === 0, "무한 폴링하지 않고 종료");
 });
 
+/* ------------------------------------------------------------------ */
+/* [7] 낭독 전 문장 다듬기(ttsClean) — 이모지·기호                           */
+/* ------------------------------------------------------------------ */
+
+section("[7] 낭독 전에 이모지·장식 기호를 지움", () => {
+  // index.html 의 ttsClean 을 그대로 추출해 실행합니다(규칙이 바뀌면 이 테스트가 깨집니다).
+  const start = html.indexOf("  function ttsClean(text) {");
+  const end = html.indexOf("  function speakTTS(text, rate) {");
+  if (start < 0 || end < 0) {
+    fail++;
+    console.log("  ✗ index.html 에서 ttsClean 블록을 찾지 못했습니다");
+    return;
+  }
+  const ttsClean = new Function(
+    html.slice(start, end) + "\nreturn ttsClean;",
+  )();
+
+  ok(ttsClean("🔥 focus on your goal") === "focus on your goal", "단어 앞 이모지(🔥)를 지움");
+  ok(ttsClean("The ✅ report was submitted.") === "The report was submitted.", "문장 중간 이모지(✅)를 지움");
+  ok(ttsClean("✈️ The flight was delayed.") === "The flight was delayed.", "변형 선택자가 뜬 이모지(✈️)를 지움");
+  ok(ttsClean("💡 Tip: check the agenda.") === "Tip: check the agenda.", "낭독 앞머리 기호 뒤 문장을 남김");
+  ok(ttsClean("3→5 days") === "3 to 5 days", "화살표는 to 로 바꿔 읽음(기존 동작 유지)");
+  ok(ttsClean("Sales grew 3~5%.") === "Sales grew 3 to 5%.", "범위 기호는 to 로 읽음(기존 동작 유지)");
+  ok(ttsClean("The team ___ the plan.") === "The team blank the plan.", "빈칸은 blank 로 읽음(기존 동작 유지)");
+  ok(!/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}]/u.test(ttsClean("🏢 Office hours are 9 to 6. ✏️")), "낭독 문장에 이모지가 남지 않음");
+
+  // 정적 페이지(문법 교재·가이드)가 쓰는 공용 스크립트도 같은 규칙이어야 합니다.
+  const speakJs = fs.readFileSync(path.join(ROOT, "assets/speak.js"), "utf8");
+  ok(/function sayable\(/.test(speakJs), "assets/speak.js 에 낭독용 문자 정리 함수가 있음");
+  ok(
+    /new SpeechSynthesisUtterance\(text\)/.test(speakJs) && /sayable\(btn\.getAttribute/.test(speakJs),
+    "assets/speak.js 가 정리된 문장을 읽음(이모지를 소리로 내지 않음)",
+  );
+  ok(
+    speakJs.includes("[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]"),
+    "assets/speak.js 도 서로게이트 쌍(그림 이모지)을 지움",
+  );
+});
+
 console.log("\n" + "-".repeat(52));
 if (fail) {
   console.log(`❌ TTS 음성 선택 테스트 실패 (통과 ${pass}건 · 실패 ${fail}건)`);

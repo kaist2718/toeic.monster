@@ -335,6 +335,9 @@ function ttsClean(text) {
   s = s.replace(/[←]/g, ", ");
   s = s.replace(/[~〜]|\u301C/g, " to ");
   s = s.replace(/[·•※★☆◈■□●○◆◇]/g, " ");
+  // 이모지·장식 기호는 화면에만 남기고 낭독에서는 뺍니다(index.html ttsClean 과 같은 규칙).
+  s = s.replace(/[\u2190-\u21FF\u2300-\u27BF\u2B00-\u2BFF\u20E3\uFE0F\u200D]/g, " ");
+  s = s.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, " ");
   s = s.replace(/…/g, ", ");
   s = s.replace(/\s*＿{2,}\s*/g, " blank ");
   s = s.replace(/\s*_{2,}\s*/g, " blank ");
@@ -344,6 +347,10 @@ function ttsClean(text) {
   s = s.replace(/\s+([,.;:!?])/g, "$1");
   return s.trim();
 }
+
+// 이모지·그림 문자 — 낭독에서는 제거되므로 화면과 소리가 달라진다.
+// (index.html·assets/speak.js 의 이모지 제거 규칙과 같은 범위)
+const EMOJI_RE = /[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}]/u;
 
 // TTS 낭독을 방해하는 기호 (문자 → 대체어 안내)
 const TTS_HOSTILE = [
@@ -524,6 +531,9 @@ for (const { where, text, tts } of rows) {
   // 3-1. TTS 낭독 문제 — sanitize 후에도 남는 문제만 보고한다.
   if (tts) {
     const spoken = ttsClean(text);
+    if (EMOJI_RE.test(text)) {
+      add(where, text, "낭독 대상에 이모지가 섞여 있습니다(소리에서는 빠집니다)");
+    }
     if (!spoken || !/[A-Za-z]/.test(spoken)) {
       add(where, text, "TTS로 읽을 영어가 없습니다(낭독 버튼이 동작하지 않음)");
     } else {

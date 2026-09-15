@@ -40,6 +40,20 @@
     return null;
   }
 
+  /*
+   * 이모지·장식 기호는 화면에는 남기되 소리로는 읽지 않습니다.
+   * 영어 음성은 🔥 · ✅ 같은 글자를 "fire" · "emoji" 로 읽거나 문장을 늘어뜨려서,
+   * 단어·문장 앞에 붙은 표시가 낭독에 섞이던 문제가 있었습니다.
+   * (index.html 의 ttsClean 과 같은 규칙을 씁니다.)
+   */
+  function sayable(s) {
+    return String(s || "")
+      .replace(/[\u2190-\u21FF\u2300-\u27BF\u2B00-\u2BFF\u20E3\uFE0F\u200D]/g, " ")
+      .replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, " ")
+      .replace(/\s{2,}/g, " ")
+      .trim();
+  }
+
   var current = null;
   function clearHl() {
     Array.prototype.forEach.call(document.querySelectorAll(".gex-speak.speaking"), function (b) {
@@ -49,7 +63,7 @@
   function stop() { try { synth.cancel(); } catch (e) {} current = null; clearHl(); }
 
   function speak(btn) {
-    var text = btn.getAttribute("data-say") || "";
+    var text = sayable(btn.getAttribute("data-say") || "");
     if (!text) return;
     if (current === btn) { stop(); return; }
     stop();

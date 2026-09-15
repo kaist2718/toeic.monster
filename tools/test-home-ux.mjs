@@ -11,6 +11,9 @@
  *      — 첫 화면에서 숨은 목록을 만들면 첫 입력까지 걸리는 시간이 길어집니다.
  *   3) 테마 기본값은 OS 설정(prefers-color-scheme)을 따르고, 직접 고른 값이 있으면 그 값을 우선합니다.
  *      — 정적 페이지(units/unit-01.html)도 같은 규칙을 쓰는지 함께 확인합니다.
+ *   4) 모바일 햄버거 메뉴가 (a) 화면보다 길어지면 메뉴 안에서 스크롤되고,
+ *      (b) 뒤로가기 한 번으로 "닫히기"만 하고 페이지를 떠나지 않는지 확인합니다.
+ *      — 예전에는 아래쪽 항목이 잘려 고를 수 없었고, 뒤로가기를 누르면 곧바로 사이트를 떠났습니다.
  *
  * 실행:  node tools/test-home-ux.mjs
  * 종료 코드: 실패가 있으면 1, 없으면 0
@@ -80,11 +83,13 @@ console.log("\n[1] 검색창·난이도 필터 노출 범위");
 
   let showView = null;
   try {
+    // reduceMotion 은 실제 스크립트에서 showView 바깥(같은 스코프)에 있는 값이라 함께 넘깁니다.
     showView = new Function(
       "document",
       "window",
+      "reduceMotion",
       `${code}\n  return showView;`,
-    )(doc, win);
+    )(doc, win, false);
   } catch (e) {
     bad("showView 블록을 실행할 수 없습니다", e.message);
   }
@@ -348,6 +353,135 @@ console.log("\n[5] 테마 기본값 (OS 설정 우선)");
     const b = runThemeScript(staticScript, "light", true);
     assert(!b.dark, "정적 페이지: 직접 고른 라이트 테마가 우선합니다", JSON.stringify(b));
   }
+}
+
+/* ------------------------------------------------------------------ */
+/* 6. 모바일 햄버거 메뉴 — 스크롤 가능 + 뒤로가기로 닫기                 */
+/* ------------------------------------------------------------------ */
+
+console.log("\n[6] 모바일 햄버거 메뉴 (스크롤 · 뒤로가기)");
+{
+  // 6-1. 항목이 화면보다 길어지면 메뉴 안에서 스크롤할 수 있어야 합니다.
+  const mobileCss = slice("@media (max-width: 1023px) {", ".skip-link {", html, "모바일 메뉴 CSS");
+  const navCss = (mobileCss.match(/\.topbar-nav\s*\{[^}]*\}/) || [""])[0];
+  assert(/max-height:\s*[^;]+;/.test(navCss), "메뉴 패널에 최대 높이가 있습니다(화면 밖으로 넘치지 않음)", navCss.slice(0, 60));
+  assert(
+    /overflow-y:\s*auto/.test(navCss),
+    "메뉴 패널이 넘치면 안에서 스크롤됩니다(아래 항목을 고를 수 있음)",
+    "overflow 가 없으면 잘린 항목은 영영 누를 수 없습니다",
+  );
+  assert(
+    /\.topbar-nav\.open\s+\.btn\.active/.test(html),
+    "펼친 메뉴에서 지금 보고 있는 화면을 왼쪽 띠로 표시합니다",
+    "열어 놓고도 내가 어느 화면에 있는지 알기 어렵습니다",
+  );
+  assert(
+    /body\.menu-open\s*\{\s*overflow:\s*hidden/.test(mobileCss),
+    "메뉴가 열려 있는 동안 뒤 화면 스크롤을 막습니다",
+    "뒤 화면이 따라 움직이면 메뉴 항목을 짚기 어렵습니다",
+  );
+
+  // 6-2. 메뉴 동작(열기·닫기·뒤로가기)을 가짜 브라우저에서 그대로 실행합니다.
+  function makeEl(id, children = []) {
+    const classes = new Set();
+    const el = {
+      id,
+      textContent: "",
+      attrs: {},
+      handlers: {},
+      children,
+      classList: {
+        add: (c) => classes.add(c),
+        remove: (c) => classes.delete(c),
+        contains: (c) => classes.has(c),
+        toggle: (c) => (classes.has(c) ? (classes.delete(c), false) : (classes.add(c), true)),
+      },
+      setAttribute(k, v) { el.attrs[k] = v; },
+      removeAttribute(k) { delete el.attrs[k]; },
+      addEventListener(t, fn) { (el.handlers[t] = el.handlers[t] || []).push(fn); },
+      focus() { doc.activeElement = el; },
+      contains: (node) => node === el || children.includes(node),
+      querySelector: () => children[0] || null,
+    };
+    return el;
+  }
+
+  const firstItem = makeEl("btnHome");
+  const els = {
+    btnMenu: makeEl("btnMenu"),
+    topbarNav: makeEl("topbarNav", [firstItem]),
+    btnMore: makeEl("btnMore"),
+    topbarMore: makeEl("topbarMore"),
+  };
+  const docHandlers = {};
+  const winHandlers = {};
+  const history = { pushes: 0, backs: 0, pushState: () => history.pushes++, back: () => history.backs++ };
+  const doc = {
+    getElementById: (id) => els[id] || null,
+    addEventListener: (t, fn) => (docHandlers[t] = docHandlers[t] || []).push(fn),
+    activeElement: null,
+    body: makeEl("body"),
+  };
+  const win = {
+    history,
+    innerWidth: 375,
+    addEventListener: (t, fn) => (winHandlers[t] = winHandlers[t] || []).push(fn),
+  };
+
+  const menuCode = slice(
+    "  // ---------- 상단바 메뉴: 모바일",
+    "  // ---------- 홈 랜딩 ----------",
+    html,
+    "상단바 메뉴",
+  );
+  try {
+    new Function("document", "window", menuCode)(doc, win);
+  } catch (e) {
+    bad("상단바 메뉴 블록을 실행할 수 없습니다", e.message);
+  }
+
+  const evt = (extra = {}) => ({ stopPropagation() {}, preventDefault() {}, ...extra });
+  const clickMenu = () => els.btnMenu.handlers.click[0](evt());
+  const pressEsc = () => docHandlers.keydown[0](evt({ key: "Escape" }));
+  const goBack = () => winHandlers.popstate[0](evt());
+  const navOpen = () => els.topbarNav.classList.contains("open");
+
+  // 열기: 패널 표시 + 첫 항목으로 초점 + 스크롤 고정 + history 항목 1개
+  clickMenu();
+  assert(navOpen() && els.btnMenu.attrs["aria-expanded"] === "true", "☰ 를 누르면 메뉴가 열리고 aria-expanded=true 가 됩니다");
+  assert(doc.body.classList.contains("menu-open"), "메뉴가 열리면 뒤 화면 스크롤을 막습니다");
+  assert(doc.activeElement === firstItem, "메뉴가 열리면 첫 항목으로 초점이 옴깁니다(키보드 사용자)");
+  assert(history.pushes === 1, "메뉴를 열 때 뒤로가기용 history 항목을 하나 빌립니다");
+
+  // 뒤로가기: 메뉴만 닫히고 페이지는 그대로(추가 back() 호출 없음)
+  goBack();
+  assert(!navOpen(), "뒤로가기를 누르면 메뉴가 닫힙니다");
+  assert(history.backs === 0, "뒤로가기로 닫힐 때는 history 를 다시 건드리지 않습니다(주소 유지)");
+  assert(doc.activeElement === els.btnMenu, "닫히면 초점이 ☰ 버튼으로 돌아옵니다");
+  assert(!doc.body.classList.contains("menu-open"), "닫히면 뒤 화면 스크롤 제한도 풀립니다");
+
+  // 다시 열고 Esc 로 닫기 — 빌려 둔 history 항목은 스스로 돌려줍니다
+  clickMenu();
+  pressEsc();
+  assert(!navOpen(), "Esc 키로도 메뉴가 닫힙니다");
+  assert(history.backs === 1 && history.pushes === 2, "직접 닫을 때는 빌린 history 항목을 되돌려줍니다");
+
+  // 항목을 고르면 닫히고, 그 항목으로 시선이 가도록 초점은 그대로 둡니다
+  clickMenu();
+  const itemBtn = makeEl("btnList");
+  const itemEvent = evt({ target: itemBtn });
+  itemBtn.closest = (sel) => (sel === ".topbar-nav .btn" ? itemBtn : null);
+  doc.activeElement = itemBtn;
+  els.topbarNav.contains = (node) => node === els.topbarNav || node === firstItem || node === itemBtn;
+  docHandlers.click[0](itemEvent);
+  assert(!navOpen(), "메뉴 항목을 고르면 메뉴가 닫힙니다");
+  assert(doc.activeElement === itemBtn, "항목을 골라 닫힌 경우에는 초점을 빼앗지 않습니다");
+
+  // 화면이 넓어져 햄버거가 사라지면 드롭다운도 닫힙니다
+  clickMenu();
+  win.innerWidth = 1280;
+  winHandlers.resize[0](evt());
+  assert(!navOpen(), "데스크톱 폭으로 넓어지면 모바일 메뉴가 닫힙니다");
 }
 
 /* ------------------------------------------------------------------ */

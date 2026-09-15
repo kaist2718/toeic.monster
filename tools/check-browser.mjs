@@ -12,7 +12,8 @@
  *     3) 검색창·난이도 필터가 목록 화면에서만 보이는지
  *     4) 상단바가 한 줄로 유지되는지(컨트롤 개편 뒤 회귀 방지)
  *     5) OS 다크 모드에서 첫 페인트가 다크인지, 직접 고른 값은 저장되는지
- *     6) 모바일 폭에서 가로 넘침·필터 스크롤 단서(mask)가 있는지
+ *     6) 모바일 폭에서 가로 넘침·필터 스크롤 단서(mask)가 있는지,
+ *        햄버거 메뉴가 스크롤되고 뒤로가기로만 닫히는지(페이지를 떠나지 않는지)
  *     7) 정적 페이지(단어장·문법·가이드·404)가 공용 스타일을 실제로 적용하고,
  *        좁은 화면에서 넘치지 않으며, 예문 듣기 버튼(speak.js)이 반응하는지
  *
@@ -287,6 +288,19 @@ try {
   await wait(600);
   const cards = await evaluate(`document.querySelectorAll("#units .card").length`);
   check(cards === 1000, `목록을 처음 열 때 단어 카드 ${cards}장을 그립니다 (1,000장이어야 함)`);
+
+  /* 3-3b. 영어 단어·예문에 lang="en" (화면 낭독기가 한국어 음성으로 영어를 읽지 않도록) */
+  const langTags = await evaluate(`({
+    words: document.querySelectorAll("#units .w[lang=en]").length,
+    examples: document.querySelectorAll("#units .ex-text[lang=en]").length,
+    flash: document.querySelectorAll("#fcWord[lang=en], #fcEx[lang=en]").length,
+    icons: document.querySelectorAll("#units .w .unit-emoji").length,
+  })`);
+  check(
+    langTags.words === 1000 && langTags.examples === 1000 && langTags.flash === 2,
+    `영어 단어·예문에 lang="en" 이 붙어 있습니다 (단어 ${langTags.words} · 예문 ${langTags.examples} · 암기카드 ${langTags.flash})`,
+  );
+  note(`단어 칸에 유닛 아이콘 ${langTags.icons}개가 붙어 있습니다(낭독에서는 제외)`);
   await evaluate(`document.getElementById("btnHome").click()`);
 
   /* 3-4. 모바일 폭 */
@@ -315,6 +329,123 @@ try {
   );
   check(mobile.levelScrollable <= 0 || mobile.levelMask, "좁은 화면의 난이도 필터에 스크롤 단서(mask)가 있습니다");
   note(`모바일(375px) 상단바 ${mobile.headerHeight}px`);
+
+  /* 3-4b. 모바일 햄버거 메뉴 — 항목이 다 보이고(스크롤), 뒤로가기로 닫히는지 */
+  // 예전에는 패널이 화면 높이를 넘으면 아래 항목이 잘려 고를 수 없었고,
+  // 뒤로가기를 누르면 메뉴가 아니라 페이지가 닫혔습니다(사이트를 떠남).
+  await evaluate(`document.getElementById("btnMenu").click()`);
+  await wait(350);
+  const menu = await evaluate(`(() => {
+    const nav = document.getElementById("topbarNav");
+    const cs = getComputedStyle(nav);
+    const vh = document.documentElement.clientHeight;
+    const panel = nav.getBoundingClientRect();
+    nav.scrollTop = nav.scrollHeight;                      // 맨 아래 항목까지 내려 본다
+    const last = document.getElementById("btnGuide");
+    const lr = last.getBoundingClientRect();
+    return {
+      open: nav.classList.contains("open") && cs.display === "flex",
+      overflowY: cs.overflowY,
+      insideViewport: Math.round(panel.bottom) <= vh + 1,
+      scrollable: nav.scrollHeight - nav.clientHeight,
+      lastReachable: lr.bottom <= panel.bottom + 1 && lr.bottom <= vh + 1 && lr.top >= panel.top - 1,
+      bodyLocked: getComputedStyle(document.body).overflow === "hidden",
+      pageOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    };
+  })()`);
+  check(menu.open, `375px 에서 ☰ 메뉴가 열립니다 (overflow-y: ${menu.overflowY})`);
+  check(menu.insideViewport, "메뉴 패널이 화면 높이 안에 들어옵니다(아래로 넘치지 않음)");
+  check(
+    menu.lastReachable,
+    `스크롤하면 마지막 항목까지 고를 수 있습니다 (넘치는 높이 ${menu.scrollable}px)`,
+  );
+  check(menu.bodyLocked, "메뉴가 열려 있는 동안 뒤 화면은 스크롤되지 않습니다");
+  check(menu.pageOverflow <= 0, `메뉴를 연 상태에서도 가로 넘침이 없습니다 (${menu.pageOverflow}px)`);
+
+  const urlBeforeBack = await evaluate(`location.pathname`);
+  await evaluate(`history.back()`);
+  await wait(600);
+  const afterBack = await evaluate(`({
+    path: location.pathname,
+    open: document.getElementById("topbarNav").classList.contains("open"),
+    expanded: document.getElementById("btnMenu").getAttribute("aria-expanded"),
+  })`);
+  check(
+    !afterBack.open && afterBack.expanded === "false" && afterBack.path === urlBeforeBack,
+    `뒤로가기 한 번으로 메뉴만 닫히고 페이지는 그대로입니다 (${afterBack.path})`,
+  );
+
+  /* 3-4c. 안내 창도 뒤로가기로 닫히는지(메뉴와 같은 규칙) */
+  await evaluate(`document.getElementById("btnGuide").click()`);
+  await wait(400);
+  const modalOpen = await evaluate(`({
+    show: document.getElementById("guideModal").classList.contains("show"),
+    locked: getComputedStyle(document.body).overflow === "hidden",
+  })`);
+  check(modalOpen.show, "📘 가이드 창이 열립니다");
+  check(modalOpen.locked, "안내 창이 열려 있는 동안 뒤 화면은 스크롤되지 않습니다");
+  await evaluate(`history.back()`);
+  await wait(600);
+  const modalAfterBack = await evaluate(`({
+    show: document.getElementById("guideModal").classList.contains("show"),
+    path: location.pathname,
+    locked: getComputedStyle(document.body).overflow === "hidden",
+  })`);
+  check(
+    !modalAfterBack.show && !modalAfterBack.locked && modalAfterBack.path === urlBeforeBack,
+    `뒤로가기로 안내 창만 닫히고 페이지는 그대로입니다 (${modalAfterBack.path})`,
+  );
+
+  /* 3-4e. 메뉴 → 안내 창으로 이어지는 흐름(뒤로가기 항목을 서로 놓치지 않는지) */
+  await evaluate(`document.getElementById("btnMenu").click()`);
+  await wait(300);
+  await evaluate(`document.getElementById("btnGuide").click()`);
+  await wait(450);
+  const chain = await evaluate(`({
+    menu: document.getElementById("topbarNav").classList.contains("open"),
+    modal: document.getElementById("guideModal").classList.contains("show"),
+    path: location.pathname,
+  })`);
+  check(chain.modal && !chain.menu, "메뉴에서 📘 가이드를 고르면 메뉴는 닫히고 안내 창이 열립니다");
+  await evaluate(`history.back()`);
+  await wait(600);
+  const chainBack = await evaluate(`({
+    modal: document.getElementById("guideModal").classList.contains("show"),
+    path: location.pathname,
+    locked: getComputedStyle(document.body).overflow === "hidden",
+  })`);
+  check(
+    !chainBack.modal && !chainBack.locked && chainBack.path === chain.path,
+    `메뉴→창으로 이어진 뒤에도 뒤로가기 한 번이면 창만 닫힙니다 (${chainBack.path})`,
+  );
+
+  /* 3-4d. 단어 카드 발음에 유닛 이모지가 섞이지 않는지 */
+  // 카드의 단어 칸(.w)에는 유닛 아이콘(💼 📊 …)이 함께 들어 있어,
+  // 화면 글자를 그대로 읽히면 "이모지 + 단어"가 낭독됬습니다.
+  const spoken = await evaluate(`(() => {
+    const ss = window.speechSynthesis;
+    if (!ss) return { skip: true };
+    const said = [];
+    const orig = ss.speak;
+    ss.speak = (u) => { said.push(String(u.text)); };
+    const card = document.querySelector("#units .card");
+    const wordEl = card.querySelector(".w");
+    const iconEl = wordEl.querySelector(".unit-emoji");
+    card.querySelector(".speak").click();
+    ss.speak = orig;
+    try { ss.cancel(); } catch (e) {}
+    return {
+      said,
+      icon: iconEl ? iconEl.textContent : "",
+      word: card.getAttribute("data-word"),
+      wordShown: wordEl.textContent,
+      hasEmoji: /[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}]/u.test(said[0] || ""),
+    };
+  })()`);
+  check(
+    spoken.skip || (spoken.said.length === 1 && !spoken.hasEmoji && spoken.said[0] === spoken.word),
+    `단어 카드 발음에 이모지가 섞이지 않습니다 (아이콘 "${spoken.icon}" · 낭독 "${spoken.said?.[0] ?? ""}")`,
+  );
 
   /* 3-5. OS 다크 모드가 기본값인지 */
   await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: "dark" }] });
