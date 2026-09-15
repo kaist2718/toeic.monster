@@ -2744,6 +2744,9 @@
         <button type="button" class="btn" id="grammarWrongOnly">📕 오답만 다시 풀기</button>
         <button type="button" class="btn" id="grammarClearWrong" hidden>🗑 오답노트 비우기</button>
         <span class="muted" id="grammarWrongCount"></span>
+        <!-- 교재의 낱개 과 페이지에서 ?level=basic&ch=5 로 들어오면 그 과만 풀립니다. -->
+        <span class="muted" id="grammarChapterHint" hidden></span>
+        <button type="button" class="btn" id="grammarChapterClear" hidden>✕ 과 선택 해제</button>
       </div>
       <div id="grammarBox"></div>
       <div id="grammarWrongBox"></div>
@@ -5872,6 +5875,7 @@
     GRAMMAR_BOOKS.forEach(function (b) {
       if (level && level !== "all" && b.id !== level) return;
       (b.chapters || []).forEach(function (c) {
+        if (grammarChapterOnly && c.no !== grammarChapterOnly) return;
         (c.practice || []).forEach(function (q, qi) {
           out.push({
             id: b.id + "-c" + c.no + "-q" + (qi + 1),
@@ -5887,6 +5891,59 @@
     return out;
   }
   var grammarWrongOnly = false;
+  // 교재 낱개 과 페이지에서 `?level=basic&ch=5` 로 들어오면 그 과만 풀립니다(0 = 전체 과).
+  var grammarChapterOnly = 0;
+
+  /**
+   * 교재 페이지가 넘겨주는 딥링크를 읽습니다.
+   *   `../index.html?level=basic&ch=5#grammar-quiz` → { level: "basic", chapter: 5 }
+   *   `../index.html?level=advanced#grammar-quiz` → { level: "advanced", chapter: 0 }
+   * 계산만 하는 순수 함수라 회귀 테스트(tools/test-home-ux.mjs)가 직접 검증합니다.
+   */
+  function parseDeepLink(search) {
+    var m = /[?&]level=(basic|intermediate|advanced)\b/.exec(search || "");
+    if (!m) return null;
+    var ch = /[?&]ch=(\d{1,2})\b/.exec(search || "");
+    return { level: m[1], chapter: ch ? parseInt(ch[1], 10) : 0 };
+  }
+
+  /**
+   * 딥링크로 받은 과 번호가 실제 교재에 있는 과인지 확인합니다.
+   * 다른 사이트에서 온 링크나 오타(`ch=99`)로 문제가 0문항이 되는 일을 막고, 없으면 전체 과(0)로 돌립니다.
+   */
+  function resolveChapter(books, level, ch) {
+    var n = parseInt(ch, 10) || 0;
+    if (!n) return 0;
+    var ok = false;
+    (books || []).forEach(function (b) {
+      if (b.id !== level) return;
+      (b.chapters || []).forEach(function (c) { if (c.no === n) ok = true; });
+    });
+    return ok ? n : 0;
+  }
+
+  /** 지금 과 필터가 걸려 있으면 눈에 보이게 알려 줍니다(안 보이면 왜 문제가 적은지 알 수 없음). */
+  function renderGrammarChapterHint() {
+    var hint = document.getElementById("grammarChapterHint");
+    var clear = document.getElementById("grammarChapterClear");
+    if (!hint) return;
+    var book = null;
+    if (grammarChapterOnly) {
+      GRAMMAR_BOOKS.forEach(function (b) {
+        if (b.id === grammarLevelValue()) book = b;
+      });
+    }
+    var on = !!(grammarChapterOnly && book);
+    hint.hidden = !on;
+    if (on) hint.textContent = "📖 " + book.title + " " + grammarChapterOnly + "과만 풀고 있어요";
+    if (clear) clear.hidden = !on;
+  }
+  function clearGrammarChapter() {
+    grammarChapterOnly = 0;
+    renderGrammarChapterHint();
+    grammarQuiz.render();
+  }
+
   function grammarWrongQuestions() {
     return Object.keys(grammarWrong).map(function (k) { return grammarWrong[k]; });
   }
@@ -5963,6 +6020,9 @@
   var grammarLevelSelEl = document.getElementById("grammarLevelSel");
   if (grammarLevelSelEl) grammarLevelSelEl.addEventListener("change", function () {
     grammarWrongOnly = false;
+    // 단계를 직접 바꾸면 "이 과만" 상태도 함께 풀립니다(다른 단계에 없는 과 번호라서).
+    grammarChapterOnly = 0;
+    renderGrammarChapterHint();
     grammarQuiz.render();
   });
   var grammarCountSelEl = document.getElementById("grammarCountSel");
@@ -5970,6 +6030,10 @@
     grammarWrongOnly = false;
     grammarQuiz.render();
   });
+  var grammarChapterClearBtn = document.getElementById("grammarChapterClear");
+  if (grammarChapterClearBtn) grammarChapterClearBtn.addEventListener("click", clearGrammarChapter);
+  // 화면을 처음 그릴 때도 힌트 상태를 맞춥니다(딥링크로 들어온 경우).
+  renderGrammarChapterHint();
   // 단계 목록은 문법 교재(defer 데이터)를 읽은 뒤 만들 수 있으므로 startApp 에서 그립니다.
 
   // ---------- 1) 빈출 콜로케이션 ----------
@@ -9265,14 +9329,16 @@
     if (cfg && cfg.level) setTimeout(function () { startGrammarQuiz(false); }, 420);
     return true;
   }
-  // 교재 페이지는 ?level=basic#grammar-quiz 형태로 들어옵니다(단계 지정 + 바로 풀이).
+  // 교재 페이지는 ?level=basic&ch=5#grammar-quiz 형태로 들어옵니다(단계·과 지정 + 바로 풀이).
   function applyLevelQuery() {
-    var matched = /[?&]level=(basic|intermediate|advanced)\b/.exec(location.search || "");
-    if (!matched) return false;
+    var cfg = parseDeepLink(location.search);
+    if (!cfg) return false;
     var sel = document.getElementById("grammarLevelSel");
     if (!sel) return false;
-    sel.value = matched[1];
+    sel.value = cfg.level;
     grammarWrongOnly = false;
+    grammarChapterOnly = resolveChapter(GRAMMAR_BOOKS, cfg.level, cfg.chapter);
+    renderGrammarChapterHint();
     grammarQuiz.render();
     if (/#grammar-quiz/.test(location.hash || "")) {
       setTimeout(function () { startGrammarQuiz(false); }, 420);

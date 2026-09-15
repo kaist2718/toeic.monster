@@ -87,6 +87,20 @@ for (const dir of ["units", "guides", "grammar", "conversation"]) {
 pages.sort();
 
 const srcOf = {};   // 원본(JSON-LD 추출용)
+
+/** 페이지가 가리켜야 할 자기 주소 — 배포 주소 기준(하위 폴더 index 는 폴더 주소). */
+function canonicalOf(p) {
+  if (p === "index.html") return `${SITE}/`;
+  if (p.endsWith("/index.html")) return `${SITE}/${p.slice(0, -"index.html".length)}`;
+  return `${SITE}/${p}`;
+}
+
+/** <title>·canonical 중복 추적 — 두 페이지가 같은 값을 쓰면 검색엔진이 고르지 못합니다. */
+const titleOwners = new Map();
+const canonicalOwners = new Map();
+
+/** 낱개 과 페이지(grammar/basic-05.html)인지 — 과 단위 전용 점검에 씁니다. */
+const isChapterPage = (p) => /^(grammar|conversation)\/[a-z-]+-\d\d\.html$/.test(p);
 const markOf = {};  // script·style 본문을 제거한 마크업(링크·자산 탐색용)
 const idsOf = {};
 
@@ -497,6 +511,22 @@ for (const page of pages) {
   const canonical = (src.match(/<link\s+rel="canonical"\s+href="([^"]*)"/i) || [])[1];
   if (!canonical) fail(`${page}: canonical 링크가 없습니다.`);
   else if (!canonical.startsWith(SITE)) fail(`${page}: canonical 이 사이트 주소가 아닙니다 — ${canonical}`);
+  else if (canonical !== canonicalOf(page)) {
+    fail(`${page}: canonical 이 이 페이지의 배포 주소가 아닙니다 — ${canonical} (기대 ${canonicalOf(page)})`);
+  }
+
+  // 같은 <title>·canonical 을 두 페이지가 쓰면 검색엔진이 어느 쪽을 색인할지 혼동합니다.
+  // (과 단위 페이지 72개가 늘면서 제목이 겹칠 위험이 커져 자동 점검에 넣었습니다.)
+  const titleKey = String(title || "").trim();
+  if (titleKey) {
+    if (titleOwners.has(titleKey)) fail(`${page}: <title> 이 ${titleOwners.get(titleKey)} 와 같습니다 — ${titleKey}`);
+    else titleOwners.set(titleKey, page);
+  }
+  if (canonical) {
+    if (canonicalOwners.has(canonical)) {
+      fail(`${page}: canonical 이 ${canonicalOwners.get(canonical)} 와 겹칩니다 — ${canonical}`);
+    } else canonicalOwners.set(canonical, page);
+  }
 
   const ogUrl = metaTag(src, 'property="og:url"');
   if (ogUrl && canonical && ogUrl !== canonical) {
@@ -510,6 +540,7 @@ for (const page of pages) {
   // 4-1. JSON-LD (@graph 로 묶인 경우도 각 항목을 검사)
   const blocks = [...src.matchAll(/<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/gi)];
   if (!blocks.length) note(`${page}: 구조화 데이터(JSON-LD)가 없습니다.`);
+  const ldItems = [];
   blocks.forEach((b, i) => {
     let data;
     try {
@@ -527,10 +558,25 @@ for (const page of pages) {
     if (node && !node["@context"]) fail(`${page}: JSON-LD 에 @context 가 없습니다.`);
     items.forEach((item) => {
       if (!item || typeof item !== "object") return fail(`${page}: JSON-LD ${i + 1}번째 항목이 객체가 아닙니다.`);
+      ldItems.push(item);
       if (!item["@type"]) fail(`${page}: JSON-LD 항목에 @type 이 없습니다.`);
       if (item === node && !item["@context"]) fail(`${page}: JSON-LD 에 @context 가 없습니다.`);
     });
   });
+
+  // 낱개 과 페이지는 "이 책의 몇 번째 과"인지까지 알려 줘야 검색엔진이 책과 과의 관계를 이해합니다.
+  if (isChapterPage(page)) {
+    const learning = ldItems.find((it) => it["@type"] === "LearningResource");
+    if (!learning) fail(`${page}: 낱개 과 페이지에 LearningResource 구조화 데이터가 없습니다.`);
+    else {
+      if (!learning.position) fail(`${page}: LearningResource 에 position(과 번호)이 없습니다.`);
+      if (!learning.isPartOf) fail(`${page}: LearningResource 에 isPartOf(책)가 없습니다.`);
+    }
+    // 책으로 돌아가는 길이 있어야 사용자도 크롤러도 갇히지 않습니다.
+    if (!/<a class="up" href="[a-z-]+\.html"/.test(markOf[page])) {
+      fail(`${page}: 낱개 과 페이지에 책으로 돌아가는 링크(← 책 전체)가 없습니다.`);
+    }
+  }
 }
 
 /* ------------------------------------------------------------------ */

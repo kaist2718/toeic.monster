@@ -1022,6 +1022,64 @@ try {
     `홈 묶음: 펼쳐 둔 상태가 다시 열어도 유지됩니다 (파트별=${groupKept.part} · 어휘=${groupKept.vocab})`,
   );
   await evaluate(`localStorage.clear()`);
+
+  // 낱개 과 페이지에서 같은 책의 다른 과로 건너갈 수 있는지(사용자 이동 + 크롤러 발견 경로).
+  await openPage("conversation/conversation-intermediate-04.html");
+  const sibling = await evaluate(`(() => {
+    const links = [...document.querySelectorAll(".toc a")];
+    return {
+      total: links.length,
+      current: links.filter((a) => a.getAttribute("aria-current") === "page").length,
+      hrefs: links.map((a) => a.getAttribute("href")).join(","),
+    };
+  })()`);
+  check(
+    sibling.total === 12 && sibling.current === 1,
+    `낱개 과 페이지: 같은 책 12개 과로 이어지고 현재 과가 표시됩니다 (${sibling.total}개 · 현재 ${sibling.current}개)`,
+  );
+  check(
+    sibling.hrefs.includes("conversation-intermediate-05.html"),
+    "낱개 과 페이지: 이웃 과 주소가 목록에 들어 있습니다",
+  );
+
+  // 교재 → 앱 딥링크: 낱개 과 페이지의 「✏️ 앱에서 이 과 문제 풀기」가 그 과만 뽑아 줘야 합니다.
+  // (앞 페이지가 하위 폴더라 상대 경로는 그 폴더 기준이 됩니다 — 루트 절대 경로로 갑니다.)
+  await evaluate(`location.href = "/index.html?level=basic&ch=5#grammar-quiz"`);
+  for (let i = 0; i < 40; i++) {
+    if (await evaluate(`!!document.getElementById("grammarBox")`)) break;
+    await wait(250);
+  }
+  // 교재 페이지에서 넘어온 흐름은 문제가 자동으로 시작됩니다(딥링크 → 0.4초 뒤 시작).
+  // 고정 시간에 기대지 않고, 문제가 실제로 뜨는지까지 기다립니다.
+  for (let i = 0; i < 24; i++) {
+    if (await evaluate(`document.getElementById("grammarBox").textContent.indexOf("과") !== -1`)) break;
+    await wait(250);
+  }
+  const deep = await evaluate(`(() => {
+    const sel = document.getElementById("grammarLevelSel");
+    const hint = document.getElementById("grammarChapterHint");
+    const text = document.getElementById("grammarBox").textContent;
+    return {
+      level: sel ? sel.value : "",
+      hintShown: hint ? !hint.hidden : false,
+      hint: hint ? hint.textContent : "",
+      hasCh5: text.indexOf("초급 5과") !== -1,
+      hasOther: text.indexOf("초급 4과") !== -1 || text.indexOf("초급 6과") !== -1 || text.indexOf("중급 5과") !== -1,
+      snippet: text.split("\n").join(" ").slice(0, 70),
+    };
+  })()`);
+  check(deep.level === "basic", `앱 딥링크: ?level=basic 이 단계 선택에 반영됩니다 (${deep.level})`);
+  check(
+    deep.hintShown && deep.hint.indexOf("5과만") !== -1,
+    `앱 딥링크: “이 과만” 상태가 화면에 보입니다 (${deep.hint})`,
+  );
+  check(
+    deep.hasCh5 && !deep.hasOther,
+    `앱 딥링크: 그 과의 문제만 나옵니다 (5과=${deep.hasCh5} · 다른 과=${deep.hasOther} · 내용 "${deep.snippet}")`,
+  );
+
+  await openPage("index.html");
+  await evaluate(`localStorage.clear()`);
 } finally {
   await shutdown();
 }

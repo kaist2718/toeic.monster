@@ -202,6 +202,7 @@ footer.ft p{margin-top:8px}
 .toc{list-style:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px;margin-top:8px}
 .toc a{display:block;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:11px 14px;text-decoration:none;color:var(--text)}
 .toc a:hover{border-color:var(--primary)}
+.toc a[aria-current="page"]{border-color:var(--primary-solid);background:var(--soft)}
 .toc b{display:block;font-size:11.5px;color:var(--primary);letter-spacing:.3px;margin-bottom:3px}
 .toc span{font-size:14px;font-weight:700}
 .gram{margin:30px 0 0;padding-top:6px}
@@ -801,15 +802,20 @@ ${links.join("\n")}
 }
 
 /** 책 페이지(12과가 이어지는 긴 페이지)의 과 이동 — 위로 목차, 다음은 같은 페이지의 앵커. */
-/** 책 페이지에서 낱개 과 페이지로 가는 목록 — 검색·공유에 쓸 주소를 알려 줍니다. */
-function chapterLinkList(book) {
+/**
+ * 낱개 과 페이지 목록 — 책 페이지에서는 「과 하나씩 따로 보기」, 과 페이지에서는 「다른 과」.
+ * currentNo 를 주면 그 과를 `aria-current` 로 표시합니다(지금 보는 과).
+ */
+function chapterLinkList(book, currentNo) {
   return book.chapters
-    .map(
-      (c) => `    <li><a href="${chapterFile(book.id, c.no)}">
-      <b>${chapterNo(c.no)}과</b>
+    .map((c) => {
+      const now = currentNo === c.no;
+      const mark = now ? ' aria-current="page"' : "";
+      return `    <li><a href="${chapterFile(book.id, c.no)}"${mark}>
+      <b>${chapterNo(c.no)}과${now ? " · 지금" : ""}</b>
       <span>${esc(c.title)}</span>
-    </a></li>`,
-    )
+    </a></li>`;
+    })
     .join("\n");
 }
 
@@ -1377,7 +1383,7 @@ ${chapterLinkList(book)}
  * 검색으로 들어오거나 링크를 공유할 때 쓸 수 있게 과 단위 URL 을 함께 만듭니다.
  * 책 페이지는 그대로 두고(연속 읽기 흐름 보존), 두 페이지가 서로를 링크합니다.
  */
-function buildChapterPage(kind, book, chapter) {
+function buildChapterPage(kind, book, chapter, books) {
   const isGrammar = kind === "grammar";
   const dir = isGrammar ? "grammar" : "conversation";
   const sectionName = isGrammar ? "문법 교재" : "회화 교재";
@@ -1388,6 +1394,20 @@ function buildChapterPage(kind, book, chapter) {
   const idx = book.chapters.findIndex((c) => c.no === chapter.no);
   const prev = book.chapters[idx - 1];
   const next = book.chapters[idx + 1];
+  // 책을 끝까지 읽었을 때 다음 단계로, 두 번째 책부터는 앞 단계 마지막 과로 이어 줍니다.
+  const bookIdx = books.findIndex((b) => b.id === book.id);
+  const nextBook = books[bookIdx + 1] || null;
+  const prevBook = books[bookIdx - 1] || null;
+  const crossBook = [];
+  if (!prev && prevBook) {
+    const last = prevBook.chapters[prevBook.chapters.length - 1];
+    crossBook.push(
+      `  <a class="cta" href="${chapterFile(prevBook.id, last.no)}">← ${esc(prevBook.title)} 마지막 과 보기</a>`,
+    );
+  }
+  if (!next && nextBook) {
+    crossBook.push(`  <a class="cta" href="${chapterFile(nextBook.id, 1)}">${esc(nextBook.title)} 첫 과 보기 →</a>`);
+  }
   const label = chapterLabel(chapter);
   const title = `${label} — ${book.title} | toeic.monster`;
   // meta description 은 40~170자를 권장합니다(audit:site 가 검사).
@@ -1441,7 +1461,14 @@ ${buildSection(
       prev: prev ? { href: chapterFile(book.id, prev.no), label: chapterLabel(prev) } : null,
       next: next ? { href: chapterFile(book.id, next.no), label: chapterLabel(next) } : null,
     }),
-  )}`;
+  )}
+
+${isGrammar ? `  <a class="cta" href="../index.html?level=${book.id}&ch=${chapter.no}#grammar-quiz">✏️ 앱에서 이 과 문제 풀기</a>\n` : ""}${crossBook.join("\n")}${crossBook.length ? "\n" : ""}
+  <h2 class="sec">🗂 ${esc(book.title)}의 다른 과</h2>
+  <p class="lead">과를 옮기면 책 페이지의 해당 위치로도 바로 갈 수 있습니다.</p>
+  <ul class="toc">
+${chapterLinkList(book, chapter.no)}
+  </ul>`;
 
   return {
     file,
@@ -1642,7 +1669,7 @@ function main() {
     const gp = buildGrammarBook(b, grammar);
     write(gp.file, gp.html);
     b.chapters.forEach((c) => {
-      const cp = buildChapterPage("grammar", b, c);
+      const cp = buildChapterPage("grammar", b, c, grammar);
       write(cp.file, cp.html);
       chapterPages++;
     });
@@ -1658,7 +1685,7 @@ function main() {
     const cp = buildConversationBook(b, conversation);
     write(cp.file, cp.html);
     b.chapters.forEach((c) => {
-      const chap = buildChapterPage("conversation", b, c);
+      const chap = buildChapterPage("conversation", b, c, conversation);
       write(chap.file, chap.html);
       chapterPages++;
     });

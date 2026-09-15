@@ -659,6 +659,55 @@ console.log("\n[6] 홈 묶음 펼침 상태 기억");
 }
 
 /* ------------------------------------------------------------------ */
+/* 7. 교재 과 페이지에서 넘어오는 딥링크를 읽는다                       */
+/* ------------------------------------------------------------------ */
+
+console.log("\n[7] 교재 → 앱 딥링크 (?level=·&ch=)");
+{
+  const linkCode = slice("  function parseDeepLink(search) {", "  /**\n   * 딥링크로 받은 과 번호가", html, "딥링크 파싱");
+  const chapterCode = slice(
+    "  function resolveChapter(books, level, ch) {",
+    "  /** 지금 과 필터가 걸려 있으면",
+    html,
+    "과 번호 검증",
+  );
+
+  let parseDeepLink = null;
+  let resolveChapter = null;
+  try {
+    parseDeepLink = new Function(`${linkCode}\n  return parseDeepLink;`)();
+    resolveChapter = new Function(`${chapterCode}\n  return resolveChapter;`)();
+  } catch (e) {
+    bad("딥링크 블록을 실행할 수 없습니다", e.message);
+  }
+
+  if (parseDeepLink && resolveChapter) {
+    const withCh = parseDeepLink("?level=basic&ch=5");
+    assert(
+      withCh && withCh.level === "basic" && withCh.chapter === 5,
+      "낱개 과 페이지 링크에서 단계와 과 번호를 읽습니다",
+      JSON.stringify(withCh),
+    );
+
+    const levelOnly = parseDeepLink("?level=advanced");
+    assert(
+      levelOnly && levelOnly.level === "advanced" && levelOnly.chapter === 0,
+      "과 번호가 없으면 그 단계 전체로 들어옵니다",
+      JSON.stringify(levelOnly),
+    );
+
+    assert(parseDeepLink("?ch=5") === null, "단계 없는 링크(?ch=5)는 무시합니다");
+    assert(parseDeepLink("#grammar-quiz") === null, "쿼리 없는 주소는 그냥 홈입니다");
+    assert(parseDeepLink("?level=초급") === null, "단계 이름이 다르면(초급) 무시합니다");
+
+    const books = [{ id: "basic", chapters: [{ no: 1 }, { no: 5 }, { no: 12 }] }];
+    assert(resolveChapter(books, "basic", 5) === 5, "교재에 있는 과 번호는 그대로 씁니다");
+    assert(resolveChapter(books, "basic", 99) === 0, "없는 과 번호(ch=99)는 전체 과로 돌립니다");
+    assert(resolveChapter(books, "advanced", 5) === 0, "그 단계에 없는 과는 전체 과로 돌립니다");
+  }
+}
+
+/* ------------------------------------------------------------------ */
 
 console.log(`\n${failures ? "❌" : "✅"} 홈 UI/UX 테스트 ${failures ? `실패 ${failures}건` : `통과 (${checks}건)`}`);
 process.exit(failures ? 1 : 0);
