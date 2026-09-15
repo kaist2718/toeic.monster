@@ -630,7 +630,10 @@ try {
 
     const BIG = 44, SMALL = 24;
     // 주요 컨트롤은 44px, 문장 흐름에 섞이는 아이콘 버튼은 최소 기준(24px)만 지킵니다.
-    const SMALL_ICONS = ["gex-speak", "speak", "tts-btn", "fav-btn", "card-check", "wod-btn"];
+    // dialogue-speak 은 대화문 한 줄 끝에 붙는 인라인 🔊 라, 예문의 gex-speak(28px)와 같은 성격입니다.
+    // (홈 섹션 순서를 묶음 단위로 재배치하면서 대화문이 첫 화면 안으로 올라오기 전까지는
+    //  화면 밖에 있어 이 검사에 걸리지 않았습니다 — 목록에 빠져 있던 것을 채웁니다.)
+    const SMALL_ICONS = ["gex-speak", "speak", "tts-btn", "fav-btn", "card-check", "wod-btn", "dialogue-speak"];
     const isBig = (el) =>
       el.matches("summary, .cta, .unitlist a, .toc a, .pager a, .quiz-opt, .mode-card, .lvl-btn, .topbar .btn") ||
       (el.matches("button") && !SMALL_ICONS.some((c) => el.classList.contains(c)));
