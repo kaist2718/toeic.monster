@@ -1,5 +1,5 @@
 /* toeic.monster Service Worker - 오프라인 학습 지원 */
-var CACHE_NAME = "toeic-monster-v8";
+var CACHE_NAME = "toeic-monster-v9";
 var CORE_ASSETS = [
   "./",
   "./index.html",
@@ -8,6 +8,9 @@ var CORE_ASSETS = [
   "./icon-192.png",
   "./icon-512.png",
   "./apple-touch-icon.png",
+  // 정적 페이지가 함께 쓰는 공용 스타일·스크립트(문법 교재 예문 듣기)
+  "./assets/site.css",
+  "./assets/speak.js",
   "./units/",
   "./units/index.html",
   "./guides/",

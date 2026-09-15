@@ -78,7 +78,14 @@ node tools/build-pages.mjs
   --user-data-dir=/tmp/chrome-og \
   --screenshot="$PWD/og-image.png" \
   "file:///$(cygpath -m "$PWD/tools/og-template.html")"
+
+# 캡처 직후 PNG 는 압축이 느슨합니다(약 226KB). 픽셀을 바꾸지 않고 다시 압축하세요.
+python tools/make-og-image.py          # 226KB → 94KB (58% 감소 · 픽셀 동일)
+python tools/make-og-image.py --check  # 커밋 전 확인
 ```
+
+> 캡처만 하고 재압축을 잊으면 공유 카드가 2배 이상 무거워집니다.
+> `npm run audit:site` 가 160KB 초과를 문제로 잡고 이 명령을 안내합니다.
 
 ---
 

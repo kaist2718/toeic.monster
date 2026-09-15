@@ -13,6 +13,8 @@
  *     4) 상단바가 한 줄로 유지되는지(컨트롤 개편 뒤 회귀 방지)
  *     5) OS 다크 모드에서 첫 페인트가 다크인지, 직접 고른 값은 저장되는지
  *     6) 모바일 폭에서 가로 넘침·필터 스크롤 단서(mask)가 있는지
+ *     7) 정적 페이지(단어장·문법·가이드·404)가 공용 스타일을 실제로 적용하고,
+ *        좁은 화면에서 넘치지 않으며, 예문 듣기 버튼(speak.js)이 반응하는지
  *
  * 실행:  node tools/check-browser.mjs            (Chrome 이 없으면 건너뜁니다)
  *        CHROME_BIN=/path/to/chrome node tools/check-browser.mjs
@@ -347,6 +349,213 @@ try {
     .map((e) => `${e.params.type}: ${e.params.errorText}`);
   check(jsErrors.length === 0, `자바스크립트 오류 0건${jsErrors.length ? " — " + jsErrors.slice(0, 3).join(" | ") : ""}`);
   check(failed.length === 0, `실패한 요청 0건${failed.length ? " — " + failed.slice(0, 3).join(" | ") : ""}`);
+
+  /* ---------------------------------------------------------------- */
+  /* 3-8. 정적 페이지(단어장 · 문법 · 가이드 · 404)                    */
+  /* ---------------------------------------------------------------- */
+
+  // 정적 페이지는 앱과 다른 템플릿(build-pages.mjs)으로 만들어집니다.
+  // 공용 스타일(assets/site.css)이 실제로 적용되는지, 좁은 화면에서 넘치지 않는지 봅니다.
+  const STATIC_PAGES = [
+    ["units/index.html", "단어장 허브"],
+    ["units/unit-01.html", "유닛 페이지"],
+    ["units/idioms.html", "숙어 모음"],
+    ["grammar/index.html", "문법 허브"],
+    ["grammar/basic.html", "문법 교재"],
+    ["grammar/cheatsheet.html", "문법 요약"],
+    ["guides/index.html", "가이드 허브"],
+    ["guides/part-5-grammar.html", "가이드"],
+    ["privacy.html", "개인정보처리방침"],
+    ["404.html", "404"],
+  ];
+
+  /** 주소가 실제로 바뀌고 로딩이 끝날 때까지 기다립니다. */
+  async function openPage(file) {
+    const from = events.length;
+    await send("Page.navigate", { url: `http://127.0.0.1:${sitePort}/${file}` });
+    for (let i = 0; i < 80; i++) {
+      const state = await evaluate(`location.pathname + "|" + document.readyState`);
+      if (typeof state === "string" && state.includes(file) && state.endsWith("complete")) break;
+      await wait(250);
+    }
+    await wait(300);
+    return from;
+  }
+
+  /** 그 페이지에서 새로 발생한 오류만 골라냅니다(앞 페이지의 오류를 다시 세지 않도록). */
+  function errorsSince(from) {
+    const slice = events.slice(from);
+    return {
+      js: slice
+        .filter((e) => e.method === "Runtime.exceptionThrown")
+        .map((e) => e.params.exceptionDetails.exception?.description || e.params.exceptionDetails.text),
+      failed: slice
+        .filter((e) => e.method === "Network.loadingFailed" && !e.params.canceled)
+        .map((e) => `${e.params.type}: ${e.params.errorText}`),
+      requests: slice.filter((e) => e.method === "Network.responseReceived").length,
+    };
+  }
+
+  const layoutProbe = `(() => {
+    const overflowAt = () => {
+      const over = document.documentElement.scrollWidth - document.documentElement.clientWidth;
+      if (over <= 0) return 0;
+      const wide = [...document.querySelectorAll("body *")]
+        .filter((el) => el.getBoundingClientRect().right > document.documentElement.clientWidth + 1)
+        .slice(0, 4)
+        .map((el) => (el.id ? "#" + el.id : el.className ? "." + String(el.className).trim().split(/\\s+/)[0] : el.tagName.toLowerCase()));
+      return { over, wide: [...new Set(wide)] };
+    };
+    const wrap = document.querySelector("main.wrap") || document.querySelector(".wrap") || document.querySelector("main");
+    return {
+      title: document.title,
+      bg: getComputedStyle(document.body).backgroundColor,
+      wrapMax: wrap ? getComputedStyle(wrap).maxWidth : "-",
+      sheets: [...document.styleSheets].map((s) => (s.href ? s.href.split("/").pop() : "inline")),
+      speakButtons: document.querySelectorAll(".gex-speak").length,
+      speakHidden: document.querySelectorAll(".gex-speak[hidden]").length,
+      overflow: overflowAt(),
+    };
+  })()`;
+
+  const generated = new Set([
+    "units/index.html",
+    "units/unit-01.html",
+    "units/idioms.html",
+    "grammar/index.html",
+    "grammar/basic.html",
+    "grammar/cheatsheet.html",
+    "guides/index.html",
+    "guides/part-5-grammar.html",
+    "404.html",
+  ]);
+
+  await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: "light" }] });
+  await send("Emulation.setDeviceMetricsOverride", { width: 1100, height: 900, deviceScaleFactor: 1, mobile: false });
+
+  const sharedCssUsers = [];
+  for (const [file, label] of STATIC_PAGES) {
+    const from = await openPage(file);
+    const wide = await evaluate(layoutProbe);
+
+    await send("Emulation.setDeviceMetricsOverride", { width: 375, height: 720, deviceScaleFactor: 2, mobile: true });
+    await wait(400);
+    const narrow = await evaluate(layoutProbe);
+    await send("Emulation.setDeviceMetricsOverride", { width: 1100, height: 900, deviceScaleFactor: 1, mobile: false });
+
+    const { js, failed, requests } = errorsSince(from);
+    check(js.length === 0, `${label}(${file}): 자바스크립트 오류 0건${js.length ? " — " + js[0] : ""}`);
+    check(failed.length === 0, `${label}(${file}): 실패한 요청 0건${failed.length ? " — " + failed[0] : ""}`);
+
+    for (const [width, seen] of [[1100, wide], [375, narrow]]) {
+      const over = seen.overflow;
+      check(
+        !over || over.over <= 0,
+        `${label}(${file}): ${width}px 에서 가로 넘침이 없습니다` +
+          (over && over.over > 0 ? ` (${over.over}px · ${over.wide.join(", ")})` : ""),
+      );
+    }
+
+    if (generated.has(file)) {
+      // 공용 스타일이 실제로 붙었는지 — 파일이 404 면 .wrap 의 max-width 가 사라집니다.
+      check(wide.sheets.includes("site.css"), `${label}(${file}): 공용 스타일(site.css)을 불러옵니다`);
+      check(wide.wrapMax === "880px", `${label}(${file}): 공용 스타일이 적용됩니다 (.wrap max-width ${wide.wrapMax})`);
+    }
+
+    // 예문 듣기 버튼이 있으면 공용 스크립트가 붙어 클릭에 반응해야 합니다.
+    // 헤드리스 Chrome 은 음성을 하나도 못 찾아 synth.speak() 가 곧바로 실패하므로,
+    // "낭독이 시작됐는가" 대신 "클릭이 speak() 까지 도달했는가"를 봅니다
+    // (speak.js 가 만들어진 리스너가 없으면 이 호출 자체가 일어나지 않습니다).
+    if (wide.speakButtons > 0 && wide.speakHidden < wide.speakButtons) {
+      const spoke = await evaluate(`(() => {
+        const b = document.querySelector(".gex-speak:not([hidden])");
+        const s = window.speechSynthesis;
+        const orig = s.speak;
+        let called = 0;
+        s.speak = function () { called++; };
+        b.click();
+        const highlighted = b.classList.contains("speaking");
+        s.speak = orig;
+        b.click();  // 눌린 표시를 되돌립니다
+        return { called, highlighted };
+      })()`);
+      check(
+        spoke && spoke.called === 1,
+        `${label}(${file}): 예문 듣기 버튼이 낭독을 호출합니다 (speak.js 연결됨 · 클릭 강조 ${spoke && spoke.highlighted})`,
+      );
+    } else if (wide.speakButtons > 0) {
+      note(`${label}(${file}): 이 브라우저에 음성 합성이 없어 버튼이 숨겨졌습니다(${wide.speakButtons}개)`);
+    }
+
+    /* 손가락으로 누르는 요소가 너무 작지 않은지(375px 화면).
+
+       기준을 두 단계로 나뉩니다:
+         · 44px — 주요 버튼·카드 링크(사과·머티리얼 권장)
+         · 24px — 그 밖의 링크·아이콘 버튼(WCAG 2.5.8 AA 최소 목표 크기)
+       문장 속에 섞인 인라인 링크(display:inline)는 같은 규격의 예외 대상이라 건너뜁니다.
+       보이는 크기가 작아도 ::after 같은 방법으로 히트 영역을 넓혔으면 통과입니다
+       (실제로 눌리는지는 elementFromPoint 로 브라우저에게 물어봅니다). */
+    const smallTargets = await evaluate(`(() => {
+      const BIG = 44, SMALL = 24;
+      // 문장 흐름 속에 섞이는 아이콘 버튼(.gex-speak, 22px)은 WCAG 최소 기준(24px)만 지키게 합니다.
+      const isBig = (el) =>
+        el.matches("summary, .cta, .unitlist a, .toc a, .pager a") ||
+        (el.matches("button") && !el.classList.contains("gex-speak"));
+      const label = (el) =>
+        el.id ? "#" + el.id
+          : el.className ? "." + String(el.className).trim().split(/\\s+/)[0]
+            : el.tagName.toLowerCase();
+      const out = [];
+      const candidates = [...document.querySelectorAll("a[href], button, summary")].filter((el) => {
+        // 문장 속 인라인 링크는 줄 높이에 묶여 있으므로 예외(WCAG 2.5.8 "Inline").
+        if (el.tagName === "A" && getComputedStyle(el).display === "inline") return false;
+        const r = el.getBoundingClientRect();
+        return (r.width > 0 && r.height > 0) && (r.width < BIG || r.height < BIG);
+      });
+      for (const el of candidates.slice(0, 80)) {
+        const need = isBig(el) ? BIG : SMALL;
+        el.scrollIntoView({ block: "center", inline: "center" });
+        const r = el.getBoundingClientRect();
+        if (r.width === 0 || r.height === 0) continue;
+        if (r.top < 0 || r.bottom > innerHeight) continue; // 화면 밖이면 히트 테스트를 건너뜁니다
+        const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+        const d = need / 2 - 2; // 목표 크기의 가장자리에서 2px 안쪽
+        const hits = (x, y) => {
+          const t = document.elementFromPoint(x, y);
+          return !!t && (t === el || el.contains(t) || t.contains(el));
+        };
+        const okY = r.height >= need || (hits(cx, cy - d) && hits(cx, cy + d));
+        const okX = r.width >= need || (hits(cx - d, cy) && hits(cx + d, cy));
+        if (!(okX && okY)) {
+          out.push(label(el) + " " + Math.round(r.width) + "×" + Math.round(r.height) + " (필요 " + need + ")");
+        }
+      }
+      return [...new Set(out)];
+    })()`);
+    check(
+      smallTargets.length === 0,
+      `${label}(${file}): 누르는 요소의 히트 영역이 충분합니다 (44px / 24px)` +
+        (smallTargets.length ? ` — 부족: ${smallTargets.slice(0, 4).join(", ")}` : ""),
+    );
+
+    sharedCssUsers.push(wide.sheets.includes("site.css") ? file : `${file}(인라인)`);
+    note(`${label} (${file}) · 요청 ${requests}개 · 배경 ${wide.bg} · 스타일 ${wide.sheets.includes("site.css") ? "site.css" : "인라인"}`);
+  }
+  note(`정적 페이지 ${STATIC_PAGES.length}개 점검 — 공용 스타일 사용 ${sharedCssUsers.filter((f) => !f.includes("(")).length}개`);
+
+  /* 정적 페이지도 OS 다크 모드를 따르는지(대표 1페이지) */
+  // 앞 단계에서 앱이 테마를 저장했을 수 있으므로(직접 고른 값이 우선) 먼저 지웁니다.
+  await openPage("units/unit-01.html");
+  await evaluate(`localStorage.clear()`);
+  await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: "dark" }] });
+  await openPage("units/unit-01.html");
+  const staticDark = await evaluate(`getComputedStyle(document.body).backgroundColor`);
+  const darkRgb = (staticDark.match(/\d+/g) || []).map(Number);
+  check(
+    (darkRgb[0] + darkRgb[1] + darkRgb[2]) / 3 < 90,
+    `정적 페이지도 OS 다크 모드를 따릅니다 (배경 ${staticDark})`,
+  );
+  await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: "light" }] });
 } finally {
   await shutdown();
 }

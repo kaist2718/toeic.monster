@@ -15,7 +15,13 @@
  *   guides/*.html           — 파트별 전략·공략 가이드 (data/extra.js)
  *   grammar/*.html          — 기초·중급·고급 문법 교재 (data/grammar-*.js)
  *   404.html                — 없는 주소 안내 (GitHub Pages 커스텀 404)
+ *   assets/site.css         — 정적 페이지 공용 스타일(최소화)
  *   sitemap.xml             — 위 페이지들을 포함한 전체 사이트맵
+ *
+ * 왜 CSS 를 따로 굽는가:
+ *   정적 페이지는 43개인데 모두 같은 스타일을 씁니다. 페이지마다 인라인으로 넣으면
+ *   같은 9KB 를 43번 다시 받게 되어 합쳐서 380KB 가 됩니다. 공용 파일로 빼고
+ *   최소화하면 한 번만 받고 모든 페이지에서 재사용합니다.
  *
  * 외부 의존성 없음(Node 내장 모듈만 사용). 여러 번 실행해도 결과가 같습니다.
  */
@@ -30,6 +36,11 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SITE = "https://toeic.monster";
 const OUT_DIR = path.join(ROOT, "units");
 const OG_IMAGE = SITE + "/og-image.png";
+
+/** 공용 자산 경로 — units/·guides/·grammar/ 페이지는 한 단계 아래에 있습니다. */
+const ASSET_REL = "../assets/";
+/** 404.html 만 루트에 있으므로 절대 경로를 씁니다(임의 주소에서도 응답되는 파일이라 상대 경로 금지). */
+const ASSET_ABS = "/assets/";
 
 /** 단계별 문법 교재 데이터 파일 — index.html 과 감사 도구도 같은 목록을 씁니다. */
 const GRAMMAR_FILES = ["data/grammar-basic.js", "data/grammar-intermediate.js", "data/grammar-advanced.js"];
@@ -135,7 +146,7 @@ header.bar a{color:#fff;text-decoration:none;font-weight:800;font-size:20px;lett
 header.bar small{opacity:.88;font-size:12.5px}
 main{padding:0 0 30px}
 .crumb{font-size:13px;color:var(--muted);margin:20px 0 12px}
-.crumb a{text-decoration:none}
+.crumb a{display:inline-block;padding:5px 2px;text-decoration:none}
 .crumb a:hover{text-decoration:underline}
 h1{font-size:25px;line-height:1.4;letter-spacing:-.5px;color:var(--primary-dark)}
 h2.sec{font-size:17px;margin:26px 0 12px;color:var(--text)}
@@ -157,7 +168,7 @@ ol.words li{background:var(--card);border:1px solid var(--border);border-radius:
 .w-expron{font-size:12.5px;font-weight:600;color:var(--cyan)}
 .w-exko{font-size:12.5px;color:var(--muted)}
 .pager{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:center;margin-top:28px;font-size:14px;font-weight:700}
-.pager a{text-decoration:none}
+.pager a{display:inline-block;padding:10px 0;text-decoration:none}
 .pager a:hover{text-decoration:underline}
 .pager .mid{font-weight:600;font-size:13px}
 .unitlist{list-style:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;margin-top:6px}
@@ -167,7 +178,7 @@ ol.words li{background:var(--card);border:1px solid var(--border);border-radius:
 .unitlist span{font-size:14.5px;font-weight:700}
 .unitlist em{display:block;font-size:12px;color:var(--muted);font-style:normal;margin-top:3px}
 footer.ft{border-top:1px solid var(--border);margin-top:34px;padding-top:16px;font-size:12.5px;color:var(--muted)}
-footer.ft a{margin-right:12px;text-decoration:none}
+footer.ft a{display:inline-block;margin-right:12px;padding:5px 0;text-decoration:none}
 footer.ft a:hover{text-decoration:underline}
 footer.ft p{margin-top:8px}
 /* 문법 교재 */
@@ -211,10 +222,10 @@ footer.ft p{margin-top:8px}
 .gquiz-opts{list-style:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:6px;margin:0}
 .gquiz-opts li{background:var(--soft);border-radius:8px;padding:7px 10px;font-size:13px}
 .gquiz details{margin-top:9px}
-.gquiz summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--primary)}
+.gquiz summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--primary);padding:12px 0}
 .gquiz .gquiz-a{font-size:12.5px;color:var(--muted);margin-top:6px}
 .gquiz .gquiz-a b{color:var(--text)}
-.gex-speak{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;margin-left:5px;border:1px solid var(--border);border-radius:50%;background:var(--card);color:var(--cyan);cursor:pointer;font-size:11px;line-height:1;vertical-align:1px}
+.gex-speak{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;margin-left:6px;border:1px solid var(--border);border-radius:50%;background:var(--card);color:var(--cyan);cursor:pointer;font-size:12.5px;line-height:1;vertical-align:-5px}
 .gex-speak[hidden]{display:none}
 .gex-speak:hover{background:var(--soft)}
 .gex-speak:active{transform:scale(.93)}
@@ -230,7 +241,25 @@ footer.ft p{margin-top:8px}
 @media print{header.bar,footer.ft,.pager,.cta,.cheat-card a{display:none}body{background:#fff}.wrap{max-width:none;padding:0}.cheat-grid{grid-template-columns:1fr 1fr}.cheat-card{border-color:#bbb;page-break-inside:avoid}}
 `;
 
-function page({ title, description, canonical, ld, body, footerNav, bodyScript }) {
+/**
+ * 스타일시트를 최소화합니다 — 주석·줄바꿈·중복 공백만 정리하고 **값은 그대로** 둡니다.
+ *
+ * 이 CSS 에는 문자열 리터럴(content:"…")이나 url("") 이 없어서 공백을 마음껏 줄일 수 있습니다.
+ * calc(100% - 28px) 처럼 공백이 의미를 갖는 자리는 건드리지 않습니다.
+ */
+function minifyCss(css) {
+  return css
+    .replace(/\/\*[\s\S]*?\*\//g, "")   // 주석
+    .replace(/\s+/g, " ")                // 줄바꿈·들여쓰기 → 한 칸
+    .replace(/\s*([{};,])\s*/g, "$1")    // 괄호·세미콜론·쉼표 주변 공백
+    .trim();
+}
+
+/** 공용 스타일을 참조한 페이지 수 — 실행 로그에 쓰기 위해 셉니다. */
+let pagesWithSharedCss = 0;
+
+function page({ title, description, canonical, ld, body, footerNav, speak }) {
+  pagesWithSharedCss++;
   return `<!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -258,6 +287,8 @@ function page({ title, description, canonical, ld, body, footerNav, bodyScript }
 <!-- 본문 서체 — Pretendard Variable. 필요한 글자 조각만 내려받는 dynamic subset 이라 첫 로드 부담이 작습니다. -->
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<!-- 공용 스타일·스크립트 — 43개 정적 페이지가 한 파일을 함께 받아 씁니다(서비스워커가 캐시). -->
+<link rel="stylesheet" href="${ASSET_REL}site.css">${speak ? `\n<script defer src="${ASSET_REL}speak.js"><\/script>` : ""}
 <link rel="icon" href="../icon.svg" type="image/svg+xml">
 <link rel="icon" href="../icon-192.png" type="image/png" sizes="192x192">
 <!-- iOS 홈 화면은 SVG 아이콘을 쓰지 않으므로 PNG 를 따로 지정합니다(tools/make-icons.py 로 생성). -->
@@ -278,7 +309,6 @@ function page({ title, description, canonical, ld, body, footerNav, bodyScript }
     } catch (e) {}
   })();
 </script>
-<style>${CSS}</style>
 <script type="application/ld+json">
 ${ld}
 </script>
@@ -298,81 +328,16 @@ ${body}
     ${footerNav || `<a href="../">홈</a><a href="./">주제별 단어장</a><a href="idioms.html">빈출 구동사·숙어</a><a href="../privacy.html">개인정보처리방침</a><a href="../terms.html">이용약관</a>`}
   </nav>
   <p>👾 toeic.monster · TOEIC 어휘 무료 학습 사이트 · 학습 기록은 브라우저에만 저장됩니다</p>
-</footer>${bodyScript ? "\n" + bodyScript : ""}
+</footer>
 </body>
 </html>
 `;
 }
 
 /**
- * 정적 문법 페이지용 예문 듣기 버튼 스크립트.
- *
- * index.html 의 TTS 설정(목소리·속도·언어)을 localStorage 로 공유해,
- * 앱에서 고른 목소리가 교재 페이지에서도 그대로 쓰입니다.
+ * 예문 듣기 버튼 스크립트는 이제 공용 파일(assets/speak.js)로 분리했습니다.
+ * 43개 페이지가 같은 2.3KB 를 각각 받지 않도록, 페이지는 defer 로 그 파일을 불러옵니다.
  */
-const TTS_SCRIPT = `<script>
-(function () {
-  function eachButton(fn) {
-    Array.prototype.forEach.call(document.querySelectorAll(".gex-speak"), fn);
-  }
-  // 브라우저가 음성 합성을 지원하지 않으면 동작하지 않는 버튼을 남기지 않습니다.
-  var synth = window.speechSynthesis;
-  if (!synth || typeof SpeechSynthesisUtterance === "undefined") {
-    eachButton(function (b) { b.hidden = true; });
-    return;
-  }
-  var VOICE_URI = "", LANG = "en-US", RATE = 0.95;
-  try {
-    VOICE_URI = localStorage.getItem("toeic1000_ttsvoice") || "";
-    LANG = localStorage.getItem("toeic1000_ttslang") || "en-US";
-    var savedRate = parseFloat(localStorage.getItem("toeic1000_ttsrate"));
-    if (savedRate) RATE = savedRate;
-  } catch (e) {}
-
-  function norm(s) { return String(s || "").replace(/_/g, "-").toLowerCase(); }
-  function listVoices() { try { return synth.getVoices() || []; } catch (e) { return []; } }
-  // 저장된 목소리가 없거나 기기에 없으면 영어 음성으로 자동 대체합니다.
-  function pickVoice() {
-    var v = listVoices(), i;
-    for (i = 0; i < v.length; i++) if (v[i].voiceURI === VOICE_URI) return v[i];
-    for (i = 0; i < v.length; i++) if (norm(v[i].lang).indexOf("en") === 0) return v[i];
-    return null;
-  }
-
-  var current = null;
-  function clearHl() {
-    Array.prototype.forEach.call(document.querySelectorAll(".gex-speak.speaking"), function (b) {
-      b.classList.remove("speaking");
-    });
-  }
-  function stop() { try { synth.cancel(); } catch (e) {} current = null; clearHl(); }
-
-  function speak(btn) {
-    var text = btn.getAttribute("data-say") || "";
-    if (!text) return;
-    if (current === btn) { stop(); return; }
-    stop();
-    var u = new SpeechSynthesisUtterance(text);
-    u.lang = LANG || "en-US";
-    var v = pickVoice();
-    if (v) { u.voice = v; u.lang = v.lang || u.lang; }
-    u.rate = RATE;
-    u.onend = u.onerror = function () { if (current === btn) { current = null; clearHl(); } };
-    current = btn;
-    btn.classList.add("speaking");
-    try { synth.speak(u); } catch (e) { current = null; clearHl(); }
-  }
-
-  eachButton(function (btn) {
-    btn.addEventListener("click", function () { speak(btn); });
-  });
-  // Esc 키로도 정지합니다(index.html 과 같은 규칙).
-  document.addEventListener("keydown", function (e) { if (e.key === "Escape") stop(); });
-  // 목록이 늦게 채워지는 브라우저를 위해 재생 직전마다 조회하므로 별도 보정은 필요 없습니다.
-  window.addEventListener("pagehide", stop);
-})();
-</script>`;
-
 /** 📘 버튼을 예문 옆에 붙입니다(듣기 대상 문장은 data-say 에 담습니다). */
 function speakBtn(text) {
   // 같은 문장이 여러 번 나오므로, 낭독기에서 어떤 문장인지 구분되도록 문장을 라벨에 넣습니다.
@@ -930,7 +895,8 @@ ${book.chapters.map(grammarChapter).join("\n\n")}
 
   return {
     file: `grammar/${book.id}.html`,
-    html: page({ title, description, canonical, ld, body, footerNav: GRAMMAR_FOOTER, bodyScript: TTS_SCRIPT }),
+    // 교재 페이지에는 예문 듣기 버튼이 있어 공용 스크립트(assets/speak.js)가 필요합니다.
+    html: page({ title, description, canonical, ld, body, footerNav: GRAMMAR_FOOTER, speak: true }),
   };
 }
 
@@ -1031,6 +997,7 @@ const NOT_FOUND_LINKS = [
 ];
 
 function build404Page() {
+  pagesWithSharedCss++;
   const links = NOT_FOUND_LINKS.map(
     ([href, title, sub]) => `      <li><a href="${href}"><b>${esc(title)}</b><span>${esc(sub)}</span></a></li>`,
   ).join("\n");
@@ -1063,7 +1030,7 @@ function build404Page() {
     } catch (e) {}
   })();
 </script>
-<style>${CSS}</style>
+<link rel="stylesheet" href="${ASSET_ABS}site.css">
 </head>
 <body>
 <header class="bar">
@@ -1148,6 +1115,11 @@ function main() {
 
   fs.mkdirSync(OUT_DIR, { recursive: true });
 
+  // 공용 스타일 — 정적 페이지 43개가 이 한 파일을 함께 받아 씁니다.
+  // (페이지마다 인라인으로 넣으면 같은 내용을 43번 다시 받게 됩니다.)
+  const siteCss = minifyCss(CSS);
+  write("assets/site.css", siteCss);
+
   let written = 0;
   units.forEach((u, i) => {
     const { file, html } = buildUnitPage(u, u.words, units[i - 1], units[i + 1]);
@@ -1193,6 +1165,13 @@ function main() {
   console.log(`   · 가이드 페이지 ${guides.length}개 + 허브 1개`);
   console.log(`   · 문법 교재 ${grammar.length}권 + 허브 1개 + 한 장 요약 (${chapters}과 · 연습 문제 ${quizzes}문항)`);
   console.log(`   · 404.html 1개 (색인 제외 — robots=noindex)`);
+  console.log(
+    `   · assets/site.css ${(siteCss.length / 1024).toFixed(1)}KB ` +
+      `(최소화 ${(CSS.length / 1024).toFixed(1)}KB → ${(100 * (1 - siteCss.length / CSS.length)).toFixed(0)}% 감소)` +
+      ` · 정적 페이지 ${pagesWithSharedCss}개가 함께 사용 (중복 ${((CSS.length * pagesWithSharedCss) / 1024 / 1024).toFixed(1)}MB → ${(
+        siteCss.length / 1024
+      ).toFixed(1)}KB)`,
+  );
   console.log(`   · sitemap.xml 갱신 (lastmod ${lastmod})`);
 }
 

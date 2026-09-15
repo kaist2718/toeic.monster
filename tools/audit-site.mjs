@@ -179,6 +179,44 @@ for (const page of pages) {
 }
 
 /* ------------------------------------------------------------------ */
+/* 3-2b. 정적 페이지 공용 자산(assets/)                                  */
+/* ------------------------------------------------------------------ */
+
+// 정적 페이지 48개는 같은 스타일을 씁니다. 페이지마다 인라인으로 되돌리면 0.4MB 가 다시
+// 중복되고, 예문 듣기 버튼이 있는데 공용 스크립트를 빠뜨리면 버튼이 아무 반응 없이 남습니다.
+const SHARED_CSS = "assets/site.css";
+const SHARED_SPEAK = "assets/speak.js";
+const INLINE_STYLE_MAX = 2048; // 정적 페이지에 남아 있어도 되는 인라인 스타일의 최대 크기
+const isGeneratedPage = (p) => p === "404.html" || /^(?:units|guides|grammar)\//.test(p);
+
+if (!has(SHARED_CSS)) {
+  fail(`${SHARED_CSS} 이 없습니다 — \`node tools/build-pages.mjs\` 를 실행하세요.`);
+} else {
+  note(`공용 스타일 ${SHARED_CSS} — ${(fs.statSync(path.join(ROOT, SHARED_CSS)).size / 1024).toFixed(1)}KB`);
+}
+
+for (const page of pages.filter(isGeneratedPage)) {
+  const biggest = [...srcOf[page].matchAll(/<style[^>]*>([\s\S]*?)<\/style>/gi)].reduce(
+    (n, m) => Math.max(n, m[1].length),
+    0,
+  );
+  if (biggest > INLINE_STYLE_MAX) {
+    fail(
+      `${page}: 인라인 <style> 이 ${(biggest / 1024).toFixed(1)}KB 입니다` +
+        ` — 공용 스타일(${SHARED_CSS})을 <link> 하세요(같은 내용을 페이지 수만큼 다시 받게 됩니다).`,
+    );
+  }
+  const speakButtons = (markOf[page].match(/class="gex-speak"/g) || []).length;
+  const loadsSpeak = new RegExp(`<script[^>]*src="[^"]*${SHARED_SPEAK.split("/").pop()}"`).test(srcOf[page]);
+  if (speakButtons && !loadsSpeak) {
+    fail(`${page}: 예문 듣기 버튼 ${speakButtons}개가 있는데 ${SHARED_SPEAK} 를 불러오지 않습니다(버튼이 동작하지 않습니다).`);
+  }
+  if (!speakButtons && loadsSpeak) {
+    fail(`${page}: 예문 듣기 버튼이 없는데 ${SHARED_SPEAK} 를 불러옵니다(쓸데없는 요청).`);
+  }
+}
+
+/* ------------------------------------------------------------------ */
 /* 3-3. manifest 아이콘 · apple-touch-icon                              */
 /* ------------------------------------------------------------------ */
 
@@ -214,6 +252,65 @@ for (const page of pages) {
   const m = srcOf[page].match(/<link[^>]*rel="apple-touch-icon"[^>]*href="([^"]*)"/i);
   if (m && /\.svg(\?|$)/i.test(m[1])) {
     fail(`${page}: apple-touch-icon 이 SVG 입니다 — iOS 가 무시합니다 (${m[1]})`);
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* 3-3a. 소셜 공유 카드(og:image)                                       */
+/* ------------------------------------------------------------------ */
+
+// 공유 카드는 카톡·슬랙·X 가 그대로 받아 가는 이미지입니다.
+// 캡처 직후의 PNG 는 압축이 느슨해 몇 배로 커지므로, 존재 여부와 용량을 함께 봅니다
+// (`python tools/make-og-image.py` 로 무손실 재압축).
+const OG_MAX_BYTES = 160 * 1024;
+const ogFiles = new Map(); // 파일 경로 -> 이 이미지를 쓰는 페이지들
+
+const metaContent = (src, attr) => {
+  const a = attr.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const m =
+    src.match(new RegExp(`<meta[^>]*\\s${a}[^>]*\\scontent="([^"]+)"`, "i")) ||
+    src.match(new RegExp(`<meta[^>]*\\scontent="([^"]+)"[^>]*\\s${a}`, "i"));
+  return m ? m[1] : null;
+};
+
+for (const page of pages) {
+  const url = metaContent(srcOf[page], 'property="og:image"');
+  if (!url) continue;
+  if (!url.startsWith(SITE)) {
+    fail(`${page}: og:image 가 사이트 주소가 아닙니다 — ${url}`);
+    continue;
+  }
+  const rel = url.slice(SITE.length).replace(/^\//, "");
+  if (!ogFiles.has(rel)) ogFiles.set(rel, []);
+  ogFiles.get(rel).push(page);
+}
+
+for (const [rel, users] of ogFiles) {
+  if (!has(rel)) {
+    fail(`${rel}: og:image 파일이 없습니다 — ${users.join(", ")}`);
+    continue;
+  }
+  const bytes = fs.statSync(path.join(ROOT, rel)).size;
+  const kb = (bytes / 1024).toFixed(0) + "KB";
+  if (bytes > OG_MAX_BYTES) {
+    fail(
+      `${rel}: 공유 카드가 너무 큽니다 — ${kb} (권장 ${OG_MAX_BYTES / 1024}KB 이하)` +
+        "\n     → `python tools/make-og-image.py` 로 무손실 재압축하세요.",
+    );
+  } else {
+    note(`공유 카드 ${rel} — ${kb} · ${users.length}개 페이지가 사용`);
+  }
+
+  // PNG 라면 헤더에서 실제 크기를 읽어, 선언한 og:image:width/height 와 맞는지 봅니다.
+  const head = fs.readFileSync(path.join(ROOT, rel)).subarray(0, 24);
+  const isPng = head.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+  if (isPng) {
+    const width = head.readUInt32BE(16);
+    const height = head.readUInt32BE(20);
+    const declaredW = Number(metaContent(srcOf[users[0]], 'property="og:image:width"') || 0);
+    const declaredH = Number(metaContent(srcOf[users[0]], 'property="og:image:height"') || 0);
+    if (declaredW && declaredW !== width) fail(`${rel}: og:image:width(${declaredW}) 와 실제 이미지 너비(${width})가 다릅니다.`);
+    if (declaredH && declaredH !== height) fail(`${rel}: og:image:height(${declaredH}) 와 실제 이미지 높이(${height})가 다릅니다.`);
   }
 }
 
