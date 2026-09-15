@@ -283,6 +283,47 @@ try {
     "다른 곳을 누르면 더 보기 패널이 닫힙니다",
   );
 
+  /* 3-2c. 창 높이가 낮은 PC — ⋯ 더 보기 패널이 화면 안에서 스크롤되는지 */
+  // 패널은 고정(sticky) 상단바에 붙어 있어 페이지를 스크롤해도 따라옵니다.
+  // 높이 제한도 스크롤도 없으면, 화면보다 길어질 때 아래 항목(진단·대시보드·가이드)은
+  // 화면 밖에 남아 아예 고를 수 없었습니다(실제 PC 에서 신고된 문제).
+  await send("Emulation.setDeviceMetricsOverride", { width: 1280, height: 640, deviceScaleFactor: 1, mobile: false });
+  await wait(400);
+  const moreShort = await evaluate(`(() => {
+    document.getElementById("btnMore").click();
+    const p = document.getElementById("topbarMore");
+    const before = p.getBoundingClientRect();
+    const cs = getComputedStyle(p);
+    const info = {
+      bottom: Math.round(before.bottom),
+      vh: innerHeight,
+      overflowY: cs.overflowY,
+      scrollable: p.scrollHeight - p.clientHeight,
+    };
+    p.scrollTop = p.scrollHeight;                       // 맨 아래 항목까지 내려 본다
+    const after = p.getBoundingClientRect();
+    const last = [...p.querySelectorAll(".btn")].pop().getBoundingClientRect();
+    info.scrolledBy = Math.round(p.scrollTop);
+    info.lastReachable = last.bottom <= after.bottom + 1 && last.top >= after.top - 1 && last.bottom <= innerHeight + 1;
+    document.body.click();
+    return info;
+  })()`);
+  check(
+    moreShort.overflowY === "auto",
+    `창이 낮을 때(1280×640) ⋯ 패널이 스크롤할 수 있습니다 (overflow-y: ${moreShort.overflowY})`,
+  );
+  check(
+    moreShort.bottom <= moreShort.vh + 1,
+    `⋯ 패널이 화면 높이 안에 들어옵니다 (아래 ${moreShort.bottom}px ≤ 화면 ${moreShort.vh}px)`,
+  );
+  check(
+    moreShort.scrollable > 0 && moreShort.scrolledBy === moreShort.scrollable,
+    `스크롤하면 ⋯ 패널의 마지막 항목까지 닿습니다 (넘치는 높이 ${moreShort.scrollable}px)`,
+  );
+  check(moreShort.lastReachable, "스크롤 후 ⋯ 패널의 마지막 항목이 패널·화면 안에 들어옵니다");
+  await send("Emulation.setDeviceMetricsOverride", { width: 1100, height: 820, deviceScaleFactor: 1, mobile: false });
+  await wait(300);
+
   /* 3-3. 목록을 열면 그때 그려지는지 */
   await evaluate(`document.getElementById("btnList").click()`);
   await wait(600);
@@ -374,6 +415,33 @@ try {
     !afterBack.open && afterBack.expanded === "false" && afterBack.path === urlBeforeBack,
     `뒤로가기 한 번으로 메뉴만 닫히고 페이지는 그대로입니다 (${afterBack.path})`,
   );
+
+  /* 3-4b-2. 창을 좁힌 PC(휠·마우스) — ☰ 메뉴도 화면 안에서 스크롤되는지 */
+  await send("Emulation.setDeviceMetricsOverride", { width: 900, height: 640, deviceScaleFactor: 1, mobile: false });
+  await wait(400);
+  const pcMenu = await evaluate(`(() => {
+    document.getElementById("btnMenu").click();
+    const nav = document.getElementById("topbarNav");
+    const panel = nav.getBoundingClientRect();
+    const info = { bottom: Math.round(panel.bottom), vh: innerHeight, scrollable: nav.scrollHeight - nav.clientHeight };
+    nav.scrollTop = nav.scrollHeight;
+    const last = document.getElementById("btnGuide").getBoundingClientRect();
+    const after = nav.getBoundingClientRect();
+    info.scrolledBy = Math.round(nav.scrollTop);
+    info.lastReachable = last.bottom <= after.bottom + 1 && last.top >= after.top - 1 && last.bottom <= innerHeight + 1;
+    document.getElementById("btnMenu").click();
+    return info;
+  })()`);
+  check(
+    pcMenu.bottom <= pcMenu.vh + 1,
+    `창을 좁힌 PC(900×640)에서도 ☰ 메뉴가 화면 높이 안에 들어옵니다 (${pcMenu.bottom}px ≤ ${pcMenu.vh}px)`,
+  );
+  check(
+    pcMenu.scrollable > 0 && pcMenu.scrolledBy === pcMenu.scrollable && pcMenu.lastReachable,
+    `☰ 메뉴에서 스크롤하면 마지막 항목까지 닿습니다 (넘치는 높이 ${pcMenu.scrollable}px)`,
+  );
+  await send("Emulation.setDeviceMetricsOverride", { width: 375, height: 720, deviceScaleFactor: 2, mobile: true });
+  await wait(300);
 
   /* 3-4c. 안내 창도 뒤로가기로 닫히는지(메뉴와 같은 규칙) */
   await evaluate(`document.getElementById("btnGuide").click()`);

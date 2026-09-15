@@ -154,6 +154,13 @@
     --topbar-btn-bg: rgba(255,255,255,.10);
     --topbar-btn-hover: rgba(0,0,0,.16);
     --topbar-active-fg: #2f4bb8;
+    /* 상단바에서 열리는 패널(데스크톱 ⋯ 더 보기 · 좁은 화면 ☰ 메뉴)의 공통 높이 한계.
+       상단바는 고정(sticky)이라 페이지를 스크롤해도 패널이 붙어 다니므로,
+       높이를 제한하지 않으면 화면 밖으로 나간 아래 항목은 영영 고를 수 없습니다.
+       그래서 두 패널이 같은 값을 쓰도록 한 곳에 둡니다(한쪽만 고쳐지는 일 방지).
+       dvh 는 주소창이 접히는 모바일 브라우저에서 실제 보이는 높이라, 모르면 vh 로 대체됩니다. */
+    --menu-panel-max-h: calc(100vh - 128px);
+    --menu-panel-max-h: min(74vh, calc(100dvh - 128px));
   }
 
   body.dark,
@@ -2167,6 +2174,14 @@
       border: 1px solid var(--border);
       border-radius: 12px;
       box-shadow: var(--shadow);
+      /* 창 높이가 낮은 PC(브라우저 창을 줄였거나 작은 노트북)에서는 패널이 화면보다 길어져
+         시험·복습·리스닝·모의고사·진단·대시보드·가이드가 화면 밖으로 나갔고,
+         패널에 스크롤이 없어 그 항목들을 아예 고를 수 없었습니다.
+         패널 "안에서" 스크롤하도록 높이를 제한합니다(☰ 메뉴와 같은 규칙). */
+      max-height: var(--menu-panel-max-h);
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      scrollbar-width: thin;
     }
     .topbar-more.open .btn {
       background: var(--soft-blue);
@@ -2218,9 +2233,8 @@
       box-shadow: var(--shadow);
       /* 항목이 화면보다 길어지면 메뉴 "안에서" 스크롤합니다.
          예전에는 그냥 잘려서(overflow 없음) 아래쪽 시험·복습·가이드 항목을 고를 수 없었습니다.
-         dvh 는 주소창이 접히는 모바일 브라우저에서 실제 보이는 높이를 씁니다(모르면 vh 로 대체). */
-      max-height: calc(100vh - 112px);
-      max-height: min(74vh, calc(100dvh - 112px));
+         데스크톱 ⋯ 더 보기 패널과 같은 높이 한계(--menu-panel-max-h)를 씁니다. */
+      max-height: var(--menu-panel-max-h);
       overflow-y: auto;
       overscroll-behavior: contain;
       -webkit-overflow-scrolling: touch;
@@ -4962,9 +4976,13 @@
     if (openModal) { closeGuide(); closeVoiceHelp(); }
     consumeMenuGuard();
   });
-  // 화면이 넓어져 햄버거가 사라지면(데스크톱) 드롭다운도 함께 닫습니다.
+  // 창 크기가 바뀌어 드롭다운이 사라지는 쪽으로 넘어가면 함께 닫습니다.
+  //   · 넓어져 ☰ 가 사라지면(데스크톱) ☰ 메뉴를 닫습니다.
+  //   · 반대로 ⋯ 더 보기 패널을 열어 둔 채 좁히면 패널은 ☰ 메뉴 안으로 합쳐져 안 보이는데,
+  //     "열림" 상태로 남아 뒤로가기 항목을 붙들고 있었습니다(한 번 눌러도 아무 일이 없음).
   window.addEventListener("resize", function () {
     if (window.innerWidth > 1023 && navEl && navEl.classList.contains("open")) closeNav();
+    if (window.innerWidth <= 1023 && moreEl && moreEl.classList.contains("open")) closeMore();
   });
 
   // ---------- 홈 랜딩 ----------
