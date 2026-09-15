@@ -14,6 +14,7 @@
  *   units/idioms.html       — 빈출 구동사·숙어 모음
  *   guides/*.html           — 파트별 전략·공략 가이드 (data/extra.js)
  *   grammar/*.html          — 기초·중급·고급 문법 교재 (data/grammar-*.js)
+ *   404.html                — 없는 주소 안내 (GitHub Pages 커스텀 404)
  *   sitemap.xml             — 위 페이지들을 포함한 전체 사이트맵
  *
  * 외부 의존성 없음(Node 내장 모듈만 사용). 여러 번 실행해도 결과가 같습니다.
@@ -258,7 +259,9 @@ function page({ title, description, canonical, ld, body, footerNav, bodyScript }
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="icon" href="../icon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="../icon.svg">
+<link rel="icon" href="../icon-192.png" type="image/png" sizes="192x192">
+<!-- iOS 홈 화면은 SVG 아이콘을 쓰지 않으므로 PNG 를 따로 지정합니다(tools/make-icons.py 로 생성). -->
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
 <script>
   // 앱(index.html)에서 고른 테마를 정적 페이지에도 첫 페인트 전에 적용해,
   // 다크 모드 사용자가 흰 화면을 번쩍 보지 않게 합니다.
@@ -1005,6 +1008,91 @@ ${sections}
 }
 
 /* ------------------------------------------------------------------ */
+/* 6-9. 404 페이지                                                      */
+/* ------------------------------------------------------------------ */
+
+/**
+ * 404.html — GitHub Pages 는 없는 주소를 이 파일로 되돌려줍니다.
+ *
+ * 주의: 이 파일은 루트(/)에서 내려가지만 **임의의 주소에서도** 응답됩니다.
+ *   그래서 링크·자산에 상대 경로(./units/…)를 쓸 수 없습니다.
+ *   (예: /units/foo 를 요청하면 ./units/ 는 /units/units/ 가 됩니다.)
+ *   전부 루트 절대 경로("/units/")로 적습니다.
+ *
+ * 검색엔진에는 noindex 로 알립니다 — 404 는 색인 대상이 아니고,
+ * 사이트맵에도 넣지 않습니다(audit-site.mjs 가 두 가지를 함께 검사합니다).
+ */
+const NOT_FOUND_LINKS = [
+  ["/units/", "단어장", "주제별 30개 유닛 · 단어 1,000개"],
+  ["/units/idioms.html", "빈출 구동사·숙어", "126개 숙어와 예문"],
+  ["/grammar/", "문법 교재", "기초·중급·고급 36과 + 연습 108문항"],
+  ["/grammar/cheatsheet.html", "문법 한 장 요약", "시험 직전에 훑는 핵심 정리"],
+  ["/guides/", "전략·유형 가이드", "파트별 공략 9편"],
+];
+
+function build404Page() {
+  const links = NOT_FOUND_LINKS.map(
+    ([href, title, sub]) => `      <li><a href="${href}"><b>${esc(title)}</b><span>${esc(sub)}</span></a></li>`,
+  ).join("\n");
+  return `<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>페이지를 찾을 수 없습니다 (404) — toeic.monster</title>
+<meta name="description" content="요청한 주소의 페이지를 찾을 수 없습니다. toeic.monster 의 학습 자료로 이동해 주세요.">
+<!-- 404 는 색인 대상이 아니지만, 링크는 따라가도 되므로 follow 를 남깁니다. -->
+<meta name="robots" content="noindex, follow">
+<meta name="theme-color" content="#3b5bdb">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<script>
+  // 앱(index.html)에서 고른 테마를 그대로 적용합니다. 직접 고른 적이 없으면 OS 설정을 따릅니다.
+  (function () {
+    try {
+      var t = localStorage.getItem("toeic1000_theme");
+      if (!t) t = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      if (t === "dark") {
+        document.documentElement.classList.add("dark-pending");
+        var m = document.querySelector('meta[name="theme-color"]');
+        if (m) m.setAttribute("content", "#10141b");
+      }
+    } catch (e) {}
+  })();
+</script>
+<style>${CSS}</style>
+</head>
+<body>
+<header class="bar">
+  <div class="wrap">
+    <a href="/">toeic.monster</a>
+    <small>발음·예문으로 외우는 TOEIC 필수 어휘 1,000</small>
+  </div>
+</header>
+<main class="wrap">
+  <h1>페이지를 찾을 수 없습니다</h1>
+  <p class="lead">주소가 바뀌었거나 오타가 있을 수 있습니다. 아래 학습 자료는 그대로 볼 수 있습니다.</p>
+  <p><a class="cta" href="/">홈으로 가서 학습 시작하기</a></p>
+  <h2 class="sec">바로 볼 수 있는 학습 자료</h2>
+  <ul class="unitlist">
+${links}
+  </ul>
+</main>
+<footer class="ft wrap">
+  <nav>
+    <a href="/">홈</a><a href="/units/">주제별 단어장</a><a href="/units/idioms.html">빈출 구동사·숙어</a><a href="/privacy.html">개인정보처리방침</a><a href="/terms.html">이용약관</a>
+  </nav>
+  <p>👾 toeic.monster · TOEIC 어휘 무료 학습 사이트 · 학습 기록은 브라우저에만 저장됩니다</p>
+</footer>
+</body>
+</html>
+`;
+}
+
+/* ------------------------------------------------------------------ */
 /* 7. 사이트맵                                                         */
 /* ------------------------------------------------------------------ */
 
@@ -1092,6 +1180,8 @@ function main() {
     write(cs.file, cs.html);
   }
 
+  // 404 는 색인 대상이 아니므로 사이트맵에 넣지 않습니다(noindex).
+  write("404.html", build404Page());
   write("sitemap.xml", buildSitemap(units, lastmod, guides, grammar));
 
   const words = units.reduce((n, u) => n + u.words.length, 0);
@@ -1102,6 +1192,7 @@ function main() {
   console.log(`   · 허브 1개 · 숙어 페이지 1개 (숙어 ${idioms.length}개)`);
   console.log(`   · 가이드 페이지 ${guides.length}개 + 허브 1개`);
   console.log(`   · 문법 교재 ${grammar.length}권 + 허브 1개 + 한 장 요약 (${chapters}과 · 연습 문제 ${quizzes}문항)`);
+  console.log(`   · 404.html 1개 (색인 제외 — robots=noindex)`);
   console.log(`   · sitemap.xml 갱신 (lastmod ${lastmod})`);
 }
 

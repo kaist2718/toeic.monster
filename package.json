@@ -14,9 +14,12 @@
     "audit:site": "node tools/audit-site.mjs",
     "audit:external": "node tools/audit-site.mjs --external",
     "test": "node tools/test-home-ux.mjs && node tools/test-tts-voice.mjs && node tools/test-grammar-quiz.mjs",
-    "build": "node tools/build-pages.mjs",
+    "check:browser": "node tools/check-browser.mjs",
+    "build": "npm run build:pages && npm run prerender",
+    "build:pages": "node tools/build-pages.mjs",
+    "prerender": "node tools/prerender-home.mjs",
     "check": "npm run build && npm run audit && npm run test",
-    "verify": "node tools/verify-generated.mjs",
+    "verify": "node tools/verify-generated.mjs && node tools/prerender-home.mjs --check",
     "check:ci": "npm run check && npm run verify"
   }
 }

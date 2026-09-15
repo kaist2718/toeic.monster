@@ -169,11 +169,22 @@ ${code}
 }
 
 {
-  const initBlock = slice("  collectUnits();\n  syncLevelButtons();", "  showHome();", html, "초기화");
+  const initBlock = slice("  function startApp() {", '  if (document.readyState === "loading")', html, "초기화");
   assert(
     !/renderUnits\(/.test(initBlock),
     "첫 화면에서 목록을 미리 그리지 않습니다",
     "초기화 블록에 renderUnits 호출이 남아 있습니다",
+  );
+  assert(
+    /document\.addEventListener\("DOMContentLoaded", startApp\)/.test(html),
+    "앱 초기화는 데이터 스크립트가 끝난 뒤(DOMContentLoaded)에 시작합니다",
+    "defer 스크립트보다 먼저 실행되면 `all` 이 비어 화면이 빕니다",
+  );
+  assert(
+    /IDIOMS = window\.VOCAB_IDIOMS \|\| \[\];/.test(initBlock) &&
+      /GRAMMAR_BOOKS = window\.GRAMMAR_BOOKS \|\| \[\];/.test(initBlock),
+    "defer 로 늦게 들어온 데이터를 초기화 때 다시 읽습니다",
+    "IDIOMS·GRAMMAR_BOOKS 를 그대로 두면 속어·교재 섹션이 빕니다",
   );
 
   const collect = slice("  function collectUnits() {", "  // ---------- TTS(음성 합성) 공통 ----------", html, "collectUnits");
@@ -199,7 +210,95 @@ ${code}
 }
 
 /* ------------------------------------------------------------------ */
-/* 3. 테마 기본값은 OS 설정을 따르고, 직접 고른 값이 우선한다            */
+/* 3. 스크립트 로딩 — 첫 화면을 막지 않는지                              */
+/* ------------------------------------------------------------------ */
+
+console.log("\n[3] 스크립트 로딩 (defer · extra.js 지연)");
+{
+  const deferred = [...html.matchAll(/<script\s+defer\s+src="(data\/[^"]+)"/g)].map((m) => m[1]);
+  assert(deferred.length === 34, `데이터 스크립트 34개가 defer 로 내려받습니다(현재 ${deferred.length}개)`);
+  assert(
+    /<script\s+defer\s+src="data\/unit01\.js"><\/script>/.test(html),
+    "첫 데이터 스크립트가 defer 입니다",
+    "defer 가 없으면 HTML 파싱이 550KB 스크립트를 기다립니다",
+  );
+  assert(
+    !deferred.includes("data/extra.js"),
+    "extra.js 는 첫 로드 목록에 없습니다",
+    "167KB 를 첫 화면에서 빼야 전송량이 줄어듭니다",
+  );
+  assert(
+    /s\.src = "data\/extra\.js";/.test(html),
+    "extra.js 는 필요할 때(loadExtra) 불러옵니다",
+    "지연 로드 코드가 없으면 확장 섹션이 비어 보입니다",
+  );
+  // 데이터 스크립트는 head 에 있어야 파싱과 동시에 내려받기 시작합니다.
+  const head = html.slice(0, html.indexOf("</head>"));
+  assert(
+    /<script\s+defer\s+src="data\/unit01\.js"/.test(head),
+    "데이터 스크립트가 head 에서 병렬로 내려받습니다",
+    "body 끝에 두면 HTML 파싱이 끝난 뒤에야 요청이 시작됩니다",
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* 4. 상단바는 늘 쓰는 컨트롤만 남기고 나머지는 패널에 담는다            */
+/* ------------------------------------------------------------------ */
+
+console.log("\n[4] 상단바 구성");
+{
+  const header = html.slice(html.indexOf('<header class="topbar">'), html.indexOf("</header>"));
+  assert(header.length > 0, "상단바 마크업을 찾았습니다", "<header class=\"topbar\"> … </header>");
+
+  // ⋯ 더 보기 패널을 걺어내면 "늘 보이는 컨트롤"만 남습니다.
+  const moreStart = header.indexOf('class="topbar-more"');
+  const moreEnd = header.indexOf("</nav>");
+  const alwaysVisible = moreStart >= 0 ? header.slice(0, moreStart) + header.slice(moreEnd) : header;
+  // 데스크톱 기준으로 셉니다 — ☰(≤1023px 전용)와 처음엔 숨겨진 버튼(⏹ 정지)은 제외합니다.
+  const desktopVisible = alwaysVisible
+    .replace(/<button[^>]*\bhidden\b[^>]*>/g, "")
+    .replace(/<button[^>]*class="[^"]*menu-toggle[^"]*"[^>]*>/g, "");
+  const controls = (desktopVisible.match(/<(?:button|select)\b/g) || []).length;
+  assert(
+    controls <= 8,
+    `데스크톱에서 늘 보이는 상단바 컨트롤이 8개 이하입니다(현재 ${controls}개)`,
+    "컨트롤이 많으면 1024~1280px 구간에서 두 줄로 접혀 헤더가 세로 공간을 먹습니다",
+  );
+
+  const morePanel = moreStart >= 0 ? header.slice(moreStart, moreEnd) : "";
+  for (const id of ["btnExam", "btnSrs", "btnListen", "btnMock", "btnDiag", "btnDash", "btnGuide", "btnVoiceHelp"]) {
+    assert(new RegExp(`id="${id}"`).test(morePanel), `${id} 는 더 보기 패널 안에 있습니다`);
+  }
+  for (const id of ["btnHome", "btnList", "btnFlash", "btnQuiz", "btnMore"]) {
+    assert(new RegExp(`id="${id}"`).test(alwaysVisible), `${id} 는 늘 보입니다`);
+  }
+
+  // 화면 전환 코드가 쓰는 버튼 id 가 모두 마크업에 한 번식 있는지(없으면 클릭 이벤트 등록이 조용히 실패합니다).
+  const btnIds = (html.match(/var BTN_IDS = \[([^\]]*)\]/) || [])[1] || "";
+  for (const id of [...btnIds.matchAll(/"([^"]+)"/g)].map((m) => m[1])) {
+    const n = (header.match(new RegExp(`id="${id}"`, "g")) || []).length;
+    assert(n === 1, `화면 전환 버튼 ${id} 가 상단바에 정확히 1개 있습니다`, `${n}개`);
+  }
+
+  // JS 가 찾는 상단바 클래스가 마크업에 실제로 있는지(클래스명이 바뀌면 null 참조로 앱이 멈춥니다).
+  const topbarSelectors = [...new Set([...html.matchAll(/querySelector(?:All)?\("(\.topbar[^"]*)"/g)].map((m) => m[1]))];
+  assert(topbarSelectors.length > 0, "상단바를 찾는 선택자를 확인했습니다", "querySelector(\".topbar…\")");
+  for (const sel of topbarSelectors) {
+    const cls = sel.slice(1).split(/[\s.>]/)[0];
+    assert(
+      new RegExp(`class="[^"]*\\b${cls}\\b`).test(html),
+      `JS 선택자 ${sel} 의 클래스(${cls})가 마크업에 있습니다`,
+      "클래스명이 바뀌면 querySelector 가 null 을 돌려줘 스크립트가 중단됩니다",
+    );
+  }
+  // 예전 이름이 남아 있으면 위 검사가 잡기 전에 여기서 먼저 알려 줍니다.
+  for (const gone of ["topbar-actions", "tts-ctrl"]) {
+    assert(!new RegExp(`\\b${gone}\\b`).test(html), `예전 상단바 클래스(${gone})를 쓰지 않습니다`);
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* 5. 테마 기본값은 OS 설정을 따르고, 직접 고른 값이 우선한다            */
 /* ------------------------------------------------------------------ */
 
 /** 테마 인라인 스크립트를 가짜 브라우저에서 실행해 어떤 테마가 적용되는지 봅니다. */
@@ -224,7 +323,7 @@ function runThemeScript(script, stored, systemDark) {
   return { dark: classes.has("dark-pending"), themeColor: meta.attrs.content };
 }
 
-console.log("\n[3] 테마 기본값 (OS 설정 우선)");
+console.log("\n[5] 테마 기본값 (OS 설정 우선)");
 {
   const appScript = (html.match(/<script>\s*\/\/ 저장된 테마[\s\S]*?<\/script>/) || [])[0];
   const staticHtml = read("units/unit-01.html");

@@ -114,6 +114,12 @@ const ctx = {
 };
 vm.createContext(ctx);
 vm.runInContext(block, ctx, { filename: "index.html:grammar-quiz", timeout: 5000 });
+// 데이터 스크립트가 defer 로 바뀐 뒤, 앱은 초기화(startApp)에서 이 두 함수를 부릅니다.
+// 테스트도 같은 순서로 한 번 그려 단계 목록·오답노트 결과를 확인합니다.
+vm.runInContext("renderGrammarLevelSelect(); renderGrammarWrongNote();", ctx, {
+  filename: "index.html:grammar-quiz-render",
+  timeout: 5000,
+});
 
 /* ------------------------------------------------------------------ */
 /* 4. 점검                                                             */
@@ -151,6 +157,10 @@ check("문항 id 가 모두 유일함", dupId === 0, `중복 ${dupId}건`);
 
 /* 4-3. 단계 선택 목록 */
 const sel = els.grammarLevelSel;
+check(
+  "앱이 데이터 준비 뒤(startApp)에 단계 목록을 그리도록 호출함",
+  /function startApp\(\)[\s\S]*?renderGrammarLevelSelect\(\);/.test(html),
+);
 check("단계 선택 목록이 생성됨", !!sel && sel.innerHTML.indexOf('value="basic"') !== -1);
 check("전체 문항 수가 목록에 표시됨", !!sel && sel.innerHTML.indexOf(`${expectedTotal}문항`) !== -1);
 

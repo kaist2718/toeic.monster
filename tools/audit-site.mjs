@@ -179,7 +179,69 @@ for (const page of pages) {
 }
 
 /* ------------------------------------------------------------------ */
-/* 3-3. 홈 섹션 이동 메뉴(칩) ↔ 섹션 1:1 일치                           */
+/* 3-3. manifest 아이콘 · apple-touch-icon                              */
+/* ------------------------------------------------------------------ */
+
+// 설치형 앱(PWA)과 iOS 홈 화면은 SVG 아이콘을 쓰지 않습니다.
+// PNG 가 있는지, 실제 파일이 있는지, apple-touch-icon 이 SVG 로 되돌아가지 않았는지 봅니다.
+if (has("manifest.webmanifest")) {
+  let manifest = null;
+  try {
+    manifest = JSON.parse(read("manifest.webmanifest"));
+  } catch (e) {
+    fail(`manifest.webmanifest: JSON 을 읽을 수 없습니다 — ${e.message}`);
+  }
+  if (manifest) {
+    const icons = Array.isArray(manifest.icons) ? manifest.icons : [];
+    if (!icons.length) fail("manifest.webmanifest: icons 가 없습니다.");
+    const sizes = new Set();
+    for (const icon of icons) {
+      if (!icon || !icon.src) {
+        fail("manifest.webmanifest: src 가 없는 아이콘이 있습니다.");
+        continue;
+      }
+      if (!has(icon.src)) fail(`manifest.webmanifest: 아이콘 파일이 없습니다 — ${icon.src}`);
+      if (icon.sizes) sizes.add(icon.sizes);
+    }
+    if (!icons.some((i) => i && i.src && /\.png$/i.test(i.src))) {
+      fail("manifest.webmanifest: PNG 아이콘이 없습니다 — iOS·설치형 앱은 SVG 만으로는 아이콘을 못 씁니다.");
+    }
+    if (icons.length) note(`manifest 아이콘 ${icons.length}개 (${[...sizes].join(", ")})`);
+  }
+}
+
+for (const page of pages) {
+  const m = srcOf[page].match(/<link[^>]*rel="apple-touch-icon"[^>]*href="([^"]*)"/i);
+  if (m && /\.svg(\?|$)/i.test(m[1])) {
+    fail(`${page}: apple-touch-icon 이 SVG 입니다 — iOS 가 무시합니다 (${m[1]})`);
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* 3-3b. 404 페이지                                                     */
+/* ------------------------------------------------------------------ */
+
+if (!has("404.html")) {
+  fail("404.html 이 없습니다 — 깨진 주소가 GitHub Pages 기본 404 로 떨어집니다.");
+} else {
+  const notFound = read("404.html");
+  if (!/<meta\s+name="robots"\s+content="[^"]*noindex/i.test(notFound)) {
+    fail("404.html: robots=noindex 가 없습니다 — 검색엔진이 404 페이지를 색인할 수 있습니다.");
+  }
+  // 이 파일은 루트(/)뿐 아니라 임의의 주소에서도 응답됩니다.
+  // 상대 경로는 요청 주소를 기준으로 풀리므로 엉뚱한 곳을 가리키게 됩니다.
+  const relativeLinks = [...notFound.matchAll(/<(?:a|link)\b[^>]*\bhref="(\.\.?\/[^"]*)"/g)].map((m) => m[1]);
+  if (relativeLinks.length) {
+    fail(
+      `404.html: 상대 경로 링크가 있습니다 — ${[...new Set(relativeLinks)].slice(0, 3).join(", ")}` +
+        " (404 는 임의의 주소에서도 보이므로 루트 절대 경로를 쓰세요)",
+    );
+  }
+  note("404.html 있음 (noindex · 루트 절대 경로)");
+}
+
+/* ------------------------------------------------------------------ */
+/* 3-4. 홈 섹션 이동 메뉴(칩) ↔ 섹션 1:1 일치                           */
 /* ------------------------------------------------------------------ */
 
 // 칩은 aria-label 로 섹션을 찾습니다. 라벨이 바뀌면 이동이 조용히 실패하므로,
@@ -209,7 +271,7 @@ if (srcOf["index.html"]) {
 
     note(`홈 섹션 ${homeLabels.length}개 · 섹션 메뉴 칩 ${chipTargets.length}개(모두 연결됨)`);
 
-    // 3-4. 묶음(🗂 전체 목차) 구성
+    // 3-5. 묶음(🗂 전체 목차) 구성
     //   · 한 묶음에 몰리지 않았는지(칩 개수)
     //   · 묶음 안에서 문서 순서대로 가는지 — 아니면 칩을 따라가며 페이지를 위로 되감아야 합니다.
     const homeIndex = new Map(homeLabels.map((label, i) => [label, i]));
@@ -231,6 +293,48 @@ if (srcOf["index.html"]) {
       }
     });
     note(`섹션 메뉴 묶음: ${groupSizes.join(" · ")}`);
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* 3-6. 홈 프리렌더 · <noscript> 폴백                                   */
+/* ------------------------------------------------------------------ */
+
+// 홈 콘텐츠의 상당 부분은 JS 로 그려집니다. 그래서
+//   ① 자바스크립트를 실행하지 않는 크롤러(네이버 Yeti)와
+//   ② 자바스크립트를 끈 사용자는 홈에서 아무 내용도 읽을 수 없습니다.
+// tools/prerender-home.mjs 가 읽을 수 있는 섹션을 미리 심고 안내를 넣습니다.
+// 여기서는 "그 자리가 계속 채워져 있는지"를 봅니다(내용 자체의 최신 여부는 `npm run verify` 가 봅니다).
+if (srcOf["index.html"]) {
+  const homeSrc = srcOf["index.html"];
+  const PRERENDERED = ["noscript", "confuseGrid", "wordpartGrid", "wordfamilyGrid", "freqGrid"];
+  const missingMarkers = PRERENDERED.filter(
+    (id) => !homeSrc.includes(`<!-- prerender:start ${id} -->`) || !homeSrc.includes(`<!-- prerender:end ${id} -->`),
+  );
+  if (missingMarkers.length) {
+    fail(
+      `index.html: 홈 프리렌더 표시가 없습니다 — ${missingMarkers.join(", ")}\n` +
+        "     → `node tools/prerender-home.mjs` 를 실행하세요(자바스크립트 없는 크롤러가 홈 내용을 읽지 못합니다).",
+    );
+  }
+
+  const ns = homeSrc.slice(homeSrc.indexOf("<noscript>"), homeSrc.indexOf("</noscript>"));
+  if (!ns) {
+    fail("index.html: <noscript> 폴백이 없습니다 — 자바스크립트를 끈 사용자에게 홈이 빈 화면으로 보입니다.");
+  } else {
+    if (!/<h2[^>]*>[^<]*주제/.test(ns)) fail("index.html: <noscript> 안에 학습 주제 목차가 없습니다.");
+    const nsLinks = [...ns.matchAll(/<a\b[^>]*href="([^"]+)"/g)].map((m) => m[1]);
+    if (nsLinks.length < 3) fail(`index.html: <noscript> 안의 정적 자료 링크가 ${nsLinks.length}개뿐입니다.`);
+    note(`홈 프리렌더 섹션 ${PRERENDERED.length - 1}개 · <noscript> 폴백 링크 ${nsLinks.length}개`);
+  }
+
+  // 미리 심은 내용이 비어 있으면(예: 렌더 실패) 크롤러가 빈 칸만 보게 됩니다.
+  for (const id of PRERENDERED.filter((x) => x !== "noscript")) {
+    const start = homeSrc.indexOf(`<!-- prerender:start ${id} -->`);
+    const end = homeSrc.indexOf(`<!-- prerender:end ${id} -->`, start + 1);
+    if (start < 0 || end < 0) continue;
+    const inner = homeSrc.slice(start, end);
+    if (inner.length < 200) fail(`index.html: 프리렌더된 ${id} 내용이 너무 적습니다(${inner.length}자).`);
   }
 }
 

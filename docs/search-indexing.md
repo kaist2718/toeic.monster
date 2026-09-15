@@ -7,7 +7,7 @@ toeic.monster 를 구글·네이버 검색에 노출시키기 위한 설정과, 
 
 <!-- audit:counts
 sitemap_urls = 48
-pages = 50
+pages = 51
 units = 30
 vocab = 1000
 idioms = 126

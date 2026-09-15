@@ -1,10 +1,13 @@
 /* toeic.monster Service Worker - 오프라인 학습 지원 */
-var CACHE_NAME = "toeic-monster-v7";
+var CACHE_NAME = "toeic-monster-v8";
 var CORE_ASSETS = [
   "./",
   "./index.html",
   "./manifest.webmanifest",
   "./icon.svg",
+  "./icon-192.png",
+  "./icon-512.png",
+  "./apple-touch-icon.png",
   "./units/",
   "./units/index.html",
   "./guides/",
