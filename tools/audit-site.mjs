@@ -208,6 +208,29 @@ if (srcOf["index.html"]) {
     if (unreachable.length) fail(`index.html: 메뉴에서 이동할 수 없는 섹션 — ${unreachable.join(", ")}`);
 
     note(`홈 섹션 ${homeLabels.length}개 · 섹션 메뉴 칩 ${chipTargets.length}개(모두 연결됨)`);
+
+    // 3-4. 묶음(🗂 전체 목차) 구성
+    //   · 한 묶음에 몰리지 않았는지(칩 개수)
+    //   · 묶음 안에서 문서 순서대로 가는지 — 아니면 칩을 따라가며 페이지를 위로 되감아야 합니다.
+    const homeIndex = new Map(homeLabels.map((label, i) => [label, i]));
+    const groupChunks = nav.split('class="sn-group"').slice(1);
+    if (groupChunks.length < 2) fail("index.html: 섹션 메뉴 묶음(sn-group)이 2개 미만입니다.");
+    const groupSizes = [];
+    groupChunks.forEach((chunk, gi) => {
+      const label = (chunk.match(/class="sn-group-label">([^<]*)</) || [])[1] || `${gi + 1}번째 묶음`;
+      const targets = [...chunk.matchAll(/class="sn-chip" data-target="([^"]+)"/g)].map((m) => m[1]);
+      groupSizes.push(`${label} ${targets.length}`);
+      if (!targets.length) fail(`index.html: "${label}" 묶음에 칩이 없습니다.`);
+      for (let i = 1; i < targets.length; i++) {
+        const prev = homeIndex.get(targets[i - 1]);
+        const cur = homeIndex.get(targets[i]);
+        if (prev === undefined || cur === undefined) continue; // 연결 오류는 위에서 이미 잡힘
+        if (prev >= cur) {
+          fail(`index.html: "${label}" 묶음의 칩 순서가 문서 순서와 다릅니다 — ${targets[i - 1]} → ${targets[i]}`);
+        }
+      }
+    });
+    note(`섹션 메뉴 묶음: ${groupSizes.join(" · ")}`);
   }
 }
 

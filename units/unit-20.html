@@ -22,14 +22,20 @@
 <meta name="twitter:title" content="UNIT 20 은행과 투자 — TOEIC 필수 단어 34개 | toeic.monster">
 <meta name="twitter:description" content="Banking &amp; Investing · 계좌·주식·투자 어휘. TOEIC에 자주 나오는 &quot;은행과 투자&quot; 주제 단어 34개를 발음기호·한글 발음·예문·해석과 함께 정리했습니다. 무료로 암기 카드와 퀴즈로 복습하세요.">
 <meta name="twitter:image" content="https://toeic.monster/og-image.png">
+<!-- 본문 서체 — Pretendard Variable. 필요한 글자 조각만 내려받는 dynamic subset 이라 첫 로드 부담이 작습니다. -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="icon" href="../icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="../icon.svg">
 <script>
   // 앱(index.html)에서 고른 테마를 정적 페이지에도 첫 페인트 전에 적용해,
   // 다크 모드 사용자가 흰 화면을 번쩍 보지 않게 합니다.
+  // 아직 직접 고른 적이 없으면 OS 의 다크 모드 설정을 따릅니다.
   (function () {
     try {
-      if ((localStorage.getItem("toeic1000_theme") || "light") === "dark") {
+      var t = localStorage.getItem("toeic1000_theme");
+      if (!t) t = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      if (t === "dark") {
         document.documentElement.classList.add("dark-pending");
         var m = document.querySelector('meta[name="theme-color"]');
         if (m) m.setAttribute("content", "#10141b");

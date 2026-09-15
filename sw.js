@@ -1,5 +1,5 @@
 /* toeic.monster Service Worker - 오프라인 학습 지원 */
-var CACHE_NAME = "toeic-monster-v6";
+var CACHE_NAME = "toeic-monster-v7";
 var CORE_ASSETS = [
   "./",
   "./index.html",
@@ -27,13 +27,19 @@ for (var i = 1; i <= 30; i++) {
   DATA_ASSETS.push("data/unit" + (i < 10 ? "0" + i : i) + ".js");
 }
 
+// 본문 서체(Pretendard Variable, CDN). CSS 만 미리 담고,
+// 실제 woff2 조각은 처음 쓰일 때 fetch 핸들러가 캐시에 넣습니다.
+var FONT_ASSETS = [
+  "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
+];
+
 // 설치: 핵심 에셋 + 어휘 데이터 캐시
 // 일부 파일이 없더라도(부분 배포 등) 설치 자체는 실패하지 않게 개별적으로 담습니다.
 self.addEventListener("install", function (event) {
   event.waitUntil(
     caches.open(CACHE_NAME).then(function (cache) {
       return Promise.all(
-        CORE_ASSETS.concat(DATA_ASSETS).map(function (url) {
+        CORE_ASSETS.concat(DATA_ASSETS, FONT_ASSETS).map(function (url) {
           return cache.add(url).catch(function () {});
         })
       );
@@ -62,14 +68,43 @@ self.addEventListener("message", function (event) {
   if (event.data && event.data.type === "SKIP_WAITING") self.skipWaiting();
 });
 
+// 본문 서체 요청인지 확인합니다(CDN 의 Pretendard CSS·woff2).
+function isFontRequest(url) {
+  return url.hostname === "cdn.jsdelivr.net" && /pretendard/i.test(url.pathname);
+}
+
 // 요청 전략
 //  - HTML 문서(페이지 이동): 네트워크 우선 → 새 배포가 즉시 반영, 오프라인이면 캐시 폴백
 //  - 그 외 에셋: stale-while-revalidate → 캐시를 즉시 응답하고 백그라운드에서 갱신
+//  - 본문 서체(외부 CDN): 캐시 우선 → 오프라인에서도 같은 글꼴로 보이게
 self.addEventListener("fetch", function (event) {
   var req = event.request;
   if (req.method !== "GET") return;
   var url = new URL(req.url);
-  if (url.origin !== self.location.origin) return; // 외부 리소스 제외
+
+  // 서체는 다른 출처라 아래 origin 검사보다 먼저 처리해야 합니다.
+  if (isFontRequest(url)) {
+    event.respondWith(
+      caches.open(CACHE_NAME).then(function (cache) {
+        return cache.match(req).then(function (cached) {
+          if (cached) return cached;
+          return fetch(req).then(function (response) {
+            // 웹폰트·CDN 응답은 CORS(200)이거나 opaque(status 0)일 수 있어 둘 다 담습니다.
+            if (response && (response.status === 200 || response.type === "opaque")) {
+              cache.put(req, response.clone());
+            }
+            return response;
+          }).catch(function () {
+            // 오프라인 첫 방문 등 글꼴을 못 받으면 시스템 글꼴로 대체됩니다.
+            return Response.error();
+          });
+        });
+      })
+    );
+    return;
+  }
+
+  if (url.origin !== self.location.origin) return; // 그 밖의 외부 리소스 제외
 
   var accept = (req.headers.get("accept") || "");
   var isHTML = req.mode === "navigate" || accept.indexOf("text/html") !== -1;
