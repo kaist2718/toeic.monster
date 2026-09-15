@@ -74,6 +74,10 @@ if (!chromePath) {
 /* 2. 임시 서버 + 헤드리스 Chrome 실행                                 */
 /* ------------------------------------------------------------------ */
 
+/* --live 이면 로컬 서버 대신 배포된 사이트를 그대로 점검합니다. */
+const LIVE = process.argv.includes("--live");
+const LIVE_SITE = "https://toeic.monster";
+
 const server = http.createServer((req, res) => {
   let p = decodeURIComponent((req.url || "/").split("?")[0]);
   if (p.endsWith("/")) p += "index.html";
@@ -88,6 +92,8 @@ const server = http.createServer((req, res) => {
 });
 await new Promise((r) => server.listen(0, "127.0.0.1", r));
 const sitePort = server.address().port;
+/** 점검 대상 주소 — 로컬 빌드 또는 배포된 사이트. */
+const BASE = LIVE ? LIVE_SITE : `http://127.0.0.1:${sitePort}`;
 
 const profile = path.join(os.tmpdir(), `toeic-browser-check-${process.pid}`);
 fs.rmSync(profile, { recursive: true, force: true });
@@ -132,7 +138,7 @@ async function shutdown() {
     /* 무시 */
   }
   chrome.kill();
-  server.close();
+  server.close(); // --live 에서도 열어 둔 서버를 닫습니다(요청은 없었지만 포트는 반납).
   try {
     fs.rmSync(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 300 });
   } catch {
@@ -144,7 +150,7 @@ async function shutdown() {
 /* 3. 페이지 열고 계측                                                 */
 /* ------------------------------------------------------------------ */
 
-const site = `http://127.0.0.1:${sitePort}/index.html`;
+const site = `${BASE}/index.html`;
 const target = await (await fetch(`${cdp}/json/new?${encodeURIComponent(site)}`, { method: "PUT" })).json();
 const ws = new WebSocket(target.webSocketDebuggerUrl);
 let nextId = 0;
@@ -335,7 +341,7 @@ try {
   check(chosen === "light", `직접 고른 테마는 저장됩니다 (${chosen})`);
 
   /* 3-6. 404 페이지 */
-  const notFound = await fetch(`http://127.0.0.1:${sitePort}/404.html`);
+  const notFound = await fetch(`${BASE}/404.html`);
   const notFoundHtml = notFound.ok ? await notFound.text() : "";
   check(notFound.ok, `404.html 이 응답합니다 (${notFound.status})`);
   check(/name="robots"[^>]*noindex/i.test(notFoundHtml), "404.html 이 noindex 입니다");
@@ -372,7 +378,7 @@ try {
   /** 주소가 실제로 바뀌고 로딩이 끝날 때까지 기다립니다. */
   async function openPage(file) {
     const from = events.length;
-    await send("Page.navigate", { url: `http://127.0.0.1:${sitePort}/${file}` });
+    await send("Page.navigate", { url: `${BASE}/${file}` });
     for (let i = 0; i < 80; i++) {
       const state = await evaluate(`location.pathname + "|" + document.readyState`);
       if (typeof state === "string" && state.includes(file) && state.endsWith("complete")) break;
@@ -396,16 +402,68 @@ try {
     };
   }
 
-  const layoutProbe = `(() => {
-    const overflowAt = () => {
-      const over = document.documentElement.scrollWidth - document.documentElement.clientWidth;
-      if (over <= 0) return 0;
-      const wide = [...document.querySelectorAll("body *")]
-        .filter((el) => el.getBoundingClientRect().right > document.documentElement.clientWidth + 1)
-        .slice(0, 4)
-        .map((el) => (el.id ? "#" + el.id : el.className ? "." + String(el.className).trim().split(/\\s+/)[0] : el.tagName.toLowerCase()));
-      return { over, wide: [...new Set(wide)] };
+  /**
+   * 화면 하나를 한 번에 재는 표현식.
+   *   · 가로 넘침과 넘치는 요소
+   *   · 손가락으로 누르는 요소의 히트 영역(주요 컨트롤 44px · 그 밖의 링크 24px,
+   *     문장 속 인라인 링크는 WCAG 2.5.8 의 예외라 건너뜀)
+   *   · 정적 페이지용 스타일 적용 여부와 예문 듣기 버튼 수
+   */
+  const PROBE = `(() => {
+    const vw = document.documentElement.clientWidth;
+    // 무엇이 걸렸는지 바로 알 수 있게 텍스트 앞부분을 붙입니다
+    // (텍스트가 비어 있으면 "a \"\"" 처럼 나오는데, 그 자체가 단서입니다).
+    const label = (el) => {
+      const sel = el.id ? "#" + el.id
+        : el.className ? "." + String(el.className).trim().split(/\\s+/)[0]
+          : el.tagName.toLowerCase();
+      const text = (el.textContent || "").trim().replace(/\\s+/g, " ").slice(0, 14);
+      return text ? sel + ' "' + text + '"' : sel;
     };
+
+    const over = document.documentElement.scrollWidth - vw;
+    const wide = over > 0
+      ? [...new Set([...document.querySelectorAll("body *")]
+          .filter((el) => el.getBoundingClientRect().right > vw + 1)
+          .slice(0, 4)
+          .map(label))]
+      : [];
+
+    const BIG = 44, SMALL = 24;
+    // 주요 컨트롤은 44px, 문장 흐름에 섞이는 아이콘 버튼은 최소 기준(24px)만 지킵니다.
+    const SMALL_ICONS = ["gex-speak", "speak", "tts-btn", "fav-btn", "card-check", "wod-btn"];
+    const isBig = (el) =>
+      el.matches("summary, .cta, .unitlist a, .toc a, .pager a, .quiz-opt, .mode-card, .lvl-btn, .topbar .btn") ||
+      (el.matches("button") && !SMALL_ICONS.some((c) => el.classList.contains(c)));
+    const small = [];
+    const candidates = [...document.querySelectorAll("a[href], button, summary")].filter((el) => {
+      // 문장 속 인라인 링크는 줄 높이에 묶여 있으므로 예외(WCAG 2.5.8 "Inline").
+      if (el.tagName === "A" && getComputedStyle(el).display === "inline") return false;
+      const r = el.getBoundingClientRect();
+      return r.width > 0 && r.height > 0 && (r.width < BIG || r.height < BIG);
+    });
+    // 요소 "안쪽"(자식 포함)을 가리켜야 그 요소를 누른 것입니다.
+    // 부모(카드 배경)를 가리키는 것은 그 요소를 누른 게 아니므로 인정하지 않습니다 —
+    // 그래야 카드 안에 작은 버튼이 있어도 제대로 걸러집니다.
+    const belongs = (t, el) => !!t && (t === el || el.contains(t));
+    for (const el of candidates.slice(0, 80)) {
+      const need = isBig(el) ? BIG : SMALL;
+      el.scrollIntoView({ block: "center", inline: "center" });
+      const r = el.getBoundingClientRect();
+      if (r.width === 0 || r.height === 0) continue;
+      if (r.top < 0 || r.bottom > innerHeight) continue; // 화면 밖이면 히트 테스트를 건너뜁니다
+      const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+      // 다른 것에 가려져 있으면(열린 모달 터 등) 손가락 문제가 아니므로 건너뜁니다.
+      if (!belongs(document.elementFromPoint(cx, cy), el)) continue;
+      const d = need / 2 - 2;
+      const hits = (x, y) => belongs(document.elementFromPoint(x, y), el);
+      const okY = r.height >= need || (hits(cx, cy - d) && hits(cx, cy + d));
+      const okX = r.width >= need || (hits(cx - d, cy) && hits(cx + d, cy));
+      if (!(okX && okY)) {
+        small.push(label(el) + " " + Math.round(r.width) + "×" + Math.round(r.height) + " (필요 " + need + ")");
+      }
+    }
+
     const wrap = document.querySelector("main.wrap") || document.querySelector(".wrap") || document.querySelector("main");
     return {
       title: document.title,
@@ -414,7 +472,8 @@ try {
       sheets: [...document.styleSheets].map((s) => (s.href ? s.href.split("/").pop() : "inline")),
       speakButtons: document.querySelectorAll(".gex-speak").length,
       speakHidden: document.querySelectorAll(".gex-speak[hidden]").length,
-      overflow: overflowAt(),
+      overflow: over > 0 ? { over, wide } : 0,
+      small: [...new Set(small)],
     };
   })()`;
 
@@ -436,11 +495,11 @@ try {
   const sharedCssUsers = [];
   for (const [file, label] of STATIC_PAGES) {
     const from = await openPage(file);
-    const wide = await evaluate(layoutProbe);
+    const wide = await evaluate(PROBE);
 
     await send("Emulation.setDeviceMetricsOverride", { width: 375, height: 720, deviceScaleFactor: 2, mobile: true });
     await wait(400);
-    const narrow = await evaluate(layoutProbe);
+    const narrow = await evaluate(PROBE);
     await send("Emulation.setDeviceMetricsOverride", { width: 1100, height: 900, deviceScaleFactor: 1, mobile: false });
 
     const { js, failed, requests } = errorsSince(from);
@@ -487,61 +546,115 @@ try {
       note(`${label}(${file}): 이 브라우저에 음성 합성이 없어 버튼이 숨겨졌습니다(${wide.speakButtons}개)`);
     }
 
-    /* 손가락으로 누르는 요소가 너무 작지 않은지(375px 화면).
-
-       기준을 두 단계로 나뉩니다:
-         · 44px — 주요 버튼·카드 링크(사과·머티리얼 권장)
-         · 24px — 그 밖의 링크·아이콘 버튼(WCAG 2.5.8 AA 최소 목표 크기)
-       문장 속에 섞인 인라인 링크(display:inline)는 같은 규격의 예외 대상이라 건너뜁니다.
-       보이는 크기가 작아도 ::after 같은 방법으로 히트 영역을 넓혔으면 통과입니다
-       (실제로 눌리는지는 elementFromPoint 로 브라우저에게 물어봅니다). */
-    const smallTargets = await evaluate(`(() => {
-      const BIG = 44, SMALL = 24;
-      // 문장 흐름 속에 섞이는 아이콘 버튼(.gex-speak, 22px)은 WCAG 최소 기준(24px)만 지키게 합니다.
-      const isBig = (el) =>
-        el.matches("summary, .cta, .unitlist a, .toc a, .pager a") ||
-        (el.matches("button") && !el.classList.contains("gex-speak"));
-      const label = (el) =>
-        el.id ? "#" + el.id
-          : el.className ? "." + String(el.className).trim().split(/\\s+/)[0]
-            : el.tagName.toLowerCase();
-      const out = [];
-      const candidates = [...document.querySelectorAll("a[href], button, summary")].filter((el) => {
-        // 문장 속 인라인 링크는 줄 높이에 묶여 있으므로 예외(WCAG 2.5.8 "Inline").
-        if (el.tagName === "A" && getComputedStyle(el).display === "inline") return false;
-        const r = el.getBoundingClientRect();
-        return (r.width > 0 && r.height > 0) && (r.width < BIG || r.height < BIG);
-      });
-      for (const el of candidates.slice(0, 80)) {
-        const need = isBig(el) ? BIG : SMALL;
-        el.scrollIntoView({ block: "center", inline: "center" });
-        const r = el.getBoundingClientRect();
-        if (r.width === 0 || r.height === 0) continue;
-        if (r.top < 0 || r.bottom > innerHeight) continue; // 화면 밖이면 히트 테스트를 건너뜁니다
-        const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
-        const d = need / 2 - 2; // 목표 크기의 가장자리에서 2px 안쪽
-        const hits = (x, y) => {
-          const t = document.elementFromPoint(x, y);
-          return !!t && (t === el || el.contains(t) || t.contains(el));
-        };
-        const okY = r.height >= need || (hits(cx, cy - d) && hits(cx, cy + d));
-        const okX = r.width >= need || (hits(cx - d, cy) && hits(cx + d, cy));
-        if (!(okX && okY)) {
-          out.push(label(el) + " " + Math.round(r.width) + "×" + Math.round(r.height) + " (필요 " + need + ")");
-        }
-      }
-      return [...new Set(out)];
-    })()`);
     check(
-      smallTargets.length === 0,
+      narrow.small.length === 0,
       `${label}(${file}): 누르는 요소의 히트 영역이 충분합니다 (44px / 24px)` +
-        (smallTargets.length ? ` — 부족: ${smallTargets.slice(0, 4).join(", ")}` : ""),
+        (narrow.small.length ? ` — 부족: ${narrow.small.slice(0, 4).join(", ")}` : ""),
     );
 
     sharedCssUsers.push(wide.sheets.includes("site.css") ? file : `${file}(인라인)`);
     note(`${label} (${file}) · 요청 ${requests}개 · 배경 ${wide.bg} · 스타일 ${wide.sheets.includes("site.css") ? "site.css" : "인라인"}`);
   }
   note(`정적 페이지 ${STATIC_PAGES.length}개 점검 — 공용 스타일 사용 ${sharedCssUsers.filter((f) => !f.includes("(")).length}개`);
+
+  /* ---------------------------------------------------------------- */
+  /* 3-9. 앱 화면별 점검 (375px) — 홈 말고도 학습 화면이 여럿입니다     */
+  /* ---------------------------------------------------------------- */
+
+  // 상단바 버튼을 눌러 화면을 옮겨 가며, 그 화면이 가로로 넘치지 않는지·
+  // 누르는 요소가 너무 작지 않은지 봅니다(모바일에서 가장 자주 깨지는 두 가지).
+  const APP_SCREENS = [
+    ["btnHome", "홈"],
+    ["btnList", "목록"],
+    ["btnFlash", "암기"],
+    ["btnQuiz", "퀴즈"],
+    ["btnExam", "시험"],
+    ["btnSrs", "복습"],
+    ["btnListen", "리스닝"],
+    ["btnMock", "모의고사"],
+    ["btnDiag", "진단"],
+    ["btnDash", "대시보드"],
+    ["btnGuide", "가이드"],
+  ];
+
+  await openPage("index.html");
+  await send("Emulation.setDeviceMetricsOverride", { width: 375, height: 720, deviceScaleFactor: 2, mobile: true });
+  await wait(600);
+
+  for (const [id, name] of APP_SCREENS) {
+    const from = events.length;
+    await evaluate(`document.getElementById("${id}").click()`);
+    await wait(600);
+    const seen = await evaluate(PROBE);
+    const { js } = errorsSince(from);
+    check(js.length === 0, `앱 ${name} 화면: 자바스크립트 오류 0건${js.length ? " — " + js[0] : ""}`);
+    check(
+      !seen.overflow || seen.overflow.over <= 0,
+      `앱 ${name} 화면: 375px 가로 넘침이 없습니다` +
+        (seen.overflow && seen.overflow.over > 0 ? ` (${seen.overflow.over}px · ${seen.overflow.wide.join(", ")})` : ""),
+    );
+    check(
+      seen.small.length === 0,
+      `앱 ${name} 화면: 누르는 요소의 히트 영역이 충분합니다` +
+        (seen.small.length ? ` — 부족: ${seen.small.slice(0, 5).join(", ")}` : ""),
+    );
+  }
+  note(`앱 화면 ${APP_SCREENS.length}개를 375px 에서 점검(넘침 · 오류 · 히트 영역)`);
+
+  /* ---------------------------------------------------------------- */
+  /* 3-10. 배포 상태(--live) — 색인·자산이 실제 주소에서 살아 있는지     */
+  /* ---------------------------------------------------------------- */
+
+  if (LIVE) {
+    // ① robots.txt 가 사이트맵을 알려 주는지
+    const robots = await (await fetch(`${LIVE_SITE}/robots.txt`)).text();
+    check(/Sitemap:\s*https:\/\/toeic\.monster\/sitemap\.xml/i.test(robots), "robots.txt 가 사이트맵 주소를 알려 줍니다");
+
+    // ② 사이트맵의 모든 주소가 실제로 응답하는지(색인 대상이 404 면 검색에서 밀립니다)
+    const sitemap = await (await fetch(`${LIVE_SITE}/sitemap.xml`)).text();
+    const locs = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1].trim());
+    const dead = [];
+    for (const loc of locs) {
+      try {
+        const r = await fetch(loc, { method: "HEAD", redirect: "follow" });
+        if (!r.ok) dead.push(`${r.status} ${loc}`);
+      } catch (e) {
+        dead.push(`실패 ${loc}`);
+      }
+    }
+    check(dead.length === 0, `사이트맵 주소 ${locs.length}개가 모두 응답합니다${dead.length ? ` — ${dead.slice(0, 3).join(", ")}` : ""}`);
+
+    // ③ 없는 주소는 404 상태 + 우리 404 페이지로 응답하는지
+    const missing = await fetch(`${LIVE_SITE}/no-such-page-${Date.now()}`, { redirect: "follow" });
+    const missingHtml = await missing.text();
+    check(missing.status === 404, `없는 주소가 404 로 응답합니다 (${missing.status})`);
+    check(/페이지를 찾을 수 없습니다/.test(missingHtml), "없는 주소가 커스텀 404 페이지를 보여 줍니다");
+
+    // ④ 공유 카드·공용 자산이 배포본에 있는지(로컬에서 고치고 푸시를 잊는 사고 방지)
+    const assets = [
+      ["/assets/site.css", "text/css"],
+      ["/assets/speak.js", "javascript"],
+      ["/apple-touch-icon.png", "image/png"],
+      ["/icon-192.png", "image/png"],
+      ["/og-image.png", "image/png"],
+    ];
+    const missingAssets = [];
+    for (const [path, type] of assets) {
+      const r = await fetch(LIVE_SITE + path, { method: "HEAD" });
+      const got = (r.headers.get("content-type") || "").split(";")[0];
+      if (!r.ok || !got.includes(type)) missingAssets.push(`${path}(${r.status} ${got})`);
+    }
+    check(missingAssets.length === 0, `배포본에 공용 자산이 있습니다${missingAssets.length ? ` — ${missingAssets.join(", ")}` : ""}`);
+
+    // ⑤ 홈이 압축돼 내려오는지(gzip 없이 원본을 받으면 모바일에서 몇 배 느립니다)
+    const home = await fetch(`${LIVE_SITE}/`);
+    check(
+      !!home.headers.get("content-encoding"),
+      `홈이 압축되어 내려옵니다 (${home.headers.get("content-encoding") || "압축 없음"})`,
+    );
+    const homeKb = Number(home.headers.get("content-length") || 0) / 1024;
+    if (homeKb) note(`배포본 홈 전송량 ${homeKb.toFixed(0)}KB (압축)`);
+  }
 
   /* 정적 페이지도 OS 다크 모드를 따르는지(대표 1페이지) */
   // 앞 단계에서 앱이 테마를 저장했을 수 있으므로(직접 고른 값이 우선) 먼저 지웁니다.

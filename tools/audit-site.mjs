@@ -404,10 +404,26 @@ if (srcOf["index.html"]) {
 // 여기서는 "그 자리가 계속 채워져 있는지"를 봅니다(내용 자체의 최신 여부는 `npm run verify` 가 봅니다).
 if (srcOf["index.html"]) {
   const homeSrc = srcOf["index.html"];
-  const PRERENDERED = ["noscript", "confuseGrid", "wordpartGrid", "wordfamilyGrid", "freqGrid"];
-  const missingMarkers = PRERENDERED.filter(
+  // 표시(마커)는 index.html 에서 직접 읽습니다 — 프리렌더 대상이 늘어도 감사는 그대로입니다.
+  const markerIds = [...homeSrc.matchAll(/<!-- prerender:start ([a-zA-Z0-9_-]+) -->/g)].map((m) => m[1]);
+  // 다만 이 핵심 섹션들은 하나라도 사라지면 크롤러가 홈에서 읽을 게 거의 없어집니다.
+  const REQUIRED_MARKERS = ["noscript", "confuseGrid", "wordpartGrid", "wordfamilyGrid", "freqGrid", "idiomGrid"];
+  const missingMarkers = REQUIRED_MARKERS.filter(
     (id) => !homeSrc.includes(`<!-- prerender:start ${id} -->`) || !homeSrc.includes(`<!-- prerender:end ${id} -->`),
   );
+  const orphanEnds = (homeSrc.match(/<!-- prerender:end /g) || []).length - markerIds.length;
+  if (orphanEnds !== 0) {
+    fail(`index.html: prerender:start/end 짝이 맞지 않습니다(${orphanEnds}개 차이).`);
+  }
+  const short = [];
+  for (const id of markerIds) {
+    if (id === "noscript") continue;
+    const start = homeSrc.indexOf(`<!-- prerender:start ${id} -->`);
+    const end = homeSrc.indexOf(`<!-- prerender:end ${id} -->`, start + 1);
+    if (start < 0 || end < 0) continue;
+    if (end - start < 200) short.push(`${id}(${end - start}자)`);
+  }
+  if (short.length) fail(`index.html: 프리렌더된 내용이 너무 적습니다 — ${short.join(", ")}`);
   if (missingMarkers.length) {
     fail(
       `index.html: 홈 프리렌더 표시가 없습니다 — ${missingMarkers.join(", ")}\n` +
@@ -422,16 +438,16 @@ if (srcOf["index.html"]) {
     if (!/<h2[^>]*>[^<]*주제/.test(ns)) fail("index.html: <noscript> 안에 학습 주제 목차가 없습니다.");
     const nsLinks = [...ns.matchAll(/<a\b[^>]*href="([^"]+)"/g)].map((m) => m[1]);
     if (nsLinks.length < 3) fail(`index.html: <noscript> 안의 정적 자료 링크가 ${nsLinks.length}개뿐입니다.`);
-    note(`홈 프리렌더 섹션 ${PRERENDERED.length - 1}개 · <noscript> 폴백 링크 ${nsLinks.length}개`);
-  }
 
-  // 미리 심은 내용이 비어 있으면(예: 렌더 실패) 크롤러가 빈 칸만 보게 됩니다.
-  for (const id of PRERENDERED.filter((x) => x !== "noscript")) {
-    const start = homeSrc.indexOf(`<!-- prerender:start ${id} -->`);
-    const end = homeSrc.indexOf(`<!-- prerender:end ${id} -->`, start + 1);
-    if (start < 0 || end < 0) continue;
-    const inner = homeSrc.slice(start, end);
-    if (inner.length < 200) fail(`index.html: 프리렌더된 ${id} 내용이 너무 적습니다(${inner.length}자).`);
+    // 크롤러(그리고 자바스크립트를 끈 사용자)가 실제로 읽을 수 있는 글자 수.
+    // 홈은 JS 로 그리는 부분이 많아 이 수치가 곧 검색 노출의 바닥입니다.
+    const homeOnly = homeSrc.slice(homeSrc.indexOf('<div id="homeView">'));
+    const withoutCode = homeOnly.replace(/<script[\s\S]*?<\/script>/g, "").replace(/<[^>]+>/g, " ");
+    const readable = withoutCode.replace(/\s+/g, " ").trim().length;
+    note(
+      `홈 프리렌더 섹션 ${markerIds.length - 1}개 · <noscript> 링크 ${nsLinks.length}개 · ` +
+        `JS 없이 읽히는 글자 ${readable.toLocaleString("en-US")}자`,
+    );
   }
 }
 

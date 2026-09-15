@@ -7,7 +7,10 @@
  *     ① 자바스크립트를 실행하지 않는 크롤러(네이버 Yeti)는 내용을 읽지 못하고,
  *     ② 자바스크립트를 끈 사용자는 제목만 있는 빈 화면을 봅니다.
  *   단어 목록(units/)처럼 페이지를 따로 만들기에는 홈의 도구 섹션들이 서로 얽혀 있어,
- *   "읽을 수 있는 텍스트 목록" 섹션만 홈 안에 미리 그려 넣습니다.
+ *   "읽을 수 있는 텍스트" 섹션만 홈 안에 미리 그려 넣습니다.
+ *   (혼동 어휘 · 어근·접두사 · 단어 패밀리 · 빈도순 기출 어휘 · 어원 암기 팁 ·
+ *    비즈니스 이메일 템플릿 · 말하기·쓰기 템플릿 · 동의어·반의어 · 리딩 지문 ·
+ *    Part 7 복수 지문 · 전략 가이드 카드 · S&W 시험 구성·연습 · 30일 스프린트 · 빈출 숙어)
  *
  * 어떻게:
  *   index.html 에서 해당 섹션의 **앱 렌더 함수를 그대로 떼어내** 가짜 브라우저에서 실행하고,
@@ -16,6 +19,9 @@
  *
  *   함께 넣는 것: <noscript> 목차 — 52개 섹션의 제목·설명과, 자바스크립트 없이 볼 수 있는
  *   정적 페이지(단어장·숙어·문법 교재·가이드) 링크.
+ *
+ *   실행 결과는 매번 같아야 합니다(두 번 그려 비교해 확인합니다). 날짜·난수를 쓰는 섹션은
+ *   넣지 않습니다 — 넣으면 커밋마다 내용이 달라져 `npm run verify` 가 실패합니다.
  *
  * 실행:  node tools/prerender-home.mjs        (index.html 을 갱신합니다)
  *        node tools/prerender-home.mjs --check (고치지 않고 어긋난 것만 보고, CI 용)
@@ -38,16 +44,27 @@ const html = read(INDEX);
 
 /* ------------------------------------------------------------------ */
 /* 1. 미리 그릴 섹션 목록                                               */
-/*    containerId: index.html 의 컨테이너 id                            */
-/*    data:        그리는 데 필요한 값(변수 이름 또는 EXTRA 키)           */
-/*    render:      앱의 렌더 함수 이름                                  */
+/*    ids:    index.html 의 컨테이너 id (한 함수가 여러 개를 채우기도 합니다) */
+/*    vars:   그리는 데 필요한 값 — `var NAME = [...]` 는 배열, 그 밖에는 한 줄 선언 */
+/*    render: 앱의 렌더 함수 이름                                        */
+/*    items:  로그에 쓸 항목 수 세는 정규식 (없으면 크기만 표시)             */
 /* ------------------------------------------------------------------ */
 
 const SECTIONS = [
-  { id: "confuseGrid", label: "혼동 어휘", varname: "CONFUSABLES", render: "renderConfusables" },
-  { id: "wordpartGrid", label: "어근·접두사", varname: "WORD_PARTS", render: "renderWordParts" },
-  { id: "wordfamilyGrid", label: "단어 패밀리", varname: "WORD_FAMILIES", render: "renderWordFamilies" },
-  { id: "freqGrid", label: "빈도순 기출 어휘", extraKey: "frequency", render: "renderFrequency", renderArg: "" },
+  { label: "혼동 어휘", ids: ["confuseGrid"], vars: ["CONFUSABLES"], render: "renderConfusables", items: /confuse-card/g },
+  { label: "어근·접두사", ids: ["wordpartGrid"], vars: ["WORD_PARTS"], render: "renderWordParts", items: /wordpart-card/g },
+  { label: "단어 패밀리", ids: ["wordfamilyGrid"], vars: ["WORD_FAMILIES"], render: "renderWordFamilies", items: /wordfamily-card/g },
+  { label: "빈도순 기출 어휘", ids: ["freqGrid"], render: "renderFrequency", items: /freq-item/g },
+  { label: "어원 암기 팁", ids: ["mnemonicGrid"], vars: ["MNEMONICS"], render: "renderMnemonics", items: /mnemonic-card/g },
+  { label: "동의어·반의어", ids: ["relationGrid"], vars: ["RELATIONS"], render: "renderRelations", items: /relation-card/g },
+  { label: "리딩 미니 지문", ids: ["readingGrid"], vars: ["READING_MINI"], render: "renderReadings", items: /reading-card/g },
+  { label: "Part 7 복수 지문", ids: ["doubleReadingGrid"], vars: ["DOUBLE_READING", "drIdx"], render: "renderDoubleReading", items: /dr-card/g },
+  { label: "이메일·회의 템플릿", ids: ["templateGrid"], vars: ["BIZ_TEMPLATES"], render: "renderTemplates", items: /reading-card/g },
+  { label: "말하기·쓰기 템플릿", ids: ["speakTplGrid", "writeTplGrid"], render: "renderTplExtra", items: /reading-card/g },
+  { label: "S&W 시험 구성·연습", ids: ["swFormatBox", "speakDrillBox", "writeDrillBox"], render: "renderSwExtra", items: /(?:sw-row|speaking-card|writing-card)/g },
+  { label: "빈출 구동사·숙어", ids: ["idiomGrid"], vars: ["IDIOMS", "IDIOM_PAGE", "idiomShown"], render: "renderIdioms", items: /idiom-card/g },
+  { label: "전략·공략 가이드", ids: ["guideCardGrid"], render: "renderGuides", items: /guide-card/g },
+  { label: "30일 스프린트", ids: ["sprintBox"], vars: ["all"], render: "renderSprint", items: /sprint-item/g },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -76,10 +93,22 @@ function endOfBlock(startAt, closer, level) {
   throw new Error(`닫는 줄(${line})을 찾지 못했습니다.`);
 }
 
-/** `  var NAME = [...]` 선언을 통째로 떼어냅니다. */
-function extractAssignment(name) {
-  const at = atLineStart(`  var ${name} = [`);
-  return html.slice(at, endOfBlock(at, "];", 2));
+/**
+ * `  var NAME = ...` 선언을 통째로 떼어냅니다.
+ * 배열(여러 줄)이면 닫는 `];` 까지, 그 밖의 한 줄 선언이면 그 줄만 가져옵니다.
+ */
+function extractVar(name) {
+  let at = -1;
+  try {
+    at = atLineStart(`  var ${name} = [`);
+  } catch {
+    at = -1; // 배열이 아니라 스칼라 선언입니다(아래에서 한 줄로 처리).
+  }
+  if (at >= 0) return html.slice(at, endOfBlock(at, "];", 2));
+  const re = new RegExp(`^  var ${name} = .*;$`, "m");
+  const m = re.exec(html);
+  if (!m) throw new Error(`index.html 에서 var ${name} 선언을 찾지 못했습니다.`);
+  return m[0];
 }
 
 /** `  function NAME(...) {...}` 정의를 통째로 떼어냅니다. */
@@ -97,19 +126,65 @@ vm.createContext(dataCtx);
 vm.runInContext(read("data/extra.js"), dataCtx, { filename: "data/extra.js", timeout: 5000 });
 const EXTRA = dataCtx.window.TOEIC_EXTRA || {};
 
-const elements = {};
-function elementOf(id) {
-  if (!elements[id]) elements[id] = { id, innerHTML: "" };
-  return elements[id];
+/**
+ * 컨테이너 하나를 흉내 냅니다.
+ *
+ * 앱의 렌더 함수는 `grid.innerHTML = ...` 만 하는 것도 있고(대부분),
+ * `createElement` + `appendChild` 로 카드를 붙이거나(숙어), `querySelectorAll` 로
+ * 안쪽 버튼에 이벤트를 다는 것도 있습니다. 그래서 그 정도만 흉내 냅니다.
+ */
+function makeElement(id) {
+  let stored = "";
+  const element = {
+    id,
+    className: "",
+    textContent: "",
+    hidden: false,
+    style: {},
+    set innerHTML(value) {
+      stored = String(value);
+    },
+    get innerHTML() {
+      return stored;
+    },
+    appendChild(child) {
+      // 앱은 createElement("div") 로 카드를 만든 뒤 className 을 붙여 appendChild 합니다.
+      // 그래서 카드 껍데기(div + class)까지 그대로 재현해야 스타일이 어긋나지 않습니다.
+      const cls = child.className ? ` class="${child.className}"` : "";
+      stored += `<div${cls}>${child.innerHTML}</div>`;
+    },
+    querySelector: () => makeElement(`${id}-child`),
+    querySelectorAll: () => [],
+    addEventListener() {},
+    setAttribute() {},
+    getAttribute: () => null,
+    classList: { add() {}, remove() {}, toggle: () => false, contains: () => false },
+  };
+  return element;
 }
+
+const elements = new Map();
+const elementOf = (id) => {
+  if (!elements.has(id)) elements.set(id, makeElement(id));
+  return elements.get(id);
+};
 
 const sandbox = {
   EXTRA,
   console,
-  document: { getElementById: elementOf, querySelector: () => null, querySelectorAll: () => [] },
-  window: { TOEIC_EXTRA: EXTRA },
+  document: {
+    getElementById: elementOf,
+    createElement: (tag) => makeElement(`created-${tag}`),
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener() {},
+  },
+  window: { TOEIC_EXTRA: EXTRA, addEventListener() {}, requestIdleCallback: null },
 };
 vm.createContext(sandbox);
+
+// 숙어 섹션은 data/idioms.js 가 채우는 window.VOCAB_IDIOMS 를 씁니다(앱과 같은 데이터).
+vm.runInContext(read("data/idioms.js"), sandbox, { filename: "data/idioms.js", timeout: 5000 });
 
 // 앱의 도우미(esc·escapeAttr·ttsBtn)도 그대로 씁니다 — 그래야 마크업이 앱과 같습니다.
 vm.runInContext(
@@ -117,28 +192,46 @@ vm.runInContext(
     extractFunction("esc"),
     extractFunction("escapeAttr"),
     extractFunction("ttsBtn"),
+    // 30일 스프린트는 단원 진행률을 함께 보여줍니다(여기서는 목록이 비어 0% 로 계산됩니다 —
+    // 앱이 뜨면 실제 진행률로 다시 그립니다).
+    extractFunction("unitProgressOf"),
   ].join("\n"),
   sandbox,
   { filename: "index.html:helpers", timeout: 5000 },
 );
 
+/** 한 섹션을 그려서 컨테이너별 HTML 을 돌려줍니다. */
+function renderSection(section) {
+  for (const id of section.ids) elementOf(id).innerHTML = "";
+  for (const name of section.vars || []) {
+    vm.runInContext(extractVar(name), sandbox, { filename: `index.html:var ${name}`, timeout: 5000 });
+  }
+  vm.runInContext(extractFunction(section.render), sandbox, { filename: `index.html:${section.render}`, timeout: 5000 });
+  vm.runInContext(`${section.render}();`, sandbox, { filename: `index.html:${section.render}()`, timeout: 5000 });
+  return section.ids.map((id) => ({ id, html: elementOf(id).innerHTML }));
+}
+
 const rendered = [];
 for (const section of SECTIONS) {
-  const code = [
-    section.varname ? extractAssignment(section.varname) : "",
-    extractFunction(section.render),
-  ].join("\n");
-  vm.runInContext(code, sandbox, { filename: `index.html:${section.render}`, timeout: 5000 });
-  // 앱이 화면을 열 때 하는 것과 같은 호출입니다(인자는 없어도 기본값을 씁니다).
-  vm.runInContext(`${section.render}();`, sandbox, { filename: `index.html:${section.render}()`, timeout: 5000 });
-  const out = elementOf(section.id).innerHTML;
-  if (!out || out.length < 40) {
-    throw new Error(`${section.label}(${section.render}) 결과가 비어 있습니다.`);
+  const first = renderSection(section);
+  const empty = first.filter((c) => !c.html || c.html.length < 40);
+  if (empty.length) {
+    throw new Error(`${section.label}(${section.render}) 결과가 비어 있습니다 — ${empty.map((c) => c.id).join(", ")}`);
   }
-  if (/undefined|\[object Object\]|NaN/.test(out)) {
-    throw new Error(`${section.label} 결과에 값이 비어 있는 자리가 있습니다.`);
+  for (const cell of first) {
+    if (/undefined|\[object Object\]|NaN/.test(cell.html)) {
+      throw new Error(`${section.label}(${cell.id}) 결과에 값이 비어 있는 자리가 있습니다.`);
+    }
   }
-  rendered.push({ ...section, html: out });
+
+  // 두 번 그려 같은지 확인합니다 — 날짜·난수를 쓰면 커밋마다 내용이 달라집니다.
+  const again = renderSection(section);
+  if (JSON.stringify(again) !== JSON.stringify(first)) {
+    throw new Error(`${section.label}(${section.render}) 결과가 실행할 때마다 달라집니다(난수·날짜 사용?).`);
+  }
+
+  const items = first.reduce((n, c) => n + (c.html.match(section.items) || []).length, 0);
+  rendered.push({ ...section, cells: first, items });
 }
 
 /* ------------------------------------------------------------------ */
@@ -175,9 +268,7 @@ const noscript = [
   "    </ul>",
   `    <h2 class="noscript-title">🗂 학습 주제 ${sections.length}가지</h2>`,
   "    <ul>",
-  ...sections.map(
-    (s, i) => `      <li><b>${i + 1}. ${s.title}</b>${s.sub ? " — " + s.sub : ""}</li>`,
-  ),
+  ...sections.map((s, i) => `      <li><b>${i + 1}. ${s.title}</b>${s.sub ? " — " + s.sub : ""}</li>`),
   "    </ul>",
   "  </section>",
   "</noscript>",
@@ -192,22 +283,22 @@ function markers(id) {
 }
 
 /** 컨테이너 안쪽을 미리 그린 HTML 로 바꿉니다(여러 번 실행해도 같은 결과). */
-function injectIntoContainer(src, section) {
-  const { start, end } = markers(section.id);
-  const block = `${start}\n${section.html}\n${end}`;
+function injectIntoContainer(src, id, cellHtml) {
+  const { start, end } = markers(id);
+  const block = `${start}\n${cellHtml}\n${end}`;
   const si = src.indexOf(start);
   if (si >= 0) {
     const ei = src.indexOf(end, si);
-    if (ei < 0) throw new Error(`${section.id}: prerender:end 주석이 없습니다.`);
+    if (ei < 0) throw new Error(`${id}: prerender:end 주석이 없습니다.`);
     return src.slice(0, si) + block + src.slice(ei + end.length);
   }
   // 첫 실행: 빈 컨테이너를 찾아 안쪽에 넣습니다.
-  const re = new RegExp(`<[a-z]+[^>]*\\bid="${section.id}"[^>]*>`);
+  const re = new RegExp(`<[a-z]+[^>]*\\bid="${id}"[^>]*>`);
   const m = re.exec(src);
-  if (!m) throw new Error(`${section.id}: 컨테이너를 찾지 못했습니다.`);
+  if (!m) throw new Error(`${id}: 컨테이너를 찾지 못했습니다.`);
   const inner = src.slice(m.index + m[0].length, src.indexOf("</div>", m.index));
   if (inner.trim()) {
-    throw new Error(`${section.id}: 컨테이너가 비어 있지 않습니다. 먼저 기존 내용을 정리하세요.`);
+    throw new Error(`${id}: 컨테이너가 비어 있지 않습니다. 먼저 기존 내용을 정리하세요.`);
   }
   return src.slice(0, m.index + m[0].length) + block + src.slice(m.index + m[0].length);
 }
@@ -230,7 +321,9 @@ function injectNoscript(src) {
 }
 
 let next = html;
-for (const section of rendered) next = injectIntoContainer(next, section);
+for (const section of rendered) {
+  for (const cell of section.cells) next = injectIntoContainer(next, cell.id, cell.html);
+}
 next = injectNoscript(next);
 
 /* ------------------------------------------------------------------ */
@@ -240,8 +333,10 @@ const kb = (n) => (n / 1024).toFixed(1) + "KB";
 
 console.log("🧩 홈 섹션 프리렌더");
 for (const s of rendered) {
-  const items = (s.html.match(/<(?:article|div) class="[^"]*(?:confuse-card|wordpart-card|wordfamily-card|freq-item)/g) || []).length;
-  console.log(`   · ${s.label.padEnd(14)} ${s.id}  항목 ${items}개  ${kb(s.html.length)}`);
+  const size = s.cells.reduce((n, c) => n + c.html.length, 0);
+  console.log(
+    `   · ${s.label.padEnd(16)} ${s.cells.map((c) => c.id).join(", ").padEnd(28)} 항목 ${String(s.items).padStart(3)}개  ${kb(size)}`,
+  );
 }
 console.log(`   · noscript 목차      섹션 ${sections.length}개 · 정적 링크 ${STATIC_LINKS.length}개  ${kb(noscript.length)}`);
 

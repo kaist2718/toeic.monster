@@ -146,7 +146,7 @@ header.bar a{color:#fff;text-decoration:none;font-weight:800;font-size:20px;lett
 header.bar small{opacity:.88;font-size:12.5px}
 main{padding:0 0 30px}
 .crumb{font-size:13px;color:var(--muted);margin:20px 0 12px}
-.crumb a{display:inline-block;padding:5px 2px;text-decoration:none}
+.crumb a{display:inline-block;padding:5px 8px;text-decoration:none}
 .crumb a:hover{text-decoration:underline}
 h1{font-size:25px;line-height:1.4;letter-spacing:-.5px;color:var(--primary-dark)}
 h2.sec{font-size:17px;margin:26px 0 12px;color:var(--text)}
@@ -178,7 +178,7 @@ ol.words li{background:var(--card);border:1px solid var(--border);border-radius:
 .unitlist span{font-size:14.5px;font-weight:700}
 .unitlist em{display:block;font-size:12px;color:var(--muted);font-style:normal;margin-top:3px}
 footer.ft{border-top:1px solid var(--border);margin-top:34px;padding-top:16px;font-size:12.5px;color:var(--muted)}
-footer.ft a{display:inline-block;margin-right:12px;padding:5px 0;text-decoration:none}
+footer.ft a{display:inline-block;padding:5px 8px;text-decoration:none}
 footer.ft a:hover{text-decoration:underline}
 footer.ft p{margin-top:8px}
 /* 문법 교재 */

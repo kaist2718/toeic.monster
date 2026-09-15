@@ -28,6 +28,7 @@ grammar_quizzes = 108
 | 크롤링 허용 | `robots.txt` (`Allow: /` + Sitemap 명시) | 적용됨 |
 | 사이트맵 | `sitemap.xml` (색인 대상 페이지만) | 자동 생성 |
 | 정적 단어 페이지 | `units/*.html` | 자동 생성 |
+| 홈 본문 프리렌더 | `index.html` (콘텐츠 컨테이너 17곳 + `<noscript>` 목차) | 자동 생성 |
 | OG 이미지 | `og-image.png` (1200×630) | 생성됨 |
 | 구조화 데이터 | WebSite · LearningResource · FAQPage · BreadcrumbList · ItemList | 적용됨 |
 
@@ -57,6 +58,20 @@ sitemap.xml               위 페이지들을 모두 포함해 재생성됨
 
 각 페이지에는 `canonical`, OG/Twitter 메타, `LearningResource` + `BreadcrumbList` 구조화 데이터,
 이전/다음 유닛 링크가 들어갑니다. 홈 페이지의 유닛 섹션과 푸터에서 링크되어 크롤러가 발견할 수 있습니다.
+
+### 홈 페이지 본문도 미리 심습니다
+
+유닛 페이지와 달리 **홈(`index.html`)은 한 개의 페이지라 정적 페이지로 만들 수 없습니다.**
+그래서 `tools/prerender-home.mjs` 가 홈의 콘텐츠 컨테이너 17곳(어휘·리딩 지문·템플릿·가이드·30일 계획)을
+**앱의 렌더 함수를 그대로 실행해** 나온 HTML 로 심고, 자바스크립트 없이 읽을 수 있는 목차(`<noscript>`)를 함께 넣습니다.
+
+```bash
+node tools/prerender-home.mjs          # 다시 심기 (npm run prerender)
+node tools/prerender-home.mjs --check  # 데이터와 한 글자라도 다르면 실패 (npm run verify 에 연결)
+```
+
+어휘 데이터나 홈 문구를 고친 뒤 `--check` 가 실패하면 위 명령으로 다시 심고 함께 커밋하세요.
+`npm run audit:site` 는 홈 프리렌더 섹션 수·`<noscript>` 링크 수·읽히는 글자 수를 함께 보고합니다.
 
 ### 재생성
 
@@ -158,6 +173,15 @@ python tools/make-og-image.py --check  # 커밋 전 확인
 ---
 
 ## 6. 배포 후 한 번에 점검
+
+**가장 빠른 방법은 배포본을 그대로 재는 아래 한 줄입니다.**
+robots·사이트맵 48개 주소·404 응답·공용 자산·압축 여부를 한 번에 확인합니다.
+
+```bash
+node tools/check-browser.mjs --live   # 배포본 상태·자산·색인 점검 (Chrome 필요)
+```
+
+수동으로 확인하려면:
 
 ```bash
 # 소유확인 태그
