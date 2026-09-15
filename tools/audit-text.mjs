@@ -25,6 +25,13 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 /** 단계별 문법 교재 데이터 파일 — build-pages.mjs 와 같은 목록을 씁니다. */
 const GRAMMAR_FILES = ["data/grammar-basic.js", "data/grammar-intermediate.js", "data/grammar-advanced.js"];
 
+/** 단계별 회화 교재 — 문법 교재와 같은 맞춤법·표기 기준으로 검사합니다. */
+const CONVERSATION_FILES = [
+  "data/conversation-basic.js",
+  "data/conversation-intermediate.js",
+  "data/conversation-advanced.js",
+];
+
 const read = (p) => fs.readFileSync(path.join(ROOT, p), "utf8");
 
 const problems = [];
@@ -45,7 +52,7 @@ function loadData() {
     const f = `data/unit${String(i).padStart(2, "0")}.js`;
     vm.runInContext(read(f), sandbox, { filename: f, timeout: 5000 });
   }
-  for (const f of ["data/idioms.js", "data/extra.js", ...GRAMMAR_FILES]) {
+  for (const f of ["data/idioms.js", "data/extra.js", ...GRAMMAR_FILES, ...CONVERSATION_FILES]) {
     vm.runInContext(read(f), sandbox, { filename: f, timeout: 5000 });
   }
   return {

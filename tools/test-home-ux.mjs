@@ -224,7 +224,7 @@ ${code}
 console.log("\n[3] 스크립트 로딩 (defer · extra.js 지연)");
 {
   const deferred = [...html.matchAll(/<script\s+defer\s+src="(data\/[^"]+)"/g)].map((m) => m[1]);
-  assert(deferred.length === 34, `데이터 스크립트 34개가 defer 로 내려받습니다(현재 ${deferred.length}개)`);
+  assert(deferred.length === 37, `데이터 스크립트 37개가 defer 로 내려받습니다(현재 ${deferred.length}개)`);
   assert(
     /<script\s+defer\s+src="data\/unit01\.js"><\/script>/.test(html),
     "첫 데이터 스크립트가 defer 입니다",

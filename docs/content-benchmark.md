@@ -15,6 +15,7 @@ guides = 9
 paraphrase = 200
 frequency = 200
 grammar_books = 3
+conversation_books = 3
 -->
 
 ---

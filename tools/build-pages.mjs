@@ -45,6 +45,13 @@ const ASSET_ABS = "/assets/";
 /** 단계별 문법 교재 데이터 파일 — index.html 과 감사 도구도 같은 목록을 씁니다. */
 const GRAMMAR_FILES = ["data/grammar-basic.js", "data/grammar-intermediate.js", "data/grammar-advanced.js"];
 
+/** 단계별 회화 교재 데이터 파일 — 문법 교재와 나란한 구조를 씁니다(conversation/ 페이지). */
+const CONVERSATION_FILES = [
+  "data/conversation-basic.js",
+  "data/conversation-intermediate.js",
+  "data/conversation-advanced.js",
+];
+
 const read = (p) => fs.readFileSync(path.join(ROOT, p), "utf8");
 const write = (p, s) => {
   fs.mkdirSync(path.dirname(path.join(ROOT, p)), { recursive: true });
@@ -76,17 +83,19 @@ function loadVocab() {
     const file = `data/unit${String(i).padStart(2, "0")}.js`;
     vm.runInContext(read(file), sandbox, { filename: file, timeout: 5000 });
   }
-  for (const file of ["data/idioms.js", "data/extra.js", GRAMMAR_FILES].flat()) {
+  for (const file of ["data/idioms.js", "data/extra.js", GRAMMAR_FILES, CONVERSATION_FILES].flat()) {
     vm.runInContext(read(file), sandbox, { filename: file, timeout: 5000 });
   }
   const vocab = sandbox.window.VOCAB_UNITS || {};
   const idioms = sandbox.window.VOCAB_IDIOMS || [];
   const extra = sandbox.window.TOEIC_EXTRA || {};
   const grammar = sandbox.window.GRAMMAR_BOOKS || [];
+  const conversation = sandbox.window.CONVERSATION_BOOKS || [];
   if (!Object.keys(vocab).length) throw new Error("어휘 데이터를 읽지 못했습니다.");
   if (!idioms.length) throw new Error("숙어 데이터를 읽지 못했습니다.");
   if (!grammar.length) throw new Error("문법 교재 데이터를 읽지 못했습니다.");
-  return { vocab, idioms, extra, grammar };
+  if (!conversation.length) throw new Error("회화 교재 데이터를 읽지 못했습니다.");
+  return { vocab, idioms, extra, grammar, conversation };
 }
 
 /** 데이터가 마지막으로 바뀐 날짜(git 기준). 재실행 시 결과가 같도록 고정값을 쓴다. */
@@ -325,7 +334,7 @@ ${body}
 </main>
 <footer class="ft wrap">
   <nav>
-    ${footerNav || `<a href="../">홈</a><a href="./">주제별 단어장</a><a href="idioms.html">빈출 구동사·숙어</a><a href="../privacy.html">개인정보처리방침</a><a href="../terms.html">이용약관</a>`}
+    ${footerNav || `<a href="../">홈</a><a href="./">주제별 단어장</a><a href="idioms.html">빈출 구동사·숙어</a><a href="../grammar/">문법 교재</a><a href="../conversation/">회화 교재</a><a href="../privacy.html">개인정보처리방침</a><a href="../terms.html">이용약관</a>`}
   </nav>
   <p>👾 toeic.monster · TOEIC 어휘 무료 학습 사이트 · 학습 기록은 브라우저에만 저장됩니다</p>
 </footer>
@@ -575,6 +584,7 @@ ${items}
 
 const GUIDE_FOOTER =
   '<a href="../">홈</a><a href="../units/">주제별 단어장</a><a href="index.html">전략·공략 가이드</a>' +
+  '<a href="../grammar/">문법 교재</a><a href="../conversation/">회화 교재</a>' +
   '<a href="../privacy.html">개인정보처리방침</a><a href="../terms.html">이용약관</a>';
 
 function buildGuidesHub(guides) {
@@ -680,7 +690,8 @@ ${sections}
 
 const GRAMMAR_FOOTER =
   '<a href="../">홈</a><a href="../units/">주제별 단어장</a><a href="index.html">문법 교재</a>' +
-  '<a href="../guides/">전략·공략 가이드</a><a href="../privacy.html">개인정보처리방침</a><a href="../terms.html">이용약관</a>';
+  '<a href="../conversation/">회화 교재</a><a href="../guides/">전략·공략 가이드</a>' +
+  '<a href="../privacy.html">개인정보처리방침</a><a href="../terms.html">이용약관</a>';
 
 /** 과 번호에 붙는 앵커 id — 목차 링크와 감사(앵커 검증)가 함께 씁니다. */
 const chapterAnchor = (no) => `ch-${String(no).padStart(2, "0")}`;
@@ -974,6 +985,237 @@ ${sections}
 }
 
 /* ------------------------------------------------------------------ */
+/* 6-4. 단계별 회화 교재 (data/conversation-*.js)                        */
+/*                                                                     */
+/* 문법 교재와 나란한 구조를 그대로 씁니다. 한 과의 구성이 같아서      */
+/* (표현 → 표 → 예문 → 주의 → 연습) 공용 스타일(book-cover·toc·gram·   */
+/* gtable·gex·gmistake·gquiz)을 그대로 쓰고, 제목만 회화에 맞게 씁니다. */
+/* 스타일을 한 번 더 구워 넣으면 같은 4KB 를 4개 페이지가 더 받습니다.  */
+/* ------------------------------------------------------------------ */
+
+const CONVERSATION_FOOTER =
+  '<a href="../">홈</a><a href="../units/">주제별 단어장</a><a href="index.html">회화 교재</a>' +
+  '<a href="../grammar/">문법 교재</a><a href="../guides/">전략·공략 가이드</a>' +
+  '<a href="../privacy.html">개인정보처리방침</a><a href="../terms.html">이용약관</a>';
+
+function buildConversationHub(books) {
+  const canonical = `${SITE}/conversation/`;
+  const totalCh = books.reduce((n, b) => n + b.chapters.length, 0);
+  const totalQ = books.reduce(
+    (n, b) => n + b.chapters.reduce((m, c) => m + (c.practice || []).length, 0),
+    0,
+  );
+  const title = "영어회화 교재 3단계 — 초급·중급·고급 | toeic.monster";
+  const description = `인사와 주문부터 협상·설득·갈등 완화까지, 초급·중급·고급 3단계 회화 교재 ${totalCh}과와 연습 문제 ${totalQ}문항을 상황별 표현·발음 안내와 함께 무료로 정리했습니다.`;
+
+  const ld = jsonLd({
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "CollectionPage",
+        name: "영어회화 교재 3단계 — 초급·중급·고급",
+        description,
+        url: canonical,
+        inLanguage: "ko",
+        isPartOf: { "@type": "WebSite", name: "toeic.monster", url: `${SITE}/` },
+      },
+      {
+        "@type": "ItemList",
+        name: "단계별 영어회화 교재",
+        numberOfItems: books.length,
+        itemListElement: books.map((b, i) => ({
+          "@type": "ListItem",
+          position: i + 1,
+          name: `${b.level} ${b.title}`,
+          url: `${SITE}/conversation/${b.id}.html`,
+        })),
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "toeic.monster", item: `${SITE}/` },
+          { "@type": "ListItem", position: 2, name: "회화 교재", item: canonical },
+        ],
+      },
+    ],
+  });
+
+  const body = `  <nav class="crumb" aria-label="breadcrumb">
+    <a href="../">toeic.monster</a> › <span>회화 교재</span>
+  </nav>
+
+  <h1>영어회화 교재 3단계 — 초급·중급·고급</h1>
+  <p class="lead">${esc(description)}</p>
+  <a class="cta" href="../">🃏 단어·퀴즈로 바로 학습하기</a>
+  <a class="cta" href="../grammar/">📘 문법 교재 보기</a>
+
+  <h2 class="sec">교재 목록</h2>
+  <ul class="unitlist">
+${books
+  .map(
+    (b) => `    <li><a href="${b.id}.html">
+      <b>${LEVEL_ICON[b.level] || "🟡"} ${esc(b.level)} · CEFR ${esc(b.cefr || "")}</b>
+      <span>${esc(b.title)}</span>
+      <em>${esc(b.subtitle)} · ${b.chapters.length}과</em>
+    </a></li>`,
+  )
+  .join("\n")}
+  </ul>
+
+  <h2 class="sec">학습 순서</h2>
+  <ol class="words">
+    <li><span class="w-mean">초급에서 인사·주문·길 묻기처럼 상황을 버티는 표현을 먼저 익힙니다.</span></li>
+    <li><span class="w-mean">중급에서 의견·조율·협상처럼 내 생각을 전달하는 표현으로 넓힙니다.</span></li>
+    <li><span class="w-mean">고급에서 완곡 표현·책임 범위·갈등 완화처럼 말의 온도를 조절합니다.</span></li>
+  </ol>
+
+  <h2 class="sec">이 교재를 만든 기준</h2>
+  <p class="lead">사이트 조사 결과와 단계 설계는 <b>docs/conversation-research.md</b> 에 정리했습니다. 상황(기능)을 축으로 삼고, CEFR A1~C1 의 말하기 기술을 과 단위로 나눴습니다.</p>`;
+
+  return { file: "conversation/index.html", html: page({ title, description, canonical, ld, body, footerNav: CONVERSATION_FOOTER }) };
+}
+
+function conversationPoint(p) {
+  const table = p.table
+    ? `\n      <div class="gtable-wrap">\n      <table class="gtable">\n        <thead><tr>${(p.table.head || [])
+        .map((h) => `<th>${esc(h)}</th>`)
+        .join("")}</tr></thead>\n        <tbody>${(p.table.rows || [])
+        .map((r) => `<tr>${r.map((c) => `<td>${esc(c)}</td>`).join("")}</tr>`)
+        .join("")}</tbody>\n      </table>\n      </div>`
+    : "";
+  const examples = (p.examples || [])
+    .map(
+      (e) =>
+        `\n      <div class="gex"><div class="en" lang="en">${esc(e.en)}${speakBtn(e.en)}</div><div class="ko">${esc(e.ko)}</div></div>`,
+    )
+    .join("");
+  const note = p.note ? `\n      <p class="g-note">💡 ${esc(p.note)}</p>` : "";
+  return `    <div class="g-point">
+      <h3>${esc(p.h)}</h3>
+      <p>${esc(p.body)}</p>${table}${examples}${note}
+    </div>`;
+}
+
+function conversationChapter(c) {
+  const points = (c.points || []).map(conversationPoint).join("\n");
+  const mistakes = (c.mistakes || []).length
+    ? `\n    <div class="gmistake">
+      <h3>⚠️ 한국어 화자가 자주 하는 실수</h3>
+      <ul>${c.mistakes.map((m) => `<li>${esc(m)}</li>`).join("")}</ul>
+    </div>`
+    : "";
+  const practice = (c.practice || []).length
+    ? `\n    <div class="gquiz">
+      <h3>✏️ 연습 문제 ${c.practice.length}문항</h3>${c.practice
+        .map(
+          (q, i) => `\n      <div class="gquiz-item">
+        <p class="gquiz-q">${i + 1}. ${esc(q.q)}</p>
+        <ol class="gquiz-opts">${(q.opts || []).map((o) => `<li>${esc(o)}</li>`).join("")}</ol>
+        <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: ${esc(q.a)}</b><br>${esc(q.why)}</p></details>
+      </div>`,
+        )
+        .join("")}
+    </div>`
+    : "";
+
+  return `  <section class="gram" id="${chapterAnchor(c.no)}">
+    <div class="gram-head"><span class="gram-no">${String(c.no).padStart(2, "0")}과</span><h2>${esc(c.title)}</h2></div>
+    <p class="gram-sum">${esc(c.summary)}</p>
+${points}${mistakes}${practice}
+  </section>`;
+}
+
+function buildConversationBook(book, books) {
+  const canonical = `${SITE}/conversation/${book.id}.html`;
+  const title = `${book.title} — ${book.subtitle} | toeic.monster`;
+  const description = book.desc;
+  const idx = books.findIndex((b) => b.id === book.id);
+  const prev = books[idx - 1];
+  const next = books[idx + 1];
+
+  const ld = jsonLd({
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "LearningResource",
+        name: `${book.title} — ${book.subtitle}`,
+        description,
+        url: canonical,
+        inLanguage: "ko",
+        learningResourceType: "영어회화 교재",
+        educationalUse: "self-study",
+        educationalLevel: book.cefr,
+        teaches: book.chapters.map((c) => c.title),
+        isPartOf: { "@type": "CollectionPage", name: "영어회화 교재 3단계", url: `${SITE}/conversation/` },
+        provider: { "@type": "Organization", name: "toeic.monster", url: `${SITE}/` },
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "toeic.monster", item: `${SITE}/` },
+          { "@type": "ListItem", position: 2, name: "회화 교재", item: `${SITE}/conversation/` },
+          { "@type": "ListItem", position: 3, name: book.title, item: canonical },
+        ],
+      },
+    ],
+  });
+
+  const toc = book.chapters
+    .map(
+      (c) => `    <li><a href="#${chapterAnchor(c.no)}">
+      <b>${String(c.no).padStart(2, "0")}과</b>
+      <span>${esc(c.title)}</span>
+    </a></li>`,
+    )
+    .join("\n");
+
+  const pager = [
+    prev ? `<a href="${prev.id}.html">← ${esc(prev.level)} ${esc(prev.title)}</a>` : `<span></span>`,
+    `<a class="mid" href="./">🗣️ 회화 교재 전체 보기</a>`,
+    next ? `<a href="${next.id}.html">${esc(next.level)} ${esc(next.title)} →</a>` : `<span></span>`,
+  ].join("\n    ");
+
+  const body = `  <nav class="crumb" aria-label="breadcrumb">
+    <a href="../">toeic.monster</a> › <a href="./">회화 교재</a> › <span>${esc(book.title)}</span>
+  </nav>
+
+  <h1>${esc(book.title)}<span class="lvl ${LEVEL_CLASS[book.level] || "lvl-mid"}">${LEVEL_ICON[book.level] || "🟡"} ${esc(book.level)}</span></h1>
+  <p class="lead">${esc(book.subtitle)} · 총 ${book.chapters.length}과</p>
+
+  <div class="book-cover">
+    <h2>이 교재의 목표</h2>
+    <p>${esc(book.goal)}</p>
+    <div class="bc-meta">
+      <div><b>CEFR</b><span>${esc(book.cefr || "")}</span></div>
+      <div><b>대상</b><span>${esc(book.audience)}</span></div>
+      <div><b>분량</b><span>${book.chapters.length}과 · 연습 문제 ${book.chapters.reduce((n, c) => n + (c.practice || []).length, 0)}문항</span></div>
+    </div>
+    <h2>이렇게 연습하세요</h2>
+    <ul>${(book.howto || []).map((h) => `<li>${esc(h)}</li>`).join("")}</ul>
+  </div>
+
+  <a class="cta" href="../">🔊 발음 들으며 단어 학습하기</a>
+  <p class="lead">🔊 를 누르면 예문 발음을 들을 수 있습니다(앱에서 고른 목소리·속도를 그대로 사용).</p>
+
+  <h2 class="sec">목차</h2>
+  <ul class="toc">
+${toc}
+  </ul>
+
+${book.chapters.map(conversationChapter).join("\n\n")}
+
+  <nav class="pager" aria-label="교재 이동">
+    ${pager}
+  </nav>`;
+
+  return {
+    file: `conversation/${book.id}.html`,
+    // 회화 교재도 예문 듣기 버튼이 있어 공용 스크립트(assets/speak.js)가 필요합니다.
+    html: page({ title, description, canonical, ld, body, footerNav: CONVERSATION_FOOTER, speak: true }),
+  };
+}
+
+/* ------------------------------------------------------------------ */
 /* 6-9. 404 페이지                                                      */
 /* ------------------------------------------------------------------ */
 
@@ -994,6 +1236,7 @@ const NOT_FOUND_LINKS = [
   ["/grammar/", "문법 교재", "기초·중급·고급 36과 + 연습 108문항"],
   ["/grammar/cheatsheet.html", "문법 한 장 요약", "시험 직전에 훑는 핵심 정리"],
   ["/guides/", "전략·유형 가이드", "파트별 공략 9편"],
+  ["/conversation/", "영어회화 교재", "초급·중급·고급 3단계 + 연습 108문항"],
 ];
 
 function build404Page() {
@@ -1063,7 +1306,7 @@ ${links}
 /* 7. 사이트맵                                                         */
 /* ------------------------------------------------------------------ */
 
-function buildSitemap(units, lastmod, guides, grammar) {
+function buildSitemap(units, lastmod, guides, grammar, conversation) {
   const rows = [];
   const add = (loc, changefreq, priority, date) => {
     rows.push(
@@ -1089,6 +1332,10 @@ function buildSitemap(units, lastmod, guides, grammar) {
     grammar.forEach((b) => add(`${SITE}/grammar/${b.id}.html`, "monthly", "0.8"));
     add(`${SITE}/grammar/cheatsheet.html`, "monthly", "0.7");
   }
+  if (conversation && conversation.length) {
+    add(`${SITE}/conversation/`, "monthly", "0.8");
+    conversation.forEach((b) => add(`${SITE}/conversation/${b.id}.html`, "monthly", "0.8"));
+  }
   // privacy.html·terms.html 은 robots=noindex 이므로 사이트맵에 넣지 않는다.
   // (noindex 페이지를 사이트맵에 제출하면 서치콘솔에서 오류로 보고된다.)
 
@@ -1101,7 +1348,7 @@ function buildSitemap(units, lastmod, guides, grammar) {
 
 function main() {
   const meta = loadUnitMeta();
-  const { vocab, idioms, extra, grammar } = loadVocab();
+  const { vocab, idioms, extra, grammar, conversation } = loadVocab();
   const guides = Array.isArray(extra.guides) ? extra.guides : [];
   const lastmod = lastModified();
 
@@ -1152,9 +1399,18 @@ function main() {
     write(cs.file, cs.html);
   }
 
+  conversation.forEach((b) => {
+    const cp = buildConversationBook(b, conversation);
+    write(cp.file, cp.html);
+  });
+  if (conversation.length) {
+    const ch = buildConversationHub(conversation);
+    write(ch.file, ch.html);
+  }
+
   // 404 는 색인 대상이 아니므로 사이트맵에 넣지 않습니다(noindex).
   write("404.html", build404Page());
-  write("sitemap.xml", buildSitemap(units, lastmod, guides, grammar));
+  write("sitemap.xml", buildSitemap(units, lastmod, guides, grammar, conversation));
 
   const words = units.reduce((n, u) => n + u.words.length, 0);
   const chapters = grammar.reduce((n, b) => n + b.chapters.length, 0);
@@ -1164,6 +1420,9 @@ function main() {
   console.log(`   · 허브 1개 · 숙어 페이지 1개 (숙어 ${idioms.length}개)`);
   console.log(`   · 가이드 페이지 ${guides.length}개 + 허브 1개`);
   console.log(`   · 문법 교재 ${grammar.length}권 + 허브 1개 + 한 장 요약 (${chapters}과 · 연습 문제 ${quizzes}문항)`);
+  const convChapters = conversation.reduce((n, b) => n + b.chapters.length, 0);
+  const convQuizzes = conversation.reduce((n, b) => n + b.chapters.reduce((m, c) => m + (c.practice || []).length, 0), 0);
+  console.log(`   · 회화 교재 ${conversation.length}권 + 허브 1개 (${convChapters}과 · 연습 문제 ${convQuizzes}문항)`);
   console.log(`   · 404.html 1개 (색인 제외 — robots=noindex)`);
   console.log(
     `   · assets/site.css ${(siteCss.length / 1024).toFixed(1)}KB ` +

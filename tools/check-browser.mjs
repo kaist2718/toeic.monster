@@ -197,7 +197,7 @@ try {
 
   // 첫 화면이 실제로 그려질 때까지 기다립니다(고정 대기 시간에 기대지 않도록).
   for (let i = 0; i < 60; i++) {
-    if ((await evaluate(`document.querySelectorAll("#homeView .home-section").length`)) >= 52) break;
+    if ((await evaluate(`document.querySelectorAll("#homeView .home-section").length`)) >= 53) break;
     await wait(500);
   }
   await wait(1000);
@@ -232,11 +232,13 @@ try {
       searchbar: getComputedStyle(document.querySelector(".searchbar")).display,
       prerenderedConfusables: q("#confuseGrid > *"),
       prerenderedFrequency: q("#freqGrid > *"),
+      conversationCards: q("#conversationBookGrid > *"),
     };
   })()`);
 
-  check(desktop.homeSections === 52, `홈 섹션 52개가 그려졌습니다 (${desktop.homeSections}개)`);
+  check(desktop.homeSections === 53, `홈 섹션 53개가 그려졌습니다 (${desktop.homeSections}개)`);
   check(desktop.renderedAtHome === 0, `첫 화면에 숨은 단어 카드를 그리지 않습니다 (${desktop.renderedAtHome}장)`);
+  check(desktop.conversationCards === 4, `회화 교재 카드가 그려졌습니다 (${desktop.conversationCards}장 · 교재 3권 + 허브)`);
   check(desktop.searchbar === "none", "홈에서는 검색창·난이도 필터가 숨겨져 있습니다");
   check(desktop.headerLines <= 2, `상단바가 ${desktop.headerLines}줄입니다 (1100px 에서 ${desktop.headerHeight}px)`);
   note(`첫 화면 프리렌더 — 혼동어휘 ${desktop.prerenderedConfusables}개 · 빈도어휘 ${desktop.prerenderedFrequency}개`);
@@ -568,6 +570,8 @@ try {
     ["grammar/index.html", "문법 허브"],
     ["grammar/basic.html", "문법 교재"],
     ["grammar/cheatsheet.html", "문법 요약"],
+    ["conversation/index.html", "회화 허브"],
+    ["conversation/conversation-basic.html", "회화 교재"],
     ["guides/index.html", "가이드 허브"],
     ["guides/part-5-grammar.html", "가이드"],
     ["privacy.html", "개인정보처리방침"],

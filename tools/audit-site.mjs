@@ -29,6 +29,13 @@ const CHECK_EXTERNAL = process.argv.includes("--external");
 /** 단계별 문법 교재 데이터 파일 — build-pages.mjs 와 같은 목록을 씁니다. */
 const GRAMMAR_FILES = ["data/grammar-basic.js", "data/grammar-intermediate.js", "data/grammar-advanced.js"];
 
+/** 단계별 회화 교재 — build-pages.mjs 와 같은 목록을 씁니다. */
+const CONVERSATION_FILES = [
+  "data/conversation-basic.js",
+  "data/conversation-intermediate.js",
+  "data/conversation-advanced.js",
+];
+
 const read = (p) => fs.readFileSync(path.join(ROOT, p), "utf8");
 const has = (p) => fs.existsSync(path.join(ROOT, p));
 
@@ -48,7 +55,7 @@ function loadData() {
     const f = `data/unit${String(i).padStart(2, "0")}.js`;
     vm.runInContext(read(f), sandbox, { filename: f, timeout: 5000 });
   }
-  for (const f of ["data/idioms.js", "data/extra.js", ...GRAMMAR_FILES]) {
+  for (const f of ["data/idioms.js", "data/extra.js", ...GRAMMAR_FILES, ...CONVERSATION_FILES]) {
     vm.runInContext(read(f), sandbox, { filename: f, timeout: 5000 });
   }
   return {
@@ -56,10 +63,11 @@ function loadData() {
     idioms: sandbox.window.VOCAB_IDIOMS || [],
     extra: sandbox.window.TOEIC_EXTRA || {},
     grammar: sandbox.window.GRAMMAR_BOOKS || [],
+    conversation: sandbox.window.CONVERSATION_BOOKS || [],
   };
 }
 
-const { vocab, idioms, extra, grammar } = loadData();
+const { vocab, idioms, extra, grammar, conversation } = loadData();
 const unitIds = Object.keys(vocab);
 const totalWords = unitIds.reduce((sum, id) => sum + vocab[id].length, 0);
 
@@ -69,7 +77,7 @@ const totalWords = unitIds.reduce((sum, id) => sum + vocab[id].length, 0);
 
 const pages = [];
 for (const f of fs.readdirSync(ROOT).filter((f) => f.endsWith(".html"))) pages.push(f);
-for (const dir of ["units", "guides", "grammar"]) {
+for (const dir of ["units", "guides", "grammar", "conversation"]) {
   for (const f of fs.readdirSync(path.join(ROOT, dir)).filter((f) => f.endsWith(".html"))) {
     pages.push(`${dir}/${f}`);
   }
@@ -576,6 +584,12 @@ const ACTUAL = {
   grammar_books: grammar.length,
   grammar_chapters: grammar.reduce((n, b) => n + (b.chapters || []).length, 0),
   grammar_quizzes: grammar.reduce(
+    (n, b) => n + (b.chapters || []).reduce((m, c) => m + (c.practice || []).length, 0),
+    0,
+  ),
+  conversation_books: conversation.length,
+  conversation_chapters: conversation.reduce((n, b) => n + (b.chapters || []).length, 0),
+  conversation_quizzes: conversation.reduce(
     (n, b) => n + (b.chapters || []).reduce((m, c) => m + (c.practice || []).length, 0),
     0,
   ),

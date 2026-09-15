@@ -6,8 +6,8 @@ toeic.monster 를 구글·네이버 검색에 노출시키기 위한 설정과, 
 > `npm run audit:site` 가 이 블록과 실제 값을 대조하므로, 콘텐츠가 늘면 문서도 함께 갱신됩니다.
 
 <!-- audit:counts
-sitemap_urls = 48
-pages = 51
+sitemap_urls = 52
+pages = 55
 units = 30
 vocab = 1000
 idioms = 126
@@ -15,6 +15,9 @@ guides = 9
 grammar_books = 3
 grammar_chapters = 36
 grammar_quizzes = 108
+conversation_books = 3
+conversation_chapters = 36
+conversation_quizzes = 108
 -->
 
 ---

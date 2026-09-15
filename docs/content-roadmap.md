@@ -16,10 +16,13 @@ frequency = 200
 grammar_books = 3
 grammar_chapters = 36
 grammar_quizzes = 108
+conversation_books = 3
+conversation_chapters = 36
+conversation_quizzes = 108
 speaking_questions = 11
 writing_questions = 8
-sitemap_urls = 48
-pages = 51
+sitemap_urls = 52
+pages = 55
 -->
 
 ---
@@ -110,6 +113,8 @@ Speaking·Writing 구성은 ETS 공식 안내를 기준으로 하며, `data/extr
 | SEO 페이지 | 가이드 8 → **9** (`guides/speaking-writing-guide.html` 신규) |
 | 문법 교재 | `data/grammar-{basic,intermediate,advanced}.js` 신설 → `grammar/` **3권 + 허브·한 장 요약** (36과 · 연습 108문항) |
 | 문법 학습 연동 | 교재 예문 발음(정적 페이지 TTS), 앱 내 **문법 문제 풀이**(단계별 기록 → 대시보드 '문법' 영역) + **문법 오답노트**(localStorage), 홈 배치를 '오늘의 문법 팁' 뒤로 이동 |
+| 회화 교재 | `data/conversation-{basic,intermediate,advanced}.js` 신설 → `conversation/` **3권 + 허브** (36과 · 연습 108문항). 상황(기능)을 축으로 하고 CEFR A1~C1 을 병기. 조사·설계는 `docs/conversation-research.md` |
+| 회화 진입 경로 | 홈 `📕 회화 교재 3단계` 섹션(`말하기·쓰기` 묶음) + 섹션 이동 칩 + `<noscript>` 정적 링크 |
 | UI/UX 점검 | `docs/ux-review.md` 신설 — 홈 섹션·칩 계측, 다크 모드 누락, 터치 영역 등 14건 점검(P1 3 · P2 7 · P3 4). 정적 페이지 다크 모드 · 홈 목차 주제별 접기 · 해시 진입 · `prefers-reduced-motion` · 전역 초점 표시 · 표 가로 스크롤 · 문항 수 선택 · `맨 위로` 버튼까지 수정 완료 |
 | 감사 범위 | 문자열 점검 8,714 → **9,630개** (TTS 대상 3,098 → 3,180개) |
 | 생성물 검증 수정 | `npm run verify` 가 `git diff` 대신 `tools/verify-generated.mjs` 를 쓰도록 교체 — 커밋 직후 `sitemap.xml` 의 `<lastmod>` 가 달라져 **CI 가 영구히 실패하던 문제** 해결 (아래 9-1) |
