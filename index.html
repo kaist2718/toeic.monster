@@ -2519,7 +2519,7 @@
       <li><b>7. 🧩 학습 모드</b> — 목적에 맞는 모드를 골라 바로 시작하세요.</li>
       <li><b>8. 🎧 오늘의 대화문</b> — 매일 새로운 LC 스타일 대화로 듣기와 어휘를 함께 연습해요. 빈칸을 채워 보세요.</li>
       <li><b>9. 📚 주제별 유닛 30개</b> — 비즈니스·금융·여행·IT까지 시험 빈출 주제만 모았어요. 버튼을 누르면 해당 유닛의 단어 카드로 이동합니다.</li>
-      <li><b>10. 💡 빈출 구동사·숙어</b> — 토익 시험에 자주 나오는 표현 0개. 🔊를 눌러 소리 내어 읽어 보세요.</li>
+      <li><b>10. 💡 빈출 구동사·숙어</b> — 토익 시험에 자주 나오는 표현 126개. 🔊를 눌러 소리 내어 읽어 보세요.</li>
       <li><b>11. 🤔 자주 헷갈리는 혼동 어휘</b> — 철자·발음은 비슷하지만 뜻이 다른 단어를 예문으로 구분해 보세요. 🔊를 누르면 문장을 읽어 줍니다.</li>
       <li><b>12. 🧩 접두사·어근으로 단어 늘리기</b> — 의미 덩어리를 알면 처음 보는 단어도 뜻을 짐작할 수 있어요. 대표 예문은 🔊로 들어 보세요.</li>
       <li><b>13. 🧱 빈출 콜로케이션 드릴</b> — 시험에 자주 나오는 동사+명사 조합을 뜻·표현 문제로 익혀 보세요.</li>
@@ -2530,7 +2530,7 @@
       <li><b>18. ⚡ 스피드 어휘 60초</b> — 60초 안에 뜻을 최대한 많이 맞힐수록 점수와 콤보가 올라갑니다.</li>
       <li><b>19. 🔗 동의어·반의어·연어 학습</b> — 단어 하나를 문맥의 네트워크로 확장하면 독해와 어휘 문제에 강해집니다.</li>
       <li><b>20. 📈 빈도순 기출 어휘</b> — 유닛과 별개로, 시험에 반복 출제되는 어휘를 빈도 감각으로 훑어보세요.</li>
-      <li><b>21. 🎧 Part 1·2 LC 유형 훈련</b> — 질문–응답과 숫자·시간 함정을 듣고 고르는 실전 리스닝 훈련입니다.</li>
+      <li><b>21. 🎧 Part 1·2 LC 유형 훈련</b> — 질의·응답과 숫자·시간 함정을 듣고 고르는 실전 리스닝 훈련입니다.</li>
       <li><b>22. 🗣️ Part 3·4 미니 세트</b> — 대화·담화를 듣고 3문항을 푸는 실전 세트입니다. 문제를 먼저 읽는 습관을 들여 보세요.</li>
       <li><b>23. 🧪 Part별 미니 문제은행</b> — 짧은 문제를 풀고 바로 해설을 확인하세요. 기록은 브라우저에 저장됩니다.</li>
       <li><b>24. 📖 리딩 미니 지문</b> — 공지·이메일·안내문을 읽고 핵심 정보와 어휘를 확인해 보세요.</li>
@@ -2585,6 +2585,8 @@
       </div>
       <div class="hero-actions">
         <button type="button" class="btn-hero primary" id="homeStartQuiz">🎯 오늘의 퀴즈</button>
+        <!-- 이어서 학습 — 학습 기록이 생긴 뒤에만 보입니다(renderHome 에서 표시). -->
+        <button type="button" class="btn-hero" id="homeResume" hidden>▶ 이어서 학습</button>
         <button type="button" class="btn-hero" id="homeStartFlash">🃏 암기 카드</button>
         <button type="button" class="btn-hero" id="homeDiag">🧭 실력 진단</button>
       </div>
@@ -2685,7 +2687,7 @@
           <h2 class="home-section-title">🏅 학습 성취 배지</h2>
           <p class="home-section-sub">학습 기록이 쌓이면 조건에 따라 자동으로 켜집니다. 목표를 정하고 하나씩 모아 보세요.</p>
         </div>
-        <span class="badge-summary" id="badgeSummary">0 / 0 획득</span>
+        <span class="badge-summary" id="badgeSummary">0 / 16 획득</span>
       </div>
       <div class="badge-grid" id="badgeGrid"></div>
     </section>
@@ -2780,7 +2782,7 @@
         <button type="button" class="mode-btn" data-mode="listen">
           <span class="mode-ico">🎧</span>
           <span class="mode-name">리스닝 연습</span>
-          <span class="mode-desc">원어민 발음 듣기 · 받아쓰기</span>
+          <span class="mode-desc">영어 발음 듣기 · 받아쓰기</span>
         </button>
         <button type="button" class="mode-btn" data-mode="mock">
           <span class="mode-ico">📝</span>
@@ -2830,7 +2832,7 @@
       <div class="section-head">
         <div>
           <h2 class="home-section-title">💡 빈출 구동사·숙어</h2>
-          <p class="home-section-sub">토익 시험에 자주 나오는 표현 <b id="idiomCount">0</b>개. 🔊를 눌러 소리 내어 읽어 보세요.</p>
+          <p class="home-section-sub">토익 시험에 자주 나오는 표현 <b id="idiomCount">126</b>개. 🔊를 눌러 소리 내어 읽어 보세요.</p>
         </div>
         <button type="button" class="btn quiz-btn" id="idiomToggle">▼ 모두 보기</button>
       </div>
@@ -2853,7 +2855,7 @@
       <h2 class="home-section-title">🧩 접두사·어근으로 단어 늘리기</h2>
       <p class="home-section-sub">의미 덩어리를 알면 처음 보는 단어도 뜻을 짐작할 수 있어요. 대표 예문은 🔊로 들어 보세요.</p>
       <div class="wordpart-grid" id="wordpartGrid"><!-- prerender:start wordpartGrid -->
-<article class="wordpart-card"><div class="wordpart-top"><span class="wordpart-type">접두사</span><span class="wordpart-part">re-</span></div><div class="wordpart-mean">다시, 뒤로</div><div class="wordpart-words">review · refund · renew</div><div class="wordpart-ex">Please review the contract before signing.<button type="button" class="tts-btn js-tts" data-say="Please review the contract before signing." title="예문 듣기" aria-label="예문 듣기">🔊</button></div></article><article class="wordpart-card"><div class="wordpart-top"><span class="wordpart-type">접두사</span><span class="wordpart-part">pre-</span></div><div class="wordpart-mean">미리, 앞서</div><div class="wordpart-words">preview · prepare · prevent</div><div class="wordpart-ex">We need to prepare the documents in advance.<button type="button" class="tts-btn js-tts" data-say="We need to prepare the documents in advance." title="예문 듣기" aria-label="예문 듣기">🔊</button></div></article><article class="wordpart-card"><div class="wordpart-top"><span class="wordpart-type">접두사</span><span class="wordpart-part">un-</span></div><div class="wordpart-mean">반대, 부정</div><div class="wordpart-words">unavailable · unable · unclear</div><div class="wordpart-ex">The product is currently unavailable.<button type="button" class="tts-btn js-tts" data-say="The product is currently unavailable." title="예문 듣기" aria-label="예문 듣기">🔊</button></div></article><article class="wordpart-card"><div class="wordpart-top"><span class="wordpart-type">접두사</span><span class="wordpart-part">dis-</span></div><div class="wordpart-mean">떨어뜨리다, 반대</div><div class="wordpart-words">discount · disappoint · dismiss</div><div class="wordpart-ex">Members receive a ten percent discount.<button type="button" class="tts-btn js-tts" data-say="Members receive a ten percent discount." title="예문 듣기" aria-label="예문 듣기">🔊</button></div></article><article class="wordpart-card"><div class="wordpart-top"><span class="wordpart-type">접두사</span><span class="wordpart-part">over-</span></div><div class="wordpart-mean">지나치게, 위에</div><div class="wordpart-words">overtime · overdue · overlook</div><div class="wordpart-ex">The payment is two weeks overdue.<button type="button" class="tts-btn js-tts" data-say="The payment is two weeks overdue." title="예문 듣기" aria-label="예문 듣기">🔊</button></div></article><article class="wordpart-card"><div class="wordpart-top"><span class="wordpart-type">접두사</span><span class="wordpart-part">inter-</span></div><div class="wordpart-mean">사이에, 상호</div><div class="wordpart-words">interview · internal · interact</div><div class="wordpart-ex">She has an interview with the manager today.<button type="button" class="tts-btn js-tts" data-say="She has an interview with the manager today." title="예문 듣기" aria-label="예문 듣기">🔊</button></div></article><article class="wordpart-card"><div class="wordpart-top"><span class="wordpart-type">접두사</span><span class="wordpart-part">trans-</span></div><div class="wordpart-mean">가로질러, 이동</div><div class="wordpart-words">transfer · transport · translate</div><div class="wordpart-ex">The funds will be transferred tomorrow.<button type="button" class="tts-btn js-tts" data-say="The funds will be transferred tomorrow." title="예문 듣기" aria-label="예문 듣기">🔊</button></div></article><article class="wordpart-card"><div class="wordpart-top"><span class="wordpart-type">어근</span><span class="wordpart-part">-tain</span></div><div class="wordpart-mean">붙잡다 (hold)</div><div class="wordpart-words">maintain · obtain · contain</div><div class="wordpart-ex">We must maintain high quality standards.<button type="button" class="tts-btn js-tts" data-say="We must maintain high quality standards." title="예문 듣기" aria-label="예문 듣기">🔊</button></div></article><article class="wordpart-card"><div class="wordpart-top"><span class="wordpart-type">어근</span><span class="wordpart-part">-duct</span></div><div class="wordpart-mean">이끌다 (lead)</div><div class="wordpart-words">produce · conduct · reduce</div><div class="wordpart-ex">The company will conduct a survey.<button type="button" class="tts-btn js-tts" data-say="The company will conduct a survey." title="예문 듣기" aria-label="예문 듣기">🔊</button></div></article><article class="wordpart-card"><div class="wordpart-top"><span class="wordpart-type">어근</span><span class="wordpart-part">-spect</span></div><div class="wordpart-mean">보다 (look)</div><div class="wordpart-words">inspect · prospect · aspect</div><div class="wordpart-ex">The equipment is inspected every month.<button type="button" class="tts-btn js-tts" data-say="The equipment is inspected every month." title="예문 듣기" aria-label="예문 듣기">🔊</button></div></article><article class="wordpart-card"><div class="wordpart-top"><span class="wordpart-type">어근</span><span class="wordpart-part">-port</span></div><div class="wordpart-mean">나르다 (carry)</div><div class="wordpart-words">import · export · report</div><div class="wordpart-ex">Exports increased by twelve percent.<button type="button" class="tts-btn js-tts" data-say="Exports increased by twelve percent." title="예문 듣기" aria-label="예문 듣기">🔊</button></div></article><article class="wordpart-card"><div class="wordpart-top"><span class="wordpart-type">어미</span><span class="wordpart-part">-able / -ible</span></div><div class="wordpart-mean">~할 수 있는</div><div class="wordpart-words">available · reliable · flexible</div><div class="wordpart-ex">The schedule is flexible for next week.<button type="button" class="tts-btn js-tts" data-say="The schedule is flexible for next week." title="예문 듣기" aria-label="예문 듣기">🔊</button></div></article><article class="wordpart-card"><div class="wordpart-top"><span class="wordpart-type">접두사</span><span class="wordpart-part">bi-</span></div><div class="wordpart-mean">둘, 두 개</div><div class="wordpart-words">bilingual · bimonthly · biannual</div><div class="wordpart-ex">Our newsletter is published bimonthly.<button type="button" class="tts-btn js-tts" data-say="Our newsletter is published bimonthly." title="예문 듣기" aria-label="예문 듣기">🔊</button></div></article><article class="wordpart-card"><div class="wordpart-top"><span class="wordpart-type">접두사</span><span class="wordpart-part">co-</span></div><div class="wordpart-mean">함께, 공동으로</div><div class="wordpart-words">coworker · cooperate · coordinate</div><div class="wordpart-ex">Departments must cooperate on this project.<button type="button" class="tts-btn js-tts" data-say="Departments must cooperate on this project." title="예문 듣기" aria-label="예문 듣기">🔊</button></div></article><article class="wordpart-card"><div class="wordpart-top"><span class="wordpart-type">접두사</span><span class="wordpart-part">mis-</span></div><div class="wordpart-mean">잘못, 나쁘게</div><div class="wordpart-words">misunderstand · misplaced · mistake</div><div class="wordpart-ex">The shipment was sent to a wrong address by mistake.<button type="button" class="tts-btn js-tts" data-say="The shipment was sent to a wrong address by mistake." title="예문 듣기" aria-label="예문 듣기">🔊</button></div></article><article class="wordpart-card"><div class="wordpart-top"><span class="wordpart-type">접두사</span><span class="wordpart-part">multi-</span></div><div class="wordpart-mean">많은, 다수의</div><div class="wordpart-words">multinational · multiple · multimedia</div><div class="wordpart-ex">She manages multiple accounts at once.<button type="button" class="tts-btn js-tts" data-say="She manages multiple accounts at once." title="예문 듣기" aria-label="예문 듣기">🔊</button></div></article><article class="wordpart-card"><div class="wordpart-top"><span class="wordpart-type">접두사</span><span class="wordpart-part">out-</span></div><div class="wordpart-mean">밖으로, 능가하여</div><div class="wordpart-words">outdated · outsource · outperform</div><div class="wordpart-ex">Our sales outperformed the market average.<button type="button" class="tts-btn js-tts" data-say="Our sales outperformed the market average." title="예문 듣기" aria-label="예문 듣기">🔊</button></div></article><article class="wordpart-card"><div class="wordpart-top"><span class="wordpart-type">접두사</span><span class="wordpart-part">sub-</span></div><div class="wordpart-mean">아래, 하위</div><div class="wordpart-words">subsidiary · subtitle · submit</div><div class="wordpart-ex">The company opened a subsidiary in Singapore.<button type="button" class="tts-btn js-tts" data-say="The company opened a subsidiary in Singapore." title="예문 듣기" aria-label="예문 듣기">🔊</button></div></article><article class="wordpart-card"><div class="wordpart-top"><span class="wordpart-type">접두사</span><span class="wordpart-part">super-</span></div><div class="wordpart-mean">위, 초월</div><div class="wordpart-words">supervisor · superior · supervise</div><div class="wordpart-ex">A supervisor will inspect the warehouse today.<button type="button" class="tts-btn js-tts" data-say="A supervisor will inspect the warehouse today." title="예문 듣기" aria-label="예문 듣기">🔊</button></div></article><article class="wordpart-card"><div class="wordpart-top"><span class="wordpart-type">어근</span><span class="wordpart-part">-dict</span></div><div class="wordpart-mean">말하다 (say)</div><div class="wordpart-words">predict · dictate · contradict</div><div class="wordpart-ex">Analysts predict strong demand this year.<button type="button" class="tts-btn js-tts" data-say="Analysts predict strong demand this year." title="예문 듣기" aria-label="예문 듣기">🔊</button></div></article><article class="wordpart-card"><div class="wordpart-top"><span class="wordpart-type">어근</span><span class="wordpart-part">-fer</span></div><div class="wordpart-mean">옮기다 (carry)</div><div class="wordpart-words">transfer · offer · prefer</div><div class="wordpart-ex">The funds will be transferred tomorrow.<button type="button" class="tts-btn js-tts" data-say="The funds will be transferred tomorrow." title="예문 듣기" aria-label="예문 듣기">🔊</button></div></article><article class="wordpart-card"><div class="wordpart-top"><span class="wordpart-type">어근</span><span class="wordpart-part">-ject</span></div><div class="wordpart-mean">던지다 (throw)</div><div class="wordpart-words">project · reject · inject</div><div class="wordpart-ex">The board decided to reject the proposal.<button type="button" class="tts-btn js-tts" data-say="The board decided to reject the proposal." title="예문 듣기" aria-label="예문 듣기">🔊</button></div></article><article class="wordpart-card"><div class="wordpart-top"><span class="wordpart-type">어근</span><span class="wordpart-part">-miss / -mit</span></div><div class="wordpart-mean">보내다 (send)</div><div class="wordpart-words">submit · dismiss · transmit</div><div class="wordpart-ex">Please submit your timesheet by Friday.<button type="button" class="tts-btn js-tts" data-say="Please submit your timesheet by Friday." title="예문 듣기" aria-label="예문 듣기">🔊</button></div></article><article class="wordpart-card"><div class="wordpart-top"><span class="wordpart-type">어근</span><span class="wordpart-part">-scrib / -script</span></div><div class="wordpart-mean">쓰다 (write)</div><div class="wordpart-words">describe · subscribe · manuscript</div><div class="wordpart-ex">Please describe the problem in detail.<button type="button" class="tts-btn js-tts" data-say="Please describe the problem in detail." title="예문 듣기" aria-label="예문 듣기">🔊</button></div></article>
+<article class="wordpart-card"><div class="wordpart-top"><span class="wordpart-type">접두사</span><span class="wordpart-part">re-</span></div><div class="wordpart-mean">다시, 뒤로</div><div class="wordpart-words">review · refund · renew</div><div class="wordpart-ex">Please review the contract before signing.<button type="button" class="tts-btn js-tts" data-say="Please review the contract before signing." title="예문 듣기" aria-label="예문 듣기">🔊</button></div></article><article class="wordpart-card"><div class="wordpart-top"><span class="wordpart-type">접두사</span><span class="wordpart-part">pre-</span></div><div class="wordpart-mean">미리, 앞서</div><div class="wordpart-words">preview · prepare · prevent</div><div class="wordpart-ex">We need to prepare the documents in advance.<button type="button" class="tts-btn js-tts" data-say="We need to prepare the documents in advance." title="예문 듣기" aria-label="예문 듣기">🔊</button></div></article><article class="wordpart-card"><div class="wordpart-top"><span class="wordpart-type">접두사</span><span class="wordpart-part">un-</span></div><div class="wordpart-mean">반대, 부정</div><div class="wordpart-words">unavailable · unable · unclear</div><div class="wordpart-ex">The product is currently unavailable.<button type="button" class="tts-btn js-tts" data-say="The product is currently unavailable." title="예문 듣기" aria-label="예문 듣기">🔊</button></div></article><article class="wordpart-card"><div class="wordpart-top"><span class="wordpart-type">접두사</span><span class="wordpart-part">dis-</span></div><div class="wordpart-mean">떨어뜨리다, 반대</div><div class="wordpart-words">discount · disappoint · dismiss</div><div class="wordpart-ex">Members receive a ten percent discount.<button type="button" class="tts-btn js-tts" data-say="Members receive a ten percent discount." title="예문 듣기" aria-label="예문 듣기">🔊</button></div></article><article class="wordpart-card"><div class="wordpart-top"><span class="wordpart-type">접두사</span><span class="wordpart-part">over-</span></div><div class="wordpart-mean">지나치게, 위에</div><div class="wordpart-words">overtime · overdue · overlook</div><div class="wordpart-ex">The payment is two weeks overdue.<button type="button" class="tts-btn js-tts" data-say="The payment is two weeks overdue." title="예문 듣기" aria-label="예문 듣기">🔊</button></div></article><article class="wordpart-card"><div class="wordpart-top"><span class="wordpart-type">접두사</span><span class="wordpart-part">inter-</span></div><div class="wordpart-mean">사이에, 상호</div><div class="wordpart-words">interview · internal · interact</div><div class="wordpart-ex">She has an interview with the manager today.<button type="button" class="tts-btn js-tts" data-say="She has an interview with the manager today." title="예문 듣기" aria-label="예문 듣기">🔊</button></div></article><article class="wordpart-card"><div class="wordpart-top"><span class="wordpart-type">접두사</span><span class="wordpart-part">trans-</span></div><div class="wordpart-mean">가로질러, 이동</div><div class="wordpart-words">transfer · transport · translate</div><div class="wordpart-ex">The funds will be transferred tomorrow.<button type="button" class="tts-btn js-tts" data-say="The funds will be transferred tomorrow." title="예문 듣기" aria-label="예문 듣기">🔊</button></div></article><article class="wordpart-card"><div class="wordpart-top"><span class="wordpart-type">어근</span><span class="wordpart-part">-tain</span></div><div class="wordpart-mean">붙잡다 (hold)</div><div class="wordpart-words">maintain · obtain · contain</div><div class="wordpart-ex">We must maintain high quality standards.<button type="button" class="tts-btn js-tts" data-say="We must maintain high quality standards." title="예문 듣기" aria-label="예문 듣기">🔊</button></div></article><article class="wordpart-card"><div class="wordpart-top"><span class="wordpart-type">어근</span><span class="wordpart-part">-duct</span></div><div class="wordpart-mean">이끌다 (lead)</div><div class="wordpart-words">produce · conduct · reduce</div><div class="wordpart-ex">The company will conduct a survey.<button type="button" class="tts-btn js-tts" data-say="The company will conduct a survey." title="예문 듣기" aria-label="예문 듣기">🔊</button></div></article><article class="wordpart-card"><div class="wordpart-top"><span class="wordpart-type">어근</span><span class="wordpart-part">-spect</span></div><div class="wordpart-mean">보다 (look)</div><div class="wordpart-words">inspect · prospect · aspect</div><div class="wordpart-ex">The equipment is inspected every month.<button type="button" class="tts-btn js-tts" data-say="The equipment is inspected every month." title="예문 듣기" aria-label="예문 듣기">🔊</button></div></article><article class="wordpart-card"><div class="wordpart-top"><span class="wordpart-type">어근</span><span class="wordpart-part">-port</span></div><div class="wordpart-mean">나르다 (carry)</div><div class="wordpart-words">import · export · report</div><div class="wordpart-ex">Exports increased by twelve percent.<button type="button" class="tts-btn js-tts" data-say="Exports increased by twelve percent." title="예문 듣기" aria-label="예문 듣기">🔊</button></div></article><article class="wordpart-card"><div class="wordpart-top"><span class="wordpart-type">어미</span><span class="wordpart-part">-able / -ible</span></div><div class="wordpart-mean">~할 수 있는</div><div class="wordpart-words">available · reliable · flexible</div><div class="wordpart-ex">The schedule is flexible for next week.<button type="button" class="tts-btn js-tts" data-say="The schedule is flexible for next week." title="예문 듣기" aria-label="예문 듣기">🔊</button></div></article><article class="wordpart-card"><div class="wordpart-top"><span class="wordpart-type">접두사</span><span class="wordpart-part">bi-</span></div><div class="wordpart-mean">둘, 두 개</div><div class="wordpart-words">bilingual · bimonthly · biannual</div><div class="wordpart-ex">Our newsletter is published bimonthly.<button type="button" class="tts-btn js-tts" data-say="Our newsletter is published bimonthly." title="예문 듣기" aria-label="예문 듣기">🔊</button></div></article><article class="wordpart-card"><div class="wordpart-top"><span class="wordpart-type">접두사</span><span class="wordpart-part">co-</span></div><div class="wordpart-mean">함께, 공동으로</div><div class="wordpart-words">coworker · cooperate · coordinate</div><div class="wordpart-ex">Departments must cooperate on this project.<button type="button" class="tts-btn js-tts" data-say="Departments must cooperate on this project." title="예문 듣기" aria-label="예문 듣기">🔊</button></div></article><article class="wordpart-card"><div class="wordpart-top"><span class="wordpart-type">접두사</span><span class="wordpart-part">mis-</span></div><div class="wordpart-mean">잘못, 나쁘게</div><div class="wordpart-words">misunderstand · misplaced · mistake</div><div class="wordpart-ex">The shipment was sent to the wrong address by mistake.<button type="button" class="tts-btn js-tts" data-say="The shipment was sent to the wrong address by mistake." title="예문 듣기" aria-label="예문 듣기">🔊</button></div></article><article class="wordpart-card"><div class="wordpart-top"><span class="wordpart-type">접두사</span><span class="wordpart-part">multi-</span></div><div class="wordpart-mean">많은, 다수의</div><div class="wordpart-words">multinational · multiple · multimedia</div><div class="wordpart-ex">She manages multiple accounts at once.<button type="button" class="tts-btn js-tts" data-say="She manages multiple accounts at once." title="예문 듣기" aria-label="예문 듣기">🔊</button></div></article><article class="wordpart-card"><div class="wordpart-top"><span class="wordpart-type">접두사</span><span class="wordpart-part">out-</span></div><div class="wordpart-mean">밖으로, 능가하여</div><div class="wordpart-words">outdated · outsource · outperform</div><div class="wordpart-ex">Our sales outperformed the market average.<button type="button" class="tts-btn js-tts" data-say="Our sales outperformed the market average." title="예문 듣기" aria-label="예문 듣기">🔊</button></div></article><article class="wordpart-card"><div class="wordpart-top"><span class="wordpart-type">접두사</span><span class="wordpart-part">sub-</span></div><div class="wordpart-mean">아래, 하위</div><div class="wordpart-words">subsidiary · subtitle · submit</div><div class="wordpart-ex">The company opened a subsidiary in Singapore.<button type="button" class="tts-btn js-tts" data-say="The company opened a subsidiary in Singapore." title="예문 듣기" aria-label="예문 듣기">🔊</button></div></article><article class="wordpart-card"><div class="wordpart-top"><span class="wordpart-type">접두사</span><span class="wordpart-part">super-</span></div><div class="wordpart-mean">위, 초월</div><div class="wordpart-words">supervisor · superior · supervise</div><div class="wordpart-ex">A supervisor will inspect the warehouse today.<button type="button" class="tts-btn js-tts" data-say="A supervisor will inspect the warehouse today." title="예문 듣기" aria-label="예문 듣기">🔊</button></div></article><article class="wordpart-card"><div class="wordpart-top"><span class="wordpart-type">어근</span><span class="wordpart-part">-dict</span></div><div class="wordpart-mean">말하다 (say)</div><div class="wordpart-words">predict · dictate · contradict</div><div class="wordpart-ex">Analysts predict strong demand this year.<button type="button" class="tts-btn js-tts" data-say="Analysts predict strong demand this year." title="예문 듣기" aria-label="예문 듣기">🔊</button></div></article><article class="wordpart-card"><div class="wordpart-top"><span class="wordpart-type">어근</span><span class="wordpart-part">-fer</span></div><div class="wordpart-mean">옮기다 (carry)</div><div class="wordpart-words">transfer · offer · prefer</div><div class="wordpart-ex">We prefer the morning slot for the briefing.<button type="button" class="tts-btn js-tts" data-say="We prefer the morning slot for the briefing." title="예문 듣기" aria-label="예문 듣기">🔊</button></div></article><article class="wordpart-card"><div class="wordpart-top"><span class="wordpart-type">어근</span><span class="wordpart-part">-ject</span></div><div class="wordpart-mean">던지다 (throw)</div><div class="wordpart-words">project · reject · inject</div><div class="wordpart-ex">The board decided to reject the proposal.<button type="button" class="tts-btn js-tts" data-say="The board decided to reject the proposal." title="예문 듣기" aria-label="예문 듣기">🔊</button></div></article><article class="wordpart-card"><div class="wordpart-top"><span class="wordpart-type">어근</span><span class="wordpart-part">-miss / -mit</span></div><div class="wordpart-mean">보내다 (send)</div><div class="wordpart-words">submit · dismiss · transmit</div><div class="wordpart-ex">Please submit your timesheet by Friday.<button type="button" class="tts-btn js-tts" data-say="Please submit your timesheet by Friday." title="예문 듣기" aria-label="예문 듣기">🔊</button></div></article><article class="wordpart-card"><div class="wordpart-top"><span class="wordpart-type">어근</span><span class="wordpart-part">-scrib / -script</span></div><div class="wordpart-mean">쓰다 (write)</div><div class="wordpart-words">describe · subscribe · manuscript</div><div class="wordpart-ex">Please describe the problem in detail.<button type="button" class="tts-btn js-tts" data-say="Please describe the problem in detail." title="예문 듣기" aria-label="예문 듣기">🔊</button></div></article>
 <!-- prerender:end wordpartGrid --></div>
     </section>
 
@@ -2937,7 +2939,7 @@
     <section class="home-section" aria-label="Part 1·2 LC 유형 훈련">
       <div class="section-head"><div>
         <h2 class="home-section-title">🎧 Part 1·2 LC 유형 훈련</h2>
-        <p class="home-section-sub">질문–응답과 숫자·시간 함정을 듣고 고르는 실전 리스닝 훈련입니다.</p>
+        <p class="home-section-sub">질의·응답과 숫자·시간 함정을 듣고 고르는 실전 리스닝 훈련입니다.</p>
       </div><button type="button" class="btn quiz-btn" id="lc12Start">🔄 8문제 시작</button></div>
       <div id="lc12Box"></div>
     </section>
@@ -3320,7 +3322,7 @@
       </div>
       <div class="check-tip">
         <b>💡 시험장 팁</b>
-        <p>LC는 문제를 먼저 훑고, Part 7은 지문보다 질문 키워드부터 찾으세요. 모르는 문제는 빠르게 찍고 다음 문제로 — 오답 감점이 없으니 마지막까지 답을 채우는 게 가장 중요해요.</p>
+        <p>Part 1은 사진을 먼저 분석하고, Part 3·4는 선택지를 미리 훑으세요. Part 7은 지문보다 질문 키워드부터 찾고, 모르는 문제는 빠르게 찍고 다음으로 — 오답 감점이 없으니 마지막까지 답을 채우는 게 가장 중요해요.</p>
       </div>
     </section>
 
@@ -3532,7 +3534,7 @@
         </select>
         <button class="btn quiz-btn" id="listenStart">🎧 시작</button>
       </div>
-      <div class="quiz-hint">🎧 🔊 버튼으로 원어민 음성을 듣고 정답을 고르세요. 정답 확인 후 [다시 듣기]로 반복 재생할 수 있어요!</div>
+      <div class="quiz-hint">🎧 🔊 버튼으로 영어 음성을 듣고 정답을 고르세요. 정답 확인 후 [다시 듣기]로 반복 재생할 수 있어요!</div>
       <div id="listenBox"></div>
     </div>
   </div>
@@ -3752,7 +3754,7 @@
 <footer>
   <h3>📚 단어 암기 TIP</h3>
   <p>
-    단어를 <b>소리</b>와 함께 외우면 기억에 오래 남습니다. 한글 발음을 읽고, 🔊 버튼으로 원어민 발음을 들은 뒤 따라 말해 보세요.
+    단어를 <b>소리</b>와 함께 외우면 기억에 오래 남습니다. 한글 발음을 읽고, 🔊 버튼으로 영어 발음을 들은 뒤 따라 말해 보세요.
     예문 속 <b>전체 문장</b>을 외우면 문법과 콜로케이션까지 함께 학습할 수 있어 토익 RC·LC 점수 향상에 큰 도움이 됩니다.
     상단 🔊 옆 <b>목소리 목록</b>에서 남성·여성 등 원하는 목소리를 바꿔 가며 들어 보세요.
   </p>
@@ -4647,11 +4649,37 @@
     renderBadges();
   }
 
+  /**
+   * 「이어서 학습」이 보여 줄 순서를 만듭니다.
+   *
+   * 1,000단어를 유닛 순서대로 외우는 사이트라, 마지막으로 본 단어를 그 순서 안에서
+   * 맨 앞으로 당겨 "보던 자리에서" 다시 시작하게 합니다. 계산만 하는 순수 함수라
+   * 회귀 테스트(tools/test-home-ux.mjs)가 그대로 검증합니다.
+   */
+  function resumeOrder(words, learnedMap, last) {
+    var fresh = words.filter(function (w) { return !learnedMap[w[0]]; });
+    var at = -1;
+    for (var i = 0; i < fresh.length; i++) {
+      if (fresh[i][0] === last) { at = i; break; }
+    }
+    if (at <= 0) return fresh; // 마지막 단어가 없거나(0) 이미 이미 맨 앞이면 순서를 그대로
+    return [fresh[at]].concat(fresh.slice(0, at), fresh.slice(at + 1));
+  }
+
   // ---------- 암기 카드 모드 ----------
   var fcList = [];
   var fcIdx = 0;
   var fcShown = false;
   var isSrsMode = false;
+  // 마지막으로 본 카드 — "이어서 학습"이 그 자리에서 다시 시작하게 합니다(showFlashCard 가 기록).
+  var LAST_WORD_KEY = "toeic1000_lastword";
+  var lastWord = "";
+  try { lastWord = localStorage.getItem(LAST_WORD_KEY) || ""; } catch (e) {}
+  function rememberWord(word) {
+    if (!word || word === lastWord) return;
+    lastWord = word;
+    try { localStorage.setItem(LAST_WORD_KEY, word); } catch (e) {}
+  }
 
   // ---------- 공통 뷰 전환 ----------
   var VIEW_IDS = ["homeView", "units", "flashcardView", "quizView", "examView", "listenView", "mockView", "diagView", "dashView"];
@@ -4694,6 +4722,22 @@
     showView("flashcardView", "btnFlash");
   }
 
+  /** 이어서 학습 — 마지막으로 본 카드부터, 아직 안 외운 단어를 유닛 순서대로 이어 갑니다. */
+  function enterResume() {
+    isSrsMode = false;
+    var list = resumeOrder(allWords(), learned, lastWord);
+    if (!list.length) {
+      showToast("🎉 1,000단어를 모두 외웠어요! 오늘의 복습으로 점검해 보세요.");
+      enterSrs();
+      return;
+    }
+    fcList = list;
+    fcIdx = 0;
+    fcShown = false;
+    showFlashCard();
+    showView("flashcardView", "btnFlash");
+  }
+
   function showListView() {
     // 목록 화면에 처음 들어올 때만 1,000장 카드를 만듭니다.
     ensureUnitsRendered();
@@ -4714,6 +4758,7 @@
   function showFlashCard() {
     if (!fcList.length) return;
     var w = fcList[fcIdx];
+    rememberWord(w[0]);
     document.getElementById("fcWord").textContent = w[0];
     document.getElementById("fcIpa").textContent = w[1];
     document.getElementById("fcKpron").textContent = w[2];
@@ -5259,14 +5304,14 @@
     ["현재분사 vs 과거분사", "The confusing instructions confused the new staff.", "-ing는 '~하게 하는'(능동), -ed는 '~된'(수동) 느낌이에요."],
     ["부사 위치", "The new policy will significantly affect sales.", "부사는 일반동사 앞, be동사·조동사 뒤에 놓여요."],
     ["대명사 일치", "The company increased its profits. / Employees updated their skills.", "단수 명사=its, 복수 명사=their. 선행사와 일치시켜요."],
-    ["whether vs if", "Please let us know whether you will attend.", "whether는 or not과 잘 쓰이고, 명사절에서 if 대신 쓸 수 있어요."],
+    ["whether vs if", "Please let us know whether you will attend.", "whether 는 whether or not 형태로 자주 쓰이고, 명사절에서 if 대신 쓸 수 있어요."],
     ["despite / in spite of", "Despite the delay, the project was completed on time.", "despite + 명사(구). although + 절과 헷갈리지 마세요."],
     ["병렬 구조", "The job requires patience, accuracy, and flexibility.", "and·or로 연결되는 요소는 같은 품사·형태를 유지해야 해요."],
     ["to부정사의 목적", "We hired an expert to solve the problem.", "'~하기 위해서'는 to + 동사원형이 목적을 나타내요."],
     ["빈도 부사", "The manager usually reviews the report on Fridays.", "always·usually·often은 be동사 뒤, 일반동사 앞에 놓여요."],
     ["동명사 주어", "Working remotely has become more common.", "동사가 주어 자리에 오면 -ing형(동명사)을 써요."],
     ["such as / for example", "Please bring documents such as a passport and ID.", "예시를 들 때 such as + 명사 목록을 사용해요."],
-    ["가정법 현재: 동사원형", "The manager insisted that the report be submitted today.", "insist·recommend·suggest + that + 주어 + 동사원형(원형)을 써요."],
+    ["가정법 현재: 동사원형", "The manager insisted that the report be submitted today.", "insist·recommend·suggest + that + 주어 + 동사원형을 써요."],
     ["부정어 도치: Not until", "Not until noon did the shipment arrive.", "Not until·Only when이 문장 앞에 오면 조동사가 주어 앞으로 도치돼요."],
     ["관계부사: where / when / why", "This is the office where the interviews take place.", "장소=where, 시간=when, 이유=why로 이어 두 문장을 하나로 만들어요."],
     ["분사구문", "Facing a tight deadline, the team worked overtime.", "접속사와 주어가 같으면 생략하고 분사(-ing / -ed)로 시작해요."],
@@ -5274,7 +5319,7 @@
     ["so that: 목적과 결과", "The instructions were written so that everyone could follow them.", "so that + 주어 + 조동사 = ~하도록(목적)을 나타내요."],
     ["much vs many", "We do not have much time. / There were many applicants.", "불가산명사는 much, 가산 복수명사는 many로 수량을 표현해요."],
     ["another / other / the other", "Please send another copy. / The other candidates are waiting.", "another=하나 더, (the) other=나머지, others=다른 것들로 구분해요."],
-    ["used to vs be used to", "She used to work downtown. / She is used to working late.", "used to + 동사원형=과거 습관, be used to + -ing=~에 익숙하다예요."],
+    ["used to vs be used to", "She used to work downtown. / She is used to working late.", "used to + 동사원형=과거 습관, be used to + -ing=~에 익숙하다는 뜻이에요."],
     ["by vs until", "Submit the form by Friday. / The office is open until six.", "by는 완료 기한(~까지), until은 상태가 계속되는 시점(~동안)이에요."],
     ["접속부사: however / therefore", "The plan was costly; however, we approved it.", "however=그러나(대조), therefore=그러므로(결과)로 접속사가 아니라 부사예요."],
     ["가정법 과거", "If I had more time, I would review the contract.", "현재 사실의 반대는 If + 과거형, 주절에 would + 동사원형을 씁니다."],
@@ -5462,13 +5507,13 @@
     { type: "어미", part: "-able / -ible", mean: "~할 수 있는", words: "available · reliable · flexible", ex: "The schedule is flexible for next week." },
     { type: "접두사", part: "bi-", mean: "둘, 두 개", words: "bilingual · bimonthly · biannual", ex: "Our newsletter is published bimonthly." },
     { type: "접두사", part: "co-", mean: "함께, 공동으로", words: "coworker · cooperate · coordinate", ex: "Departments must cooperate on this project." },
-    { type: "접두사", part: "mis-", mean: "잘못, 나쁘게", words: "misunderstand · misplaced · mistake", ex: "The shipment was sent to a wrong address by mistake." },
+    { type: "접두사", part: "mis-", mean: "잘못, 나쁘게", words: "misunderstand · misplaced · mistake", ex: "The shipment was sent to the wrong address by mistake." },
     { type: "접두사", part: "multi-", mean: "많은, 다수의", words: "multinational · multiple · multimedia", ex: "She manages multiple accounts at once." },
     { type: "접두사", part: "out-", mean: "밖으로, 능가하여", words: "outdated · outsource · outperform", ex: "Our sales outperformed the market average." },
     { type: "접두사", part: "sub-", mean: "아래, 하위", words: "subsidiary · subtitle · submit", ex: "The company opened a subsidiary in Singapore." },
     { type: "접두사", part: "super-", mean: "위, 초월", words: "supervisor · superior · supervise", ex: "A supervisor will inspect the warehouse today." },
     { type: "어근", part: "-dict", mean: "말하다 (say)", words: "predict · dictate · contradict", ex: "Analysts predict strong demand this year." },
-    { type: "어근", part: "-fer", mean: "옮기다 (carry)", words: "transfer · offer · prefer", ex: "The funds will be transferred tomorrow." },
+    { type: "어근", part: "-fer", mean: "옮기다 (carry)", words: "transfer · offer · prefer", ex: "We prefer the morning slot for the briefing." },
     { type: "어근", part: "-ject", mean: "던지다 (throw)", words: "project · reject · inject", ex: "The board decided to reject the proposal." },
     { type: "어근", part: "-miss / -mit", mean: "보내다 (send)", words: "submit · dismiss · transmit", ex: "Please submit your timesheet by Friday." },
     { type: "어근", part: "-scrib / -script", mean: "쓰다 (write)", words: "describe · subscribe · manuscript", ex: "Please describe the problem in detail." }
@@ -6002,21 +6047,21 @@
 
   // ---------- 3) Part 1·2 LC 유형 훈련 ----------
   var LC_TRAINING = [
-    { tag: "Part 2 질문·응답", audio: "When does the meeting start?", a: "At three o'clock this afternoon.", opts: ["At three o'clock this afternoon.", "Yes, I met him yesterday.", "No, the room is on the left.", "It was a long meeting."], why: "When에는 시간으로 답합니다.", ko: "회의는 언제 시작하나요? — 오늘 오후 3시입니다." },
-    { tag: "Part 2 질문·응답", audio: "Who is in charge of the marketing team?", a: "Ms. Kim, the new manager.", opts: ["Ms. Kim, the new manager.", "In the conference room.", "About two hours.", "Yes, I do."], why: "Who에는 사람으로 답합니다.", ko: "마케팅 팀은 누가 담당하나요? — 새 매니저인 김 씨입니다." },
-    { tag: "Part 2 질문·응답", audio: "Where can I find the employee handbook?", a: "On the company intranet.", opts: ["On the company intranet.", "Yes, it is new.", "Every Monday.", "Mr. Park will attend."], why: "Where에는 장소로 답합니다.", ko: "직원 안내서는 어디서 볼 수 있나요? — 사내 인트라넷에서요." },
-    { tag: "Part 2 질문·응답", audio: "Why was the shipment delayed?", a: "Because of the heavy snow.", opts: ["Because of the heavy snow.", "It leaves at noon.", "Yes, it was delivered.", "About fifty boxes."], why: "Why에는 이유로 답합니다.", ko: "배송이 왜 지연됐나요? — 폭설 때문입니다." },
-    { tag: "Part 2 질문·응답", audio: "How long will the maintenance take?", a: "About two hours.", opts: ["About two hours.", "At the front desk.", "Yes, please.", "Mr. Lee did it."], why: "How long에는 기간으로 답합니다.", ko: "정비에 얼마나 걸리나요? — 두 시간 정도입니다." },
-    { tag: "Part 2 질문·응답", audio: "Would you like to join the workshop?", a: "I'd love to, but I have a deadline.", opts: ["I'd love to, but I have a deadline.", "It is on the second floor.", "Yes, she works here.", "Last Tuesday."], why: "제안에는 수락·거절 의사로 답합니다.", ko: "워크숍에 참여하시겠어요? — 그러고 싶지만 마감이 있어요." },
-    { tag: "숫자·시간 함정", audio: "The flight departs at a quarter to nine.", a: "8:45", opts: ["8:45", "9:15", "9:45", "8:15"], why: "a quarter to nine = 9시 15분 전 = 8시 45분", ko: "비행기는 8시 45분에 출발한다." },
+    { tag: "Part 2 질의·응답", audio: "When does the meeting start?", a: "At three o'clock this afternoon.", opts: ["At three o'clock this afternoon.", "Yes, I met him yesterday.", "No, the room is on the left.", "It was a long meeting."], why: "When에는 시간으로 답합니다.", ko: "회의는 언제 시작하나요? — 오늘 오후 3시입니다." },
+    { tag: "Part 2 질의·응답", audio: "Who is in charge of the marketing team?", a: "Ms. Kim, the new manager.", opts: ["Ms. Kim, the new manager.", "In the conference room.", "About two hours.", "Yes, I do."], why: "Who에는 사람으로 답합니다.", ko: "마케팅 팀은 누가 담당하나요? — 새 매니저인 김 씨입니다." },
+    { tag: "Part 2 질의·응답", audio: "Where can I find the employee handbook?", a: "On the company intranet.", opts: ["On the company intranet.", "Yes, it is new.", "Every Monday.", "Mr. Park will attend."], why: "Where에는 장소로 답합니다.", ko: "직원 안내서는 어디서 볼 수 있나요? — 사내 인트라넷에서요." },
+    { tag: "Part 2 질의·응답", audio: "Why was the shipment delayed?", a: "Because of the heavy snow.", opts: ["Because of the heavy snow.", "It leaves at noon.", "Yes, it was delivered.", "About fifty boxes."], why: "Why에는 이유로 답합니다.", ko: "배송이 왜 지연됐나요? — 폭설 때문입니다." },
+    { tag: "Part 2 질의·응답", audio: "How long will the maintenance take?", a: "About two hours.", opts: ["About two hours.", "At the front desk.", "Yes, please.", "Mr. Lee did it."], why: "How long에는 기간으로 답합니다.", ko: "정비에 얼마나 걸리나요? — 두 시간 정도입니다." },
+    { tag: "Part 2 질의·응답", audio: "Would you like to join the workshop?", a: "I'd love to, but I have a deadline.", opts: ["I'd love to, but I have a deadline.", "It is on the second floor.", "Yes, she works here.", "Last Tuesday."], why: "제안에는 수락·거절 의사로 답합니다.", ko: "워크숍에 참여하시겠어요? — 그러고 싶지만 마감이 있어요." },
+    { tag: "숫자·시간 함정", audio: "The flight departs at a quarter to nine.", a: "8:45", opts: ["8:45", "9:15", "9:45", "8:15"], why: "a quarter to nine = 9시까지 15분 남은 시각 = 8:45", ko: "비행기는 8시 45분에 출발한다." },
     { tag: "숫자·시간 함정", audio: "The invoice is due in fifteen days.", a: "15일 후", opts: ["15일 후", "5일 후", "50일 후", "2주 전"], why: "in fifteen days = 15일 후", ko: "청구서는 15일 후가 기한이다." },
     { tag: "숫자·시간 함정", audio: "Please submit the form by the 30th of next month.", a: "다음 달 30일", opts: ["다음 달 30일", "이번 달 13일", "다음 달 3일", "이번 달 30일"], why: "the 30th of next month = 다음 달 30일", ko: "다음 달 30일까지 서식을 제출해 주세요." },
     { tag: "숫자·시간 함정", audio: "The discount is thirteen percent off the original price.", a: "13%", opts: ["13%", "30%", "3%", "33%"], why: "thirteen(13)과 thirty(30)은 발음이 다릅니다.", ko: "정가에서 13% 할인됩니다." },
     { tag: "숫자·시간 함정", audio: "The conference runs from Tuesday to Thursday.", a: "화요일~목요일", opts: ["화요일~목요일", "목요일~화요일", "화요일~수요일", "수요일~금요일"], why: "from A to B = A부터 B까지", ko: "회의는 화요일부터 목요일까지 열린다." },
     { tag: "숫자·시간 함정", audio: "Our office is on the fourteenth floor.", a: "14층", opts: ["14층", "4층", "40층", "15층"], why: "fourteenth = 14번째", ko: "우리 사무실은 14층에 있다." },
-    { tag: "Part 2 질문·응답", audio: "How often do you visit the branch office?", a: "Twice a month.", opts: ["Twice a month.", "For two hours.", "In the main lobby.", "Yes, I visited."], why: "How often에는 빈도를 나타내는 표현으로 답합니다.", ko: "지사에 얼마나 자주 가나요? — 한 달에 두 번이요." },
-    { tag: "Part 2 질문·응답", audio: "Could you send me the invoice again?", a: "Sure, I will email it right away.", opts: ["Sure, I will email it right away.", "It was about two hundred dollars.", "Yes, the office is closed.", "I met him last week."], why: "요청에는 수락·행동 약속으로 답합니다.", ko: "청구서를 다시 보내 주시겠어요? — 네, 바로 이메일로 보내 드리겠습니다." },
-    { tag: "Part 2 질문·응답", audio: "Should we take a taxi or the subway?", a: "Let's take the subway to save time.", opts: ["Let's take the subway to save time.", "Yes, I took it yesterday.", "It is on the third floor.", "About twenty minutes ago."], why: "A or B 선택 의문문에는 둘 중 하나를 고르는 답이 자연스럽습니다.", ko: "택시를 탈까요, 지하철을 탈까요? — 시간을 아끼려면 지하철을 타죠." },
+    { tag: "Part 2 질의·응답", audio: "How often do you visit the branch office?", a: "Twice a month.", opts: ["Twice a month.", "For two hours.", "In the main lobby.", "Yes, I visited."], why: "How often에는 빈도를 나타내는 표현으로 답합니다.", ko: "지사에 얼마나 자주 가나요? — 한 달에 두 번이요." },
+    { tag: "Part 2 질의·응답", audio: "Could you send me the invoice again?", a: "Sure, I will email it right away.", opts: ["Sure, I will email it right away.", "It was about two hundred dollars.", "Yes, the office is closed.", "I met him last week."], why: "요청에는 수락·행동 약속으로 답합니다.", ko: "청구서를 다시 보내 주시겠어요? — 네, 바로 이메일로 보내 드리겠습니다." },
+    { tag: "Part 2 질의·응답", audio: "Should we take a taxi or the subway?", a: "Let's take the subway to save time.", opts: ["Let's take the subway to save time.", "Yes, I took it yesterday.", "It is on the third floor.", "About twenty minutes ago."], why: "A or B 선택 의문문에는 둘 중 하나를 고르는 답이 자연스럽습니다.", ko: "택시를 탈까요, 지하철을 탈까요? — 시간을 아끼려면 지하철을 타죠." },
     { tag: "숫자·시간 함정", audio: "The total comes to three hundred fifty dollars.", a: "$350", opts: ["$350", "$315", "$3,150", "$530"], why: "three hundred fifty = 350입니다.", ko: "합계는 350달러입니다." },
     { tag: "숫자·시간 함정", audio: "Please dial extension two oh four.", a: "204", opts: ["204", "244", "214", "240"], why: "내선 번호는 숫자를 하나씩 읽습니다: two-oh-four = 204", ko: "내선 번호 204번을 눌러 주세요." },
     { tag: "숫자·시간 함정", audio: "The order number is double seven four three.", a: "7743", opts: ["7743", "7473", "7734", "7474"], why: "double seven = 77, 뒤에 four three = 43 → 7743", ko: "주문 번호는 7743입니다." }
@@ -6431,14 +6476,36 @@
   // 종이에서 통째로 빠집니다(인쇄본은 「한 장으로 보는 자료」로도 쓰입니다).
   var homeGroups = [].slice.call(document.querySelectorAll("#homeView details.home-group"));
   var printReopened = [];
+  var printing = false;
   window.addEventListener("beforeprint", function () {
+    printing = true;
     printReopened = homeGroups.filter(function (g) { return !g.open; });
     printReopened.forEach(function (g) { g.open = true; });
   });
   window.addEventListener("afterprint", function () {
     printReopened.forEach(function (g) { g.open = false; });
     printReopened = [];
+    printing = false;
   });
+
+  // 홈 목차 묶음(어휘 익히기·파트별 훈련·말하기·쓰기·실전 관리)의 펼침 상태를 기억합니다.
+  // 홈은 53개 섹션이라 한 번 펼쳐 둔 묶음이 화면을 옮겼다 돌아올 때마다 접혀 있으면
+  // 매번 다시 찾아 펼쳐야 합니다. (인쇄용 임시 펼침은 저장하지 않습니다.)
+  var HOME_GROUP_KEY = "toeic1000_homegroups";
+  var homeGroupSaved = null;
+  try { homeGroupSaved = JSON.parse(localStorage.getItem(HOME_GROUP_KEY) || "null"); } catch (e) { homeGroupSaved = null; }
+  if (homeGroupSaved && typeof homeGroupSaved === "object") {
+    homeGroups.forEach(function (g) {
+      if (typeof homeGroupSaved[g.id] === "boolean") g.open = homeGroupSaved[g.id];
+    });
+  }
+  function saveHomeGroups() {
+    if (printing) return;
+    var state = {};
+    homeGroups.forEach(function (g) { state[g.id] = g.open; });
+    try { localStorage.setItem(HOME_GROUP_KEY, JSON.stringify(state)); } catch (e) {}
+  }
+  homeGroups.forEach(function (g) { g.addEventListener("toggle", saveHomeGroups); });
 
   // 섹션 메뉴: 자주 쓰는 8개만 먼저 보여 주고, 나머지는 주제별로 접어 둡니다.
   // 넓은 화면에서는 스크롤 부담이 적으므로 전체를 펼친 상태로 시작합니다.
@@ -7766,6 +7833,14 @@
     var pct = totalCount ? Math.round(learnedN / totalCount * 100) : 0;
     document.getElementById("heroLearned").textContent = learnedN;
     document.getElementById("heroPct").textContent = pct + "%";
+
+    // 이어서 학습 — 학습 기록이 없는 첫 방문에는 보여 주지 않습니다(할 일이 겹침).
+    var resumeBtn = document.getElementById("homeResume");
+    if (resumeBtn) {
+      var canResume = learnedN > 0 || !!lastWord;
+      resumeBtn.hidden = !canResume;
+      if (canResume) resumeBtn.textContent = "▶ 이어서 학습 " + learnedN + "/" + totalCount;
+    }
     document.getElementById("heroStreak").textContent = streakInfo.count;
     document.getElementById("heroBest").textContent = examBest;
 
@@ -7890,6 +7965,7 @@
       return;
     }
     if (e.target.id === "homeStartQuiz" || e.target.id === "homeCtaStart") enterQuiz();
+    else if (e.target.id === "homeResume") enterResume();
     else if (e.target.id === "homeStartFlash") enterFlash();
     else if (e.target.id === "homeDiag") enterDiag();
   });

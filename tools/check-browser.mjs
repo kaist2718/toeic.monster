@@ -202,6 +202,13 @@ try {
   }
   await wait(1000);
 
+  // 「확장 홈」(회화 교재 카드 등)은 requestIdleCallback + data/extra.js(167KB) 로딩 뒤에 그려집니다.
+  // 고정 시간에 기대면 브라우저가 바쁠 때 0장으로 보입니다 — 실제로 그려질 때까지 기다립니다.
+  for (let i = 0; i < 40; i++) {
+    if ((await evaluate(`document.querySelectorAll("#conversationBookGrid > *").length`)) > 0) break;
+    await wait(250);
+  }
+
   /* 3-1. 데스크톱 첫 화면 */
   const desktop = await evaluate(`(() => {
     const q = (s) => document.querySelectorAll(s).length;
@@ -491,7 +498,7 @@ try {
 
   /* 3-4d. 단어 카드 발음에 유닛 이모지가 섞이지 않는지 */
   // 카드의 단어 칸(.w)에는 유닛 아이콘(💼 📊 …)이 함께 들어 있어,
-  // 화면 글자를 그대로 읽히면 "이모지 + 단어"가 낭독됬습니다.
+  // 화면 글자를 그대로 읽히면 "이모지 + 단어"가 낭독됐습니다.
   const spoken = await evaluate(`(() => {
     const ss = window.speechSynthesis;
     if (!ss) return { skip: true };
@@ -569,9 +576,11 @@ try {
     ["units/idioms.html", "숙어 모음"],
     ["grammar/index.html", "문법 허브"],
     ["grammar/basic.html", "문법 교재"],
+    ["grammar/basic-01.html", "낱개 과 페이지"],
     ["grammar/cheatsheet.html", "문법 요약"],
     ["conversation/index.html", "회화 허브"],
     ["conversation/conversation-basic.html", "회화 교재"],
+    ["conversation/conversation-basic-01.html", "낱개 과 페이지(회화)"],
     ["guides/index.html", "가이드 허브"],
     ["guides/part-5-grammar.html", "가이드"],
     ["privacy.html", "개인정보처리방침"],
@@ -875,6 +884,144 @@ try {
     `정적 페이지도 OS 다크 모드를 따릅니다 (배경 ${staticDark})`,
   );
   await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: "light" }] });
+
+  /* ---------------------------------------------------------------- */
+  /* 3-10. 내비게이션 — 교재 과 이동 · 가이드 이전/다음 · 이어서 학습  */
+  /* ---------------------------------------------------------------- */
+
+  // 교재 한 권은 12과가 한 페이지에 이어져 77KB까지 커집니다.
+  // 과를 읽는 중에 위 목차까지 되돌아가지 않도록 넣은 두 장치(과 끝 링크 · 현재 과 바)와,
+  // 홈의 「이어서 학습」이 실제 브라우저에서 동작하는지 확인합니다.
+
+  const bookFrom = await openPage("grammar/basic.html");
+  const bookNav = await evaluate(`(() => {
+    const links = [...document.querySelectorAll(".chnav a")];
+    return {
+      chapters: document.querySelectorAll("section.gram[id]").length,
+      bar: !!document.getElementById("chBar"),
+      toc: !!document.getElementById("toc"),
+      links: links.length,
+      anchorsOk: links.every((a) => !!document.getElementById((a.getAttribute("href") || "").slice(1))),
+    };
+  })()`);
+  check(bookNav.chapters === 12, `교재: 과 섹션 ${bookNav.chapters}개를 찾았습니다 (12개)`);
+  check(bookNav.toc && bookNav.bar, "교재: 목차 앵커(#toc)와 현재 과 바(#chBar)가 있습니다");
+  check(bookNav.anchorsOk && bookNav.links > 0, `교재: 과 끝 이동 링크 ${bookNav.links}개가 모두 실제 앵커를 가리킵니다`);
+
+  // 7과로 내려가면, 지금 보고 있는 과를 알려 주는 바가 따라옵니다.
+  await evaluate(`document.getElementById("ch-07").scrollIntoView()`);
+  await wait(700);
+  const barShown = await evaluate(`(() => {
+    const bar = document.getElementById("chBar");
+    const next = document.getElementById("chBarNext");
+    const r = bar.getBoundingClientRect();
+    return {
+      hidden: bar.hidden,
+      text: document.getElementById("chBarCur").textContent.trim(),
+      next: next.hidden ? "" : next.getAttribute("href"),
+      inViewport: r.top >= -1 && r.bottom <= window.innerHeight + 1,
+      over: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    };
+  })()`);
+  check(!barShown.hidden && /^07과/.test(barShown.text), `교재: 7과로 가면 현재 과 바가 뜹니다 ("${barShown.text}")`);
+  check(barShown.next === "#ch-08", `교재: 바의 「다음 과」가 8과를 가리킵니다 (${barShown.next})`);
+  check(
+    barShown.inViewport && barShown.over <= 0,
+    `교재: 바가 화면 안에 들어오고 375px 에서 넘치지 않습니다 (넘침 ${barShown.over}px)`,
+  );
+
+  // 페이지 끝에서는 같은 링크(pager)가 화면에 있으니 바를 내립니다.
+  await evaluate(`window.scrollTo(0, document.body.scrollHeight)`);
+  await wait(700);
+  const barAtEnd = await evaluate(`document.getElementById("chBar").hidden`);
+  check(barAtEnd, "교재: 페이지 끝에서는 바가 내려가 본문을 가리지 않습니다");
+  check(errorsSince(bookFrom).js.length === 0, "교재: 현재 과 바 스크립트가 오류 없이 실행됩니다");
+
+  // pager 가 단계명을 두 번 찍던 문제("중급 중급 영문법")가 사라졌는지.
+  await openPage("grammar/intermediate.html");
+  const midPager = await evaluate(`[...document.querySelectorAll(".pager a")].map((a) => a.textContent.trim()).join(" | ")`);
+  const midPagerDup = ["초급 초급", "중급 중급", "고급 고급", "기초 기초"].filter((s) => midPager.includes(s));
+  check(midPagerDup.length === 0, `교재: pager 에 단계명이 겹치지 않습니다 (${midPager})`);
+
+  // 가이드 9편은 이전/다음 편으로 이어 볼 수 있습니다.
+  await openPage("guides/part-2-traps.html");
+  const guideHrefs = await evaluate(`[...document.querySelectorAll(".pager a")].map((a) => a.getAttribute("href")).join(",")`);
+  check(
+    guideHrefs.includes("part-7-double-passage.html") && guideHrefs.includes("vocabulary-30day.html"),
+    `가이드: 이전·다음 편으로 이어 볼 수 있습니다 (${guideHrefs})`,
+  );
+
+  // 「이어서 학습」 — 기록이 없으면 숨김, 기록이 있으면 마지막으로 본 단어부터.
+  await openPage("index.html");
+  await evaluate(`localStorage.clear()`);
+  await openPage("index.html");
+  const resumeHidden = await evaluate(`document.getElementById("homeResume").hidden`);
+  check(resumeHidden === true, "이어서 학습: 기록이 없는 첫 방문에는 버튼이 보이지 않습니다");
+
+  await evaluate(`(() => {
+    localStorage.setItem("toeic1000_learned", JSON.stringify({ available: "2026-09-16" }));
+    localStorage.setItem("toeic1000_lastword", "require");
+  })()`);
+  await openPage("index.html");
+  const resumeState = await evaluate(
+    `(() => { const b = document.getElementById("homeResume"); return { hidden: b.hidden, text: b.textContent.trim() }; })()`,
+  );
+  check(
+    !resumeState.hidden && resumeState.text.indexOf("이어서 학습 1/") !== -1,
+    `이어서 학습: 기록이 있으면 진도와 함께 보입니다 ("${resumeState.text}")`,
+  );
+
+  await evaluate(`document.getElementById("homeResume").click()`);
+  await wait(600);
+  const resumeCard = await evaluate(
+    `(() => ({ shown: document.getElementById("flashcardView").classList.contains("show"), word: document.getElementById("fcWord").textContent.trim() }))()`,
+  );
+  check(
+    resumeCard.shown && resumeCard.word === "require",
+    `이어서 학습: 마지막으로 본 단어부터 시작합니다 ("${resumeCard.word}")`,
+  );
+  await evaluate(`localStorage.clear()`);
+
+  /* ---------------------------------------------------------------- */
+  /* 3-11. 낱개 과 페이지 · 홈 묶음 펼침 상태 기억                    */
+  /* ---------------------------------------------------------------- */
+
+  // 12과가 이어지는 책 페이지에서 한 과만 떼어 둔 주소(검색·공유용)입니다.
+  // 책과 서로를 링크하고, 앞뒤 과로 이어지는지 확인합니다(정적 검사는 audit:site 담당).
+  const chapterFrom = await openPage("grammar/basic-05.html");
+  const chapterPage = await evaluate(`(() => {
+    const nav = document.querySelector(".chnav");
+    const links = nav ? [...nav.querySelectorAll("a")].map((a) => a.getAttribute("href")) : [];
+    return {
+      canonical: (document.querySelector('link[rel="canonical"]') || {}).href || "",
+      up: links[0] || "",
+      prev: links[1] || "",
+      next: links[2] || "",
+      backToBook: (document.querySelector('.lead a') || {}).getAttribute ? document.querySelector('.lead a').getAttribute("href") : "",
+      sections: document.querySelectorAll("section.gram").length,
+      over: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    };
+  })()`);
+  check(chapterPage.canonical.endsWith("/grammar/basic-05.html"), `낱개 과 페이지: canonical 이 스스로를 가리킵니다 (${chapterPage.canonical})`);
+  check(
+    chapterPage.up === "basic.html" && chapterPage.prev === "basic-04.html" && chapterPage.next === "basic-06.html",
+    `낱개 과 페이지: 책 · 이전 · 다음 과로 이어집니다 (${chapterPage.up} / ${chapterPage.prev} / ${chapterPage.next})`,
+  );
+  check(chapterPage.sections === 1 && chapterPage.over <= 0, "낱개 과 페이지: 과 하나만 담고 375px 에서 넘치지 않습니다");
+  check(errorsSince(chapterFrom).js.length === 0, "낱개 과 페이지: 자바스크립트 오류 0건");
+
+  // 홈 묶음(어휘 익히기 등)의 펼침 상태가 화면을 옮겼다 돌아와도 유지되는지.
+  await evaluate(`localStorage.clear()`);
+  await openPage("index.html");
+  await evaluate(`document.getElementById("home-group-part").open = true`);
+  await wait(300);
+  await openPage("index.html");
+  const groupKept = await evaluate(`(() => ({ part: document.getElementById("home-group-part").open, vocab: document.getElementById("home-group-vocab").open }))()`);
+  check(
+    groupKept.part === true && groupKept.vocab === true,
+    `홈 묶음: 펼쳐 둔 상태가 다시 열어도 유지됩니다 (파트별=${groupKept.part} · 어휘=${groupKept.vocab})`,
+  );
+  await evaluate(`localStorage.clear()`);
 } finally {
   await shutdown();
 }

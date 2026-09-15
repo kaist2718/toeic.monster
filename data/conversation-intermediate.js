@@ -196,7 +196,7 @@ window.CONVERSATION_BOOKS.push({
               ["기록", "Could you confirm that in writing?"]
             ]
           },
-          note: "look into 는 조사하다, 살펴보다는 뜻입니다. check 보다 정중하고, 상대에게 시간을 주는 표현입니다."
+          note: "look into 는 조사하다, 살펴본다는 뜻입니다. check 보다 정중하고, 상대에게 시간을 주는 표현입니다."
         },
         {
           h: "강하게 밀어야 할 때 — 단계 올리기",
@@ -240,7 +240,7 @@ window.CONVERSATION_BOOKS.push({
         },
         {
           h: "대안을 함께 제시하기",
-          body: "하나만 제안하면 예스와 노로 끝납니다. 대안을 함께 주면 상대가 고를 수 있어 대화가 이어집니다.",
+          body: "하나만 제안하면 Yes/No 로 끝납니다. 대안을 함께 주면 상대가 고를 수 있어 대화가 이어집니다.",
           examples: [
             { en: "We could either split the order or delay the second half. Which would you prefer?", ko: "주문을 나누거나 후반부를 미룰 수 있습니다. 어느 쪽이 좋으세요?" },
             { en: "One option is to extend the deadline. Another is to add a second team.", ko: "한 가지 방법은 기한을 늘리는 것이고, 다른 방법은 인력을 더 넣는 것입니다." }
@@ -370,7 +370,7 @@ window.CONVERSATION_BOOKS.push({
         }
       ],
       mistakes: [
-        "Because 다음에 시스템 문제를 길게 설명하며 사과를 뒤로 미루는 실수 — 사과가 먼저, 설명이 뒤입니다.",
+        "이유 설명을 사과보다 앞세우는 실수 — 사과가 먼저, 설명이 뒤입니다.",
         "Sorry. 만 반복하고 재발 방지나 책임을 말하지 않는 실수 — 상대는 다음을 어떻게 할지 알고 싶어 합니다."
       ],
       practice: [

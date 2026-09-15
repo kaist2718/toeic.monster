@@ -622,7 +622,7 @@ window.CONVERSATION_BOOKS.push({
             { en: "Could I leave a message? Please ask him to call me back.", ko: "메시지를 남겨도 될까요? 저에게 다시 전화해 달라고 전해 주세요." },
             { en: "I'll pass on the message. Thank you for calling.", ko: "메시지 전해 드리겠습니다. 전화 주셔서 감사합니다." }
           ],
-          note: "call me back 은 다시 전화해 달라는 뜻입니다. call back 은 사람에게, call back to 는 장소에 다시 전화한다는 뜻으로 쓰입니다."
+          note: "call me back 은 저에게 다시 전화해 달라는 뜻입니다. 목적어를 빼고 call back 만 쓰면 '다시 전화하다'라는 뜻이 됩니다."
         }
       ],
       mistakes: [

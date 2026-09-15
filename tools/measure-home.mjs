@@ -15,6 +15,7 @@
  * 실행:  node tools/measure-home.mjs                 (1100px)
  *        node tools/measure-home.mjs --width 375     (모바일 폭)
  *        node tools/measure-home.mjs --all-closed    (모두 접었을 때 높이도 함께)
+ *        node tools/measure-home.mjs --live          (배포된 사이트를 그대로 계측)
  *        node tools/measure-home.mjs --top 15
  * 종료 코드: 동작 점검이 실패하면 1, 아니면 0
  *
@@ -65,7 +66,12 @@ if (!chromePath) {
   process.exit(0);
 }
 
-/* ---------------- 임시 서버 + 헤드리스 Chrome ---------------- */
+/* ---------------- 임시 서버(로컬일 때만) + 헤드리스 Chrome ---------------- */
+
+// --live 이면 로컬 파일 대신 **배포된 사이트**를 계측합니다(check-browser.mjs 와 같은 규칙).
+// 로컬 수치가 실제 프로덕션에서도 재현되는지 확인할 때 씁니다.
+const LIVE = process.argv.includes("--live");
+const LIVE_SITE = "https://toeic.monster";
 
 const server = http.createServer((req, res) => {
   let p = decodeURIComponent((req.url || "/").split("?")[0]);
@@ -79,8 +85,12 @@ const server = http.createServer((req, res) => {
   res.writeHead(200, { "content-type": MIME[path.extname(f)] || "application/octet-stream" });
   fs.createReadStream(f).pipe(res);
 });
-await new Promise((r) => server.listen(0, "127.0.0.1", r));
-const port = server.address().port;
+let BASE = LIVE_SITE;
+if (!LIVE) {
+  await new Promise((r) => server.listen(0, "127.0.0.1", r));
+  BASE = `http://127.0.0.1:${server.address().port}`;
+  server.on("error", () => {}); // 포트가 없어도 계측은 포기하지 않습니다(아래에서 연결 실패로 드러납니다).
+}
 
 const profile = path.join(os.tmpdir(), `toeic-measure-home-${process.pid}`);
 fs.rmSync(profile, { recursive: true, force: true });
@@ -123,7 +133,7 @@ async function shutdown(code) {
     /* 무시 */
   }
   chrome.kill();
-  server.close();
+  if (!LIVE) server.close();
   try {
     fs.rmSync(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 300 });
   } catch {
@@ -134,7 +144,7 @@ async function shutdown(code) {
 
 /* ---------------- 계측 ---------------- */
 
-const site = `http://127.0.0.1:${port}/index.html`;
+const site = `${BASE}/`;
 const target = await (await fetch(`${cdp}/json/new?${encodeURIComponent(site)}`, { method: "PUT" })).json();
 const ws = new WebSocket(target.webSocketDebuggerUrl);
 let nextId = 0;
@@ -209,11 +219,15 @@ const data = await evaluate(`(() => {
 const total = data.sections.reduce((n, s) => n + s.h, 0);
 
 console.log("");
-console.log(`════════ 홈 화면 길이 계측 (${WIDTH}px) ════════`);
+console.log(`════════ 홈 화면 길이 계측 (${WIDTH}px · ${LIVE ? "배포본 " + LIVE_SITE : "로컬"}) ════════`);
 console.log(`문서 전체 스크롤 높이 : ${data.docHeight.toLocaleString("en-US")}px`);
 console.log(`#homeView 높이        : ${data.homeHeight.toLocaleString("en-US")}px`);
 console.log(`홈 섹션 개수          : ${data.sectionCount}개`);
-console.log(`묶음(기본 펼침)       : ${GROUPS.map((g) => `${g.title} ${g.open ? "펼침" : "접힘"}`).join(" · ")}`);
+console.log(
+  GROUPS.length
+    ? `묶음(기본 펼침)       : ${GROUPS.map((g) => `${g.title} ${g.open ? "펼침" : "접힘"}`).join(" · ")}`
+    : "묶음(기본 펼침)       : 없음 — 묶음 구조가 아닌 배포본입니다",
+);
 const closedCount = data.sections.filter((s) => s.hidden).length;
 console.log(`접힌 묶음 안 섹션      : ${closedCount}개 / 전체 ${data.sectionCount}개`);
 // "전부 접었을 때"는 기본 펼침을 어디까지 열어 둘지 정하는 근거가 됩니다.

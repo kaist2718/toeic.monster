@@ -25,7 +25,7 @@
 <!-- 본문 서체 — Pretendard Variable. 필요한 글자 조각만 내려받는 dynamic subset 이라 첫 로드 부담이 작습니다. -->
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-<!-- 공용 스타일·스크립트 — 43개 정적 페이지가 한 파일을 함께 받아 씁니다(서비스워커가 캐시). -->
+<!-- 공용 스타일·스크립트 — 124개 정적 페이지가 한 파일을 함께 받아 씁니다(서비스워커가 캐시). -->
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="icon" href="../icon.svg" type="image/svg+xml">
 <link rel="icon" href="../icon-192.png" type="image/png" sizes="192x192">
@@ -71,19 +71,19 @@
         {
           "@type": "ListItem",
           "position": 1,
-          "name": "초급 기초 영어회화",
+          "name": "기초 영어회화",
           "url": "https://toeic.monster/conversation/conversation-basic.html"
         },
         {
           "@type": "ListItem",
           "position": 2,
-          "name": "중급 중급 영어회화",
+          "name": "중급 영어회화",
           "url": "https://toeic.monster/conversation/conversation-intermediate.html"
         },
         {
           "@type": "ListItem",
           "position": 3,
-          "name": "고급 고급 영어회화",
+          "name": "고급 영어회화",
           "url": "https://toeic.monster/conversation/conversation-advanced.html"
         }
       ]
@@ -153,7 +153,13 @@
   </ol>
 
   <h2 class="sec">이 교재를 만든 기준</h2>
-  <p class="lead">사이트 조사 결과와 단계 설계는 <b>docs/conversation-research.md</b> 에 정리했습니다. 상황(기능)을 축으로 삼고, CEFR A1~C1 의 말하기 기술을 과 단위로 나눴습니다.</p>
+  <p class="lead">회화 교재는 <b>어떤 상황을 배우는지</b>를 먼저 정하고, <b>어디까지 말할 수 있는지</b>를 CEFR 로 표시했습니다. 난이도만 있으면 어디서 시작할지 몰라 헤매고, 상황만 있으면 내 수준에 맞는지 가늠할 수 없기 때문입니다.</p>
+  <ol class="words">
+    <li><span class="w-mean">축은 문법 항목이 아니라 <b>상황(기능)</b> 입니다. "현재완료를 배운다"보다 "카페에서 주문한다"를 먼저 찾기 때문에, 과 제목을 인사·주문·길 묻기·협상처럼 실제로 겪는 장면으로 잡았습니다.</span></li>
+    <li><span class="w-mean">단계는 <b>초급 A1~A2 · 중급 B1~B2 · 고급 C1</b> 세 가지로 고정하고 CEFR 을 함께 적었습니다. 문법 교재와 같은 이름·같은 표기를 써서 두 교재를 나란히 오갈 수 있습니다.</span></li>
+    <li><span class="w-mean">한 과는 <b>상황 요약 → 표현 표 → 예문 → 흔한 실수 → 연습 문제</b> 순서입니다. 예문마다 🔊 를 붙여 눈으로만 읽지 않고 소리로 확인하게 했습니다.</span></li>
+    <li><span class="w-mean">이 구성은 <b>British Council LearnEnglish</b>(CEFR 6단계), <b>VOA Let's Learn English</b>(2단계), <b>ELLLO</b>(레벨별 레슨과 퀴즈), <b>BBC Learning English</b>(단원 단위)의 단계 구성을 조사해 세 단계로 정리한 것입니다.</span></li>
+  </ol>
 </main>
 <footer class="ft wrap">
   <nav>

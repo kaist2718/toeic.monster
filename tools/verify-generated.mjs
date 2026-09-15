@@ -3,7 +3,8 @@
  * 생성물 검증 — HEAD 의 생성 파일과 작업 트리를 비교합니다.
  *
  * 목적: "소스만 고치고 build 를 돌리지 않은 커밋"을 잡아내는 것.
- *   대상: units/ · guides/ · grammar/ · assets/ · 404.html · sitemap.xml (모두 tools/build-pages.mjs 산출물)
+ *   대상: units/ · guides/ · grammar/ · conversation/ · assets/ · 404.html · sitemap.xml
+ *         (모두 tools/build-pages.mjs 산출물)
  *
  * <lastmod> 만 비교에서 제외하는 이유:
  *   sitemap.xml 의 <lastmod> 는 "data·index.html 을 마지막으로 건드린 커밋 날짜"에서 나옵니다.
@@ -23,7 +24,7 @@ import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const TARGETS = ["units", "guides", "grammar", "assets", "404.html", "sitemap.xml"];
+const TARGETS = ["units", "guides", "grammar", "conversation", "assets", "404.html", "sitemap.xml"];
 
 const git = (args) =>
   execFileSync("git", args, { cwd: ROOT, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
@@ -93,7 +94,9 @@ const problems = [
   ...changed.map((f) => `내용이 HEAD와 다릅니다 — ${f}`),
   ...extra.map((f) => `아직 커밋되지 않았습니다 — ${f}`),
   ...missing.map((f) => `HEAD에는 있는데 파일이 없습니다 — ${f}`),
-];  console.log("🧾 생성물 검증 (units · guides · grammar · assets · 404.html · sitemap.xml)");
+];
+
+console.log("🧾 생성물 검증 (units · guides · grammar · conversation · assets · 404.html · sitemap.xml)");
 console.log(`   · 커밋된 파일 ${trackedFiles.length}개 · 작업 트리 파일 ${working.length}개`);
 console.log("   · sitemap.xml 의 <lastmod> 는 커밋 시점에 따라 달라지므로 비교에서 제외");
 

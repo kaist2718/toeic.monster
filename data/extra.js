@@ -282,7 +282,7 @@ window.TOEIC_EXTRA = {
         { n: 4, a: "by", opts: ["by", "until", "for", "since"], why: "지원 마감 기한은 전치사 by로 표현합니다." }
       ] },
     { title: "호텔 안내문", type: "호텔 안내",
-      text: "We are delighted to welcome you to the Grand Riverside Hotel. Your room key also serves __(1)__ a gym pass, so you may use our fitness center at no extra charge. Breakfast is served daily __(2)__ 6:30 a.m. and 10 a.m. In the Ocean View Restaurant. Should you need anything during your stay, please dial 0 to reach the front desk __(3)__. We hope you enjoy your visit and look forward __(4)__ seeing you again.",
+      text: "We are delighted to welcome you to the Grand Riverside Hotel. Your room key also serves __(1)__ a gym pass, so you may use our fitness center at no extra charge. Breakfast is served daily __(2)__ 6:30 a.m. and 10 a.m. in the Ocean View Restaurant. Should you need anything during your stay, please dial 0 to reach the front desk __(3)__. We hope you enjoy your visit and look forward __(4)__ seeing you again.",
       blanks: [
         { n: 1, a: "as", opts: ["as", "for", "with", "to"], why: "serve as ~는 '~로 쓰이다'라는 관용 표현입니다." },
         { n: 2, a: "between", opts: ["between", "among", "during", "from"], why: "between A and B 구조가 필요합니다." },
@@ -738,7 +738,7 @@ window.TOEIC_EXTRA = {
     { tag: "수량", audio: "We ordered three dozen boxes.", a: "36개", opts: ["36개", "13개", "30개", "3개"], why: "a dozen = 12, three dozen = 36" },
     { tag: "수량", audio: "Nearly half of the staff attended the workshop.", a: "약 절반", opts: ["약 절반", "약 15%", "거의 전부", "약 4분의 1"], why: "half = 절반" },
     { tag: "시간", audio: "The shuttle leaves every quarter past the hour.", a: "매시 15분", opts: ["매시 15분", "매시 45분", "30분마다", "매시 정각"], why: "a quarter past = ~시 15분" },
-    { tag: "시간", audio: "Please arrive by ten to nine.", a: "8시 50분", opts: ["8시 50분", "9시 10분", "9시 50분", "8시 10분"], why: "ten to nine = 9시 10분 전 = 8시 50분" },
+    { tag: "시간", audio: "Please arrive by ten to nine.", a: "8시 50분", opts: ["8시 50분", "9시 10분", "9시 50분", "8시 10분"], why: "ten to nine = 9시까지 10분 남은 시각 = 8시 50분" },
     { tag: "가격", audio: "The annual subscription costs one thousand two hundred dollars.", a: "$1,200", opts: ["$1,200", "$120", "$12,000", "$1,020"], why: "one thousand two hundred = 1,200" },
     { tag: "가격", audio: "Rooms start at ninety-nine dollars a night.", a: "$99", opts: ["$99", "$19", "$909", "$9"], why: "ninety-nine = 99입니다." },
     { tag: "날짜", audio: "Our fiscal year begins on the twenty-fifth of March.", a: "3월 25일", opts: ["3월 25일", "5월 23일", "3월 5일", "2월 25일"], why: "the twenty-fifth of March = 3월 25일" },

@@ -25,7 +25,7 @@
 <!-- 본문 서체 — Pretendard Variable. 필요한 글자 조각만 내려받는 dynamic subset 이라 첫 로드 부담이 작습니다. -->
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-<!-- 공용 스타일·스크립트 — 43개 정적 페이지가 한 파일을 함께 받아 씁니다(서비스워커가 캐시). -->
+<!-- 공용 스타일·스크립트 — 124개 정적 페이지가 한 파일을 함께 받아 씁니다(서비스워커가 캐시). -->
 <link rel="stylesheet" href="../assets/site.css">
 <script defer src="../assets/speak.js"></script>
 <link rel="icon" href="../icon.svg" type="image/svg+xml">
@@ -144,7 +144,7 @@
   <a class="cta" href="../index.html?level=basic#grammar-quiz">✏️ 앱에서 이 교재 문제 풀기</a>
   <p class="lead">🔊 를 누르면 예문 발음을 들을 수 있습니다(앱에서 고른 목소리·속도를 그대로 사용).</p>
 
-  <h2 class="sec">목차</h2>
+  <h2 class="sec" id="toc">목차</h2>
   <ul class="toc">
     <li><a href="#ch-01">
       <b>01과</b>
@@ -234,7 +234,7 @@
     </div>
     <div class="gmistake">
       <h3>⚠️ 자주 틀리는 포인트</h3>
-      <ul><li>주어를 빠뜨리고 Is busy. 처럼 말하는 실수 — 반드시 주어를 넣어 She is busy. 로 씁니다.</li><li>I am agree. 는 틀린 문장입니다. agree는 일반동사이므로 I agree. 로 씁니다.</li></ul>
+      <ul><li>주어를 빠뜨리고 Is busy. 처럼 말하는 실수 — 반드시 주어를 넣어 She is busy. 로 씁니다.</li><li>I am agree. 는 틀린 문장입니다. agree 는 일반동사이므로 I agree. 로 씁니다.</li></ul>
     </div>
     <div class="gquiz">
       <h3>✏️ 연습 문제 3문항</h3>
@@ -254,6 +254,10 @@
         <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: were</b><br>복수 주어 The employees 에는 과거형 were 를 씁니다.</p></details>
       </div>
     </div>
+    <nav class="chnav" aria-label="01과 이동">
+      <a class="up" href="#toc">↑ 목차</a>
+      <a class="next" href="#ch-02">02과 일반동사와 3인칭 단수 →</a>
+    </nav>
   </section>
 
   <section class="gram" id="ch-02">
@@ -305,9 +309,13 @@
       <div class="gquiz-item">
         <p class="gquiz-q">3. The staff ____ not use the back entrance during renovation.</p>
         <ol class="gquiz-opts"><li>does</li><li>do</li><li>is</li><li>are</li></ol>
-        <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: do</b><br>복수 주어 The staff 에는 do not 을 씁니다.</p></details>
+        <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: do</b><br>staff 는 구성원 전체를 가리키는 집합명사로, 구성원들(복수)로 볼 때는 do not 을 씁니다.</p></details>
       </div>
     </div>
+    <nav class="chnav" aria-label="02과 이동">
+      <a class="up" href="#toc">↑ 목차</a>
+      <a class="next" href="#ch-03">03과 명사·관사·복수형 →</a>
+    </nav>
   </section>
 
   <section class="gram" id="ch-03">
@@ -362,6 +370,10 @@
         <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: people</b><br>person 의 복수형 people 이 자연스럽고, 숫자 뒤에 바로 씁니다.</p></details>
       </div>
     </div>
+    <nav class="chnav" aria-label="03과 이동">
+      <a class="up" href="#toc">↑ 목차</a>
+      <a class="next" href="#ch-04">04과 대명사와 소유 표현 →</a>
+    </nav>
   </section>
 
   <section class="gram" id="ch-04">
@@ -411,6 +423,10 @@
         <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: themselves</b><br>주어와 목적어가 같고 복수이므로 재귀대명사 themselves 를 씁니다. theirselves 는 틀린 표기입니다.</p></details>
       </div>
     </div>
+    <nav class="chnav" aria-label="04과 이동">
+      <a class="up" href="#toc">↑ 목차</a>
+      <a class="next" href="#ch-05">05과 현재시제와 현재진행형 →</a>
+    </nav>
   </section>
 
   <section class="gram" id="ch-05">
@@ -460,6 +476,10 @@
         <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: belongs</b><br>belong 은 상태동사이므로 진행형 대신 현재시제를 씁니다.</p></details>
       </div>
     </div>
+    <nav class="chnav" aria-label="05과 이동">
+      <a class="up" href="#toc">↑ 목차</a>
+      <a class="next" href="#ch-06">06과 과거시제와 과거진행형 →</a>
+    </nav>
   </section>
 
   <section class="gram" id="ch-06">
@@ -509,6 +529,10 @@
         <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: were giving</b><br>전원이 나간 순간 진행 중이던 일이므로 과거진행형을 씁니다.</p></details>
       </div>
     </div>
+    <nav class="chnav" aria-label="06과 이동">
+      <a class="up" href="#toc">↑ 목차</a>
+      <a class="next" href="#ch-07">07과 조동사 기초 →</a>
+    </nav>
   </section>
 
   <section class="gram" id="ch-07">
@@ -562,6 +586,10 @@
         <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: Could</b><br>정중한 요청에는 조동사 Could 를 주어 앞에 둡니다. Do 나 Are 를 함께 쓰지 않습니다.</p></details>
       </div>
     </div>
+    <nav class="chnav" aria-label="07과 이동">
+      <a class="up" href="#toc">↑ 목차</a>
+      <a class="next" href="#ch-08">08과 형용사·부사와 비교 표현 →</a>
+    </nav>
   </section>
 
   <section class="gram" id="ch-08">
@@ -612,6 +640,10 @@
         <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: carefully</b><br>동사 review 를 꾸미는 부사 carefully 가 필요합니다.</p></details>
       </div>
     </div>
+    <nav class="chnav" aria-label="08과 이동">
+      <a class="up" href="#toc">↑ 목차</a>
+      <a class="next" href="#ch-09">09과 전치사와 시간·장소 표현 →</a>
+    </nav>
   </section>
 
   <section class="gram" id="ch-09">
@@ -667,6 +699,10 @@
         <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: by</b><br>늦어도 그때까지라는 기한은 by 로 나타냅니다.</p></details>
       </div>
     </div>
+    <nav class="chnav" aria-label="09과 이동">
+      <a class="up" href="#toc">↑ 목차</a>
+      <a class="next" href="#ch-10">10과 의문문과 부가의문문 →</a>
+    </nav>
   </section>
 
   <section class="gram" id="ch-10">
@@ -717,6 +753,10 @@
         <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: Did</b><br>일반동사 과거의 의문문에는 Did 를 씁니다.</p></details>
       </div>
     </div>
+    <nav class="chnav" aria-label="10과 이동">
+      <a class="up" href="#toc">↑ 목차</a>
+      <a class="next" href="#ch-11">11과 부정문과 There is / are →</a>
+    </nav>
   </section>
 
   <section class="gram" id="ch-11">
@@ -766,6 +806,10 @@
         <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: is</b><br>뒤의 명사 a maintenance schedule 이 단수이므로 is 를 씁니다.</p></details>
       </div>
     </div>
+    <nav class="chnav" aria-label="11과 이동">
+      <a class="up" href="#toc">↑ 목차</a>
+      <a class="next" href="#ch-12">12과 문장의 5형식과 기초 접속사 →</a>
+    </nav>
   </section>
 
   <section class="gram" id="ch-12">
@@ -815,12 +859,68 @@
         <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: and</b><br>두 형용사를 대등하게 이어 주는 등위접속사 and 가 맞습니다.</p></details>
       </div>
     </div>
+    <nav class="chnav" aria-label="12과 이동">
+      <a class="up" href="#toc">↑ 목차</a>
+    </nav>
   </section>
+
+  <h2 class="sec">🔗 과 하나씩 따로 보기</h2>
+  <p class="lead">각 과에는 따로 열 수 있는 주소가 있습니다. 검색·공유로 특정 과를 바로 열 때 씁니다.</p>
+  <ul class="toc">
+    <li><a href="basic-01.html">
+      <b>01과</b>
+      <span>문장의 뼈대와 be동사</span>
+    </a></li>
+    <li><a href="basic-02.html">
+      <b>02과</b>
+      <span>일반동사와 3인칭 단수</span>
+    </a></li>
+    <li><a href="basic-03.html">
+      <b>03과</b>
+      <span>명사·관사·복수형</span>
+    </a></li>
+    <li><a href="basic-04.html">
+      <b>04과</b>
+      <span>대명사와 소유 표현</span>
+    </a></li>
+    <li><a href="basic-05.html">
+      <b>05과</b>
+      <span>현재시제와 현재진행형</span>
+    </a></li>
+    <li><a href="basic-06.html">
+      <b>06과</b>
+      <span>과거시제와 과거진행형</span>
+    </a></li>
+    <li><a href="basic-07.html">
+      <b>07과</b>
+      <span>조동사 기초</span>
+    </a></li>
+    <li><a href="basic-08.html">
+      <b>08과</b>
+      <span>형용사·부사와 비교 표현</span>
+    </a></li>
+    <li><a href="basic-09.html">
+      <b>09과</b>
+      <span>전치사와 시간·장소 표현</span>
+    </a></li>
+    <li><a href="basic-10.html">
+      <b>10과</b>
+      <span>의문문과 부가의문문</span>
+    </a></li>
+    <li><a href="basic-11.html">
+      <b>11과</b>
+      <span>부정문과 There is / are</span>
+    </a></li>
+    <li><a href="basic-12.html">
+      <b>12과</b>
+      <span>문장의 5형식과 기초 접속사</span>
+    </a></li>
+  </ul>
 
   <nav class="pager" aria-label="교재 이동">
     <span></span>
     <a class="mid" href="./">📘 문법 교재 전체 보기</a>
-    <a href="intermediate.html">중급 중급 영문법 →</a>
+    <a href="intermediate.html">중급 영문법 →</a>
   </nav>
 </main>
 <footer class="ft wrap">
@@ -829,5 +929,49 @@
   </nav>
   <p>👾 toeic.monster · TOEIC 어휘 무료 학습 사이트 · 학습 기록은 브라우저에만 저장됩니다</p>
 </footer>
+<nav class="chbar" id="chBar" aria-label="현재 과 이동" hidden>
+  <a href="#toc">🗂 목차</a>
+  <span class="chbar-cur" id="chBarCur"></span>
+  <a id="chBarNext" href="#toc" hidden>다음 과 →</a>
+</nav>
+<script>
+  (function () {
+    var bar = document.getElementById("chBar");
+    if (!bar || !("IntersectionObserver" in window)) return;
+    var cur = document.getElementById("chBarCur");
+    var next = document.getElementById("chBarNext");
+    var secs = [].slice.call(document.querySelectorAll("section.gram[id]"));
+    if (!secs.length) return;
+    var pager = document.querySelector(".pager");
+    var inChapter = false;
+    var atEnd = false;
+    function sync() { bar.hidden = !(inChapter && !atEnd); }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        var i = secs.indexOf(en.target);
+        var no = en.target.querySelector(".gram-no");
+        var h = en.target.querySelector("h2");
+        cur.textContent = (no ? no.textContent : "") + (h ? " " + h.textContent : "");
+        var nx = secs[i + 1];
+        next.hidden = !nx;
+        if (nx) {
+          next.href = "#" + nx.id;
+          next.textContent = "다음 과 →";
+        }
+        inChapter = true;
+        sync();
+      });
+    }, { rootMargin: "-45% 0px -50% 0px" });
+    secs.forEach(function (s) { io.observe(s); });
+    // 페이지 끝 pager 가 보이면 같은 링크가 이미 화면에 있으니 바를 내립니다.
+    if (pager) {
+      new IntersectionObserver(function (entries) {
+        atEnd = entries.some(function (en) { return en.isIntersecting; });
+        sync();
+      }, { rootMargin: "0px 0px -15% 0px" }).observe(pager);
+    }
+  })();
+</script>
 </body>
 </html>

@@ -112,8 +112,8 @@ window.CONVERSATION_BOOKS.push({
           h: "자리에 따라 높임과 낮춤 조절하기",
           body: "상대가 고객·투자자인지, 같은 팀 동료인지에 따라 조동사와 부사를 바꿉니다. 이 조절을 'register shift'라고 합니다.",
           examples: [
-            { en: "Would you mind if we revisited the schedule? — 고객에게", ko: "일정을 다시 보면 실례가 될까요? — 고객에게" },
-            { en: "Shall we move the review to Thursday? — 같은 팀", ko: "검토를 목요일로 옮길까요? — 같은 팀" }
+            { en: "Would you mind if we revisited the schedule?", ko: "일정을 다시 보면 실례가 될까요? (고객에게)" },
+            { en: "Shall we move the review to Thursday?", ko: "검토를 목요일로 옮길까요? (같은 팀)" }
           ],
           note: "Shall we ~? 는 제안을 함께 하자는 편한 표현으로, 같은 팀이나 대등한 사이에서 씁니다. 고객에게는 Would you mind if we ~? 가 안전합니다."
         }
@@ -155,7 +155,7 @@ window.CONVERSATION_BOOKS.push({
               ["제삼자", "The consultants came to the same conclusion.", "높음"]
             ]
           },
-          note: "My instinct is that ~ 은 근거가 약하다는 것을 스스로 밝히는 표현입니다. 이를 숨기고 데이터인 척하면 신뢰를 잃습니다."
+          note: "My instinct is that ~ 은 근거가 약하다는 것을 스스로 밝히는 표현입니다. 이를 숨기고 데이터인 것처럼 말하면 신뢰를 잃습니다."
         },
         {
           h: "선택지로 몰아가기",
@@ -191,7 +191,7 @@ window.CONVERSATION_BOOKS.push({
               ["확인됨", "I've confirmed that ~", "내가 직접 확인"],
               ["보고됨", "I'm told that ~", "전해 들음"],
               ["추정", "My best guess is ~", "근거 있는 추정"],
-              ["미확인", "I have no way of knowing yet.", "알 수단이 없음"],
+              ["미확인", "I have no way of knowing yet.", "알 방법이 없음"],
               ["보류", "It's still up in the air.", "아직 미정"]
             ]
           },
@@ -480,7 +480,7 @@ window.CONVERSATION_BOOKS.push({
           body: "아이러니는 말과 뜻이 반대입니다. 억양과 상황이 단서가 되지만 서면에서는 오해가 생기므로 주의합니다.",
           examples: [
             { en: "Great, the server is down again. Just what we needed.", ko: "좋네요, 서버가 또 죽었습니다. 딱 필요한 일이었죠." },
-            { en: "Well, that went smoothly. (문제가 생긴 뒤에)", ko: "네, 참 매끄럽게 됐네요. (문제가 생긴 뒤에)" }
+            { en: "Well, that went smoothly.", ko: "네, 참 매끄럽게 됐네요. (문제가 생긴 뒤에 쓴 아이러니)" }
           ],
           note: "아이러니는 억양이 단서입니다. 이메일이나 메신저에서 이 표현을 쓰면 진심으로 읽힐 수 있으므로 이모지나 설명을 붙이는 편이 안전합니다."
         },

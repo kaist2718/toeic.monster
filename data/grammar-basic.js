@@ -68,7 +68,7 @@ window.GRAMMAR_BOOKS.push({
       ],
       mistakes: [
         "주어를 빠뜨리고 Is busy. 처럼 말하는 실수 — 반드시 주어를 넣어 She is busy. 로 씁니다.",
-        "I am agree. 는 틀린 문장입니다. agree는 일반동사이므로 I agree. 로 씁니다."
+        "I am agree. 는 틀린 문장입니다. agree 는 일반동사이므로 I agree. 로 씁니다."
       ],
       practice: [
         { q: "The new printer ____ in the supply room.", opts: ["are", "is", "am", "be"], a: "is", why: "주어 The new printer 는 3인칭 단수이므로 is 를 씁니다." },
@@ -120,7 +120,7 @@ window.GRAMMAR_BOOKS.push({
       practice: [
         { q: "Our team ____ a progress report every Monday.", opts: ["submit", "submits", "submitting", "submitted"], a: "submits", why: "주어 Our team 은 단수 취급이므로 -s 를 붙인 submits 가 맞습니다." },
         { q: "____ the receptionist handle international calls?", opts: ["Do", "Does", "Is", "Are"], a: "Does", why: "주어가 3인칭 단수이고 일반동사 handle 이 있으므로 Does 로 묻습니다." },
-        { q: "The staff ____ not use the back entrance during renovation.", opts: ["does", "do", "is", "are"], a: "do", why: "복수 주어 The staff 에는 do not 을 씁니다." }
+        { q: "The staff ____ not use the back entrance during renovation.", opts: ["does", "do", "is", "are"], a: "do", why: "staff 는 구성원 전체를 가리키는 집합명사로, 구성원들(복수)로 볼 때는 do not 을 씁니다." }
       ]
     },
     {

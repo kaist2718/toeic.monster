@@ -17,6 +17,9 @@
  *      (c) 창 크기가 바뀌어 패널이 사라지는 쪽으로 넘어가면 상태를 정리하는지 확인합니다.
  *      — 예전에는 아래쪽 항목이 잘려 고를 수 없었고(모바일 375px · PC 낮은 창),
  *        뒤로가기를 누르면 곧바로 사이트를 떠났습니다.
+ *   5) 「이어서 학습」은 마지막으로 본 단어부터 시작하고, 그 뒤로는 아직 안 외운 단어를
+ *      유닛 순서대로 이어 갑니다. 첫 방문(기록 없음)에는 버튼 자체가 보이지 않습니다.
+ *      — 1,000단어를 순서대로 외우는 사이트라 “어디서 이어서 하지”를 찾아 헤매게 했습니다.
  *
  * 실행:  node tools/test-home-ux.mjs
  * 종료 코드: 실패가 있으면 1, 없으면 0
@@ -520,6 +523,139 @@ console.log("\n[6] 모바일 햄버거 메뉴 (스크롤 · 뒤로가기)");
   win.innerWidth = 900;
   winHandlers.resize[0](evt());
   assert(!moreOpen(), "창을 좁히면(☰ 메뉴로 합쳐지면) 더 보기 패널이 상태를 정리합니다");
+}
+
+/* ------------------------------------------------------------------ */
+/* 5. 이어서 학습 — 마지막으로 본 단어부터 이어 간다                     */
+/* ------------------------------------------------------------------ */
+
+console.log("\n[5] 이어서 학습 순서");
+{
+  const code = slice(
+    "  function resumeOrder(words, learnedMap, last) {",
+    "  // ---------- 암기 카드 모드 ----------",
+    html,
+    "이어서 학습",
+  );
+  const W = (name) => [name];
+  const flat = (list) => list.map((w) => w[0]).join(",");
+
+  let resumeOrder = null;
+  try {
+    resumeOrder = new Function(`${code}\n  return resumeOrder;`)();
+  } catch (e) {
+    bad("resumeOrder 블록을 실행할 수 없습니다", e.message);
+  }
+
+  if (resumeOrder) {
+    const words = [W("alpha"), W("bravo"), W("charlie"), W("delta")];
+    const learnedMap = { alpha: "2026-09-01" };
+
+    assert(
+      flat(resumeOrder(words, learnedMap, "charlie")) === "charlie,bravo,delta",
+      "마지막으로 본 단어부터, 나머지는 유닛 순서대로 이어 갑니다",
+      flat(resumeOrder(words, learnedMap, "charlie")),
+    );
+    assert(
+      flat(resumeOrder(words, learnedMap, "alpha")) === "bravo,charlie,delta",
+      "이미 외운 단어가 마지막 기록이면 건너뜁니다",
+      flat(resumeOrder(words, learnedMap, "alpha")),
+    );
+    assert(
+      flat(resumeOrder(words, {}, "")) === "alpha,bravo,charlie,delta",
+      "기록이 없으면(첫 방문) 유닛 순서 그대로 시작합니다",
+      flat(resumeOrder(words, {}, "")),
+    );
+    assert(
+      resumeOrder(words, { alpha: 1, bravo: 1, charlie: 1, delta: 1 }, "bravo").length === 0,
+      "전부 외우면 빈 목록을 돌려줍니다(호출부가 복습으로 안내)",
+    );
+    assert(
+      flat(resumeOrder(words, {}, "alpha")) === "alpha,bravo,charlie,delta",
+      "마지막 단어가 이미 맨 앞이면 순서를 건드리지 않습니다",
+      flat(resumeOrder(words, {}, "alpha")),
+    );
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* 6. 홈 목차 묶음의 펼침 상태를 기억한다                               */
+/* ------------------------------------------------------------------ */
+
+console.log("\n[6] 홈 묶음 펼침 상태 기억");
+{
+  const code = slice(
+    '  var HOME_GROUP_KEY = "toeic1000_homegroups";',
+    "  // 섹션 메뉴: 자주 쓰는 8개만 먼저 보여 주고",
+    html,
+    "묶음 상태 저장",
+  );
+  const IDS = ["home-group-vocab", "home-group-part", "home-group-speak", "home-group-manage"];
+
+  /** 실제 저장소 대신 메모리 객체를 씁니다(테스트가 브라우저 저장소를 건드리지 않도록). */
+  const run = (seed) => {
+    const store = { ...seed };
+    const storage = {
+      getItem: (k) => (k in store ? store[k] : null),
+      setItem: (k, v) => { store[k] = String(v); },
+    };
+    const groups = IDS.map((id) => ({
+      id,
+      open: id === "home-group-vocab", // HTML 기본값: 어휘 묶음만 펼침
+      listeners: {},
+      addEventListener(type, fn) { this.listeners[type] = fn; },
+    }));
+    const doc = { querySelectorAll: () => groups };
+    // homeGroups·printing 은 실제 스크립트에서 이 블록 바로 위에 선언된 값이라 함께 넘깁니다.
+    new Function(
+      "document",
+      "localStorage",
+      `  var printing = false;\n  var homeGroups = [].slice.call(document.querySelectorAll("#homeView details.home-group"));\n${code}`,
+    )(doc, storage);
+    return { groups, store };
+  };
+  const openedIds = (groups) => groups.filter((g) => g.open).map((g) => g.id).join(",");
+
+  const fresh = run({});
+  assert(
+    openedIds(fresh.groups) === "home-group-vocab",
+    "저장된 값이 없으면 기본값(어휘 묶음만 펼침)을 유지합니다",
+    openedIds(fresh.groups),
+  );
+
+  const restored = run({
+    toeic1000_homegroups: JSON.stringify({ "home-group-part": true, "home-group-manage": true }),
+  });
+  assert(
+    openedIds(restored.groups) === "home-group-vocab,home-group-part,home-group-manage",
+    "저장된 펼침 상태를 복원하고, 저장에 없는 묶음은 HTML 기본값을 따릅니다",
+    openedIds(restored.groups),
+  );
+
+  // false("접힘")도 저장된 값이므로 무시하면 안 됩니다(기본값이 펼침인 묶음이 되살아납니다).
+  const collapsed = run({ toeic1000_homegroups: JSON.stringify({ "home-group-vocab": false }) });
+  assert(
+    openedIds(collapsed.groups) === "",
+    "접힌 상태(false)도 저장된 대로 반영합니다",
+    openedIds(collapsed.groups),
+  );
+
+  const afterToggle = run({});
+  afterToggle.groups[1].open = true;
+  afterToggle.groups[1].listeners.toggle();
+  const saved = JSON.parse(afterToggle.store.toeic1000_homegroups || "{}");
+  assert(
+    saved["home-group-part"] === true && saved["home-group-vocab"] === true,
+    "묶음을 펼치면 그 상태를 저장합니다",
+    afterToggle.store.toeic1000_homegroups,
+  );
+
+  const broken = run({ toeic1000_homegroups: "{깨진 JSON" });
+  assert(
+    openedIds(broken.groups) === "home-group-vocab",
+    "저장된 값이 깨져 있어도 기본값으로 시작합니다(앱이 멈추지 않음)",
+    openedIds(broken.groups),
+  );
 }
 
 /* ------------------------------------------------------------------ */

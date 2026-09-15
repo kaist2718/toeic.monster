@@ -4,7 +4,7 @@
  *
  * 화면에 보이는 모든 문구(데이터 + index.html)를 모아 아래를 점검합니다.
  *   1) TTS로 읽히는 문자열에 낭독이 어려운 기호가 섞였는지 (|, →, ~, 한글 등)
- *   (검사 대상: data/*.js + index.html + data/grammar-*.js 문법 교재)
+ *   (검사 대상: data/*.js + index.html + data/grammar-*.js 문법 교재 + data/conversation-*.js 회화 교재)
  *   2) 한글 맞춤법·표기 오류 (자주 틀리는 표현 사전)
  *   3) 영문 철자 오류 (자주 틀리는 비즈니스 단어 사전)
  *   4) 공통 타이포그래피 오류 (겹친 공백, 구두점 앞 공백, 중복 단어, 전각 문자)
@@ -60,6 +60,7 @@ function loadData() {
     idioms: sandbox.window.VOCAB_IDIOMS || [],
     extra: sandbox.window.TOEIC_EXTRA || {},
     grammar: sandbox.window.GRAMMAR_BOOKS || [],
+    conversation: sandbox.window.CONVERSATION_BOOKS || [],
   };
 }
 
@@ -96,7 +97,7 @@ function extractArray(name) {
   try { return vm.runInNewContext(src, {}, { timeout: 5000 }); } catch { return null; }
 }
 
-const { vocab, idioms, extra, grammar } = loadData();
+const { vocab, idioms, extra, grammar, conversation } = loadData();
 const A = (n) => extractArray(n) || [];
 
 /* ------------------------------------------------------------------ */
@@ -213,6 +214,41 @@ pushAll("extra.dictation", extra.dictation, true);
 // 2-3-1. 문법 교재 (개념 설명·표는 낭독 대상이 아니고, 영문 예문만 TTS 대상)
 grammar.forEach((b) => {
   const bw = `grammar.${b.id}`;
+  push(`${bw}.title`, b.title, false);
+  push(`${bw}.subtitle`, b.subtitle, false);
+  push(`${bw}.desc`, b.desc, false);
+  push(`${bw}.audience`, b.audience, false);
+  push(`${bw}.goal`, b.goal, false);
+  pushAll(`${bw}.howto`, b.howto, false);
+  (b.chapters || []).forEach((c) => {
+    const cw = `${bw}.ch${c.no}`;
+    push(`${cw}.title`, c.title, false);
+    push(`${cw}.summary`, c.summary, false);
+    (c.points || []).forEach((p, pi) => {
+      push(`${cw}.p${pi}.h`, p.h, false);
+      push(`${cw}.p${pi}.body`, p.body, false);
+      push(`${cw}.p${pi}.note`, p.note, false);
+      if (p.table) {
+        pushAll(`${cw}.p${pi}.table.head`, p.table.head, false);
+        (p.table.rows || []).forEach((r, ri) => pushAll(`${cw}.p${pi}.table.row${ri}`, r, false));
+      }
+      (p.examples || []).forEach((e, ei) => {
+        push(`${cw}.p${pi}.ex${ei}.en`, e.en, true);
+        push(`${cw}.p${pi}.ex${ei}.ko`, e.ko, false);
+      });
+    });
+    pushAll(`${cw}.mistakes`, c.mistakes, false);
+    (c.practice || []).forEach((q, qi) => {
+      push(`${cw}.q${qi}.q`, q.q, false);
+      pushAll(`${cw}.q${qi}.opts`, q.opts, false);
+      push(`${cw}.q${qi}.why`, q.why, false);
+    });
+  });
+});
+
+// 2-3-2. 회화 교재 (문법 교재와 같은 기준으로 검사)
+conversation.forEach((b) => {
+  const bw = `conversation.${b.id}`;
   push(`${bw}.title`, b.title, false);
   push(`${bw}.subtitle`, b.subtitle, false);
   push(`${bw}.desc`, b.desc, false);

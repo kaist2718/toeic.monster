@@ -9,6 +9,8 @@
  *   4) 메타 태그(description·canonical·OG·twitter)와 구조화 데이터(JSON-LD) 형식
  *   5) sitemap.xml 과 실제 페이지의 일치 (noindex 페이지가 사이트맵에 들어가지 않았는지)
  *   6) docs/*.md 의 `audit:counts` 블록 수치와 실제 값의 일치
+ *   6-1) index.html 에 박혀 있는 고정 표시값(배지 요약·숙어 수)과 실제 데이터의 일치
+ *   (문법·회화의 낱개 과 페이지도 다른 정적 페이지와 같은 기준으로 검사합니다 — 링크·앵커·사이트맵 일치.)
  *
  * 실행:  node tools/audit-site.mjs
  *        node tools/audit-site.mjs --external   (외부 링크 HTTP 상태까지 확인 · 네트워크 필요)
@@ -190,7 +192,7 @@ for (const page of pages) {
 /* 3-2b. 정적 페이지 공용 자산(assets/)                                  */
 /* ------------------------------------------------------------------ */
 
-// 정적 페이지 48개는 같은 스타일을 씁니다. 페이지마다 인라인으로 되돌리면 0.4MB 가 다시
+// 정적 페이지 124개는 같은 스타일을 씁니다. 페이지마다 인라인으로 되돌리면 1.2MB 가 다시
 // 중복되고, 예문 듣기 버튼이 있는데 공용 스크립트를 빠뜨리면 버튼이 아무 반응 없이 남습니다.
 const SHARED_CSS = "assets/site.css";
 const SHARED_SPEAK = "assets/speak.js";
@@ -602,6 +604,10 @@ const ACTUAL = {
   writing_questions: questionCount("Writing"),
   sitemap_urls: locs.length,
   pages: pages.length,
+  // 낱개 과 페이지(문법·회화) — 책 한 권 안의 과를 따로 여는 주소 수.
+  chapter_pages:
+    grammar.reduce((n, b) => n + (b.chapters || []).length, 0) +
+    conversation.reduce((n, b) => n + (b.chapters || []).length, 0),
 };
 
 const docsDir = path.join(ROOT, "docs");
@@ -626,6 +632,36 @@ for (const file of fs.readdirSync(docsDir).filter((f) => f.endsWith(".md"))) {
   }
 }
 if (!countBlocks) note("docs/*.md 에 audit:counts 블록이 없습니다(문서 수치 검증 생략).");
+
+/* ------------------------------------------------------------------ */
+/* 6-1. index.html 에 박힌 고정 표시값 ↔ 실제 데이터                     */
+/* ------------------------------------------------------------------ */
+
+/* 이 숫자들은 화면 첫 렌더에 그대로 보이고, <noscript> 목차에도 실립니다.
+   자바스크립트가 값을 다시 채우기 전이라도 틀린 숫자를 보여 주면 안 되므로
+   여기서 실제 값과 대조합니다(예: 숙어를 추가했는데 홈에 “표현 0개”가 남는 일). */
+
+const homeSource = read("index.html");
+
+const badgeBlock = (homeSource.match(/var BADGES = \[([\s\S]*?)\n\s*\];/) || [])[1] || "";
+const badgeCount = (badgeBlock.match(/\{ ico:/g) || []).length;
+if (!badgeCount) {
+  fail("index.html: BADGES 목록을 찾지 못했습니다(배지 요약 고정값 검증 불가).");
+} else {
+  const shown = (homeSource.match(/id="badgeSummary"[^>]*>([^<]*)</) || [])[1];
+  const expected = `0 / ${badgeCount} 획득`;
+  if (!shown) fail("index.html: 배지 요약(#badgeSummary)의 초기값을 찾지 못했습니다.");
+  else if (shown.trim() !== expected) {
+    fail(`index.html: 배지 요약의 초기값이 실제와 다릅니다 — "${shown.trim()}" (배지 ${badgeCount}개 → "${expected}")`);
+  }
+}
+
+const idiomShown = (homeSource.match(/id="idiomCount">([\d,]+)</) || [])[1];
+if (!idiomShown) {
+  fail("index.html: 숙어 수 고정값(#idiomCount)을 찾지 못했습니다.");
+} else if (Number(idiomShown.replace(/,/g, "")) !== idioms.length) {
+  fail(`index.html: 숙어 수 고정값이 실제와 다릅니다 (표시 ${idiomShown} / 실제 ${idioms.length})`);
+}
 
 /* ------------------------------------------------------------------ */
 /* 7. 외부 링크 (기본은 목록만, --external 이면 HTTP 확인)               */

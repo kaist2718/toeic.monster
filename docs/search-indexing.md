@@ -6,8 +6,9 @@ toeic.monster 를 구글·네이버 검색에 노출시키기 위한 설정과, 
 > `npm run audit:site` 가 이 블록과 실제 값을 대조하므로, 콘텐츠가 늘면 문서도 함께 갱신됩니다.
 
 <!-- audit:counts
-sitemap_urls = 52
-pages = 55
+sitemap_urls = 124
+pages = 127
+chapter_pages = 72
 units = 30
 vocab = 1000
 idioms = 126
@@ -31,6 +32,7 @@ conversation_quizzes = 108
 | 크롤링 허용 | `robots.txt` (`Allow: /` + Sitemap 명시) | 적용됨 |
 | 사이트맵 | `sitemap.xml` (색인 대상 페이지만) | 자동 생성 |
 | 정적 단어 페이지 | `units/*.html` | 자동 생성 |
+| 교재 낱개 과 페이지 | `grammar/*-NN.html` · `conversation/*-NN.html` (72개) | 자동 생성 |
 | 홈 본문 프리렌더 | `index.html` (콘텐츠 컨테이너 17곳 + `<noscript>` 목차) | 자동 생성 |
 | OG 이미지 | `og-image.png` (1200×630) | 생성됨 |
 | 구조화 데이터 | WebSite · LearningResource · FAQPage · BreadcrumbList · ItemList | 적용됨 |
@@ -58,6 +60,20 @@ sitemap.xml               위 페이지들을 모두 포함해 재생성됨
 
 > `privacy.html`·`terms.html` 은 `robots=noindex` 이므로 **사이트맵에 넣지 않습니다.**
 > 색인 대상 페이지와 사이트맵이 어긋나면 `npm run audit:site` 가 실패합니다.
+
+### 교재도 과 단위 주소를 갖습니다
+
+문법·회화 교재는 한 권(12과)이 **한 페이지**라서 “이 과”를 가리키는 주소가 없었습니다.
+`tools/build-pages.mjs` 가 과마다 `grammar/basic-01.html` 형태의 페이지를 함께 만들어, 검색·공유로 특정 과를 바로 열 수 있습니다.
+
+```
+grammar/index.html            문법 허브
+  grammar/basic.html          교재 1권 — 12과가 이어지는 긴 페이지(연속 읽기)
+  grammar/basic-01.html ~ 12  낱개 과 — 책 · 이전 과 · 다음 과로 연결
+```
+
+낱개 과 페이지는 책 페이지와 같은 본문을 담지만 `canonical` 은 각자 자기 주소를 가집니다.
+과 단위 검색 유입과 공유를 위한 선택이고, 책 페이지 링크 목록(「과 하나삩 따로 보기」)과 사이트맵으로 발견됩니다.
 
 각 페이지에는 `canonical`, OG/Twitter 메타, `LearningResource` + `BreadcrumbList` 구조화 데이터,
 이전/다음 유닛 링크가 들어갑니다. 홈 페이지의 유닛 섹션과 푸터에서 링크되어 크롤러가 발견할 수 있습니다.

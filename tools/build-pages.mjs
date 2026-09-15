@@ -19,7 +19,7 @@
  *   sitemap.xml             — 위 페이지들을 포함한 전체 사이트맵
  *
  * 왜 CSS 를 따로 굽는가:
- *   정적 페이지는 43개인데 모두 같은 스타일을 씁니다. 페이지마다 인라인으로 넣으면
+ *   정적 페이지는 124개인데 모두 같은 스타일을 씁니다. 페이지마다 인라인으로 넣으면
  *   같은 9KB 를 43번 다시 받게 되어 합쳐서 380KB 가 됩니다. 공용 파일로 빼고
  *   최소화하면 한 번만 받고 모든 페이지에서 재사용합니다.
  *
@@ -209,6 +209,18 @@ footer.ft p{margin-top:8px}
 .gram-no{flex:0 0 auto;background:var(--primary-solid);color:#fff;font-size:12px;font-weight:800;border-radius:6px;padding:3px 8px}
 .gram-head h2{font-size:19px;color:var(--primary-dark);letter-spacing:-.3px}
 .gram-sum{font-size:14px;color:var(--muted);margin:6px 0 16px}
+/* 교재 과 이동 — 과 끝의 이동 링크와, 스크롤해도 남는 현재 과 바 */
+.chnav{display:flex;flex-wrap:wrap;gap:14px;justify-content:space-between;align-items:center;margin-top:16px;padding-top:10px;border-top:1px dashed var(--border);font-size:13px;font-weight:700}
+.chnav a{text-decoration:none}
+.chnav a:hover{text-decoration:underline}
+.chnav .up{color:var(--muted)}
+.chnav .prev{color:var(--primary)}
+.chnav .next{color:var(--primary)}
+.chbar{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:40;display:flex;gap:4px;align-items:center;max-width:min(560px,calc(100vw - 20px));background:var(--card);border:1px solid var(--border);border-radius:999px;box-shadow:0 8px 22px rgba(0,0,0,.18);padding:5px 8px;font-size:12.5px}
+.chbar[hidden]{display:none}
+.chbar a{display:block;text-decoration:none;padding:7px 9px;border-radius:999px;font-weight:700;color:var(--text);white-space:nowrap}
+.chbar a:hover{background:var(--soft);color:var(--primary)}
+.chbar-cur{flex:1 1 auto;min-width:0;text-align:center;font-weight:800;color:var(--primary-dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .g-point{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:15px 17px;margin-bottom:12px}
 .g-point h3{font-size:15.5px;color:var(--text);margin-bottom:6px}
 .g-point p{font-size:13.5px;color:var(--text);line-height:1.75}
@@ -247,7 +259,7 @@ footer.ft p{margin-top:8px}
 .cheat-card ul{margin:0 0 8px;padding-left:16px;font-size:12.5px;color:var(--text)}
 .cheat-card li{margin-bottom:3px}
 .cheat-card a{font-size:12.5px;font-weight:700;text-decoration:none}
-@media print{header.bar,footer.ft,.pager,.cta,.cheat-card a{display:none}body{background:#fff}.wrap{max-width:none;padding:0}.cheat-grid{grid-template-columns:1fr 1fr}.cheat-card{border-color:#bbb;page-break-inside:avoid}}
+@media print{header.bar,footer.ft,.pager,.chbar,.chnav,.cta,.cheat-card a{display:none}body{background:#fff}.wrap{max-width:none;padding:0}.cheat-grid{grid-template-columns:1fr 1fr}.cheat-card{border-color:#bbb;page-break-inside:avoid}}
 `;
 
 /**
@@ -267,7 +279,60 @@ function minifyCss(css) {
 /** 공용 스타일을 참조한 페이지 수 — 실행 로그에 쓰기 위해 셉니다. */
 let pagesWithSharedCss = 0;
 
-function page({ title, description, canonical, ld, body, footerNav, speak }) {
+/**
+ * 교재 페이지(문법·회화)에 붙는 「현재 과」 바.
+ *
+ * 12과가 한 페이지에 이어지는 탓에 페이지가 77KB까지 커져서, 7과를 읽는 중에
+ * 6과로 돌아가려면 10화면을 거슬러 올라가야 했습니다(맨 위 목차까지 스크롤).
+ * 스크롤 위치를 따라 현재 과와 목차·다음 과 링크를 띄웁니다.
+ * 자바스크립트가 없으면 바는 hidden 그대로 남고, 각 과 끝의 .chnav 링크로 이동할 수 있습니다.
+ */
+const CHAPTER_BAR = `<nav class="chbar" id="chBar" aria-label="현재 과 이동" hidden>
+  <a href="#toc">🗂 목차</a>
+  <span class="chbar-cur" id="chBarCur"></span>
+  <a id="chBarNext" href="#toc" hidden>다음 과 →</a>
+</nav>
+<script>
+  (function () {
+    var bar = document.getElementById("chBar");
+    if (!bar || !("IntersectionObserver" in window)) return;
+    var cur = document.getElementById("chBarCur");
+    var next = document.getElementById("chBarNext");
+    var secs = [].slice.call(document.querySelectorAll("section.gram[id]"));
+    if (!secs.length) return;
+    var pager = document.querySelector(".pager");
+    var inChapter = false;
+    var atEnd = false;
+    function sync() { bar.hidden = !(inChapter && !atEnd); }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        var i = secs.indexOf(en.target);
+        var no = en.target.querySelector(".gram-no");
+        var h = en.target.querySelector("h2");
+        cur.textContent = (no ? no.textContent : "") + (h ? " " + h.textContent : "");
+        var nx = secs[i + 1];
+        next.hidden = !nx;
+        if (nx) {
+          next.href = "#" + nx.id;
+          next.textContent = "다음 과 →";
+        }
+        inChapter = true;
+        sync();
+      });
+    }, { rootMargin: "-45% 0px -50% 0px" });
+    secs.forEach(function (s) { io.observe(s); });
+    // 페이지 끝 pager 가 보이면 같은 링크가 이미 화면에 있으니 바를 내립니다.
+    if (pager) {
+      new IntersectionObserver(function (entries) {
+        atEnd = entries.some(function (en) { return en.isIntersecting; });
+        sync();
+      }, { rootMargin: "0px 0px -15% 0px" }).observe(pager);
+    }
+  })();
+</script>`;
+
+function page({ title, description, canonical, ld, body, footerNav, speak, chapterBar }) {
   pagesWithSharedCss++;
   return `<!DOCTYPE html>
 <html lang="ko">
@@ -296,7 +361,7 @@ function page({ title, description, canonical, ld, body, footerNav, speak }) {
 <!-- 본문 서체 — Pretendard Variable. 필요한 글자 조각만 내려받는 dynamic subset 이라 첫 로드 부담이 작습니다. -->
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-<!-- 공용 스타일·스크립트 — 43개 정적 페이지가 한 파일을 함께 받아 씁니다(서비스워커가 캐시). -->
+<!-- 공용 스타일·스크립트 — 124개 정적 페이지가 한 파일을 함께 받아 씁니다(서비스워커가 캐시). -->
 <link rel="stylesheet" href="${ASSET_REL}site.css">${speak ? `\n<script defer src="${ASSET_REL}speak.js"><\/script>` : ""}
 <link rel="icon" href="../icon.svg" type="image/svg+xml">
 <link rel="icon" href="../icon-192.png" type="image/png" sizes="192x192">
@@ -338,14 +403,14 @@ ${body}
   </nav>
   <p>👾 toeic.monster · TOEIC 어휘 무료 학습 사이트 · 학습 기록은 브라우저에만 저장됩니다</p>
 </footer>
-</body>
+${chapterBar ? CHAPTER_BAR + "\n" : ""}</body>
 </html>
 `;
 }
 
 /**
  * 예문 듣기 버튼 스크립트는 이제 공용 파일(assets/speak.js)로 분리했습니다.
- * 43개 페이지가 같은 2.3KB 를 각각 받지 않도록, 페이지는 defer 로 그 파일을 불러옵니다.
+ * 124개 페이지가 같은 2.3KB 를 각각 받지 않도록, 페이지는 defer 로 그 파일을 불러옵니다.
  */
 /** 📘 버튼을 예문 옆에 붙입니다(듣기 대상 문장은 data-say 에 담습니다). */
 function speakBtn(text) {
@@ -627,7 +692,7 @@ ${guides
   return { file: "guides/index.html", html: page({ title, description, canonical, ld, body, footerNav: GUIDE_FOOTER }) };
 }
 
-function buildGuidePage(g) {
+function buildGuidePage(g, prev, next) {
   const canonical = `${SITE}/guides/${g.slug}.html`;
   const title = `${g.title} | toeic.monster`;
   const description = g.desc;
@@ -656,6 +721,15 @@ function buildGuidePage(g) {
     ],
   });
 
+  // 가이드 9편은 순서대로 읽는 코스라, 유닛처럼 이전/다음 편으로 이어 볼 수 있게 합니다.
+  // 제목이 모두 "TOEIC " 로 시작해서, pager 에서는 그 접두어를 떼어 짧게 보여 줍니다.
+  const shortTitle = (t) => t.replace(/^TOEIC /, "");
+  const guidePager = [
+    prev ? `<a href="${prev.slug}.html">← ${esc(shortTitle(prev.title))}</a>` : `<span></span>`,
+    `<a class="mid" href="./">📕 가이드 전체 보기</a>`,
+    next ? `<a href="${next.slug}.html">${esc(shortTitle(next.title))} →</a>` : `<span></span>`,
+  ].join("\n    ");
+
   const sections = (g.sections || [])
     .map(
       (s) =>
@@ -676,9 +750,7 @@ function buildGuidePage(g) {
 ${sections}
 
   <nav class="pager" aria-label="이동">
-    <span></span>
-    <a class="mid" href="./">📕 가이드 전체 보기</a>
-    <span></span>
+    ${guidePager}
   </nav>`;
 
   return { file: `guides/${g.slug}.html`, html: page({ title, description, canonical, ld, body, footerNav: GUIDE_FOOTER }) };
@@ -695,6 +767,61 @@ const GRAMMAR_FOOTER =
 
 /** 과 번호에 붙는 앵커 id — 목차 링크와 감사(앵커 검증)가 함께 씁니다. */
 const chapterAnchor = (no) => `ch-${String(no).padStart(2, "0")}`;
+
+/** 두 자리 과 번호 — 화면 표기·앵커·파일 이름이 모두 이 규칙을 씁니다. */
+const chapterNo = (no) => String(no).padStart(2, "0");
+
+/** 과 목록에 쓰는 라벨. */
+const chapterLabel = (ch) => `${chapterNo(ch.no)}과 ${ch.title}`;
+
+/**
+ * 낱개 과 페이지의 파일 이름 — `grammar/basic-01.html`.
+ * 하위 폴더(`basic/01.html`) 대신 같은 폴더의 평범한 파일로 두는 이유:
+ * 링크가 단순해지고, 생성물 검증(`tools/verify-generated.mjs`)이 디렉터리 한 단계만 훑어도 걸립니다.
+ */
+const chapterFile = (bookId, no) => `${bookId}-${chapterNo(no)}.html`;
+
+/**
+ * 과 끝에 붙는 이동 링크.
+ *
+ * 교재 한 권이 12과짜리 긴 페이지라, 과를 읽다가 위쪽 목차까지 되돌아가는 수고를 없앱니다.
+ * (자바스크립트가 없어도 동작하는 기본 이동 수단이고, 스크롤 바는 이 링크를 대신합니다.)
+ *
+ * plan: { back: { href, label }, prev?, next? } — 책 페이지는 `↑ 목차` + 앵커,
+ * 낱개 과 페이지는 `← 책 이름` + 이전/다음 과 페이지를 넣습니다.
+ */
+function chapterFooterNav(no, plan) {
+  const links = [`      <a class="up" href="${plan.back.href}">${plan.back.label}</a>`];
+  if (plan.prev) links.push(`      <a class="prev" href="${plan.prev.href}">← ${esc(plan.prev.label)}</a>`);
+  if (plan.next) links.push(`      <a class="next" href="${plan.next.href}">${esc(plan.next.label)} →</a>`);
+  return `
+    <nav class="chnav" aria-label="${chapterNo(no)}과 이동">
+${links.join("\n")}
+    </nav>`;
+}
+
+/** 책 페이지(12과가 이어지는 긴 페이지)의 과 이동 — 위로 목차, 다음은 같은 페이지의 앵커. */
+/** 책 페이지에서 낱개 과 페이지로 가는 목록 — 검색·공유에 쓸 주소를 알려 줍니다. */
+function chapterLinkList(book) {
+  return book.chapters
+    .map(
+      (c) => `    <li><a href="${chapterFile(book.id, c.no)}">
+      <b>${chapterNo(c.no)}과</b>
+      <span>${esc(c.title)}</span>
+    </a></li>`,
+    )
+    .join("\n");
+}
+
+function bookChapterNav(chapters) {
+  return (c, i) =>
+    chapterFooterNav(c.no, {
+      back: { href: "#toc", label: "↑ 목차" },
+      next: chapters[i + 1]
+        ? { href: `#${chapterAnchor(chapters[i + 1].no)}`, label: chapterLabel(chapters[i + 1]) }
+        : null,
+    });
+}
 
 function buildGrammarHub(books) {
   const canonical = `${SITE}/grammar/`;
@@ -724,7 +851,8 @@ function buildGrammarHub(books) {
         itemListElement: books.map((b, i) => ({
           "@type": "ListItem",
           position: i + 1,
-          name: `${b.level} ${b.title}`,
+          // 제목에 단계명이 이미 들어 있어서("중급 영문법") level 을 앞에 또 붙이지 않습니다.
+          name: `${b.title}`,
           url: `${SITE}/grammar/${b.id}.html`,
         })),
       },
@@ -791,7 +919,7 @@ function grammarPoint(p) {
     </div>`;
 }
 
-function grammarChapter(c) {
+function grammarChapter(c, nav) {
   const points = (c.points || []).map(grammarPoint).join("\n");
   const mistakes = (c.mistakes || []).length
     ? `\n    <div class="gmistake">
@@ -816,7 +944,7 @@ function grammarChapter(c) {
   return `  <section class="gram" id="${chapterAnchor(c.no)}">
     <div class="gram-head"><span class="gram-no">${String(c.no).padStart(2, "0")}과</span><h2>${esc(c.title)}</h2></div>
     <p class="gram-sum">${esc(c.summary)}</p>
-${points}${mistakes}${practice}
+${points}${mistakes}${practice}${nav}
   </section>`;
 }
 
@@ -865,9 +993,11 @@ function buildGrammarBook(book, books) {
     .join("\n");
 
   const pager = [
-    prev ? `<a href="${prev.id}.html">← ${esc(prev.level)} ${esc(prev.title)}</a>` : `<span></span>`,
+    // 단계명은 이미 교재 제목에 들어 있어서("중급 영문법") 앞에 level 을 또 붙이면
+    // "중급 중급 영문법" 처럼 같은 말이 겹쳤습니다. 제목만 씁니다.
+    prev ? `<a href="${prev.id}.html">← ${esc(prev.title)}</a>` : `<span></span>`,
     `<a class="mid" href="./">📘 문법 교재 전체 보기</a>`,
-    next ? `<a href="${next.id}.html">${esc(next.level)} ${esc(next.title)} →</a>` : `<span></span>`,
+    next ? `<a href="${next.id}.html">${esc(next.title)} →</a>` : `<span></span>`,
   ].join("\n    ");
 
   const body = `  <nav class="crumb" aria-label="breadcrumb">
@@ -893,12 +1023,18 @@ function buildGrammarBook(book, books) {
   <a class="cta" href="../index.html?level=${book.id}#grammar-quiz">✏️ 앱에서 이 교재 문제 풀기</a>
   <p class="lead">🔊 를 누르면 예문 발음을 들을 수 있습니다(앱에서 고른 목소리·속도를 그대로 사용).</p>
 
-  <h2 class="sec">목차</h2>
+  <h2 class="sec" id="toc">목차</h2>
   <ul class="toc">
 ${toc}
   </ul>
 
-${book.chapters.map(grammarChapter).join("\n\n")}
+${book.chapters.map((c, i, arr) => grammarChapter(c, bookChapterNav(arr)(c, i))).join("\n\n")}
+
+  <h2 class="sec">🔗 과 하나씩 따로 보기</h2>
+  <p class="lead">각 과에는 따로 열 수 있는 주소가 있습니다. 검색·공유로 특정 과를 바로 열 때 씁니다.</p>
+  <ul class="toc">
+${chapterLinkList(book)}
+  </ul>
 
   <nav class="pager" aria-label="교재 이동">
     ${pager}
@@ -907,7 +1043,7 @@ ${book.chapters.map(grammarChapter).join("\n\n")}
   return {
     file: `grammar/${book.id}.html`,
     // 교재 페이지에는 예문 듣기 버튼이 있어 공용 스크립트(assets/speak.js)가 필요합니다.
-    html: page({ title, description, canonical, ld, body, footerNav: GRAMMAR_FOOTER, speak: true }),
+    html: page({ title, description, canonical, ld, body, footerNav: GRAMMAR_FOOTER, speak: true, chapterBar: true }),
   };
 }
 
@@ -1026,7 +1162,8 @@ function buildConversationHub(books) {
         itemListElement: books.map((b, i) => ({
           "@type": "ListItem",
           position: i + 1,
-          name: `${b.level} ${b.title}`,
+          // 제목에 단계명이 이미 들어 있어서("중급 영문법") level 을 앞에 또 붙이지 않습니다.
+          name: `${b.title}`,
           url: `${SITE}/conversation/${b.id}.html`,
         })),
       },
@@ -1070,7 +1207,13 @@ ${books
   </ol>
 
   <h2 class="sec">이 교재를 만든 기준</h2>
-  <p class="lead">사이트 조사 결과와 단계 설계는 <b>docs/conversation-research.md</b> 에 정리했습니다. 상황(기능)을 축으로 삼고, CEFR A1~C1 의 말하기 기술을 과 단위로 나눴습니다.</p>`;
+  <p class="lead">회화 교재는 <b>어떤 상황을 배우는지</b>를 먼저 정하고, <b>어디까지 말할 수 있는지</b>를 CEFR 로 표시했습니다. 난이도만 있으면 어디서 시작할지 몰라 헤매고, 상황만 있으면 내 수준에 맞는지 가늠할 수 없기 때문입니다.</p>
+  <ol class="words">
+    <li><span class="w-mean">축은 문법 항목이 아니라 <b>상황(기능)</b> 입니다. "현재완료를 배운다"보다 "카페에서 주문한다"를 먼저 찾기 때문에, 과 제목을 인사·주문·길 묻기·협상처럼 실제로 겪는 장면으로 잡았습니다.</span></li>
+    <li><span class="w-mean">단계는 <b>초급 A1~A2 · 중급 B1~B2 · 고급 C1</b> 세 가지로 고정하고 CEFR 을 함께 적었습니다. 문법 교재와 같은 이름·같은 표기를 써서 두 교재를 나란히 오갈 수 있습니다.</span></li>
+    <li><span class="w-mean">한 과는 <b>상황 요약 → 표현 표 → 예문 → 흔한 실수 → 연습 문제</b> 순서입니다. 예문마다 🔊 를 붙여 눈으로만 읽지 않고 소리로 확인하게 했습니다.</span></li>
+    <li><span class="w-mean">이 구성은 <b>British Council LearnEnglish</b>(CEFR 6단계), <b>VOA Let's Learn English</b>(2단계), <b>ELLLO</b>(레벨별 레슨과 퀴즈), <b>BBC Learning English</b>(단원 단위)의 단계 구성을 조사해 세 단계로 정리한 것입니다.</span></li>
+  </ol>`;
 
   return { file: "conversation/index.html", html: page({ title, description, canonical, ld, body, footerNav: CONVERSATION_FOOTER }) };
 }
@@ -1096,7 +1239,7 @@ function conversationPoint(p) {
     </div>`;
 }
 
-function conversationChapter(c) {
+function conversationChapter(c, nav) {
   const points = (c.points || []).map(conversationPoint).join("\n");
   const mistakes = (c.mistakes || []).length
     ? `\n    <div class="gmistake">
@@ -1121,7 +1264,7 @@ function conversationChapter(c) {
   return `  <section class="gram" id="${chapterAnchor(c.no)}">
     <div class="gram-head"><span class="gram-no">${String(c.no).padStart(2, "0")}과</span><h2>${esc(c.title)}</h2></div>
     <p class="gram-sum">${esc(c.summary)}</p>
-${points}${mistakes}${practice}
+${points}${mistakes}${practice}${nav}
   </section>`;
 }
 
@@ -1170,9 +1313,11 @@ function buildConversationBook(book, books) {
     .join("\n");
 
   const pager = [
-    prev ? `<a href="${prev.id}.html">← ${esc(prev.level)} ${esc(prev.title)}</a>` : `<span></span>`,
+    // 단계명은 이미 교재 제목에 들어 있어서("중급 영문법") 앞에 level 을 또 붙이면
+    // "중급 중급 영문법" 처럼 같은 말이 겹쳤습니다. 제목만 씁니다.
+    prev ? `<a href="${prev.id}.html">← ${esc(prev.title)}</a>` : `<span></span>`,
     `<a class="mid" href="./">🗣️ 회화 교재 전체 보기</a>`,
-    next ? `<a href="${next.id}.html">${esc(next.level)} ${esc(next.title)} →</a>` : `<span></span>`,
+    next ? `<a href="${next.id}.html">${esc(next.title)} →</a>` : `<span></span>`,
   ].join("\n    ");
 
   const body = `  <nav class="crumb" aria-label="breadcrumb">
@@ -1197,12 +1342,18 @@ function buildConversationBook(book, books) {
   <a class="cta" href="../">🔊 발음 들으며 단어 학습하기</a>
   <p class="lead">🔊 를 누르면 예문 발음을 들을 수 있습니다(앱에서 고른 목소리·속도를 그대로 사용).</p>
 
-  <h2 class="sec">목차</h2>
+  <h2 class="sec" id="toc">목차</h2>
   <ul class="toc">
 ${toc}
   </ul>
 
-${book.chapters.map(conversationChapter).join("\n\n")}
+${book.chapters.map((c, i, arr) => conversationChapter(c, bookChapterNav(arr)(c, i))).join("\n\n")}
+
+  <h2 class="sec">🔗 과 하나씩 따로 보기</h2>
+  <p class="lead">각 과에는 따로 열 수 있는 주소가 있습니다. 검색·공유로 특정 과를 바로 열 때 씁니다.</p>
+  <ul class="toc">
+${chapterLinkList(book)}
+  </ul>
 
   <nav class="pager" aria-label="교재 이동">
     ${pager}
@@ -1211,7 +1362,98 @@ ${book.chapters.map(conversationChapter).join("\n\n")}
   return {
     file: `conversation/${book.id}.html`,
     // 회화 교재도 예문 듣기 버튼이 있어 공용 스크립트(assets/speak.js)가 필요합니다.
-    html: page({ title, description, canonical, ld, body, footerNav: CONVERSATION_FOOTER, speak: true }),
+    html: page({ title, description, canonical, ld, body, footerNav: CONVERSATION_FOOTER, speak: true, chapterBar: true }),
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/* 6-5. 낱개 과 페이지 (검색·공유용 주소)                               */
+/* ------------------------------------------------------------------ */
+
+/**
+ * 과 하나만 따로 보는 페이지 — `grammar/basic-01.html`.
+ *
+ * 책 페이지는 12과가 이어지는 한 문서(77KB)라서 “이 과”를 가리키는 주소가 없었습니다.
+ * 검색으로 들어오거나 링크를 공유할 때 쓸 수 있게 과 단위 URL 을 함께 만듭니다.
+ * 책 페이지는 그대로 두고(연속 읽기 흐름 보존), 두 페이지가 서로를 링크합니다.
+ */
+function buildChapterPage(kind, book, chapter) {
+  const isGrammar = kind === "grammar";
+  const dir = isGrammar ? "grammar" : "conversation";
+  const sectionName = isGrammar ? "문법 교재" : "회화 교재";
+  const buildSection = isGrammar ? grammarChapter : conversationChapter;
+  const file = `${dir}/${chapterFile(book.id, chapter.no)}`;
+  const canonical = `${SITE}/${file}`;
+  const bookFile = `${book.id}.html`;
+  const idx = book.chapters.findIndex((c) => c.no === chapter.no);
+  const prev = book.chapters[idx - 1];
+  const next = book.chapters[idx + 1];
+  const label = chapterLabel(chapter);
+  const title = `${label} — ${book.title} | toeic.monster`;
+  // meta description 은 40~170자를 권장합니다(audit:site 가 검사).
+  // 요약이 짧은 과는 책·과 정보를 덧붙여 너무 짧은 설명이 되지 않게 합니다.
+  const quizN = (chapter.practice || []).length;
+  const description =
+    chapter.summary.length >= 60
+      ? chapter.summary
+      : `${chapter.summary} ${book.title} ${chapterNo(chapter.no)}과${quizN ? ` · 연습 ${quizN}문항` : ""}`;
+
+  const ld = jsonLd({
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "LearningResource",
+        name: `${label} — ${book.title}`,
+        description,
+        url: canonical,
+        inLanguage: "ko",
+        learningResourceType: isGrammar ? "문법 교재" : "영어회화 교재",
+        educationalUse: "self-study",
+        educationalLevel: book.cefr,
+        position: chapter.no,
+        isPartOf: { "@type": "Book", name: book.title, url: `${SITE}/${dir}/${bookFile}` },
+        provider: { "@type": "Organization", name: "toeic.monster", url: `${SITE}/` },
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "toeic.monster", item: `${SITE}/` },
+          { "@type": "ListItem", position: 2, name: sectionName, item: `${SITE}/${dir}/` },
+          { "@type": "ListItem", position: 3, name: book.title, item: `${SITE}/${dir}/${bookFile}` },
+          { "@type": "ListItem", position: 4, name: label, item: canonical },
+        ],
+      },
+    ],
+  });
+
+  const body = `  <nav class="crumb" aria-label="breadcrumb">
+    <a href="../">toeic.monster</a> › <a href="./">${sectionName}</a> › <a href="${bookFile}">${esc(book.title)}</a> › <span>${esc(label)}</span>
+  </nav>
+
+  <h1>${esc(label)}<span class="lvl ${LEVEL_CLASS[book.level] || "lvl-mid"}">${LEVEL_ICON[book.level] || "🟡"} ${esc(book.level)}</span></h1>
+  <p class="lead">${esc(book.title)} · CEFR ${esc(book.cefr || "")} · 총 ${book.chapters.length}과 중 ${chapter.no}번째</p>
+  <p class="lead">책 전체를 순서대로 보려면 <a href="${bookFile}">${esc(book.title)}</a>, 같은 자리로 바로 가려면 <a href="${bookFile}#${chapterAnchor(chapter.no)}">책 페이지의 이 과</a>를 쓰세요.</p>
+
+${buildSection(
+    chapter,
+    chapterFooterNav(chapter.no, {
+      back: { href: bookFile, label: `← ${esc(book.title)} 전체` },
+      prev: prev ? { href: chapterFile(book.id, prev.no), label: chapterLabel(prev) } : null,
+      next: next ? { href: chapterFile(book.id, next.no), label: chapterLabel(next) } : null,
+    }),
+  )}`;
+
+  return {
+    file,
+    html: page({
+      title,
+      description,
+      canonical,
+      ld,
+      body,
+      footerNav: isGrammar ? GRAMMAR_FOOTER : CONVERSATION_FOOTER,
+      speak: true,
+    }),
   };
 }
 
@@ -1329,12 +1571,19 @@ function buildSitemap(units, lastmod, guides, grammar, conversation) {
   }
   if (grammar && grammar.length) {
     add(`${SITE}/grammar/`, "monthly", "0.8");
-    grammar.forEach((b) => add(`${SITE}/grammar/${b.id}.html`, "monthly", "0.8"));
+    grammar.forEach((b) => {
+      add(`${SITE}/grammar/${b.id}.html`, "monthly", "0.8");
+      // 낱개 과 페이지 — 책 안의 한 과를 직접 가리키는 주소(검색 유입·공유용).
+      (b.chapters || []).forEach((c) => add(`${SITE}/grammar/${chapterFile(b.id, c.no)}`, "monthly", "0.6"));
+    });
     add(`${SITE}/grammar/cheatsheet.html`, "monthly", "0.7");
   }
   if (conversation && conversation.length) {
     add(`${SITE}/conversation/`, "monthly", "0.8");
-    conversation.forEach((b) => add(`${SITE}/conversation/${b.id}.html`, "monthly", "0.8"));
+    conversation.forEach((b) => {
+      add(`${SITE}/conversation/${b.id}.html`, "monthly", "0.8");
+      (b.chapters || []).forEach((c) => add(`${SITE}/conversation/${chapterFile(b.id, c.no)}`, "monthly", "0.6"));
+    });
   }
   // privacy.html·terms.html 은 robots=noindex 이므로 사이트맵에 넣지 않는다.
   // (noindex 페이지를 사이트맵에 제출하면 서치콘솔에서 오류로 보고된다.)
@@ -1362,12 +1611,13 @@ function main() {
 
   fs.mkdirSync(OUT_DIR, { recursive: true });
 
-  // 공용 스타일 — 정적 페이지 43개가 이 한 파일을 함께 받아 씁니다.
+  // 공용 스타일 — 정적 페이지 124개가 이 한 파일을 함께 받아 씁니다.
   // (페이지마다 인라인으로 넣으면 같은 내용을 43번 다시 받게 됩니다.)
   const siteCss = minifyCss(CSS);
   write("assets/site.css", siteCss);
 
   let written = 0;
+  let chapterPages = 0;
   units.forEach((u, i) => {
     const { file, html } = buildUnitPage(u, u.words, units[i - 1], units[i + 1]);
     write(file, html);
@@ -1379,8 +1629,8 @@ function main() {
   write(hub.file, hub.html);
   write(idiomsPage.file, idiomsPage.html);
 
-  guides.forEach((g) => {
-    const gp = buildGuidePage(g);
+  guides.forEach((g, i) => {
+    const gp = buildGuidePage(g, guides[i - 1], guides[i + 1]);
     write(gp.file, gp.html);
   });
   if (guides.length) {
@@ -1391,6 +1641,11 @@ function main() {
   grammar.forEach((b) => {
     const gp = buildGrammarBook(b, grammar);
     write(gp.file, gp.html);
+    b.chapters.forEach((c) => {
+      const cp = buildChapterPage("grammar", b, c);
+      write(cp.file, cp.html);
+      chapterPages++;
+    });
   });
   if (grammar.length) {
     const gh = buildGrammarHub(grammar);
@@ -1402,6 +1657,11 @@ function main() {
   conversation.forEach((b) => {
     const cp = buildConversationBook(b, conversation);
     write(cp.file, cp.html);
+    b.chapters.forEach((c) => {
+      const chap = buildChapterPage("conversation", b, c);
+      write(chap.file, chap.html);
+      chapterPages++;
+    });
   });
   if (conversation.length) {
     const ch = buildConversationHub(conversation);
@@ -1423,6 +1683,7 @@ function main() {
   const convChapters = conversation.reduce((n, b) => n + b.chapters.length, 0);
   const convQuizzes = conversation.reduce((n, b) => n + b.chapters.reduce((m, c) => m + (c.practice || []).length, 0), 0);
   console.log(`   · 회화 교재 ${conversation.length}권 + 허브 1개 (${convChapters}과 · 연습 문제 ${convQuizzes}문항)`);
+  console.log(`   · 낱개 과 페이지 ${chapterPages}개 (검색·공유용 주소 · 사이트맵 포함)`);
   console.log(`   · 404.html 1개 (색인 제외 — robots=noindex)`);
   console.log(
     `   · assets/site.css ${(siteCss.length / 1024).toFixed(1)}KB ` +

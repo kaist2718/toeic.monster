@@ -25,7 +25,7 @@
 <!-- 본문 서체 — Pretendard Variable. 필요한 글자 조각만 내려받는 dynamic subset 이라 첫 로드 부담이 작습니다. -->
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-<!-- 공용 스타일·스크립트 — 43개 정적 페이지가 한 파일을 함께 받아 씁니다(서비스워커가 캐시). -->
+<!-- 공용 스타일·스크립트 — 124개 정적 페이지가 한 파일을 함께 받아 씁니다(서비스워커가 캐시). -->
 <link rel="stylesheet" href="../assets/site.css">
 <script defer src="../assets/speak.js"></script>
 <link rel="icon" href="../icon.svg" type="image/svg+xml">
@@ -144,7 +144,7 @@
   <a class="cta" href="../index.html?level=intermediate#grammar-quiz">✏️ 앱에서 이 교재 문제 풀기</a>
   <p class="lead">🔊 를 누르면 예문 발음을 들을 수 있습니다(앱에서 고른 목소리·속도를 그대로 사용).</p>
 
-  <h2 class="sec">목차</h2>
+  <h2 class="sec" id="toc">목차</h2>
   <ul class="toc">
     <li><a href="#ch-01">
       <b>01과</b>
@@ -250,6 +250,10 @@
         <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: had been replacing</b><br>과거의 한 시점까지 계속된 진행을 강조하므로 과거완료진행형을 씁니다.</p></details>
       </div>
     </div>
+    <nav class="chnav" aria-label="01과 이동">
+      <a class="up" href="#toc">↑ 목차</a>
+      <a class="next" href="#ch-02">02과 수동태 →</a>
+    </nav>
   </section>
 
   <section class="gram" id="ch-02">
@@ -309,6 +313,10 @@
         <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: are satisfied</b><br>be satisfied with 는 사람이 만족하는 상태를 나타내는 수동태 표현입니다.</p></details>
       </div>
     </div>
+    <nav class="chnav" aria-label="02과 이동">
+      <a class="up" href="#toc">↑ 목차</a>
+      <a class="next" href="#ch-03">03과 관계대명사와 관계부사 →</a>
+    </nav>
   </section>
 
   <section class="gram" id="ch-03">
@@ -368,6 +376,10 @@
         <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: which</b><br>사물 선행사 invoice 를 받고 뒤에 주어 you 가 오므로 목적격 which 가 맞습니다.</p></details>
       </div>
     </div>
+    <nav class="chnav" aria-label="03과 이동">
+      <a class="up" href="#toc">↑ 목차</a>
+      <a class="next" href="#ch-04">04과 부정사와 동명사 →</a>
+    </nav>
   </section>
 
   <section class="gram" id="ch-04">
@@ -423,6 +435,10 @@
         <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: receiving</b><br>look forward to 의 to 는 전치사이므로 동명사가 옵니다.</p></details>
       </div>
     </div>
+    <nav class="chnav" aria-label="04과 이동">
+      <a class="up" href="#toc">↑ 목차</a>
+      <a class="next" href="#ch-05">05과 분사와 분사구문 입문 →</a>
+    </nav>
   </section>
 
   <section class="gram" id="ch-05">
@@ -477,6 +493,10 @@
         <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: signed</b><br>서명을 받는 문서이므로 과거분사 signed 가 맞습니다.</p></details>
       </div>
     </div>
+    <nav class="chnav" aria-label="05과 이동">
+      <a class="up" href="#toc">↑ 목차</a>
+      <a class="next" href="#ch-06">06과 가정법 →</a>
+    </nav>
   </section>
 
   <section class="gram" id="ch-06">
@@ -512,7 +532,7 @@
       <h3>가정의 다른 표현</h3>
       <p>without, otherwise, but for도 가정의 뜻을 담습니다. 주절에 would를 쓰는 점이 같습니다.</p>
       <div class="gex"><div class="en" lang="en">Without your help, we would not have finished on time. <button type="button" class="gex-speak" data-say="Without your help, we would not have finished on time." aria-label="예문 듣기: Without your help, we would not have finished on time." title="예문 듣기">🔊</button></div><div class="ko">당신의 도움이 없었다면 제때 끝내지 못했을 것입니다.</div></div>
-      <div class="gex"><div class="en" lang="en">I should have left earlier; otherwise I would have caught the train. <button type="button" class="gex-speak" data-say="I should have left earlier; otherwise I would have caught the train." aria-label="예문 듣기: I should have left earlier; otherwise I would have caught the train." title="예문 듣기">🔊</button></div><div class="ko">더 일찍 출발했어야 했습니다. 그랬다면 기차를 탔을 텐데요.</div></div>
+      <div class="gex"><div class="en" lang="en">We left early; otherwise we would have missed the flight. <button type="button" class="gex-speak" data-say="We left early; otherwise we would have missed the flight." aria-label="예문 듣기: We left early; otherwise we would have missed the flight." title="예문 듣기">🔊</button></div><div class="ko">우리는 일찍 출발했습니다. 그렇지 않았다면 비행기를 놓쳤을 것입니다.</div></div>
     </div>
     <div class="gmistake">
       <h3>⚠️ 자주 틀리는 포인트</h3>
@@ -536,6 +556,10 @@
         <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: had had</b><br>지난주라는 과거에 대한 아쉬움이므로 had + p.p. 를 씁니다.</p></details>
       </div>
     </div>
+    <nav class="chnav" aria-label="06과 이동">
+      <a class="up" href="#toc">↑ 목차</a>
+      <a class="next" href="#ch-07">07과 조동사 심화 — 추측과 후회 →</a>
+    </nav>
   </section>
 
   <section class="gram" id="ch-07">
@@ -585,6 +609,10 @@
         <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: cannot have delivered</b><br>택배가 아직 있으므로 배달했을 리 없다는 부정적 확신을 cannot have p.p. 로 나타냅니다.</p></details>
       </div>
     </div>
+    <nav class="chnav" aria-label="07과 이동">
+      <a class="up" href="#toc">↑ 목차</a>
+      <a class="next" href="#ch-08">08과 사역동사와 지각동사 →</a>
+    </nav>
   </section>
 
   <section class="gram" id="ch-08">
@@ -634,6 +662,10 @@
         <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: to change</b><br>get 은 사역의 뜻이지만 목적격 보어로 to부정사를 씁니다.</p></details>
       </div>
     </div>
+    <nav class="chnav" aria-label="08과 이동">
+      <a class="up" href="#toc">↑ 목차</a>
+      <a class="next" href="#ch-09">09과 비교 표현 심화 →</a>
+    </nav>
   </section>
 
   <section class="gram" id="ch-09">
@@ -651,7 +683,7 @@
       <div class="gtable-wrap">
       <table class="gtable">
         <thead><tr><th>표현</th><th>예문</th></tr></thead>
-        <tbody><tr><td>much + 비교급</td><td>This route is much faster.</td></tr><tr><td>twice as many as</td><td>We received twice as many orders as last year.</td></tr><tr><td>three times the price</td><td>The unit costs three times the price of the older model.</td></tr></tbody>
+        <tbody><tr><td>much + 비교급</td><td>This route is much faster.</td></tr><tr><td>twice as many as</td><td>We received twice as many orders as last year.</td></tr><tr><td>three times as much as</td><td>The new unit costs three times as much as the older model.</td></tr></tbody>
       </table>
       </div>
     </div>
@@ -689,6 +721,10 @@
         <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: factories</b><br>one of the + 최상급 뒤에는 복수 명사가 옵니다.</p></details>
       </div>
     </div>
+    <nav class="chnav" aria-label="09과 이동">
+      <a class="up" href="#toc">↑ 목차</a>
+      <a class="next" href="#ch-10">10과 간접의문문과 명사절 →</a>
+    </nav>
   </section>
 
   <section class="gram" id="ch-10">
@@ -744,6 +780,10 @@
         <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: What</b><br>명사절의 주어 자리에서 절을 이끄는 의문대명사는 What 입니다.</p></details>
       </div>
     </div>
+    <nav class="chnav" aria-label="10과 이동">
+      <a class="up" href="#toc">↑ 목차</a>
+      <a class="next" href="#ch-11">11과 화법 — 직접화법과 간접화법 →</a>
+    </nav>
   </section>
 
   <section class="gram" id="ch-11">
@@ -803,6 +843,10 @@
         <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: to turn off</b><br>명령문을 전달할 때는 tell + 목적어 + to부정사 구조를 씁니다.</p></details>
       </div>
     </div>
+    <nav class="chnav" aria-label="11과 이동">
+      <a class="up" href="#toc">↑ 목차</a>
+      <a class="next" href="#ch-12">12과 연결어 심화 — 접속사·접속부사·전치사 →</a>
+    </nav>
   </section>
 
   <section class="gram" id="ch-12">
@@ -862,12 +906,68 @@
         <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: otherwise</b><br>그렇지 않으면이라는 조건의 의미를 나타내는 otherwise 를 씁니다.</p></details>
       </div>
     </div>
+    <nav class="chnav" aria-label="12과 이동">
+      <a class="up" href="#toc">↑ 목차</a>
+    </nav>
   </section>
 
+  <h2 class="sec">🔗 과 하나씩 따로 보기</h2>
+  <p class="lead">각 과에는 따로 열 수 있는 주소가 있습니다. 검색·공유로 특정 과를 바로 열 때 씁니다.</p>
+  <ul class="toc">
+    <li><a href="intermediate-01.html">
+      <b>01과</b>
+      <span>완료시제 3종</span>
+    </a></li>
+    <li><a href="intermediate-02.html">
+      <b>02과</b>
+      <span>수동태</span>
+    </a></li>
+    <li><a href="intermediate-03.html">
+      <b>03과</b>
+      <span>관계대명사와 관계부사</span>
+    </a></li>
+    <li><a href="intermediate-04.html">
+      <b>04과</b>
+      <span>부정사와 동명사</span>
+    </a></li>
+    <li><a href="intermediate-05.html">
+      <b>05과</b>
+      <span>분사와 분사구문 입문</span>
+    </a></li>
+    <li><a href="intermediate-06.html">
+      <b>06과</b>
+      <span>가정법</span>
+    </a></li>
+    <li><a href="intermediate-07.html">
+      <b>07과</b>
+      <span>조동사 심화 — 추측과 후회</span>
+    </a></li>
+    <li><a href="intermediate-08.html">
+      <b>08과</b>
+      <span>사역동사와 지각동사</span>
+    </a></li>
+    <li><a href="intermediate-09.html">
+      <b>09과</b>
+      <span>비교 표현 심화</span>
+    </a></li>
+    <li><a href="intermediate-10.html">
+      <b>10과</b>
+      <span>간접의문문과 명사절</span>
+    </a></li>
+    <li><a href="intermediate-11.html">
+      <b>11과</b>
+      <span>화법 — 직접화법과 간접화법</span>
+    </a></li>
+    <li><a href="intermediate-12.html">
+      <b>12과</b>
+      <span>연결어 심화 — 접속사·접속부사·전치사</span>
+    </a></li>
+  </ul>
+
   <nav class="pager" aria-label="교재 이동">
-    <a href="basic.html">← 초급 기초 영문법</a>
+    <a href="basic.html">← 기초 영문법</a>
     <a class="mid" href="./">📘 문법 교재 전체 보기</a>
-    <a href="advanced.html">고급 고급 영문법 →</a>
+    <a href="advanced.html">고급 영문법 →</a>
   </nav>
 </main>
 <footer class="ft wrap">
@@ -876,5 +976,49 @@
   </nav>
   <p>👾 toeic.monster · TOEIC 어휘 무료 학습 사이트 · 학습 기록은 브라우저에만 저장됩니다</p>
 </footer>
+<nav class="chbar" id="chBar" aria-label="현재 과 이동" hidden>
+  <a href="#toc">🗂 목차</a>
+  <span class="chbar-cur" id="chBarCur"></span>
+  <a id="chBarNext" href="#toc" hidden>다음 과 →</a>
+</nav>
+<script>
+  (function () {
+    var bar = document.getElementById("chBar");
+    if (!bar || !("IntersectionObserver" in window)) return;
+    var cur = document.getElementById("chBarCur");
+    var next = document.getElementById("chBarNext");
+    var secs = [].slice.call(document.querySelectorAll("section.gram[id]"));
+    if (!secs.length) return;
+    var pager = document.querySelector(".pager");
+    var inChapter = false;
+    var atEnd = false;
+    function sync() { bar.hidden = !(inChapter && !atEnd); }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        var i = secs.indexOf(en.target);
+        var no = en.target.querySelector(".gram-no");
+        var h = en.target.querySelector("h2");
+        cur.textContent = (no ? no.textContent : "") + (h ? " " + h.textContent : "");
+        var nx = secs[i + 1];
+        next.hidden = !nx;
+        if (nx) {
+          next.href = "#" + nx.id;
+          next.textContent = "다음 과 →";
+        }
+        inChapter = true;
+        sync();
+      });
+    }, { rootMargin: "-45% 0px -50% 0px" });
+    secs.forEach(function (s) { io.observe(s); });
+    // 페이지 끝 pager 가 보이면 같은 링크가 이미 화면에 있으니 바를 내립니다.
+    if (pager) {
+      new IntersectionObserver(function (entries) {
+        atEnd = entries.some(function (en) { return en.isIntersecting; });
+        sync();
+      }, { rootMargin: "0px 0px -15% 0px" }).observe(pager);
+    }
+  })();
+</script>
 </body>
 </html>

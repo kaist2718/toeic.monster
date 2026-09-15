@@ -327,7 +327,7 @@ window.GRAMMAR_BOOKS.push({
           body: "without, otherwise, but for도 가정의 뜻을 담습니다. 주절에 would를 쓰는 점이 같습니다.",
           examples: [
             { en: "Without your help, we would not have finished on time.", ko: "당신의 도움이 없었다면 제때 끝내지 못했을 것입니다." },
-            { en: "I should have left earlier; otherwise I would have caught the train.", ko: "더 일찍 출발했어야 했습니다. 그랬다면 기차를 탔을 텐데요." }
+            { en: "We left early; otherwise we would have missed the flight.", ko: "우리는 일찍 출발했습니다. 그렇지 않았다면 비행기를 놓쳤을 것입니다." }
           ]
         }
       ],
@@ -452,7 +452,7 @@ window.GRAMMAR_BOOKS.push({
             rows: [
               ["much + 비교급", "This route is much faster."],
               ["twice as many as", "We received twice as many orders as last year."],
-              ["three times the price", "The unit costs three times the price of the older model."]
+              ["three times as much as", "The new unit costs three times as much as the older model."]
             ]
           }
         },

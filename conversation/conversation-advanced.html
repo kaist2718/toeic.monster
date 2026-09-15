@@ -25,7 +25,7 @@
 <!-- 본문 서체 — Pretendard Variable. 필요한 글자 조각만 내려받는 dynamic subset 이라 첫 로드 부담이 작습니다. -->
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-<!-- 공용 스타일·스크립트 — 43개 정적 페이지가 한 파일을 함께 받아 씁니다(서비스워커가 캐시). -->
+<!-- 공용 스타일·스크립트 — 124개 정적 페이지가 한 파일을 함께 받아 씁니다(서비스워커가 캐시). -->
 <link rel="stylesheet" href="../assets/site.css">
 <script defer src="../assets/speak.js"></script>
 <link rel="icon" href="../icon.svg" type="image/svg+xml">
@@ -143,7 +143,7 @@
   <a class="cta" href="../">🔊 발음 들으며 단어 학습하기</a>
   <p class="lead">🔊 를 누르면 예문 발음을 들을 수 있습니다(앱에서 고른 목소리·속도를 그대로 사용).</p>
 
-  <h2 class="sec">목차</h2>
+  <h2 class="sec" id="toc">목차</h2>
   <ul class="toc">
     <li><a href="#ch-01">
       <b>01과</b>
@@ -249,6 +249,10 @@
         <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: I'd push back slightly on the timeline, though I take your point on scope.</b><br>동의하는 부분을 먼저 밝히고 이견을 좁혀 말하면 협력적으로 들립니다.</p></details>
       </div>
     </div>
+    <nav class="chnav" aria-label="01과 이동">
+      <a class="up" href="#toc">↑ 목차</a>
+      <a class="next" href="#ch-02">02과 격식과 비격식 전환하기 →</a>
+    </nav>
   </section>
 
   <section class="gram" id="ch-02">
@@ -279,8 +283,8 @@
     <div class="g-point">
       <h3>자리에 따라 높임과 낮춤 조절하기</h3>
       <p>상대가 고객·투자자인지, 같은 팀 동료인지에 따라 조동사와 부사를 바꿉니다. 이 조절을 'register shift'라고 합니다.</p>
-      <div class="gex"><div class="en" lang="en">Would you mind if we revisited the schedule? — 고객에게 <button type="button" class="gex-speak" data-say="Would you mind if we revisited the schedule? — 고객에게" aria-label="예문 듣기: Would you mind if we revisited the schedule? — 고객에게" title="예문 듣기">🔊</button></div><div class="ko">일정을 다시 보면 실례가 될까요? — 고객에게</div></div>
-      <div class="gex"><div class="en" lang="en">Shall we move the review to Thursday? — 같은 팀 <button type="button" class="gex-speak" data-say="Shall we move the review to Thursday? — 같은 팀" aria-label="예문 듣기: Shall we move the review to Thursday? — 같은 팀" title="예문 듣기">🔊</button></div><div class="ko">검토를 목요일로 옮길까요? — 같은 팀</div></div>
+      <div class="gex"><div class="en" lang="en">Would you mind if we revisited the schedule? <button type="button" class="gex-speak" data-say="Would you mind if we revisited the schedule?" aria-label="예문 듣기: Would you mind if we revisited the schedule?" title="예문 듣기">🔊</button></div><div class="ko">일정을 다시 보면 실례가 될까요? (고객에게)</div></div>
+      <div class="gex"><div class="en" lang="en">Shall we move the review to Thursday? <button type="button" class="gex-speak" data-say="Shall we move the review to Thursday?" aria-label="예문 듣기: Shall we move the review to Thursday?" title="예문 듣기">🔊</button></div><div class="ko">검토를 목요일로 옮길까요? (같은 팀)</div></div>
       <p class="g-note">💡 Shall we ~? 는 제안을 함께 하자는 편한 표현으로, 같은 팀이나 대등한 사이에서 씁니다. 고객에게는 Would you mind if we ~? 가 안전합니다.</p>
     </div>
     <div class="gmistake">
@@ -305,6 +309,10 @@
         <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: We require additional time.</b><br>격식 문어체에서는 축약을 줄이고 require 같은 동사를 씁니다.</p></details>
       </div>
     </div>
+    <nav class="chnav" aria-label="02과 이동">
+      <a class="up" href="#toc">↑ 목차</a>
+      <a class="next" href="#ch-03">03과 설득하고 반론을 미리 막기 →</a>
+    </nav>
   </section>
 
   <section class="gram" id="ch-03">
@@ -326,7 +334,7 @@
         <tbody><tr><td>데이터</td><td>The figures show ~</td><td>매우 높음</td></tr><tr><td>사례</td><td>We saw this work at another site.</td><td>높음</td></tr><tr><td>일반 원칙</td><td>In principle, ~</td><td>보통</td></tr><tr><td>직감</td><td>My instinct is that ~</td><td>낮음, 솔직함</td></tr><tr><td>제삼자</td><td>The consultants came to the same conclusion.</td><td>높음</td></tr></tbody>
       </table>
       </div>
-      <p class="g-note">💡 My instinct is that ~ 은 근거가 약하다는 것을 스스로 밝히는 표현입니다. 이를 숨기고 데이터인 척하면 신뢰를 잃습니다.</p>
+      <p class="g-note">💡 My instinct is that ~ 은 근거가 약하다는 것을 스스로 밝히는 표현입니다. 이를 숨기고 데이터인 것처럼 말하면 신뢰를 잃습니다.</p>
     </div>
     <div class="g-point">
       <h3>선택지로 몰아가기</h3>
@@ -357,6 +365,10 @@
         <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: Which would you be more comfortable with?</b><br>예와 아니오가 아니라 선택지 사이에서 고르게 하면 승낙 가능성이 올라갑니다.</p></details>
       </div>
     </div>
+    <nav class="chnav" aria-label="03과 이동">
+      <a class="up" href="#toc">↑ 목차</a>
+      <a class="next" href="#ch-04">04과 정보의 한계와 불확실성 다루기 →</a>
+    </nav>
   </section>
 
   <section class="gram" id="ch-04">
@@ -368,7 +380,7 @@
       <div class="gtable-wrap">
       <table class="gtable">
         <thead><tr><th>확실성</th><th>표현</th><th>뜻</th></tr></thead>
-        <tbody><tr><td>확인됨</td><td>I've confirmed that ~</td><td>내가 직접 확인</td></tr><tr><td>보고됨</td><td>I'm told that ~</td><td>전해 들음</td></tr><tr><td>추정</td><td>My best guess is ~</td><td>근거 있는 추정</td></tr><tr><td>미확인</td><td>I have no way of knowing yet.</td><td>알 수단이 없음</td></tr><tr><td>보류</td><td>It's still up in the air.</td><td>아직 미정</td></tr></tbody>
+        <tbody><tr><td>확인됨</td><td>I've confirmed that ~</td><td>내가 직접 확인</td></tr><tr><td>보고됨</td><td>I'm told that ~</td><td>전해 들음</td></tr><tr><td>추정</td><td>My best guess is ~</td><td>근거 있는 추정</td></tr><tr><td>미확인</td><td>I have no way of knowing yet.</td><td>알 방법이 없음</td></tr><tr><td>보류</td><td>It's still up in the air.</td><td>아직 미정</td></tr></tbody>
       </table>
       </div>
       <p class="g-note">💡 I'm told that ~ 은 내가 확인한 것이 아니라 전해 들었다는 뜻입니다. 출처가 약할 때 반드시 붙입니다.</p>
@@ -413,6 +425,10 @@
         <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: That's outside my area. Mina would know better than I would.</b><br>범위를 밝히고 담당자를 연결하면 신뢰를 잃지 않습니다.</p></details>
       </div>
     </div>
+    <nav class="chnav" aria-label="04과 이동">
+      <a class="up" href="#toc">↑ 목차</a>
+      <a class="next" href="#ch-05">05과 갈등 완화하고 중재하기 →</a>
+    </nav>
   </section>
 
   <section class="gram" id="ch-05">
@@ -469,6 +485,10 @@
         <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: Let's take this offline.</b><br>여기서 결론 내지 않고 따로 다루자는 뜻으로, 회의 흐름을 지키며 쟁점을 미룹니다.</p></details>
       </div>
     </div>
+    <nav class="chnav" aria-label="05과 이동">
+      <a class="up" href="#toc">↑ 목차</a>
+      <a class="next" href="#ch-06">06과 역제안하고 판을 바꾸기 →</a>
+    </nav>
   </section>
 
   <section class="gram" id="ch-06">
@@ -521,6 +541,10 @@
         <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: We can start with a trial, then decide on the full roll-out.</b><br>되돌릴 수 있고 부담이 작은 제안이 승낙 가능성을 높입니다.</p></details>
       </div>
     </div>
+    <nav class="chnav" aria-label="06과 이동">
+      <a class="up" href="#toc">↑ 목차</a>
+      <a class="next" href="#ch-07">07과 미묘한 뉘앙스 구분하기 →</a>
+    </nav>
   </section>
 
   <section class="gram" id="ch-07">
@@ -581,6 +605,10 @@
         <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: There's room to improve.</b><br>아쉬운 점을 부드럽게 전하는 표현으로, 사람을 공격하지 않습니다.</p></details>
       </div>
     </div>
+    <nav class="chnav" aria-label="07과 이동">
+      <a class="up" href="#toc">↑ 목차</a>
+      <a class="next" href="#ch-08">08과 관용 표현을 업무 대화에 쓰기 →</a>
+    </nav>
   </section>
 
   <section class="gram" id="ch-08">
@@ -637,6 +665,10 @@
         <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: We're on the same page.</b><br>합의를 확인할 때 쓰는 관용 표현입니다.</p></details>
       </div>
     </div>
+    <nav class="chnav" aria-label="08과 이동">
+      <a class="up" href="#toc">↑ 목차</a>
+      <a class="next" href="#ch-09">09과 유머와 아이러니의 경계 →</a>
+    </nav>
   </section>
 
   <section class="gram" id="ch-09">
@@ -657,7 +689,7 @@
       <h3>아이러니와 진짜 뜻 구분하기</h3>
       <p>아이러니는 말과 뜻이 반대입니다. 억양과 상황이 단서가 되지만 서면에서는 오해가 생기므로 주의합니다.</p>
       <div class="gex"><div class="en" lang="en">Great, the server is down again. Just what we needed. <button type="button" class="gex-speak" data-say="Great, the server is down again. Just what we needed." aria-label="예문 듣기: Great, the server is down again. Just what we needed." title="예문 듣기">🔊</button></div><div class="ko">좋네요, 서버가 또 죽었습니다. 딱 필요한 일이었죠.</div></div>
-      <div class="gex"><div class="en" lang="en">Well, that went smoothly. (문제가 생긴 뒤에) <button type="button" class="gex-speak" data-say="Well, that went smoothly. (문제가 생긴 뒤에)" aria-label="예문 듣기: Well, that went smoothly. (문제가 생긴 뒤에)" title="예문 듣기">🔊</button></div><div class="ko">네, 참 매끄럽게 됐네요. (문제가 생긴 뒤에)</div></div>
+      <div class="gex"><div class="en" lang="en">Well, that went smoothly. <button type="button" class="gex-speak" data-say="Well, that went smoothly." aria-label="예문 듣기: Well, that went smoothly." title="예문 듣기">🔊</button></div><div class="ko">네, 참 매끄럽게 됐네요. (문제가 생긴 뒤에 쓴 아이러니)</div></div>
       <p class="g-note">💡 아이러니는 억양이 단서입니다. 이메일이나 메신저에서 이 표현을 쓰면 진심으로 읽힐 수 있으므로 이모지나 설명을 붙이는 편이 안전합니다.</p>
     </div>
     <div class="g-point">
@@ -693,6 +725,10 @@
         <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: 진심으로 읽혀 오해를 만든다</b><br>아이러니는 억양이 단서라 서면에서는 오해가 생기기 쉽습니다.</p></details>
       </div>
     </div>
+    <nav class="chnav" aria-label="09과 이동">
+      <a class="up" href="#toc">↑ 목차</a>
+      <a class="next" href="#ch-10">10과 담화 표지로 흐름 만들기 →</a>
+    </nav>
   </section>
 
   <section class="gram" id="ch-10">
@@ -749,6 +785,10 @@
         <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: There are two things I want to cover.</b><br>개수를 먼저 알리면 듣는 사람이 구조를 잡고 따라올 수 있습니다.</p></details>
       </div>
     </div>
+    <nav class="chnav" aria-label="10과 이동">
+      <a class="up" href="#toc">↑ 목차</a>
+      <a class="next" href="#ch-11">11과 발표하고 설명 이끌기 →</a>
+    </nav>
   </section>
 
   <section class="gram" id="ch-11">
@@ -805,6 +845,10 @@
         <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: If you take one thing away today, let it be this:</b><br>청중이 기억할 한 문장을 남기는 효과적인 마무리입니다.</p></details>
       </div>
     </div>
+    <nav class="chnav" aria-label="11과 이동">
+      <a class="up" href="#toc">↑ 목차</a>
+      <a class="next" href="#ch-12">12과 문화 차이와 예의의 결 →</a>
+    </nav>
   </section>
 
   <section class="gram" id="ch-12">
@@ -861,10 +905,66 @@
         <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: I'd like to offer a different view on the second point.</b><br>안건을 명시하면 반대가 사람을 향하지 않는다는 것이 분명해집니다.</p></details>
       </div>
     </div>
+    <nav class="chnav" aria-label="12과 이동">
+      <a class="up" href="#toc">↑ 목차</a>
+    </nav>
   </section>
 
+  <h2 class="sec">🔗 과 하나씩 따로 보기</h2>
+  <p class="lead">각 과에는 따로 열 수 있는 주소가 있습니다. 검색·공유로 특정 과를 바로 열 때 씁니다.</p>
+  <ul class="toc">
+    <li><a href="conversation-advanced-01.html">
+      <b>01과</b>
+      <span>완곡하게 말하고 책임 한계 두기</span>
+    </a></li>
+    <li><a href="conversation-advanced-02.html">
+      <b>02과</b>
+      <span>격식과 비격식 전환하기</span>
+    </a></li>
+    <li><a href="conversation-advanced-03.html">
+      <b>03과</b>
+      <span>설득하고 반론을 미리 막기</span>
+    </a></li>
+    <li><a href="conversation-advanced-04.html">
+      <b>04과</b>
+      <span>정보의 한계와 불확실성 다루기</span>
+    </a></li>
+    <li><a href="conversation-advanced-05.html">
+      <b>05과</b>
+      <span>갈등 완화하고 중재하기</span>
+    </a></li>
+    <li><a href="conversation-advanced-06.html">
+      <b>06과</b>
+      <span>역제안하고 판을 바꾸기</span>
+    </a></li>
+    <li><a href="conversation-advanced-07.html">
+      <b>07과</b>
+      <span>미묘한 뉘앙스 구분하기</span>
+    </a></li>
+    <li><a href="conversation-advanced-08.html">
+      <b>08과</b>
+      <span>관용 표현을 업무 대화에 쓰기</span>
+    </a></li>
+    <li><a href="conversation-advanced-09.html">
+      <b>09과</b>
+      <span>유머와 아이러니의 경계</span>
+    </a></li>
+    <li><a href="conversation-advanced-10.html">
+      <b>10과</b>
+      <span>담화 표지로 흐름 만들기</span>
+    </a></li>
+    <li><a href="conversation-advanced-11.html">
+      <b>11과</b>
+      <span>발표하고 설명 이끌기</span>
+    </a></li>
+    <li><a href="conversation-advanced-12.html">
+      <b>12과</b>
+      <span>문화 차이와 예의의 결</span>
+    </a></li>
+  </ul>
+
   <nav class="pager" aria-label="교재 이동">
-    <a href="conversation-intermediate.html">← 중급 중급 영어회화</a>
+    <a href="conversation-intermediate.html">← 중급 영어회화</a>
     <a class="mid" href="./">🗣️ 회화 교재 전체 보기</a>
     <span></span>
   </nav>
@@ -875,5 +975,49 @@
   </nav>
   <p>👾 toeic.monster · TOEIC 어휘 무료 학습 사이트 · 학습 기록은 브라우저에만 저장됩니다</p>
 </footer>
+<nav class="chbar" id="chBar" aria-label="현재 과 이동" hidden>
+  <a href="#toc">🗂 목차</a>
+  <span class="chbar-cur" id="chBarCur"></span>
+  <a id="chBarNext" href="#toc" hidden>다음 과 →</a>
+</nav>
+<script>
+  (function () {
+    var bar = document.getElementById("chBar");
+    if (!bar || !("IntersectionObserver" in window)) return;
+    var cur = document.getElementById("chBarCur");
+    var next = document.getElementById("chBarNext");
+    var secs = [].slice.call(document.querySelectorAll("section.gram[id]"));
+    if (!secs.length) return;
+    var pager = document.querySelector(".pager");
+    var inChapter = false;
+    var atEnd = false;
+    function sync() { bar.hidden = !(inChapter && !atEnd); }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        var i = secs.indexOf(en.target);
+        var no = en.target.querySelector(".gram-no");
+        var h = en.target.querySelector("h2");
+        cur.textContent = (no ? no.textContent : "") + (h ? " " + h.textContent : "");
+        var nx = secs[i + 1];
+        next.hidden = !nx;
+        if (nx) {
+          next.href = "#" + nx.id;
+          next.textContent = "다음 과 →";
+        }
+        inChapter = true;
+        sync();
+      });
+    }, { rootMargin: "-45% 0px -50% 0px" });
+    secs.forEach(function (s) { io.observe(s); });
+    // 페이지 끝 pager 가 보이면 같은 링크가 이미 화면에 있으니 바를 내립니다.
+    if (pager) {
+      new IntersectionObserver(function (entries) {
+        atEnd = entries.some(function (en) { return en.isIntersecting; });
+        sync();
+      }, { rootMargin: "0px 0px -15% 0px" }).observe(pager);
+    }
+  })();
+</script>
 </body>
 </html>

@@ -322,7 +322,7 @@ window.GRAMMAR_BOOKS.push({
       practice: [
         { q: "The vendor appears ____ the specification before shipping the parts.", opts: ["to misread", "to have misread", "misreading", "to be misreading"], a: "to have misread", why: "출하보다 사양을 잘못 읽은 일이 앞서므로 완료부정사를 씁니다." },
         { q: "The equipment requires ____ every six months.", opts: ["to inspect", "to be inspected", "inspecting it", "inspect"], a: "to be inspected", why: "장비는 점검받는 대상이므로 수동부정사 to be inspected 를 씁니다." },
-        { q: "The director was advised ____ the decision without consulting legal.", opts: ["not to make", "to not made", "not making", "no to make"], a: "not to make", why: "부정부정사는 to 앞에 not 을 두어 not to make 로 씁니다." }
+        { q: "The director was advised ____ the decision without consulting legal.", opts: ["not to make", "to not made", "not making", "no to make"], a: "not to make", why: "부정의 to부정사는 to 앞에 not 을 두어 not to make 로 씁니다." }
       ]
     },
     {
