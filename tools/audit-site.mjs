@@ -786,18 +786,30 @@ if (!idiomShown) {
 const externalUrls = [...external.keys()].sort();
 
 if (CHECK_EXTERNAL && externalUrls.length) {
+  /* 일부 사이트는 브라우저가 아닌 요청을 막습니다(403·연결 끊김). 우리가 보는 것은
+     "이 링크가 살아 있는가" 이므로 브라우저와 같은 User-Agent 로 확인합니다.
+     (실제로 britishcouncil 링크가 기본 fetch 에서는 연결이 끊기고, 이 헤더로는 200 이었습니다.) */
+  const headers = {
+    "user-agent":
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+    accept: "text/html,application/xhtml+xml,*/*;q=0.8",
+    "accept-language": "ko-KR,ko;q=0.9,en;q=0.8",
+  };
   const check = async (url) => {
     const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 10000);
+    const timer = setTimeout(() => ctrl.abort(), 15000);
     try {
-      let res = await fetch(url, { method: "HEAD", redirect: "follow", signal: ctrl.signal });
+      let res = await fetch(url, { method: "HEAD", redirect: "follow", headers, signal: ctrl.signal });
       if (res.status === 405 || res.status === 403) {
-        res = await fetch(url, { method: "GET", redirect: "follow", signal: ctrl.signal });
+        res = await fetch(url, { method: "GET", redirect: "follow", headers, signal: ctrl.signal });
       }
       if (!res.ok) fail(`외부 링크 응답 ${res.status}: ${url} (${[...external.get(url)].join(", ")})`);
       return res.status;
     } catch (e) {
-      fail(`외부 링크 확인 실패: ${url} — ${e.message}`);
+      fail(
+        `외부 링크 확인 실패: ${url} — ${e.message}\n` +
+          "     → 이 환경에서 막혔을 수 있습니다(브라우저로 직접 열어 확인해 보세요).",
+      );
       return 0;
     } finally {
       clearTimeout(timer);
