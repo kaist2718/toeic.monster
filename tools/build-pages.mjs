@@ -205,6 +205,15 @@ footer.ft p{margin-top:8px}
 .toc a[aria-current="page"]{border-color:var(--primary-solid);background:var(--soft)}
 .toc b{display:block;font-size:11.5px;color:var(--primary);letter-spacing:.3px;margin-bottom:3px}
 .toc span{font-size:14px;font-weight:700}
+/* 바로 가기(점프 목록)와 「맨 위로」 — 긴 목록 페이지에서 위로 되돌아가는 수고를 줄입니다.
+   홈(앱)의 「섹션 메뉴」와 달리 자바스크립트 없이 열리는 <details> 라, 크롤러도 링크를 따라갈 수 있습니다. */
+.jump{margin-top:24px}
+.jump>summary{display:inline-flex;align-items:center;min-height:44px;font-weight:700;font-size:13.5px;color:var(--primary);background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 14px;cursor:pointer;list-style:none}
+.jump>summary::-webkit-details-marker{display:none}
+.jump>summary::after{content:"▾";margin-left:8px;font-size:11px}
+.jump[open]>summary::after{content:"▴"}
+.jump-body{padding:14px 0 0}
+.totop{display:inline-flex;align-items:center;min-height:44px;padding:9px 12px;font-weight:700;font-size:13px;text-decoration:none}
 .gram{margin:30px 0 0;padding-top:6px}
 .gram-head{display:flex;align-items:baseline;gap:10px;border-bottom:2px solid var(--border);padding-bottom:8px;margin-bottom:10px}
 .gram-no{flex:0 0 auto;background:var(--primary-solid);color:#fff;font-size:12px;font-weight:800;border-radius:6px;padding:3px 8px}
@@ -260,7 +269,7 @@ footer.ft p{margin-top:8px}
 .cheat-card ul{margin:0 0 8px;padding-left:16px;font-size:12.5px;color:var(--text)}
 .cheat-card li{margin-bottom:3px}
 .cheat-card a{font-size:12.5px;font-weight:700;text-decoration:none}
-@media print{header.bar,footer.ft,.pager,.chbar,.chnav,.cta,.cheat-card a{display:none}body{background:#fff}.wrap{max-width:none;padding:0}.cheat-grid{grid-template-columns:1fr 1fr}.cheat-card{border-color:#bbb;page-break-inside:avoid}}
+@media print{header.bar,footer.ft,.pager,.jump,.totop,.chbar,.chnav,.cta,.cheat-card a{display:none}body{background:#fff}.wrap{max-width:none;padding:0}.cheat-grid{grid-template-columns:1fr 1fr}.cheat-card{border-color:#bbb;page-break-inside:avoid}}
 `;
 
 /**
@@ -368,6 +377,9 @@ function page({ title, description, canonical, ld, body, footerNav, speak, chapt
 <link rel="icon" href="../icon-192.png" type="image/png" sizes="192x192">
 <!-- iOS 홈 화면은 SVG 아이콘을 쓰지 않으므로 PNG 를 따로 지정합니다(tools/make-icons.py 로 생성). -->
 <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<!-- 방문자 분석 (Umami Cloud — 쿠키 미사용, 개인정보 미수집). index.html 과 같은 웹사이트 ID 를 씁니다. -->
+<link rel="preconnect" href="https://cloud.umami.is" crossorigin>
+<script async defer src="https://cloud.umami.is/script.js" data-website-id="04c3b8cf-c418-4a70-8549-9f21e09b8cbf"><\/script>
 <script>
   // 앱(index.html)에서 고른 테마를 정적 페이지에도 첫 페인트 전에 적용해,
   // 다크 모드 사용자가 흰 화면을 번쩍 보지 않게 합니다.
@@ -388,7 +400,7 @@ function page({ title, description, canonical, ld, body, footerNav, speak, chapt
 ${ld}
 </script>
 </head>
-<body>
+<body id="top">
 <header class="bar">
   <div class="wrap">
     <a href="../">toeic.monster</a>
@@ -404,6 +416,7 @@ ${body}
   </nav>
   <p>👾 toeic.monster · TOEIC 어휘 무료 학습 사이트 · 학습 기록은 브라우저에만 저장됩니다</p>
 </footer>
+<div class="wrap"><a class="totop" href="#top">↑ 맨 위로</a></div>
 ${chapterBar ? CHAPTER_BAR + "\n" : ""}</body>
 </html>
 `;
@@ -435,7 +448,58 @@ function wordItem(w) {
       </li>`;
 }
 
-function buildUnitPage(u, words, prev, next) {
+/**
+ * 「다른 유닛으로 바로 가기」 — 단어장 페이지는 30개 유닛이 이어지는데
+ * 허브로 돌아가야만 먼 유닛으로 갈 수 있었습니다. 접어 둔 목록으로 둡니다.
+ * (과 페이지의 「다른 과」 목록과 같은 .toc 카드 모양을 씁니다.)
+ */
+function unitJumpList(units, currentId, summaryText) {
+  const items = units
+    .map((u) => {
+      const now = u.id === currentId;
+      return `    <li><a href="${unitPath(u.id)}"${now ? ' aria-current="page"' : ""}>
+      <b>UNIT ${u.id} ${LEVEL_ICON[u.level] || "🟡"}${now ? " · 지금" : ""}</b>
+      <span>${esc(u.title)}</span>
+    </a></li>`;
+    })
+    .join("\n");
+  return `
+  <details class="jump">
+    <summary>${summaryText || `🔢 다른 유닛으로 바로 가기 (${units.length}개)`}</summary>
+    <div class="jump-body">
+      <ul class="toc">
+${items}
+      </ul>
+    </div>
+  </details>`;
+}
+
+/**
+ * 「다른 가이드로 바로 가기」 — 가이드 9편은 순서대로 읽는 코스라
+ * 이전/다음 편만으로는 중간 편으로 건너뛰기 어렵습니다.
+ */
+function guideJumpList(guides, currentSlug) {
+  const items = guides
+    .map((g, i) => {
+      const now = g.slug === currentSlug;
+      return `    <li><a href="${g.slug}.html"${now ? ' aria-current="page"' : ""}>
+      <b>${i + 1}편${now ? " · 지금" : ""}</b>
+      <span>${esc(g.title.replace(/^TOEIC /, ""))}</span>
+    </a></li>`;
+    })
+    .join("\n");
+  return `
+  <details class="jump">
+    <summary>📕 다른 가이드로 바로 가기 (${guides.length}편)</summary>
+    <div class="jump-body">
+      <ul class="toc">
+${items}
+      </ul>
+    </div>
+  </details>`;
+}
+
+function buildUnitPage(u, words, prev, next, allUnits) {
   const file = "units/" + unitPath(u.id);
   const canonical = unitUrl(u.id);
   const n = words.length;
@@ -497,7 +561,8 @@ ${words.map(wordItem).join("\n")}
 
   <nav class="pager" aria-label="유닛 이동">
     ${pager}
-  </nav>`;
+  </nav>
+${allUnits && allUnits.length ? unitJumpList(allUnits, u.id) : ""}`;
 
   return { file, html: page({ title, description, canonical, ld, body }) };
 }
@@ -581,7 +646,7 @@ ${units
 /* 6. 숙어 페이지                                                      */
 /* ------------------------------------------------------------------ */
 
-function buildIdiomsPage(idioms) {
+function buildIdiomsPage(idioms, units) {
   const canonical = `${SITE}/units/idioms.html`;
   const n = idioms.length;
   const title = `TOEIC 빈출 구동사·숙어 ${n}선 — 뜻·예문·해석 | toeic.monster`;
@@ -639,7 +704,8 @@ ${items}
     <span></span>
     <a class="mid" href="./">📚 주제별 단어장 전체 보기</a>
     <span></span>
-  </nav>`;
+  </nav>
+${units && units.length ? unitJumpList(units, -1, `📚 단어장 유닛 바로 가기 (${units.length}개)`) : ""}`;
 
   return { file: "units/idioms.html", html: page({ title, description, canonical, ld, body }) };
 }
@@ -693,7 +759,7 @@ ${guides
   return { file: "guides/index.html", html: page({ title, description, canonical, ld, body, footerNav: GUIDE_FOOTER }) };
 }
 
-function buildGuidePage(g, prev, next) {
+function buildGuidePage(g, prev, next, guides) {
   const canonical = `${SITE}/guides/${g.slug}.html`;
   const title = `${g.title} | toeic.monster`;
   const description = g.desc;
@@ -752,7 +818,8 @@ ${sections}
 
   <nav class="pager" aria-label="이동">
     ${guidePager}
-  </nav>`;
+  </nav>
+${guides && guides.length ? guideJumpList(guides, g.slug) : ""}`;
 
   return { file: `guides/${g.slug}.html`, html: page({ title, description, canonical, ld, body, footerNav: GUIDE_FOOTER }) };
 }
@@ -1543,6 +1610,9 @@ function build404Page() {
   })();
 </script>
 <link rel="stylesheet" href="${ASSET_ABS}site.css">
+<!-- 방문자 분석 (Umami Cloud — 쿠키 미사용, 개인정보 미수집). index.html 과 같은 웹사이트 ID 를 씁니다. -->
+<link rel="preconnect" href="https://cloud.umami.is" crossorigin>
+<script async defer src="https://cloud.umami.is/script.js" data-website-id="04c3b8cf-c418-4a70-8549-9f21e09b8cbf"><\/script>
 </head>
 <body>
 <header class="bar">
@@ -1646,18 +1716,18 @@ function main() {
   let written = 0;
   let chapterPages = 0;
   units.forEach((u, i) => {
-    const { file, html } = buildUnitPage(u, u.words, units[i - 1], units[i + 1]);
+    const { file, html } = buildUnitPage(u, u.words, units[i - 1], units[i + 1], units);
     write(file, html);
     written++;
   });
 
   const hub = buildHubPage(units);
-  const idiomsPage = buildIdiomsPage(idioms);
+  const idiomsPage = buildIdiomsPage(idioms, units);
   write(hub.file, hub.html);
   write(idiomsPage.file, idiomsPage.html);
 
   guides.forEach((g, i) => {
-    const gp = buildGuidePage(g, guides[i - 1], guides[i + 1]);
+    const gp = buildGuidePage(g, guides[i - 1], guides[i + 1], guides);
     write(gp.file, gp.html);
   });
   if (guides.length) {

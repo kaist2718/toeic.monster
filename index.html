@@ -2383,6 +2383,44 @@
   .to-top:hover { border-color: var(--primary); }
   .to-top[hidden] { display: none; }
   @media print { .to-top { display: none !important; } }
+  /* 섹션 단위 이동 — 53섹션을 따라 내려가다 다른 섹션으로 갈 때, 목차까지 되돌아가지 않게 합니다. */
+  .sec-jump {
+    position: fixed;
+    right: 18px;
+    bottom: 74px;
+    z-index: 280;
+    display: flex;
+    gap: 8px;
+  }
+  .sec-jump-btn {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--primary);
+    font-size: 15px;
+    font-weight: 800;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 14px rgba(0,0,0,.12);
+  }
+  .sec-jump-btn:hover { border-color: var(--primary); }
+  .sec-jump[hidden] { display: none; }
+  @media print { .sec-jump { display: none !important; } }
+  /* 단축키 안내에 쓰는 키 표시 */
+  .hint kbd {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--text);
+    background: var(--soft-blue);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 1px 6px;
+  }
 </style>
 <!-- 어휘·문법 데이터. defer 로 받아 HTML 파싱과 첫 페인트를 막지 않고 바로 내려받기 시작합니다.
      이 스크립트들은 파싱이 끝난 뒤 순서대로 실행되므로, 앱 초기화는 DOMContentLoaded 에서 합니다.
@@ -2482,7 +2520,7 @@
 <section class="searchbar print-hide" aria-label="단어 검색과 난이도 필터">
   <label for="searchInput" class="sr-only">단어 검색</label>
   <input type="text" id="searchInput" placeholder="🔍 단어 · 뜻 · 예문 검색 (영어/한글)" autocomplete="off">
-  <div class="hint">💡 카드의 ✅ 체크 = 외운 단어 표시 · ⭐ = 내 단어장 · 🔊 = 발음 듣기(상단에서 속도·목소리 선택) · Ctrl+P = PDF 저장</div>
+  <div class="hint">💡 카드의 ✅ 체크 = 외운 단어 표시 · ⭐ = 내 단어장 · 🔊 = 발음 듣기(상단에서 속도·목소리 선택) · <kbd>/</kbd> = 단어 검색 · Ctrl+P = PDF 저장</div>
   <div class="levelbar" id="levelbar">
     <button class="lvl-btn active" data-level="" data-label="📚 전체">전체</button>
     <button class="lvl-btn" data-level="초급" data-label="🟢 초급">초급</button>
@@ -3773,6 +3811,11 @@
 </footer>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<div class="sec-jump print-hide" id="secJump" hidden>
+  <button type="button" class="sec-jump-btn" id="secPrev" aria-label="이전 섹션으로 이동" title="이전 섹션">▲</button>
+  <button type="button" class="sec-jump-btn" id="secNext" aria-label="다음 섹션으로 이동" title="다음 섹션">▼</button>
+</div>
 
 <button type="button" class="to-top print-hide" id="toTop" aria-label="맨 위로" title="맨 위로" hidden>↑</button>
 
@@ -9347,17 +9390,65 @@
     return false;
   }
   window.addEventListener("hashchange", function () { goToHash(location.hash); });
-  // 긴 홈에서 스크롤이 깊어지면 돌아가는 버튼을 보여 줍니다.
-  (function initToTop() {
-    var btn = document.getElementById("toTop");
-    if (!btn) return;
-    function sync() { btn.hidden = (window.pageYOffset || document.documentElement.scrollTop || 0) < 700; }
+  // 긴 홈에서 스크롤이 깊어지면 돌아가는 버튼과 섹션 이동 버튼을 보여 줍니다.
+  // 섹션 칩은 화면 맨 위에 있어, 깊은 구간에서는 「맨 위로」를 거쳐야 다른 섹션으로 갈 수 있었습니다.
+  // (목차를 고정하지 않은 것은 의도된 선택이라 — docs/ux-review.md §13-6 — 그 대신 한 섹션씩 옮겨 다닐 수 있게 합니다.)
+  (function initDeepNav() {
+    var top = document.getElementById("toTop");
+    var jump = document.getElementById("secJump");
+    var prevBtn = document.getElementById("secPrev");
+    var nextBtn = document.getElementById("secNext");
+    // 홈 섹션을 문서 순서대로 모읍니다(접힌 묶음 안의 섹션도 순서는 그대로 둡니다).
+    var sections = [].slice.call(document.querySelectorAll("#homeView .home-section"));
+    function scrollY() {
+      return window.pageYOffset || document.documentElement.scrollTop || 0;
+    }
+    // 지금 보고 있는 섹션의 번지 — 접혀서 높이가 0인 섹션은 건너뜁니다.
+    function currentIndex() {
+      var line = scrollY() + window.innerHeight * 0.2;
+      var idx = 0;
+      for (var i = 0; i < sections.length; i++) {
+        var r = sections[i].getBoundingClientRect();
+        if (r.height > 0 && r.top + scrollY() <= line) idx = i;
+      }
+      return idx;
+    }
+    function move(step) {
+      if (!sections.length) return;
+      var target = sections[currentIndex() + step];
+      // scrollToEl 이 접힌 묶음을 먼저 열어 줍니다.
+      if (target) scrollToEl(target, "start");
+    }
+    function sync() {
+      var deep = scrollY() > 700;
+      if (top) top.hidden = !deep;
+      if (jump) jump.hidden = !deep;
+    }
     window.addEventListener("scroll", sync, { passive: true });
-    btn.addEventListener("click", function () {
-      window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
-    });
+    if (top) {
+      top.addEventListener("click", function () {
+        window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
+      });
+    }
+    if (prevBtn) prevBtn.addEventListener("click", function () { move(-1); });
+    if (nextBtn) nextBtn.addEventListener("click", function () { move(1); });
     sync();
   })();
+
+  // 「/」 로 단어 검색으로 바로 이동 — 53섹션과 1,000단어를 훑지 않고 바로 찾기 위해.
+  // 검색창은 「단어 목록」 화면에만 있으므로, 다른 화면이면 그 화면으로 옮긴 뒤 초점을 줍니다.
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "/" || e.ctrlKey || e.metaKey || e.altKey) return;
+    var t = e.target;
+    var tag = t && t.tagName ? t.tagName.toLowerCase() : "";
+    if (tag === "input" || tag === "textarea" || tag === "select" || (t && t.isContentEditable)) return;
+    var box = document.getElementById("searchInput");
+    if (!box) return;
+    e.preventDefault();
+    if (activeView !== "units") showListView();
+    try { box.focus({ preventScroll: true }); } catch (err) { box.focus(); }
+    if (box.select) { try { box.select(); } catch (err2) {} }
+  });
 })();
 </script>
 </body>

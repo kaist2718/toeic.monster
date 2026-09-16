@@ -31,6 +31,9 @@
 <link rel="icon" href="../icon-192.png" type="image/png" sizes="192x192">
 <!-- iOS 홈 화면은 SVG 아이콘을 쓰지 않으므로 PNG 를 따로 지정합니다(tools/make-icons.py 로 생성). -->
 <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<!-- 방문자 분석 (Umami Cloud — 쿠키 미사용, 개인정보 미수집). index.html 과 같은 웹사이트 ID 를 씁니다. -->
+<link rel="preconnect" href="https://cloud.umami.is" crossorigin>
+<script async defer src="https://cloud.umami.is/script.js" data-website-id="04c3b8cf-c418-4a70-8549-9f21e09b8cbf"></script>
 <script>
   // 앱(index.html)에서 고른 테마를 정적 페이지에도 첫 페인트 전에 적용해,
   // 다크 모드 사용자가 흰 화면을 번쩍 보지 않게 합니다.
@@ -92,7 +95,7 @@
 }
 </script>
 </head>
-<body>
+<body id="top">
 <header class="bar">
   <div class="wrap">
     <a href="../">toeic.monster</a>
@@ -126,6 +129,50 @@
     <a class="mid" href="./">📕 가이드 전체 보기</a>
     <a href="vocabulary-30day.html">어휘 30일 완성 커리큘럼 →</a>
   </nav>
+
+  <details class="jump">
+    <summary>📕 다른 가이드로 바로 가기 (9편)</summary>
+    <div class="jump-body">
+      <ul class="toc">
+    <li><a href="part-5-grammar.html">
+      <b>1편</b>
+      <span>Part 5 빈출 문법 10가지</span>
+    </a></li>
+    <li><a href="part-6-text-completion.html">
+      <b>2편</b>
+      <span>Part 6 장문 공란 공략법</span>
+    </a></li>
+    <li><a href="part-7-double-passage.html">
+      <b>3편</b>
+      <span>Part 7 복수 지문(이중·삼중) 공략</span>
+    </a></li>
+    <li><a href="part-2-traps.html" aria-current="page">
+      <b>4편 · 지금</b>
+      <span>Part 2 오답 함정 유형 정리</span>
+    </a></li>
+    <li><a href="vocabulary-30day.html">
+      <b>5편</b>
+      <span>어휘 30일 완성 커리큘럼</span>
+    </a></li>
+    <li><a href="listening-numbers.html">
+      <b>6편</b>
+      <span>LC 숫자·금액·시간 함정 정리</span>
+    </a></li>
+    <li><a href="part-5-connectors.html">
+      <b>7편</b>
+      <span>접속사·전치사·접속부사 구분법</span>
+    </a></li>
+    <li><a href="part-5-word-forms.html">
+      <b>8편</b>
+      <span>어형 변화(품사 변환) 공략</span>
+    </a></li>
+    <li><a href="speaking-writing-guide.html">
+      <b>9편</b>
+      <span>Speaking·Writing 유형 완전 정리</span>
+    </a></li>
+      </ul>
+    </div>
+  </details>
 </main>
 <footer class="ft wrap">
   <nav>
@@ -133,5 +180,6 @@
   </nav>
   <p>👾 toeic.monster · TOEIC 어휘 무료 학습 사이트 · 학습 기록은 브라우저에만 저장됩니다</p>
 </footer>
+<div class="wrap"><a class="totop" href="#top">↑ 맨 위로</a></div>
 </body>
 </html>

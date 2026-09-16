@@ -612,6 +612,76 @@ for (const page of pages) {
 }
 
 /* ------------------------------------------------------------------ */
+/* 5-1. sw.js 프리캐시 정합성 (오프라인 목록 ↔ 실제 파일)               */
+/* ------------------------------------------------------------------ */
+
+// 프리캐시 목록은 손으로 관리합니다. 그래서
+//   ① 없는 파일이 적히거나(설치 단계에서 조용히 실패),
+//   ② 새 섹션·데이터가 목록에서 빠지면(오프라인 첫 방문에서 빈 화면)
+// 아무도 모르게 어긋납니다. sw.js 를 실제로 실행해 목록을 읽고 대조합니다.
+if (has("sw.js")) {
+  const swSrc = read("sw.js");
+  const swBox = { self: { addEventListener() {} } };
+  let swOk = true;
+  try {
+    vm.createContext(swBox);
+    vm.runInContext(swSrc, swBox, { filename: "sw.js", timeout: 5000 });
+  } catch (e) {
+    swOk = false;
+    fail(`sw.js: 실행할 수 없습니다 — ${e.message}`);
+  }
+
+  /** 프리캐시 항목을 프로젝트 안 파일 경로로 바꿉니다(디렉터리 주소는 그 안의 index.html). */
+  const precacheFile = (entry) => {
+    let f = String(entry).trim().replace(/^\.?\//, "");
+    if (f === "" || f.endsWith("/")) f += "index.html";
+    return f;
+  };
+
+  const core = (swBox.CORE_ASSETS || []).map(precacheFile);
+  const data = (swBox.DATA_ASSETS || []).map(precacheFile);
+  const precached = new Set([...core, ...data]);
+
+  if (swOk && (!core.length || !data.length)) {
+    fail("sw.js: CORE_ASSETS 또는 DATA_ASSETS 를 읽지 못했습니다(변수 이름이 바뀌었나요?).");
+  }
+
+  if (swOk) {
+    // ① 목록에 적힌 파일이 실제로 있는가 — 없으면 설치 단계에서 조용히 빠집니다.
+    const ghost = [...precached].filter((f) => !has(f));
+    if (ghost.length) {
+      fail(`sw.js: 프리캐시에 실제로 없는 파일이 적혀 있습니다 — ${ghost.join(", ")}`);
+    }
+
+    // ② index.html 이 첫 화면에서 내려받는 파일이 모두 들어 있는가.
+    //    홈이 즉시 fetch 하는데 목록에 없으면, 캐시되기 전에 오프라인이 될 때 그 부분이 빕니다.
+    const homeMarkup = markOf["index.html"] || "";
+    const homeScripts = [...homeMarkup.matchAll(/<script\b[^>]*\bsrc="([^"]+)"/g)]
+      .map((m) => m[1])
+      .filter((s) => !/^(https?:)?\/\//.test(s));
+    const missingData = homeScripts.filter((s) => !precached.has(precacheFile(s)));
+    if (missingData.length) {
+      fail(
+        `sw.js: index.html 이 내려받는 파일이 프리캐시에 없습니다 — ${missingData.join(", ")}\n` +
+          "     → 그 파일이 캐시되기 전에 오프라인이 되면 해당 섹션이 빈 화면으로 보입니다.",
+      );
+    }
+
+    // ③ 섹션 허브(사이트맵의 디렉터리 주소)가 모두 들어 있는가 — 오프라인에서 섹션 입구가 열리도록.
+    const hubs = locs.filter((l) => l.startsWith(SITE) && l.endsWith("/"));
+    const missingHubs = hubs.filter((l) => !precached.has(precacheFile(l.slice(SITE.length))));
+    if (missingHubs.length) {
+      fail(`sw.js: 섹션 허브가 프리캐시에 없습니다 — ${missingHubs.join(", ")}`);
+    }
+
+    note(
+      `sw.js 프리캐시 ${precached.size}개(핵심 ${core.length} · 데이터 ${data.length}) · ` +
+        `섹션 허브 ${hubs.length}개 · 홈이 내려받는 파일 ${homeScripts.length}개 대조`,
+    );
+  }
+}
+
+/* ------------------------------------------------------------------ */
 /* 6. docs/*.md 의 audit:counts 블록 검증                               */
 /* ------------------------------------------------------------------ */
 

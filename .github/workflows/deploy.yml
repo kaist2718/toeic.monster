@@ -1,0 +1,62 @@
+name: Deploy to GitHub Pages
+
+# 사이트 파일만 골라 담은 _site 폴더를 배포합니다.
+# main 브랜치를 그대로 배포하면 tools/·promo/·docs/·package.json 같은 운영 자료까지
+# 인터넷에 공개되므로(내부 문서 포함), tools/stage-site.mjs 로 공개 목록만 추려 올립니다.
+#
+# ⚠️ 최초 1회 설정 (저장소 → Settings → Pages):
+#   · Build and deployment → Source 를 "GitHub Actions" 로 바꿔 주세요.
+#     ("Deploy from a branch" 인 동안에는 이 워크플로가 실패합니다 — 사이트는 기존 방식으로 계속 열립니다.)
+#   · Custom domain(toeic.monster)은 같은 화면에서 그대로 유지하면 됩니다.
+#
+# 기본 브랜치를 main 이 아닌 다른 이름으로 바꿨다면 아래 branches 값도 함께 고쳐 주세요.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# 배포는 동시에 하나만 — 진행 중인 배포를 끊고 새로 시작하지 않습니다.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    name: build (_site)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22.x"
+
+      # 감사 3종 + 테스트 3종 + 빌드 + 생성물 최신성 검증까지 통과해야 배포합니다.
+      # (생성물을 커밋하지 않고 소스만 바꾼 푸시는 여기서 멈춥니다.)
+      - name: 감사 · 테스트 · 생성물 검증
+        run: npm run check:ci
+
+      - name: 배포용 사이트 폴더 구성 (공개 목록만)
+        run: node tools/stage-site.mjs
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    name: deploy
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

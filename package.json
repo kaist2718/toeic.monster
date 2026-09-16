@@ -5,7 +5,7 @@
   "description": "toeic.monster — 발음·예문으로 외우는 TOEIC 필수 어휘 1,000 정적 사이트",
   "license": "UNLICENSED",
   "engines": {
-    "node": ">=18"
+    "node": ">=22"
   },
   "scripts": {
     "audit": "npm run audit:content && npm run audit:text && npm run audit:site",
@@ -16,6 +16,7 @@
     "test": "node tools/test-home-ux.mjs && node tools/test-tts-voice.mjs && node tools/test-grammar-quiz.mjs",
     "check:browser": "node tools/check-browser.mjs",
     "serve": "node tools/serve.mjs",
+    "stage": "node tools/stage-site.mjs",
     "build": "npm run build:pages && npm run prerender",
     "build:pages": "node tools/build-pages.mjs",
     "prerender": "node tools/prerender-home.mjs",

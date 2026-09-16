@@ -1,4 +1,9 @@
 User-agent: *
 Allow: /
+# 사이트 운영에만 쓰는 파일 — 소스·도구·내부 문서는 검색에 노출하지 않습니다.
+Disallow: /tools/
+Disallow: /promo/
+Disallow: /docs/
+Disallow: /package.json
 
 Sitemap: https://toeic.monster/sitemap.xml

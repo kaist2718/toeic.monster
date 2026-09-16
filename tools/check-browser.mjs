@@ -983,6 +983,89 @@ try {
   await evaluate(`localStorage.clear()`);
 
   /* ---------------------------------------------------------------- */
+  /* 3-10b. 깊은 구간 이동 — 섹션 이동 버튼 · 「/」 검색 단축키          */
+  /* ---------------------------------------------------------------- */
+
+  // 홈은 53섹션짜리 긴 페이지입니다. 섹션 칩은 맨 위에 있어, 깊이 내려가면
+  // 다른 섹션으로 가려고 위로 되돌아가야 했습니다(맨 위로 버튼만 있었음).
+  await openPage("index.html");
+  const deepHidden = await evaluate(
+    `(() => ({ jump: document.getElementById("secJump").hidden, top: document.getElementById("toTop").hidden }))()`,
+  );
+  check(
+    deepHidden.jump && deepHidden.top,
+    "깊은 구간 이동: 맨 위에서는 「섹션 이동」과 「맨 위로」가 숨어 있습니다",
+  );
+
+  // 목차 칩으로 깊은 섹션까지 내려가면 버튼이 나타나야 합니다.
+  await evaluate(`document.querySelector('.sn-chip[data-target="30일 스프린트"]').click()`);
+  await wait(1200);
+  const deepShown = await evaluate(
+    `(() => ({
+      jump: document.getElementById("secJump").hidden,
+      y: Math.round(window.pageYOffset),
+      now: (document.getElementById("snCurrent") || {}).textContent || "",
+    }))()`,
+  );
+  check(
+    !deepShown.jump && deepShown.y > 700,
+    `깊은 구간 이동: 스크롤이 깊어지면 버튼이 나타납니다 (y=${deepShown.y})`,
+  );
+
+  // 「다음 섹션」 — 아래 섹션으로 내려가고 위치 표시도 바뀝니다.
+  await evaluate(`document.getElementById("secNext").click()`);
+  await wait(1200);
+  const afterNext = await evaluate(
+    `(() => ({
+      y: Math.round(window.pageYOffset),
+      now: (document.getElementById("snCurrent") || {}).textContent || "",
+    }))()`,
+  );
+  check(
+    afterNext.y > deepShown.y + 40,
+    `섹션 이동: 「다음 섹션」이 아래 섹션으로 내려갑니다 (y ${deepShown.y} → ${afterNext.y})`,
+  );
+  check(
+    afterNext.now !== deepShown.now && afterNext.now.indexOf("지금:") === 0,
+    `섹션 이동: 위치 표시가 새 섹션으로 바뀝니다 ("${deepShown.now}" → "${afterNext.now}")`,
+  );
+
+  // 「이전 섹션」 — 다시 위로 올라옵니다.
+  await evaluate(`document.getElementById("secPrev").click()`);
+  await wait(1200);
+  const afterPrev = await evaluate(`Math.round(window.pageYOffset)`);
+  check(
+    afterPrev < afterNext.y - 40,
+    `섹션 이동: 「이전 섹션」이 위 섹션으로 돌아갑니다 (y ${afterNext.y} → ${afterPrev})`,
+  );
+
+  // 「/」 — 53섹션을 훑어보지 않고 바로 찾기 위한 단축키.
+  await evaluate(`window.scrollTo(0, 0)`);
+  await wait(400);
+  const slashFocus = await evaluate(`(() => {
+    document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "/", bubbles: true }));
+    return document.activeElement ? (document.activeElement.id || document.activeElement.tagName) : "";
+  })()`);
+  check(
+    slashFocus === "searchInput",
+    `검색 단축키: 「/」를 누르면 단어 검색으로 이동해 검색창에 초점이 갑니다 (${slashFocus || "없음"})`,
+  );
+
+  const slashTyping = await evaluate(`(() => {
+    const box = document.getElementById("searchInput");
+    box.focus();
+    box.value = "";
+    box.dispatchEvent(new KeyboardEvent("keydown", { key: "/", bubbles: true }));
+    const v = box.value;
+    box.blur();
+    return v;
+  })()`);
+  check(
+    slashTyping === "",
+    `검색 단축키: 검색창에 입력 중이면 「/」를 가로채지 않습니다 (값 "${slashTyping}")`,
+  );
+
+  /* ---------------------------------------------------------------- */
   /* 3-11. 낱개 과 페이지 · 홈 묶음 펼침 상태 기억                    */
   /* ---------------------------------------------------------------- */
 
@@ -1065,7 +1148,7 @@ try {
       hint: hint ? hint.textContent : "",
       hasCh5: text.indexOf("초급 5과") !== -1,
       hasOther: text.indexOf("초급 4과") !== -1 || text.indexOf("초급 6과") !== -1 || text.indexOf("중급 5과") !== -1,
-      snippet: text.split("\n").join(" ").slice(0, 70),
+      snippet: text.split("\\n").join(" ").slice(0, 70),
     };
   })()`);
   check(deep.level === "basic", `앱 딥링크: ?level=basic 이 단계 선택에 반영됩니다 (${deep.level})`);

@@ -11,11 +11,16 @@ promo/reports/
 
 # Python 캐시
 __pycache__/
-*.pyc# 생성된 쇼츠 영상 (make_shorts.py 산출물 — 재생성 가능)
+*.pyc
+
+# 생성된 쇼츠 영상 (make_shorts.py 산출물 — 재생성 가능)
 promo/assets/
 
 # 생성된 인쇄용 워크북 (make_workbook.py 산출물 — 재생성 가능)
 workbook/
+
+# 배포용 스테이징 폴더 (tools/stage-site.mjs 산출물 — 재생성 가능)
+_site/
 
 # Windows 실행 부산물
 promo/*.log

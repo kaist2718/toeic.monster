@@ -1,5 +1,5 @@
 /* toeic.monster Service Worker - 오프라인 학습 지원 */
-var CACHE_NAME = "toeic-monster-v9";
+var CACHE_NAME = "toeic-monster-v10";
 var CORE_ASSETS = [
   "./",
   "./index.html",
@@ -17,7 +17,10 @@ var CORE_ASSETS = [
   "./guides/index.html",
   "./grammar/",
   "./grammar/index.html",
-  "./grammar/cheatsheet.html"
+  "./grammar/cheatsheet.html",
+  // 회화 교재도 문법 교재와 같은 정적 페이지라 허브를 함께 담아 둡니다.
+  "./conversation/",
+  "./conversation/index.html"
 ];
 
 // 어휘 데이터. index.html 이 첫 화면에서 바로 내려받는 파일들이라
@@ -27,7 +30,11 @@ var DATA_ASSETS = [
   "data/extra.js",
   "data/grammar-basic.js",
   "data/grammar-intermediate.js",
-  "data/grammar-advanced.js"
+  "data/grammar-advanced.js",
+  // 회화 교재 3권도 index.html 이 첫 화면에서 함께 내려받습니다(data/conversation-*.js).
+  "data/conversation-basic.js",
+  "data/conversation-intermediate.js",
+  "data/conversation-advanced.js"
 ];
 for (var i = 1; i <= 30; i++) {
   DATA_ASSETS.push("data/unit" + (i < 10 ? "0" + i : i) + ".js");

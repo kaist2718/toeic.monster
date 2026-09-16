@@ -172,7 +172,7 @@ Windows 작업 스케줄러에서 `promo_center.bat --run-due --dry-run` 또는 
    - 범위에 `.../auth/youtube.upload` 추가
    - 앱 이름·지원 이메일·개발자 연락처 입력 (비어 있으면 `403 access_denied` 로 실패합니다)
    - **테스트 사용자**에 로그인할 Google 계정을 추가 — https://console.cloud.google.com/auth/audience 의 **+ ADD USERS**
-     (이 단계를 빼먹으면 브라우저에 "개발자가 승인한 테스터만 액세스할 수 있습니다" 403 오류가 뜽니다)
+     (이 단계를 빼먹으면 브라우저에 "개발자가 승인한 테스터만 액세스할 수 있습니다" 403 오류가 뜹니다)
 4. **OAuth 클라이언트 ID 만들기** — https://console.cloud.google.com/apis/credentials
    - 애플리케이션 유형: **데스크톱 앱** → JSON 다운로드
 5. 내려받은 JSON 파일을 `promo/.secrets/` 폴더에 **이름 그대로** 넣으면 됩니다. Google이 내려준 이름(`client_secret_1234-abc.apps.googleusercontent.com.json`)도 자동 인식하며, 꼭 `client_secret.json` 으로 바꾸지 않아도 됩니다. 여러 개면 `client_secret.json` 이 우선이고, 폴더는 메뉴 **10번 → 2번** 또는 설정 도우미로 열 수 있습니다.
