@@ -395,6 +395,13 @@ for (const [name, r] of results) {
   console.log(
     `  큰 파일: ` + r.cold.biggest.map((b) => `${b.url.replace(/^https?:\/\/[^/]+/, "")} ${KB(b.bytes)}`).join(" · "),
   );
+  // 재방문에 남는 전송은 대부분 서비스 워커의 배경 재확인(stale-while-revalidate)입니다.
+  // 화면을 막지 않는다는 것을 알 수 있게 따로 적습니다.
+  if (r.warm.bytes > 0) {
+    console.log(
+      `  재방문 잔여: ` + r.warm.biggest.map((b) => `${b.url.replace(/^https?:\/\/[^/]+/, "")} ${KB(b.bytes)}`).join(" · "),
+    );
+  }
 }
 
 if (results.size === 2) {
