@@ -2410,6 +2410,13 @@
   .sec-jump-btn:hover { border-color: var(--primary); }
   .sec-jump[hidden] { display: none; }
   @media print { .sec-jump { display: none !important; } }
+  /* 전체 목차 오버레이 — 깊은 구간에서도 어느 섹션으로든 바로 갑니다. */
+  .toc-panel { max-width: 720px; }
+  .toc-hint { font-size: 13px; color: var(--text-muted); margin: 0 0 14px; }
+  .toc-panel-body { display: grid; gap: 16px; }
+  .toc-panel-body .sn-group { display: block; }
+  .toc-panel-body .sn-group-label { display: block; margin-bottom: 8px; }
+  .toc-panel-body .sn-chip { margin: 0 6px 6px 0; }
   /* 단축키 안내에 쓰는 키 표시 */
   .hint kbd {
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -3810,11 +3817,26 @@
   <p style="margin-top:14px">👾 toeic.monster · TOEIC 어휘 무료 학습 사이트 · 학습 데이터는 브라우저에만 저장됩니다</p>
 </footer>
 
+<!-- 전체 목차 — 섹션 메뉴(#snMore)를 그대로 복제해 채우므로 목차를 두 곳에서 관리하지 않습니다. -->
+<div class="modal-overlay" id="tocModal">
+  <div class="modal toc-panel" role="dialog" aria-modal="true" aria-labelledby="tocModalTitle">
+    <div class="modal-head">
+      <h2 id="tocModalTitle">🗂 전체 목차</h2>
+      <button class="btn modal-close" id="tocClose" aria-label="목차 창 닫기">✕</button>
+    </div>
+    <div class="modal-body">
+      <p class="toc-hint">섹션을 고르면 그 자리로 이동합니다. 지금 보고 있는 섹션은 <b>지금</b> 으로 표시됩니다.</p>
+      <div class="toc-panel-body" id="tocModalBody"></div>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <div class="sec-jump print-hide" id="secJump" hidden>
   <button type="button" class="sec-jump-btn" id="secPrev" aria-label="이전 섹션으로 이동" title="이전 섹션">▲</button>
   <button type="button" class="sec-jump-btn" id="secNext" aria-label="다음 섹션으로 이동" title="다음 섹션">▼</button>
+  <button type="button" class="sec-jump-btn" id="btnToc" aria-label="전체 목차 열기" title="전체 목차">🗂</button>
 </div>
 
 <button type="button" class="to-top print-hide" id="toTop" aria-label="맨 위로" title="맨 위로" hidden>↑</button>
@@ -4516,6 +4538,20 @@
     el.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: block || "start" });
   }
 
+  /* 이동 중에 브라우저의 스크롤 복원(뒤로가기 처리 때 일어납니다)이 끼어들면 이동이 되감깁니다.
+     목차에서 섹션을 고를 때 특히 잘 일어나므로, 도착할 때까지 몇 번 더 확인해 다시 이동합니다.
+     도착하면(|top| 이 작으면) 곧바로 멈추므로 평소에는 한 번 더 확인하는 정도로 끝납니다. */
+  function keepAt(el, tries) {
+    if (!el) return;
+    var left = tries == null ? 4 : tries;
+    if (left <= 0) return;
+    setTimeout(function () {
+      if (Math.abs(el.getBoundingClientRect().top) < 200) return;
+      scrollToEl(el, "start");
+      keepAt(el, left - 1);
+    }, 250);
+  }
+
   // 예문 등 문장 옆에 붙이는 🔊 듣기 버튼 (data-say 문장을 TTS로 재생)
   function ttsBtn(text, label, extraClass) {
     var txt = String(text == null ? "" : text).trim();
@@ -4731,7 +4767,40 @@
   var VIEW_IDS = ["homeView", "units", "flashcardView", "quizView", "examView", "listenView", "mockView", "diagView", "dashView"];
   var activeView = "homeView";
   var BTN_IDS = ["btnHome", "btnList", "btnFlash", "btnQuiz", "btnExam", "btnSrs", "btnListen", "btnMock", "btnDiag", "btnDash"];
-  function showView(viewId, btnId) {
+  // 화면 ↔ 주소 해시. 섹션 딥링크(#units·#dashboard 같은 앵커)와 겹치지 않게 "view=" 를 붙입니다.
+  var VIEW_HASH = {
+    homeView: "home", units: "list", flashcardView: "flash", quizView: "quiz",
+    examView: "exam", listenView: "listen", mockView: "mock", diagView: "diag", dashView: "dash"
+  };
+  var VIEW_BTN = {
+    homeView: "btnHome", units: "btnList", flashcardView: "btnFlash", quizView: "btnQuiz",
+    examView: "btnExam", listenView: "btnListen", mockView: "btnMock", diagView: "btnDiag", dashView: "btnDash"
+  };
+  var viewHashOf = function (viewId) { return VIEW_HASH[viewId] ? "#view=" + VIEW_HASH[viewId] : ""; };
+  /** 화면 전환을 기록에 남깁니다(주소도 함께 바뀌므로 새로고침·공유에도 같은 화면이 열립니다). */
+  function syncViewHistory(viewId) {
+    var want = viewHashOf(viewId);
+    if (!want || !window.history || typeof window.history.pushState !== "function") return;
+    if (location.hash === want) return;
+    try { window.history.pushState({ tbmView: viewId }, "", want); } catch (e) {}
+  }
+  /** 기록을 따라 화면을 옮깁니다(주소에 화면이 없으면 홈). 섹션 해시는 기존 hashchange 처리가 맡습니다. */
+  function applyViewFromHistory() {
+    if (!VIEW_HASH) return;
+    var m = /^#view=([a-z]+)$/.exec(location.hash || "");
+    if (!m) {
+      if (location.hash) return; // 섹션 딥링크(#units 등)는 goToHash 가 맡습니다
+      showView("homeView", VIEW_BTN.homeView, true);
+      return;
+    }
+    var viewId = null;
+    for (var k in VIEW_HASH) { if (VIEW_HASH[k] === m[1]) { viewId = k; break; } }
+    if (!viewId || viewId === activeView) return;
+    showView(viewId, VIEW_BTN[viewId], true);
+  }
+  function showView(viewId, btnId, fromHistory) {
+    // 화면이 실제로 바뀔 때만 기록을 남깁니다(같은 화면을 다시 고른 경우는 제외).
+    var viewChanged = viewId !== activeView;
     VIEW_IDS.forEach(function (v) {
       var el = document.getElementById(v);
       if (!el) return;
@@ -4754,6 +4823,8 @@
     var bi = document.querySelector(".book-intro");
     if (bi) bi.style.display = viewId === "homeView" ? "none" : "";
     activeView = viewId;
+    // 화면 전환을 브라우저 기록에 남깁니다 — 뒤로가기가 이전 화면으로 돌아갑니다.
+    if (viewChanged && !fromHistory) syncViewHistory(viewId);
     // 화면을 옮길 때는 맨 위로. 모션 감소 설정이면 애니메이션 없이 즉시 이동합니다.
     window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
   }
@@ -5066,6 +5137,10 @@
      주소는 그대로이므로 화면은 바뀌지 않고, 뒤로가기가 "닫기"와 같은 역할을 합니다. */
   var guardDepth = 0;   // 지금 열려 있는 패널(메뉴) 개수
   var guardPushed = false;
+  // 우리가 빌린 기록 항목을 되돌리는 중인가 — 이때 오는 popstate 로는 화면을 바꾸지 않습니다.
+  var suppressViewHistory = false;
+  // 기록 복원 뒤에 이동할 섹션(목차에서 고른 섹션) — 복원이 스크롤을 덮어쓰기 때문입니다.
+  var pendingHistoryScroll = null;
   function anyMenuOpen() {
     return !!((navEl && navEl.classList.contains("open")) || (moreEl && moreEl.classList.contains("open")));
   }
@@ -5078,7 +5153,24 @@
     guardDepth = Math.max(0, guardDepth - 1);
     if (guardDepth > 0 || !guardPushed) return;
     guardPushed = false;
-    try { window.history.back(); } catch (e) {}
+    suppressViewHistory = true;
+    holdScrollRestore();
+    try { window.history.back(); } catch (e) { suppressViewHistory = false; releaseScrollRestore(); }
+  }
+
+  /* 빌린 기록 항목을 되돌려줄 때는 브라우저의 스크롤 복원을 잠시 꺼 둡니다.
+     복원은 popstate 뒤에 적용되는데, 목차에서 고른 섹션으로 가는 이동이 그때 되감겨
+     화면이 제자리로 돌아오는 일이 있었습니다(약 절반 재현). popstate 안에서 곧바로
+     auto 로 되돌리면 그 복원이 다시 살아나므로, 우리 이동이 끝난 뒤(scrollend) 풀어 줍니다. */
+  function holdScrollRestore() {
+    if (window.history && "scrollRestoration" in window.history) {
+      try { window.history.scrollRestoration = "manual"; } catch (e) {}
+    }
+  }
+  function releaseScrollRestore() {
+    if (window.history && window.history.scrollRestoration !== "auto") {
+      try { window.history.scrollRestoration = "auto"; } catch (e) {}
+    }
   }
   // 뒤로가기가 우리가 빌린 항목을 소비한 경우 — 다시 되돌리지 않습니다.
   function consumeMenuGuard() {
@@ -5152,15 +5244,42 @@
   });
   // 브라우저·기기 뒤로가기: 메뉴가 열려 있으면 "닫기"로 소비하고 화면은 그대로 둡니다.
   window.addEventListener("popstate", function () {
+    // 우리가 빌린 항목을 돌려주는 중이면 화면은 그대로 두고 주소만 현재 화면에 맞춥니다.
+    if (suppressViewHistory) {
+      suppressViewHistory = false;
+      var wantHash = viewHashOf(activeView);
+      if (wantHash && location.hash !== wantHash && window.history.replaceState) {
+        try { window.history.replaceState({ tbmView: activeView }, "", wantHash); } catch (e) {}
+      }
+      if (pendingHistoryScroll) {
+        var scrollTarget = pendingHistoryScroll;
+        pendingHistoryScroll = null;
+        // 복원이 이 뒤에 적용되므로, 이동이 끝난 것을 보고 나서 복원을 다시 켜 둡니다.
+        setTimeout(function () {
+          scrollToEl(scrollTarget, "start");
+          if ("onscrollend" in window) window.addEventListener("scrollend", releaseScrollRestore, { once: true });
+          setTimeout(releaseScrollRestore, 1200);
+        }, 0);
+      } else {
+        releaseScrollRestore();
+      }
+      return;
+    }
+    releaseScrollRestore();
     // 안내 창도 뒤로가기로 닫아 줍니다(상단바 메뉴와 같은 규칙).
     var guideEl = document.getElementById("guideModal");
     var voiceEl = document.getElementById("voiceHelpModal");
+    var tocEl = document.getElementById("tocModal");
     var openModal = !!(guideEl && guideEl.classList.contains("show")) ||
-      !!(voiceEl && voiceEl.classList.contains("show"));
-    if (!anyMenuOpen() && !openModal) return;   // 열린 것이 없으면 평소처럼 이동합니다
+      !!(voiceEl && voiceEl.classList.contains("show")) ||
+      !!(tocEl && tocEl.classList.contains("show"));
+    if (!anyMenuOpen() && !openModal) {   // 열린 것이 없으면 화면 전환 기록을 따라갑니다
+      applyViewFromHistory();
+      return;
+    }
     if (navEl && navEl.classList.contains("open")) closeNav(true);
     if (moreEl && moreEl.classList.contains("open")) closeMore(true);
-    if (openModal) { closeGuide(); closeVoiceHelp(); }
+    if (openModal) { closeGuide(); closeVoiceHelp(); closeToc(); }
     consumeMenuGuard();
   });
   // 창 크기가 바뀌어 드롭다운이 사라지는 쪽으로 넘어가면 함께 닫습니다.
@@ -6632,22 +6751,75 @@
     });
   }
 
+  // ---------- 전체 목차 오버레이 ----------
+  // 53섹션이 4묶음으로 접혀 있고 목차는 화면 맨 위에 있어, 깊이 내려가면 다른 섹션으로
+  // 가려고 「맨 위로」를 거쳐야 했습니다. 섹션 메뉴를 그대로 복제해 어디서든 열 수 있게 합니다.
+  var tocModal = document.getElementById("tocModal");
+  var tocBody = document.getElementById("tocModalBody");
+  var snMoreSrc = document.getElementById("snMore");
+  var snQuickSrc = document.querySelector(".section-nav .sn-row");
+  if (tocModal && tocBody && snMoreSrc) {
+    // 자주 쓰는 8개(위 줄) + 주제별 4묶음 — 본문 섹션 메뉴와 같은 53개가 되게 합니다.
+    tocBody.innerHTML =
+      (snQuickSrc ? '<div class="sn-group"><span class="sn-group-label">자주 찾는 섹션</span>' + snQuickSrc.innerHTML + "</div>" : "") +
+      snMoreSrc.innerHTML;
+  }
+  function openToc() {
+    if (!tocModal || tocModal.classList.contains("show")) return;
+    tocModal.classList.add("show");
+    // 뒤로가기·닫기 버튼으로 닫히도록 history 항목을 빌리고, 뒤 화면 스크롤을 막습니다.
+    pushMenuGuard();
+    document.body.classList.add("modal-open");
+    var closeBtn = document.getElementById("tocClose");
+    if (closeBtn) closeBtn.focus();
+  }
+  function closeToc() {
+    if (!tocModal || !tocModal.classList.contains("show")) return;
+    tocModal.classList.remove("show");
+    document.body.classList.remove("modal-open");
+    releaseMenuGuard();
+  }
+  var btnTocEl = document.getElementById("btnToc");
+  if (btnTocEl) btnTocEl.addEventListener("click", openToc);
+  var tocCloseEl = document.getElementById("tocClose");
+  if (tocCloseEl) tocCloseEl.addEventListener("click", closeToc);
+  if (tocModal) tocModal.addEventListener("click", function (e) { if (e.target === this) closeToc(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" || e.key === "Esc") closeToc(); });
+  // 목차에서 섹션을 고르면 창을 닫고 그 자리로 갑니다.
+  if (tocBody) tocBody.addEventListener("click", function (e) {
+    var chip = e.target.closest ? e.target.closest(".sn-chip") : null;
+    if (!chip) return;
+    var sec = document.querySelector('.home-section[aria-label="' + chip.getAttribute("data-target") + '"]');
+    // 창을 닫으면 빌려 둔 기록 항목을 되돌리는데, 그때 브라우저가 스크롤 위치를 복원합니다.
+    // 복원이 우리 이동을 되감을 수 있어, 도착할 때까지 몇 번 더 확인해 이동합니다.
+    if (sec) {
+      pendingHistoryScroll = sec;
+      scrollToEl(sec, "start");
+      keepAt(sec);
+    }
+    closeToc();
+  });
+
   // 지금 보고 있는 섹션의 칩을 강조해, 긴 페이지에서도 위치를 알 수 있게 합니다.
   var snChips = [].slice.call(document.querySelectorAll(".sn-chip"));
   if ("IntersectionObserver" in window && snChips.length) {
-    var chipByTarget = {};
-    snChips.forEach(function (c) { chipByTarget[c.getAttribute("data-target")] = c; });
+    // 같은 섹션을 가리키는 칩이 둘 이상일 수 있습니다(섹션 메뉴 + 전체 목차) — 모두 표시합니다.
     var snObserver = new IntersectionObserver(function (entries) {
       entries.forEach(function (en) {
         if (!en.isIntersecting) return;
-        var matched = chipByTarget[en.target.getAttribute("aria-label")];
+        var label = en.target.getAttribute("aria-label");
+        var matched = false;
+        snChips.forEach(function (c) {
+          var on = c.getAttribute("data-target") === label;
+          if (on) matched = true;
+          c.classList.toggle("active", on);
+          if (on) c.setAttribute("aria-current", "true");
+          else c.removeAttribute("aria-current");
+        });
         if (!matched) return;
-        snChips.forEach(function (c) { c.classList.remove("active"); c.removeAttribute("aria-current"); });
-        matched.classList.add("active");
-        matched.setAttribute("aria-current", "true");
         // 접힌 목차 안에 있는 섹션이면 칩이 안 보이므로, 현재 위치를 글자로도 알려 줍니다.
         var cur = document.getElementById("snCurrent");
-        if (cur) cur.textContent = "지금: " + en.target.getAttribute("aria-label");
+        if (cur) cur.textContent = "지금: " + label;
       });
     }, { rootMargin: "-15% 0px -75% 0px" });
     [].slice.call(document.querySelectorAll("#homeView .home-section")).forEach(function (s) { snObserver.observe(s); });
@@ -9276,7 +9448,11 @@
     // 초기 렌더(오늘의 학습 등)가 끝난 뒤에 이동해야 위치가 어긋나지 않습니다.
     setTimeout(function () {
       var started = applyLevelQuery();
-      if (!started) goToHash(location.hash);
+      if (!started) {
+        goToHash(location.hash);
+        // 주소에 화면(#view=…)이 적혀 있으면 그 화면으로 시작합니다(새로고침·공유·뒤로가기 대응).
+        applyViewFromHistory();
+      }
     }, 0);
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", startApp);

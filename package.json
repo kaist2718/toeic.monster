@@ -15,6 +15,8 @@
     "audit:external": "node tools/audit-site.mjs --external",
     "test": "node tools/test-home-ux.mjs && node tools/test-tts-voice.mjs && node tools/test-grammar-quiz.mjs",
     "check:browser": "node tools/check-browser.mjs",
+    "measure": "node tools/measure-home.mjs",
+    "check:staged": "npm run stage && node tools/check-browser.mjs --site-root _site",
     "serve": "node tools/serve.mjs",
     "stage": "node tools/stage-site.mjs",
     "build": "npm run build:pages && npm run prerender",

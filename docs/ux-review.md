@@ -1059,3 +1059,72 @@ for p in package.json tools/stage-site.mjs docs/monetization-plan.md promo/publi
 done
 ```
 
+---
+
+## 16. 11차 점검 (2026-09-16) — 배포본 무게 · 목차 이동 회귀
+
+> 계기: 남은 제안을 모두 적용하고 최종 점검 후 배포. 10차(§15)에서 배포 파이프라인(`_site`)이 생겼으므로,
+> §9 부터 미뤄 둔 “배포 경로가 생기면 하자”였던 **index.html 무게 줄이기**를 그 위에서 실제로 적용했습니다.
+> 그 과정에서 점검 도구로만 보이던 **목차 이동 회귀**(절반 확률로 제자리로 돌아옴)를 찾아 고쳤습니다.
+
+### 16-1. 요약
+
+| 심각도 | 내용 | 상태 |
+| --- | --- | --- |
+| P2 | `index.html` 719KB 를 첫 방문마다 다시 받음(압축 전) — §9 에서 “분할은 배포 경로가 생기면” 으로 남긴 항목 | ✅ 배포본에서 인라인 CSS 분리 + HTML 최소화 |
+| P2 | 목차에서 고른 섹션이 **약 절반 확률로 제자리로 되돌아옴**(브라우저 스크롤 복원이 이동을 취소) | ✅ 도착할 때까지 확인 후 재이동 |
+| P3 | 배포본(분리·최소화된 결과)을 점검할 수단이 없어 “배포에서만 깨지는” 경우를 못 잡음 | ✅ `npm run check:staged` |
+| P3 | 루트 `README.md` 없음 · `.gitattributes` 없음(CRLF 혼선) · `measure-home.mjs` 미연결 | ✅ 정리 |
+
+### 16-2. 배포본 무게 줄이기 ✅
+
+원본은 그대로 두고 **`_site` 에 담을 때만** 다듬습니다. `index.html` 이 유일한 원본이라는 규칙(§9)은 그대로입니다.
+
+- 큰 인라인 `<style>`(2KB 초과)을 `assets/app.css` 로 빼고 `<link>` 로 바꿉니다 — 위치가 같아 적용 순서도 그대로입니다.
+- 남은 HTML 에서 주석과 태그 사이 공백을 걷어냅니다(텍스트 안쪽 공백은 보존 — `white-space: pre-wrap` 대비).
+- 실측: `index.html` **719.5KB → 624.7KB(−94.8KB, −13.2%)** + `assets/app.css` 79.8KB(재방문 시 캐시), 배포본 전체 3,233KB → 2,888KB(−10.7%).
+- 검증: `npm run check:staged` 로 **배포본을 그대로** 브라우저 점검(아래 16-4).
+
+**인라인 JS 348KB(48%)는 아직 그대로입니다.** `index.html` 안의 블록을 읽는 도구가 여섯 개라(`audit-content` 배열 추출 · `audit-text` · `test-home-ux` · `test-tts-voice` · `test-grammar-quiz` · `prerender-home` 의 vm 실행), 옮기려면 그 여섯을 함께 손봐야 합니다 — 다음 후보로 남깁니다.
+
+### 16-3. 목차에서 고른 섹션으로 돌아오던 문제 ✅
+
+재현: 목차에서 섹션을 고르면 `y=46123` 대신 `y=2200`(고르기 직전 위치)으로 끝나는 일이 **약 절반** 있었습니다.
+
+- 원인: 목차를 열 때 뒤로가기용으로 **빌린 history 항목을 `closeToc()` 이 `back()` 으로 돌려주는데**, 브라우저가 그 이동에서 스크롤 위치를 복원합니다.
+  그 복원이 진행 중이던 `scrollIntoView({behavior:"smooth"})` 를 취소해 화면이 제자리로 돌아왔습니다.
+- 시도 1(실패): `back()` 직전에 `history.scrollRestoration = "manual"`, popstate 에서 `auto` 복원 — 복원이 popstate **뒤에** 적용되어 되살아났습니다.
+- 채택: **도착할 때까지 확인해 다시 이동**합니다(`keepAt`). 250ms 간격 최대 4회, 섹션 상단이 200px 안에 들어오면 즉시 중단합니다.
+  평소에는 한 번 더 확인하고 끝나며, 복원이 늦게 끼어들어도 결국 목표 위치에 섭니다.
+- 검증: 수정 전 3회 중 1~2회 실패 → 수정 후 **원본 6회 + 배포본 1회 연속 통과**.
+
+또한 점검 도구가 고정 대기(2.6초)로 재던 부분을 **멈출 때까지 재는 방식**(`waitForScrollSettle`)으로 바꿔, 44,000px 짜리 부드러운 이동이
+기계 부하에 따라 중간에서 측정되던 문제도 함께 없앴습니다.
+
+### 16-4. 배포본을 점검하는 수단 ✅
+
+`npm run check:staged` = `npm run stage` + `node tools/check-browser.mjs --site-root _site`.
+`--site-root` 는 서빙 폴더만 바꾸므로 같은 100여 항목이 배포본에 그대로 적용됩니다(리포트 첫 줄에 서빙 폴더를 적습니다).
+홈 스타일이 인라인인지 `assets/app.css` 인지도 항목으로 확인합니다 — 분리 경로가 틀리면 여기서 걸립니다.
+
+### 16-5. 부수 정리 ✅
+
+- `.gitattributes` — 텍스트는 `eol=lf` 로 고정(Windows `core.autocrlf=true` 환경에서 CRLF 로 받아 생기는 혼선 방지). 추가 후에도 `git status` 변화 없음을 확인했습니다.
+- 루트 `README.md` — 공개 저장소인데 안내가 없었습니다. 실행·명령·구조·배포를 짧게 정리했습니다(배포본에는 들어가지 않습니다).
+- `npm run measure` — `tools/measure-home.mjs` 만 npm 스크립트가 없었습니다.
+
+### 16-6. 11차 점검 재현 방법
+
+```bash
+npm run check:ci        # 감사 3종 + 테스트 3종 + 빌드 + 생성물 최신성
+npm run check:browser   # 원본 점검
+npm run check:staged    # 배포본 점검(분리·최소화 결과 그대로)
+
+# 배포본 무게(숫자가 리포트에 찍힙니다)
+npm run stage | grep 'HTML 최소화'
+ls -l _site/index.html _site/assets/app.css
+
+# 목차 이동은 반복 실행으로 확인합니다(수정 전에는 3회 중 1~2회 실패)
+for i in 1 2 3; do npm run check:browser | grep '고른 섹션'; done
+```
+

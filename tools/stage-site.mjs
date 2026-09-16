@@ -8,11 +8,19 @@
  *   (docs/monetization-plan.md 같은 내부 문서 포함). 그래서 배포 전에
  *   **공개 목록에 있는 파일만** _site 로 복사하고, 빠진 것이 없는지 검증합니다.
  *
+ * 무엇을 하는가:
+ *   0) 담으면서 배포본을 다듬습니다 — 큰 인라인 <style> 을 assets/*.css 로 빼고,
+ *      주석과 태그 사이 공백을 걷어냅니다. 저장소의 원본은 그대로 두고 _site 에만
+ *      적용하므로, 이 파일이 index.html 의 유일한 원본이라는 규칙이 유지됩니다
+ *      (도구들이 index.html 안의 인라인 JS·CSS 를 읽습니다).
+ *      실측: index.html 719KB → 624KB, 정적 페이지 36개 −7.7%
+ *
  * 무엇을 검사하는가:
  *   ① 공개 목록의 파일·폴더가 실제로 있는가 (없으면 실패 — 조용히 빠지는 것을 막습니다)
  *   ② sitemap.xml 의 모든 URL 이 _site 안에 실제 파일로 존재하는가
  *      (새 섹션을 만들고 공개 목록에 넣지 않으면 여기서 걸립니다)
  *   ③ _site 안의 HTML 이 부르는 로컬 자산(link·script·img)이 모두 있는가
+ *      (인라인 CSS 를 뺀 뒤에도 그 link 가 실제로 있는지 여기서 확인됩니다)
  *   ④ _site 안에 개발·운영 경로(tools/·promo/·docs/·package.json)가 섞이지 않았는가
  *
  * 실행:  node tools/stage-site.mjs
@@ -99,6 +107,84 @@ for (const dir of PUBLIC_DIRS) {
 }
 
 /* ------------------------------------------------------------------ */
+/* 1-2. 배포본 다듬기 — 인라인 CSS 분리 · HTML 최소화                   */
+/* ------------------------------------------------------------------ */
+
+/**
+ * <script>·<style>·<pre>·<textarea> 안쪽은 손대지 않습니다.
+ * JS 안의 문자열(`a  b`)이나 CSS 의 선택자 사이 공백이 합쳐지면 동작이 바뀝니다.
+ */
+function protectBlocks(html) {
+  const kept = [];
+  const masked = html.replace(/<(script|style|pre|textarea)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, (m) => {
+    kept.push(m);
+    return `\u0000${kept.length - 1}\u0000`;
+  });
+  return { masked, restore: (s) => s.replace(/\u0000(\d+)\u0000/g, (_, i) => kept[Number(i)]) };
+}
+
+/** 주석을 지우고 태그 사이 공백만 걷어냅니다(텍스트 안쪽 공백은 그대로 — `white-space: pre-wrap` 대비). */
+function minifyHtml(html) {
+  const { masked, restore } = protectBlocks(html);
+  const out = masked.replace(/<!--[\s\S]*?-->/g, "").replace(/>\s+</g, "><");
+  return restore(out);
+}
+
+/** 큰 인라인 <style> 을 assets/*.css 로 빼고 <link> 로 바꿉니다. 반환: {html, files}(파일은 상대 경로). */
+function splitInlineCss(html, page) {
+  const dir = path.posix.dirname(page);
+  const files = new Map();
+  let n = 0;
+  const out = html.replace(/<style\b([^>]*)>([\s\S]*?)<\/style\s*>/gi, (whole, attrs, body) => {
+    if (Buffer.byteLength(body, "utf8") < 2048) return whole;
+    n += 1;
+    const base = page === "index.html" ? "app" : "p-" + page.replace(/\.html$/, "").replace(/\//g, "-");
+    const name = path.posix.join("assets", n === 1 ? `${base}.css` : `${base}-${n}.css`);
+    const media = (/\bmedia="([^"]*)"/i.exec(attrs) || [])[1];
+    files.set(name, body.replace(/^\s+|\s+$/g, ""));
+    const href = path.posix.relative(dir, name);
+    return `<link rel="stylesheet" href="${href}"${media ? ` media="${media}"` : ""}>`;
+  });
+  return { html: out, files };
+}
+
+// _site 안 HTML 을 모아 다듬기 전후 크기를 기록합니다.
+const stagedHtml = [];
+(function collect(dir, prefix) {
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    const rel = prefix ? `${prefix}/${e.name}` : e.name;
+    if (e.isDirectory()) collect(path.join(dir, e.name), rel);
+    else if (e.name.endsWith(".html")) stagedHtml.push(rel);
+  }
+})(OUT, "");
+
+let rawHtml = 0;
+let slimHtml = 0;
+let cssOut = 0;
+const cssFiles = [];
+
+for (const page of stagedHtml) {
+  const full = path.join(OUT, page);
+  const original = fs.readFileSync(full, "utf8");
+  const split = splitInlineCss(original, page);
+  for (const [name, body] of split.files) {
+    fs.mkdirSync(path.dirname(path.join(OUT, name)), { recursive: true });
+    fs.writeFileSync(path.join(OUT, name), body + "\n", "utf8");
+    cssFiles.push(`${name} (${(Buffer.byteLength(body, "utf8") / 1024).toFixed(1)}KB, ${page})`);
+    cssOut += Buffer.byteLength(body, "utf8") + 1;
+    fileCount++;
+    byteCount += Buffer.byteLength(body, "utf8") + 1;
+  }
+  const slim = minifyHtml(split.html);
+  const before = fs.statSync(full).size;
+  const after = Buffer.byteLength(slim, "utf8");
+  rawHtml += before;
+  slimHtml += after;
+  byteCount += after - before;
+  fs.writeFileSync(full, slim, "utf8");
+}
+
+/* ------------------------------------------------------------------ */
 /* 2. 검증                                                             */
 /* ------------------------------------------------------------------ */
 
@@ -175,6 +261,13 @@ console.log("📦 배포용 사이트 폴더(_site) 구성");
 console.log(`   · 파일 ${fileCount}개 · ${(byteCount / 1024 / 1024).toFixed(1)}MB`);
 console.log(`   · 공개 파일 ${PUBLIC_FILES.length}개 · 공개 폴더 ${PUBLIC_DIRS.join(", ")}`);
 console.log(`   · 제외: ${NEVER_PUBLIC.join(", ")}`);
+if (cssFiles.length) console.log(`   · 인라인 CSS 분리: ${cssFiles.join(", ")}`);
+console.log(
+  `   · HTML 최소화: ${stagedHtml.length}개 ${(rawHtml / 1024).toFixed(1)}KB → ` +
+    `${(slimHtml / 1024).toFixed(1)}KB (${((slimHtml - rawHtml) / 1024).toFixed(1)}KB, ` +
+    `${(((slimHtml - rawHtml) / rawHtml) * 100).toFixed(1)}%)` +
+    (cssOut ? ` + 분리한 CSS ${(cssOut / 1024).toFixed(1)}KB` : ""),
+);
 
 if (problems.length) {
   console.log(`\n❌ 문제 ${problems.length}건`);

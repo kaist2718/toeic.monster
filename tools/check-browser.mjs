@@ -19,6 +19,8 @@
  *
  * 실행:  node tools/check-browser.mjs            (Chrome 이 없으면 건너뜁니다)
  *        CHROME_BIN=/path/to/chrome node tools/check-browser.mjs
+ *        node tools/check-browser.mjs --site-root _site   (배포본 점검 — npm run check:staged)
+ *        node tools/check-browser.mjs --live              (배포된 사이트 점검)
  * 종료 코드: 문제가 있으면 1, 없으면 0 (CI 필수 단계는 아닙니다 — 로컬·배포 전 점검용)
  *
  * 외부 의존성 없음(Node 내장 모듈 + DevTools 프로토콜만 사용).
@@ -79,11 +81,29 @@ if (!chromePath) {
 const LIVE = process.argv.includes("--live");
 const LIVE_SITE = "https://toeic.monster";
 
+/* --site-root <dir>: 저장소 루트 대신 그 폴더를 서빙합니다(_site 배포본 점검용).
+   배포본은 인라인 CSS 분리·HTML 최소화를 거치므로, 원본만 점검하면 배포에서만
+   깨지는 것(분리한 CSS 경로·최소화가 건드린 마크업)을 놓칩니다. */
+const rootArg = process.argv.findIndex((a) => a === "--site-root" || a.startsWith("--site-root="));
+const SITE_ROOT = (() => {
+  if (rootArg < 0) return ROOT;
+  const raw = process.argv[rootArg].includes("=")
+    ? process.argv[rootArg].split("=").slice(1).join("=")
+    : process.argv[rootArg + 1] || "";
+  const dir = path.resolve(ROOT, raw);
+  if (!raw || !fs.existsSync(dir)) {
+    console.log(`❌ --site-root 폴더가 없습니다 — ${raw || "(값 없음)"} (npm run stage 를 먼저 돌리세요)`);
+    process.exit(1);
+  }
+  return dir;
+})();
+const SERVING = SITE_ROOT === ROOT ? ROOT : `${path.relative(ROOT, SITE_ROOT) || "."}/`;
+
 const server = http.createServer((req, res) => {
   let p = decodeURIComponent((req.url || "/").split("?")[0]);
   if (p.endsWith("/")) p += "index.html";
-  const f = path.join(ROOT, p);
-  if (!f.startsWith(ROOT) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) {
+  const f = path.join(SITE_ROOT, p);
+  if (!f.startsWith(SITE_ROOT) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) {
     res.writeHead(404, { "content-type": "text/plain;charset=utf-8" });
     res.end("not found");
     return;
@@ -187,6 +207,25 @@ const evaluate = async (expression) => {
   return r.result?.result?.value;
 };
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * 부드러운 이동(smooth scroll)이 멈출 때까지 기다립니다.
+ * 거리가 길면(목차에서 44,000px 아래 섹션으로 이동) 고정 대기만으로는 모자라
+ * 기계가 바쁠 때 간간히 실패합니다. 실제로 멈춘 것을 보고 재도록 바꿉니다.
+ */
+async function waitForScrollSettle({ timeout = 8000, initial = 1000 } = {}) {
+  await wait(initial);
+  let last = await evaluate("Math.round(window.pageYOffset)");
+  let stable = 0;
+  const until = Date.now() + timeout;
+  while (Date.now() < until && stable < 4) {
+    await wait(200);
+    const y = await evaluate("Math.round(window.pageYOffset)");
+    stable = Math.abs(y - last) < 2 ? stable + 1 : 0;
+    last = y;
+  }
+  return last;
+}
 
 try {
   await send("Runtime.enable");
@@ -563,6 +602,29 @@ try {
     .map((e) => `${e.params.type}: ${e.params.errorText}`);
   check(jsErrors.length === 0, `자바스크립트 오류 0건${jsErrors.length ? " — " + jsErrors.slice(0, 3).join(" | ") : ""}`);
   check(failed.length === 0, `실패한 요청 0건${failed.length ? " — " + failed.slice(0, 3).join(" | ") : ""}`);
+
+  /* 홈 스타일의 출처 — 원본은 index.html 안의 <style>, 배포본(_site)은 tools/stage-site.mjs 가
+     assets/app.css 로 분리합니다. 어느 쪽이든 실제로 적용되어야 합니다(분리 뒤 경로가 틀리면 화면이 무너집니다). */
+  const homeStyle = await evaluate(`(() => {
+    const cs = getComputedStyle(document.documentElement);
+    const read = (n) => cs.getPropertyValue(n).trim();
+    return {
+      inline: [...document.querySelectorAll("style")].reduce((n, s) => n + s.textContent.length, 0),
+      links: [...document.querySelectorAll('link[rel="stylesheet"]')].map((l) => l.getAttribute("href") || ""),
+      tokens: [read("--primary"), read("--bg"), read("--text")],
+    };
+  })()`);
+  const appCss = homeStyle.links.filter((h) => /(^|\/)app(-\d+)?\.css$/.test(h));
+  check(
+    homeStyle.inline > 10000 || appCss.length > 0,
+    `홈 스타일을 불러옵니다 (인라인 ${Math.round(homeStyle.inline / 1024)}KB` +
+      (appCss.length ? ` · 분리 ${appCss.join(", ")}` : "") +
+      ")",
+  );
+  check(
+    homeStyle.tokens.every((v) => v && v !== "none"),
+    `홈 스타일이 실제로 적용됩니다 (--primary ${homeStyle.tokens[0]} · --bg ${homeStyle.tokens[1]})`,
+  );
 
   /* ---------------------------------------------------------------- */
   /* 3-8. 정적 페이지(단어장 · 문법 · 가이드 · 404)                    */
@@ -1066,6 +1128,86 @@ try {
   );
 
   /* ---------------------------------------------------------------- */
+  /* 3-10c. 전체 목차 오버레이 · 화면 전환 기록                        */
+  /* ---------------------------------------------------------------- */
+
+  // 53섹션이 4묶음으로 접혀 있고 목차는 화면 맨 위에 있어, 깊이 내려가면 목차로 가려면
+  // 「맨 위로」를 거쳐야 했습니다. 섹션 메뉴를 복제한 목차를 어디서든 열 수 있어야 합니다.
+  await openPage("index.html");
+  await evaluate(`window.scrollTo(0, 2200)`);
+  await wait(700);
+  const tocOpen = await evaluate(`(() => {
+    const btn = document.getElementById("btnToc");
+    if (!btn) return { found: false };
+    const hidden = btn.parentElement.hidden;
+    if (hidden) return { found: true, hidden: true };
+    btn.click();
+    return {
+      found: true,
+      hidden: false,
+      shown: document.getElementById("tocModal").classList.contains("show"),
+      chips: document.querySelectorAll("#tocModalBody .sn-chip").length,
+      inline: document.querySelectorAll(".section-nav .sn-chip").length,
+    };
+  })()`);
+  check(tocOpen.found && !tocOpen.hidden, "전체 목차: 깊은 구간에서 목차 버튼이 나타납니다");
+  check(tocOpen.shown === true, "전체 목차: 목차 버튼으로 창이 열립니다");
+  check(
+    tocOpen.chips > 0 && tocOpen.chips === tocOpen.inline,
+    `전체 목차: 섹션 메뉴 ${tocOpen.inline}개가 그대로 들어 있습니다 (복제 ${tocOpen.chips}개)`,
+  );
+
+  // 목차에서 섹션을 고르면 창이 닫히고 그 섹션 위로 이동해야 합니다.
+  const tocPick = await evaluate(`(() => {
+    const chip = [...document.querySelectorAll("#tocModalBody .sn-chip")]
+      .find((c) => c.getAttribute("data-target") === "30일 스프린트");
+    if (!chip) return { found: false };
+    chip.click();
+    return { found: true };
+  })()`);
+  // 44,000px 를 부드럽게 넘고, 기록 복원 뒤 다시 이동합니다 — 멈출 때까지 봅니다.
+  await waitForScrollSettle();
+  const tocAfter = await evaluate(`(() => ({
+    shown: document.getElementById("tocModal").classList.contains("show"),
+    y: Math.round(window.pageYOffset),
+    top: Math.round(document.querySelector('.home-section[aria-label="30일 스프린트"]').getBoundingClientRect().top),
+  }))()`);
+  check(tocPick.found && !tocAfter.shown, "전체 목차: 섹션을 고르면 창이 닫힙니다");
+  check(
+    Math.abs(tocAfter.top) < 200,
+    `전체 목차: 고른 섹션이 화면 위쪽으로 옵니다 (top=${tocAfter.top}px · y=${tocAfter.y})`,
+  );
+
+  // 화면 전환을 기록에 남기지 않으면, 목록을 보다 뒤로가기를 누를 때 사이트를 떠납니다.
+  await openPage("index.html");
+  await evaluate(`document.getElementById("btnList").click()`);
+  await wait(800);
+  const onList = await evaluate(
+    `(() => ({ listShown: !document.getElementById("units").classList.contains("hide"), hash: location.hash }))()`,
+  );
+  check(onList.listShown, "화면 기록: 「목록」을 고르면 목록 화면이 열립니다");
+  check(onList.hash === "#view=list", `화면 기록: 주소에도 화면이 남습니다 (${onList.hash || "해시 없음"})`);
+
+  await evaluate(`window.history.back()`);
+  await wait(1000);
+  const viewAfterBack = await evaluate(`(() => ({
+    home: !document.getElementById("homeView").classList.contains("hide"),
+    hash: location.hash,
+  }))()`);
+  check(
+    viewAfterBack.home,
+    `화면 기록: 뒤로가기 한 번이면 홈으로 돌아옵니다 (hash="${viewAfterBack.hash}")`,
+  );
+
+  // 주소로도 화면이 열려야 합니다(새로고침·공유·직접 입력).
+  await openPage("index.html#view=quiz");
+  await wait(600);
+  const deepView = await evaluate(
+    `(() => ({ quiz: !document.getElementById("quizView").classList.contains("hide"), btn: document.getElementById("btnQuiz").classList.contains("active") }))()`,
+  );
+  check(deepView.quiz && deepView.btn, "화면 기록: #view=quiz 주소로 퀴즈 화면이 바로 열립니다");
+
+  /* ---------------------------------------------------------------- */
   /* 3-11. 낱개 과 페이지 · 홈 묶음 펼침 상태 기억                    */
   /* ---------------------------------------------------------------- */
 
@@ -1172,6 +1314,7 @@ try {
 /* ------------------------------------------------------------------ */
 
 console.log("🌐 실제 브라우저 점검 (헤드리스 Chrome)");
+console.log(`   · 서빙 폴더: ${SERVING}${LIVE ? ` (대신 ${LIVE_SITE})` : ""}`);
 notes.forEach((n) => console.log("   " + n));
 if (problems.length) {
   console.log(`\n❌ 문제 ${problems.length}건`);
