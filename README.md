@@ -23,8 +23,10 @@ npm run serve       # http://127.0.0.1:8000 에서 미리보기
 | `npm run verify` | 생성물이 소스와 어긋나지 않는지 확인 |
 | `npm run check:ci` | 위 네 가지를 한 번에 (CI 가 돌리는 것과 같습니다) |
 | `npm run check:browser` | 실제 브라우저로 100여 항목 점검 (로컬·배포 전용) |
+| `npm run check:live` | 배포된 사이트를 브라우저로 점검 (배포 워크플로가 돌리는 것) |
 | `npm run stage` | 배포본 `_site/` 구성 (공개할 파일만) |
 | `npm run check:staged` | `_site/` 를 브라우저로 점검 (배포본 그대로) |
+| `npm run perf` | 첫 방문·재방문 전송량 · FCP/LCP · 캐시 적중 실측 (`--compare` 로 원본과 비교) |
 | `npm run audit:external` | 배포된 사이트의 색인·링크 점검 |
 
 `npm run build` 뒤에는 생성물을 함께 커밋해야 `npm run verify` 가 통과합니다.
@@ -44,15 +46,16 @@ docs/               기획·점검 기록 (사이트 배포 대상 아님)
 ## 배포
 
 `main` 에 푸시하면 `.github/workflows/deploy.yml` 이 `check:ci` 를 통과한 뒤
-`_site/`(공개 목록만 담은 폴더)만 GitHub Pages 로 게시합니다.
+`_site/`(공개 목록만 담은 폴더)만 GitHub Pages 로 게시하고, 이어서 **배포된 주소**를
+헤드리스 브라우저로 훑는 `smoke` 작업이 돕니다.
 `tools/`·`promo/`·`docs/`·`package.json` 은 배포본에 들어가지 않습니다.
 
-> **최초 1회 설정**: 저장소 → Settings → Pages → Source 를 **GitHub Actions** 로 바꿔야 합니다.
-> 그 전까지는 기존 브랜치 배포 방식이 그대로 동작합니다(사이트는 정상).
+> **설정 유지**: 저장소 → Settings → Pages → Source 가 **GitHub Actions** 여야 합니다.
+> 브랜치 배포로 되돌리면 저장소 루트 전체가 공개됩니다.
 
-배포본은 `tools/stage-site.mjs` 에서 한 번 더 다듬습니다 — 큰 인라인 `<style>` 을
-`assets/app.css` 로 빼고 주석·태그 사이 공백을 걷어냅니다(index.html 719KB → 624KB).
-저장소의 `index.html` 은 원본 그대로입니다.
+배포본은 `tools/stage-site.mjs` 에서 한 번 더 다듬습니다 — 큰 인라인 `<style>`·`<script>` 를
+`assets/app.css`·`assets/app.js` 로 빼고 주석·태그 사이 공백을 걷어냅니다
+(`index.html` 721KB → 270KB, 나머지는 재방문 시 캐시). 저장소의 `index.html` 은 원본 그대로입니다.
 
 ## 문서
 

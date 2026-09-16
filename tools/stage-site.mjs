@@ -9,11 +9,11 @@
  *   **공개 목록에 있는 파일만** _site 로 복사하고, 빠진 것이 없는지 검증합니다.
  *
  * 무엇을 하는가:
- *   0) 담으면서 배포본을 다듬습니다 — 큰 인라인 <style> 을 assets/*.css 로 빼고,
- *      주석과 태그 사이 공백을 걷어냅니다. 저장소의 원본은 그대로 두고 _site 에만
- *      적용하므로, 이 파일이 index.html 의 유일한 원본이라는 규칙이 유지됩니다
- *      (도구들이 index.html 안의 인라인 JS·CSS 를 읽습니다).
- *      실측: index.html 719KB → 624KB, 정적 페이지 36개 −7.7%
+ *   0) 담으면서 배포본을 다듬습니다 — 큰 인라인 <style>·<script> 를 assets/*.css·
+ *      assets/*.js 로 빼고, 주석과 태그 사이 공백을 걷어냅니다. 저장소의 원본은 그대로
+ *      두고 _site 에만 적용하므로, 이 파일이 index.html 의 유일한 원본이라는 규칙이
+ *      유지됩니다(도구 여섯이 index.html 안의 인라인 JS·CSS 를 읽습니다).
+ *      실측: index.html 719KB → 276KB + app.css 80KB·app.js 348KB(캐시 대상)
  *
  * 무엇을 검사하는가:
  *   ① 공개 목록의 파일·폴더가 실제로 있는가 (없으면 실패 — 조용히 빠지는 것을 막습니다)
@@ -130,21 +130,48 @@ function minifyHtml(html) {
   return restore(out);
 }
 
-/** 큰 인라인 <style> 을 assets/*.css 로 빼고 <link> 로 바꿉니다. 반환: {html, files}(파일은 상대 경로). */
-function splitInlineCss(html, page) {
+/**
+ * 큰 인라인 <style>·<script> 를 assets/*.css·assets/*.js 로 빼고 link·script src 로 바꿉니다.
+ * 반환: {html, files}(파일은 _site 기준 상대 경로).
+ *
+ * 왜 이렇게 하나:
+ *   index.html 은 도구 여섯이 안쪽 블록을 읽는 **유일한 원본**이라 저장소에서는 쪼개지 않습니다.
+ *   대신 배포본에서만 빼내면, 원본 규칙을 건드리지 않고 첫/재방문 전송량을 줄일 수 있습니다.
+ *   (실측: index.html 719KB → 276KB, app.js 348KB·app.css 80KB 는 재방문 시 캐시)
+ */
+function splitInlineBlocks(html, page) {
   const dir = path.posix.dirname(page);
+  const base = page === "index.html" ? "app" : "p-" + page.replace(/\.html$/, "").replace(/\//g, "-");
   const files = new Map();
-  let n = 0;
-  const out = html.replace(/<style\b([^>]*)>([\s\S]*?)<\/style\s*>/gi, (whole, attrs, body) => {
-    if (Buffer.byteLength(body, "utf8") < 2048) return whole;
-    n += 1;
-    const base = page === "index.html" ? "app" : "p-" + page.replace(/\.html$/, "").replace(/\//g, "-");
-    const name = path.posix.join("assets", n === 1 ? `${base}.css` : `${base}-${n}.css`);
-    const media = (/\bmedia="([^"]*)"/i.exec(attrs) || [])[1];
-    files.set(name, body.replace(/^\s+|\s+$/g, ""));
-    const href = path.posix.relative(dir, name);
-    return `<link rel="stylesheet" href="${href}"${media ? ` media="${media}"` : ""}>`;
-  });
+  const counters = { css: 0, js: 0 };
+
+  /** @param {"css"|"js"} kind */
+  const fileName = (kind) => {
+    counters[kind] += 1;
+    const suffix = counters[kind] === 1 ? "" : `-${counters[kind]}`;
+    return path.posix.join("assets", `${base}${suffix}.${kind}`);
+  };
+
+  const out = html
+    .replace(/<style\b([^>]*)>([\s\S]*?)<\/style\s*>/gi, (whole, attrs, body) => {
+      if (Buffer.byteLength(body, "utf8") < 2048) return whole;
+      const name = fileName("css");
+      const media = (/\bmedia="([^"]*)"/i.exec(attrs) || [])[1];
+      files.set(name, body.replace(/^\s+|\s+$/g, ""));
+      const href = path.posix.relative(dir, name);
+      return `<link rel="stylesheet" href="${href}"${media ? ` media="${media}"` : ""}>`;
+    })
+    .replace(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi, (whole, attrs, body) => {
+      // JSON-LD(`type=…`)는 구조화 데이터라 문서 안에 있어야 하고, src 가 있으면 이미 외부 파일입니다.
+      if (/\btype=/i.test(attrs) || /\bsrc=/i.test(attrs)) return whole;
+      if (Buffer.byteLength(body, "utf8") < 4096) return whole;
+      const name = fileName("js");
+      files.set(name, body.replace(/^\s+|\s+$/g, ""));
+      // defer — 맨 뒤에 있어 실행 순서가 그대로입니다(앱이 readyState 를 보고 시작합니다).
+      //          파서를 막지 않아 첫 화면이 먼저 그려집니다.
+      return `<script defer src="${path.posix.relative(dir, name)}"></script>`;
+    });
+
   return { html: out, files };
 }
 
@@ -160,20 +187,21 @@ const stagedHtml = [];
 
 let rawHtml = 0;
 let slimHtml = 0;
-let cssOut = 0;
-const cssFiles = [];
+let splitOut = 0;
+const splitFiles = [];
 
 for (const page of stagedHtml) {
   const full = path.join(OUT, page);
   const original = fs.readFileSync(full, "utf8");
-  const split = splitInlineCss(original, page);
+  const split = splitInlineBlocks(original, page);
   for (const [name, body] of split.files) {
     fs.mkdirSync(path.dirname(path.join(OUT, name)), { recursive: true });
+    const bytes = Buffer.byteLength(body, "utf8") + 1;
     fs.writeFileSync(path.join(OUT, name), body + "\n", "utf8");
-    cssFiles.push(`${name} (${(Buffer.byteLength(body, "utf8") / 1024).toFixed(1)}KB, ${page})`);
-    cssOut += Buffer.byteLength(body, "utf8") + 1;
+    splitFiles.push(`${name} ${(bytes / 1024).toFixed(1)}KB`);
+    splitOut += bytes;
     fileCount++;
-    byteCount += Buffer.byteLength(body, "utf8") + 1;
+    byteCount += bytes;
   }
   const slim = minifyHtml(split.html);
   const before = fs.statSync(full).size;
@@ -261,12 +289,12 @@ console.log("📦 배포용 사이트 폴더(_site) 구성");
 console.log(`   · 파일 ${fileCount}개 · ${(byteCount / 1024 / 1024).toFixed(1)}MB`);
 console.log(`   · 공개 파일 ${PUBLIC_FILES.length}개 · 공개 폴더 ${PUBLIC_DIRS.join(", ")}`);
 console.log(`   · 제외: ${NEVER_PUBLIC.join(", ")}`);
-if (cssFiles.length) console.log(`   · 인라인 CSS 분리: ${cssFiles.join(", ")}`);
+if (splitFiles.length) console.log(`   · 인라인 블록 분리: ${splitFiles.join(" · ")}`);
 console.log(
   `   · HTML 최소화: ${stagedHtml.length}개 ${(rawHtml / 1024).toFixed(1)}KB → ` +
     `${(slimHtml / 1024).toFixed(1)}KB (${((slimHtml - rawHtml) / 1024).toFixed(1)}KB, ` +
     `${(((slimHtml - rawHtml) / rawHtml) * 100).toFixed(1)}%)` +
-    (cssOut ? ` + 분리한 CSS ${(cssOut / 1024).toFixed(1)}KB` : ""),
+    (splitOut ? ` — 별도 파일 ${(splitOut / 1024).toFixed(1)}KB(재방문 시 캐시)` : ""),
 );
 
 if (problems.length) {

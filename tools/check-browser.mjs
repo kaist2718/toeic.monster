@@ -597,11 +597,14 @@ try {
   const jsErrors = events
     .filter((e) => e.method === "Runtime.exceptionThrown")
     .map((e) => e.params.exceptionDetails.exception?.description || e.params.exceptionDetails.text);
-  const failed = events
-    .filter((e) => e.method === "Network.loadingFailed" && !e.params.canceled)
-    .map((e) => `${e.params.type}: ${e.params.errorText}`);
+  const failedSince = errorsSince(0);
+  const failed = failedSince.failed;
+  const externalFailed = failedSince.externalFailed;
   check(jsErrors.length === 0, `자바스크립트 오류 0건${jsErrors.length ? " — " + jsErrors.slice(0, 3).join(" | ") : ""}`);
   check(failed.length === 0, `실패한 요청 0건${failed.length ? " — " + failed.slice(0, 3).join(" | ") : ""}`);
+  if (externalFailed.length) {
+    note(`다른 출처 자원 ${externalFailed.length}건이 응답하지 않았습니다 — 우리 자산은 아닙니다 (${externalFailed[0]})`);
+  }
 
   /* 홈 스타일의 출처 — 원본은 index.html 안의 <style>, 배포본(_site)은 tools/stage-site.mjs 가
      assets/app.css 로 분리합니다. 어느 쪽이든 실제로 적용되어야 합니다(분리 뒤 경로가 틀리면 화면이 무너집니다). */
@@ -662,16 +665,35 @@ try {
     return from;
   }
 
+  /** 요청 id → 주소. 실패한 요청이 우리 자산인지 다른 출처인지 가리려고 씁니다. */
+  function urlOf(requestId) {
+    for (let i = events.length - 1; i >= 0; i--) {
+      const e = events[i];
+      if (e.method === "Network.requestWillBeSent" && e.params.requestId === requestId) {
+        return e.params.request.url;
+      }
+    }
+    return "";
+  }
+  /** 우리 사이트 밖(웹폰트 CDN·분석 스크립트 등)인가. */
+  const isExternal = (url) => !!url && /^https?:/i.test(url) && !url.startsWith(BASE);
+
   /** 그 페이지에서 새로 발생한 오류만 골라냅니다(앞 페이지의 오류를 다시 세지 않도록). */
   function errorsSince(from) {
     const slice = events.slice(from);
+    const failedAll = slice.filter((e) => e.method === "Network.loadingFailed" && !e.params.canceled);
     return {
       js: slice
         .filter((e) => e.method === "Runtime.exceptionThrown")
         .map((e) => e.params.exceptionDetails.exception?.description || e.params.exceptionDetails.text),
-      failed: slice
-        .filter((e) => e.method === "Network.loadingFailed" && !e.params.canceled)
+      // 다른 출처 자원(웹폰트 CDN·분석)은 우리가 고칠 수 없어 문제로 세지 않습니다.
+      // 그 주소가 살아 있는지는 `npm run audit:external` 이 따로 봅니다.
+      failed: failedAll
+        .filter((e) => !isExternal(urlOf(e.params.requestId)))
         .map((e) => `${e.params.type}: ${e.params.errorText}`),
+      externalFailed: failedAll
+        .filter((e) => isExternal(urlOf(e.params.requestId)))
+        .map((e) => `${urlOf(e.params.requestId)} (${e.params.errorText})`),
       requests: slice.filter((e) => e.method === "Network.responseReceived").length,
     };
   }
@@ -1075,8 +1097,11 @@ try {
   );
 
   // 「다음 섹션」 — 아래 섹션으로 내려가고 위치 표시도 바뀝니다.
+  // 위치 표시는 IntersectionObserver 가 갱신하므로, 이동이 멈춘 뒤 잠깐 더 기다려야 합니다.
+  // (고정 대기로는 기계가 바쁠 때 표시가 갱신되기 전에 재어 간간히 실패했습니다.)
   await evaluate(`document.getElementById("secNext").click()`);
-  await wait(1200);
+  await waitForScrollSettle({ initial: 300 });
+  await wait(300);
   const afterNext = await evaluate(
     `(() => ({
       y: Math.round(window.pageYOffset),
@@ -1094,7 +1119,7 @@ try {
 
   // 「이전 섹션」 — 다시 위로 올라옵니다.
   await evaluate(`document.getElementById("secPrev").click()`);
-  await wait(1200);
+  await waitForScrollSettle({ initial: 300 });
   const afterPrev = await evaluate(`Math.round(window.pageYOffset)`);
   check(
     afterPrev < afterNext.y - 40,
