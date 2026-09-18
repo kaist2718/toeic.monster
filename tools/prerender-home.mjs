@@ -99,18 +99,26 @@ function endOfBlock(startAt, closer, level) {
 }
 
 /**
- * `  var NAME = ...` 선언을 통째로 떼어냅니다.
+ * `var NAME = ...` 선언을 통째로 떼어냅니다.
  * 배열(여러 줄)이면 닫는 `];` 까지, 그 밖의 한 줄 선언이면 그 줄만 가져옵니다.
+ * 들여쓰기는 줄에 따라 다릅니다 — 데이터 배열은 data/app-data.js 에 0칸,
+ * 앱 상태 변수는 assets/app.js 에 2칸으로 있습니다. 그래서 선언 줄의 들여쓰기를 읽어
+ * 같은 깊이의 닫는 줄까지 가져옵니다.
  */
 function extractVar(name) {
-  let at = -1;
-  try {
-    at = atLineStart(`  var ${name} = [`);
-  } catch {
-    at = -1; // 배열이 아니라 스칼라 선언입니다(아래에서 한 줄로 처리).
+  const arrayRe = new RegExp(`^([ \\t]*)var ${name} = \\[`, "m");
+  const arr = arrayRe.exec(code);
+  if (arr) {
+    const lineEnd = code.indexOf("\n", arr.index);
+    const firstLine = code.slice(arr.index, lineEnd === -1 ? code.length : lineEnd);
+    // 한 줄에서 닫히는 배열(`var all = [];`)은 그 줄만 씁니다.
+    // 그냥 아래로 훑으면 멀리 있는 다른 `];` 까지 삼켜 엉뚱한 코드를 실행하게 됩니다
+    // (예전에는 우연히 동작했지만, 데이터를 파일로 나누면서 드러났습니다).
+    if (!/\]\s*;\s*$/.test(firstLine)) {
+      return code.slice(arr.index, endOfBlock(arr.index, "];", arr[1].length));
+    }
   }
-  if (at >= 0) return code.slice(at, endOfBlock(at, "];", 2));
-  const re = new RegExp(`^  var ${name} = .*;$`, "m");
+  const re = new RegExp(`^[ \\t]*var ${name} = .*;$`, "m");
   const m = re.exec(code);
   if (!m) throw new Error(`앱 소스에서 var ${name} 선언을 찾지 못했습니다.`);
   return m[0];

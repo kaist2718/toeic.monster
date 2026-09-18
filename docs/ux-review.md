@@ -1395,7 +1395,32 @@ node -e "for (const f of ['guides/part-5-grammar.html','grammar/index.html']) { 
   때까지 기다린 뒤 잽니다.
 - 확인: `npm run check:browser` 3회 연속 통과(이전에는 간헐 실패).
 
-### 20-3. 15차 재현 방법
+### 20-3. 학습 데이터를 `data/app-data.js` 로 분리 ✅
+
+`assets/app.js` 345.9KB → **259.6KB**, `data/app-data.js` **85.5KB**(학습 배열·객체 23개).
+스타일·스크립트·데이터가 각각 캐시 가능한 파일이 되어, 한쪽만 바뀔 때 다른 쪽은 그대로 재사용합니다.
+`index.html` 은 `data/app-data.js` 를 `assets/app.js` 보다 먼저 부릅니다(전역으로 선언되고 앱이 이름으로 씁니다).
+
+- 함께 고친 **잠재 버그**: `prerender-home.mjs` 의 `extractVar` 가 한 줄짜리 빈 배열(`var all = [];`)을
+  여러 줄 배열로 오인해 멀리 있는 다른 `];` 까지 삼키고 있었습니다(예전에는 그 덩어리가 우연히 실행돼 통과).
+  이제 첫 줄에서 닫히는 배열은 그 줄만 씁니다.
+- 회귀 방지: `audit-site` **3-2b-3** 이 `data/app-data.js` 미참조·로드 순서 역전·데이터가 앱 코드로
+  되돌아간 경우를 실패로 잡습니다. `sw.js` 프리캐시에 `data/app-data.js` 추가(캐시 `v12 → v13`).
+- 확인: `npm run build` 가 "바뀐 내용 없음"(프리렌더 산출물 바이트 동일) · `npm run perf:compare`
+  첫 방문 963.2KB → 961.4KB · 재방문 310B → 287B.
+
+### 20-4. 폰트 프리캐시는 실제로 동작한다(확인) ✅
+
+`sw.js` 주석은 "설치 단계에서 CDN CSS 만 미리 담고, woff2 조각은 처음 쓰일 때 fetch 핸들러가 담는다"고
+적혀 있는데, 교차 출처 응답은 `cache.add` 가 거부할 수 있어 **실제로 확인**했습니다.
+
+- 확인 방법: 헤드리스 Chrome 에서 서비스워커 등록 뒤 `caches.open("toeic-monster-v13").keys()`
+- 결과: 캐시 항목 112개 · Pretendard **CSS 1개**(설치 단계 프리캐시) · **woff2 39조각**(처음 쓰일 때 캐시)
+  · `assets/app.js` 1개(2단계에서 추가).
+- 근거: jsdelivr 가 `access-control-allow-origin: *` 를 보내므로 설치 단계의 `cache.add` 는 CORS(200)
+  응답을 받습니다. 주석에 이 근거를 보강했습니다(동작 변경 없음).
+
+### 20-5. 15차 재현 방법
 
 ```bash
 npm run check:ci      # 감사 3종(3-2b-2·3-2b-3 포함) + 테스트 3종 + 빌드 + 생성물 최신성
@@ -1403,8 +1428,9 @@ npm run check:browser # 반복 실행 — 섹션 이동 표시가 매번 갱신�
 npm run check:staged  # 배포본(_site)에서도 앱 스크립트가 실행되는지
 npm run perf:compare  # 원본 vs 배포본 전송량 · FCP/LCP
 
-# 앱 스크립트가 파일인가(큰 인라인으로 되돌아갔는가)
-node tools/audit-site.mjs | grep '앱 스크립트'
-grep -o '<script defer src="assets/app.js"></script>' index.html
+# 스크립트·데이터가 파일인가(큰 인라인·앱 코드로 되돌아갔는가)
+node tools/audit-site.mjs | grep -E '앱 스크립트|앱 데이터'
+grep -o '<script defer src="data/app-data.js"></script>' index.html
+grep -c 'UNITS = \[' data/app-data.js    # 1
 ```
 

@@ -235,7 +235,8 @@ ${code}
 console.log("\n[3] 스크립트 로딩 (defer · extra.js 지연)");
 {
   const deferred = [...html.matchAll(/<script\s+defer\s+src="(data\/[^"]+)"/g)].map((m) => m[1]);
-  assert(deferred.length === 37, `데이터 스크립트 37개가 defer 로 내려받습니다(현재 ${deferred.length}개)`);
+  // 37개(단어 30 + 숙어 + 문법 3 + 회화 3) + data/app-data.js(앱 학습 데이터) = 38개.
+  assert(deferred.length === 38, `데이터 스크립트 38개가 defer 로 내려받습니다(현재 ${deferred.length}개)`);
   assert(
     /<script\s+defer\s+src="data\/unit01\.js"><\/script>/.test(html),
     "첫 데이터 스크립트가 defer 입니다",

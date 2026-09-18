@@ -1,5 +1,5 @@
 /* toeic.monster Service Worker - 오프라인 학습 지원 */
-var CACHE_NAME = "toeic-monster-v12";
+var CACHE_NAME = "toeic-monster-v13";
 var CORE_ASSETS = [
   "./",
   "./index.html",
@@ -32,6 +32,8 @@ var CORE_ASSETS = [
 // 어휘 데이터. index.html 이 첫 화면에서 바로 내려받는 파일들이라
 // 설치 단계에서 미리 캐시해 두면 다음 방문부터는 오프라인에서도 즉시 열립니다.
 var DATA_ASSETS = [
+  // 홈 앱의 학습 데이터 — 2026-09-18 부터 assets/app.js 안이 아니라 이 파일입니다(2단계).
+  "data/app-data.js",
   "data/idioms.js",
   "data/extra.js",
   "data/grammar-basic.js",
@@ -48,6 +50,8 @@ for (var i = 1; i <= 30; i++) {
 
 // 본문 서체(Pretendard Variable, CDN). CSS 만 미리 담고,
 // 실제 woff2 조각은 처음 쓰일 때 fetch 핸들러가 캐시에 넣습니다.
+// (설치 단계의 cache.add 가 되는 이유: jsdelivr 가 access-control-allow-origin: * 를 보내므로
+//  CORS(200) 응답을 받습니다. 2026-09-18 실제 브라우저 캐시에서 CSS 1 + woff2 39개를 확인했습니다.)
 var FONT_ASSETS = [
   "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
 ];

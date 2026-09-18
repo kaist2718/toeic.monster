@@ -433,12 +433,19 @@ for (const [name, r] of results) {
 }
 if (results.size === 2) {
   const [a, b] = [...results.values()];
+  // 첫 방문은 5% 까지 여유를 둡니다(로컬 계측 잡음).
+  // 재방문은 예전에 "배포본이 더 가볍다"를 요구했는데, 이제 앱 스크립트·데이터까지 원본부터
+  // 파일로 나뉘어 있어(docs/app-split-plan.md 2·3단계) 그 차이가 0.1KB 반올림에 묻히는 잡음이 됐습니다.
+  // 그래서 기준을 "늘지 않았다"로 맞춥니다 — 계획서의 완료 기준도 그 값입니다.
   const coldOk = b.cold.bytes <= a.cold.bytes * 1.05;
-  const warmOk = b.warm.bytes < a.warm.bytes;
+  const warmOk = b.warm.bytes <= a.warm.bytes;
   (coldOk ? note : fail)(
     `첫 방문이 무거워지지 않았습니다 (${KB(a.cold.bytes)} → ${KB(b.cold.bytes)})`,
   );
-  (warmOk ? note : fail)(`재방문이 가벼워졌습니다 (${KB(a.warm.bytes)} → ${KB(b.warm.bytes)})`);
+  (warmOk ? note : fail)(
+    `재방문이 무거워지지 않았습니다 (${KB(a.warm.bytes)} → ${KB(b.warm.bytes)} · ` +
+      `${a.warm.bytes}B → ${b.warm.bytes}B)`,
+  );
 }
 
 console.log("");

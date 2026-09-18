@@ -252,31 +252,47 @@ if (!has(APP_CSS)) {
 // 조용히 어긋나도 감사가 통과해 버립니다. 그래서 여기서 막습니다.
 // (첫 페인트용 부트스트랩·JSON-LD 는 인라인으로 남습니다 — 가장 큰 것이 약 2.5KB)
 const APP_JS = "assets/app.js";
+// 앱 데이터(학습 배열·객체)는 2026-09-18 부터 data/app-data.js 로 나뉘어 있습니다(2단계).
+const APP_DATA = "data/app-data.js";
 const INLINE_SCRIPT_MAX = 8192;
 
 if (!has(APP_JS)) {
   fail(`${APP_JS} 이 없습니다 — index.html 의 앱 스크립트는 이 파일에 있어야 합니다.`);
 } else if (has("index.html")) {
   const home = srcOf["index.html"] || "";
+  const mark = markOf["index.html"] || "";
   const inlineScripts = [...home.matchAll(/<script\b(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)].map((m) => m[1]);
   const biggest = inlineScripts.reduce((n, body) => Math.max(n, body.length), 0);
   if (biggest > INLINE_SCRIPT_MAX) {
     fail(`index.html: 인라인 <script> 이 ${(biggest / 1024).toFixed(1)}KB 입니다 — ${APP_JS} 로 옮기세요.`);
   }
-  if (!/<script\b[^>]*src="(?:\.\/)?assets\/app\.js"/.test(markOf["index.html"] || "")) {
+  if (!/<script\b[^>]*src="(?:\.\/)?assets\/app\.js"/.test(mark)) {
     fail(`index.html: ${APP_JS} 를 <script src> 로 부르지 않습니다(앱이 실행되지 않습니다).`);
+  }
+  // 앱 데이터는 전역으로 선언되어 앱이 이름으로 씁니다 — 코드보다 먼저 실행되어야 합니다.
+  const atData = mark.indexOf("data/app-data.js");
+  const atApp = mark.indexOf("assets/app.js");
+  if (!has(APP_DATA)) {
+    fail(`${APP_DATA} 이 없습니다 — 앱 데이터 배열은 이 파일에 있어야 합니다.`);
+  } else if (atData === -1) {
+    fail(`index.html: ${APP_DATA} 를 부르지 않습니다(앱 데이터가 비어 보입니다).`);
+  } else if (atApp !== -1 && atData > atApp) {
+    fail(`index.html: ${APP_DATA} 가 ${APP_JS} 보다 뒤에 있습니다(데이터가 먼저 실행되어야 합니다).`);
+  } else if (/^\s*var (?:UNITS|CONFUSABLES|PART_BANK)\s*=\s*[[{]/m.test(read(APP_JS))) {
+    fail(`${APP_JS}: 데이터 배열이 앱 코드로 되돌아갔습니다 — ${APP_DATA} 로 옮기세요.`);
   }
   note(
     `앱 스크립트 ${APP_JS} ${(fs.statSync(path.join(ROOT, APP_JS)).size / 1024).toFixed(1)}KB · ` +
+      `앱 데이터 ${APP_DATA} ${((has(APP_DATA) ? fs.statSync(path.join(ROOT, APP_DATA)).size : 0) / 1024).toFixed(1)}KB · ` +
       `index.html 인라인 ${(biggest / 1024).toFixed(1)}KB`,
   );
 }
 
-// index.html + 앱 스크립트 — 앱 배열·템플릿 문자열을 보는 검사(3-2d·6-1)가 씁니다.
-// 앱 코드는 2026-09-18 부터 assets/app.js 파일이라(docs/app-split-plan.md 2단계),
+// index.html + 앱 데이터 + 앱 스크립트 — 앱 배열·템플릿 문자열을 보는 검사(3-2d·6-1)가 씁니다.
+// 앱 코드·데이터는 2026-09-18 부터 assets/app.js·data/app-data.js 파일이라(2단계),
 // index.html 만 보면 앱이 만드는 상자·배지 목록을 놓칩니다.
 const homeFullSource = has("index.html")
-  ? (srcOf["index.html"] || "") + "\n" + (has(APP_JS) ? read(APP_JS) : "")
+  ? [srcOf["index.html"] || "", has(APP_DATA) ? read(APP_DATA) : "", has(APP_JS) ? read(APP_JS) : ""].join("\n")
   : "";
 
 for (const page of pages.filter(isGeneratedPage)) {
