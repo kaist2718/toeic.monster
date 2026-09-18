@@ -1142,8 +1142,16 @@ try {
   );
 
   // 목차 칩으로 깊은 섹션까지 내려가면 버튼이 나타나야 합니다.
+  // 칩은 부드러운 스크롤로 46,000px 아래 섹션까지 내려갑니다 — 고정 대기(1.2초)로는 도착 전에
+  // 재어 어느 섹션인지 어긋났습니다(그 뒤 계산이 한 칸씩 밀렸습니다).
+  // 실제로 멈춘 것을 보고, 위치 표시가 갱신될 때까지 기다린 뒤 정지 위치를 읽습니다.
   await evaluate(`document.querySelector('.sn-chip[data-target="30일 스프린트"]').click()`);
-  await wait(1200);
+  await waitForScrollSettle({ initial: 800 });
+  for (let i = 0; i < 25; i++) {
+    const shown = await evaluate(`(document.getElementById("snCurrent") || {}).textContent || ""`);
+    if (shown) break;
+    await wait(120);
+  }
   const deepShown = await evaluate(
     `(() => ({
       jump: document.getElementById("secJump").hidden,
@@ -1393,7 +1401,6 @@ try {
     `앱 딥링크: 그 과의 문제만 나옵니다 (5과=${deep.hasCh5} · 다른 과=${deep.hasOther} · 내용 "${deep.snippet}")`,
   );
 
-  await openPage("index.html");
   await evaluate(`localStorage.clear()`);
 } finally {
   await shutdown();
