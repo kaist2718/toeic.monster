@@ -43,7 +43,7 @@ assets/             앱 스크립트(app.js) · 앱 스타일(app.css) · 정적
                     · 본문 서체 서브셋(fonts/ — `python tools/make-font-subset.py` 로 만듭니다)
                     — 홈 앱의 원본은 index.html · data/app-data.js · assets/app.js 세 파일이고,
                       도구는 셋을 이어 붙여 읽습니다(`tools/app-source.mjs` · docs/app-split-plan.md 2단계).
-tools/              빌드·감사·점검·배포 도구 (Node 내장 모듈만)
+tools/              빌드·감사(콘텐츠·문구·구조·접근성)·점검·배포 도구 (Node 내장 모듈만)
                     — 폰트 서브셋만 Python(fontTools) 을 씁니다: tools/make-font-subset.py
 promo/              홍보 영상·게시 도구 (사이트 배포 대상 아님)
 docs/               기획·점검 기록 (사이트 배포 대상 아님)
