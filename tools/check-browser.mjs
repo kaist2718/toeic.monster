@@ -1157,11 +1157,16 @@ try {
   );
 
   // 「다음 섹션」 — 아래 섹션으로 내려가고 위치 표시도 바뀝니다.
-  // 위치 표시는 IntersectionObserver 가 갱신하므로, 이동이 멈춘 뒤 잠깐 더 기다려야 합니다.
-  // (고정 대기로는 기계가 바쁠 때 표시가 갱신되기 전에 재어 간간히 실패했습니다.)
+  // 위치 표시는 IntersectionObserver 가 갱신하므로, 이동이 멈춘 뒤 한 박자 늦게 바뀝니다.
+  // 고정 대기(또는 「바뀌었나?」 한 번 보기)로 재면 스크롤 중이던 이전 값이 남아 간간히 실패합니다.
+  // 그래서 실제로 표시가 바뀔 때까지 기다린 뒤에 잽니다(스크롤 정지 확인은 그대로).
   await evaluate(`document.getElementById("secNext").click()`);
   await waitForScrollSettle({ initial: 300 });
-  await wait(300);
+  for (let i = 0; i < 25; i++) {
+    const shown = await evaluate(`(document.getElementById("snCurrent") || {}).textContent || ""`);
+    if (shown && shown !== deepShown.now) break;
+    await wait(120);
+  }
   const afterNext = await evaluate(
     `(() => ({
       y: Math.round(window.pageYOffset),

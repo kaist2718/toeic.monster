@@ -16,9 +16,11 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { readAppSource } from "./app-source.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+// 앱 코드는 2026-09-18 부터 assets/app.js 파일입니다(docs/app-split-plan.md 2단계).
+const { code: html } = readAppSource();
 
 const START = "  // ---------- TTS(음성 합성) 공통 ----------";
 const END = "  // 사용자 설정: 발음 듣기 켜기/끄기 + 재생 속도 (localStorage 에 저장)";

@@ -1,12 +1,12 @@
 # `index.html` 원본 경량화 설계 (실행 전 계획)
 
-> 작성: 2026-09-18 · 상태: **1단계 완료 · 2·3단계 남음** · 관련 기록: `docs/ux-review.md` §3 · §9-5 · §18-5 · §19
+> 작성: 2026-09-18 · 상태: **1·2단계 완료 · 3단계 남음** · 관련 기록: `docs/ux-review.md` §3 · §9-5 · §18-5 · §19 · §20
 > 대상: 저장소 원본 `index.html` 하나 (배포본 `_site/` 는 이미 분리되어 있습니다)
 
 ## 0. 왜 별도 문서인가
 
 `index.html` 은 이 프로젝트에서 **손으로 고치는 유일한 원본이자, 도구 14종이 읽는 입력**입니다
-(`tools/*.mjs` 가 인라인 `<style>`·`<script>`·데이터 배열을 직접 읽습니다).
+(`tools/*.mjs` 가 코드 블록·데이터 배열을 직접 읽습니다).
 그래서 "그냥 스타일·스크립트를 파일로 빼는" 변경은 사소해 보이지만, 실제로는 **빌드·감사·테스트·계측
 도구의 입력 형식을 바꾸는 일**입니다. 이 문서는 그 순서와 검증 방법을 먼저 정해 두기 위한 것입니다.
 
@@ -65,17 +65,33 @@
 - 검증(모두 통과): `npm run audit`(3-2b-2 포함) · `npm test`(101 + 31 + 문법) · `npm run check:browser` ·
   `npm run check:staged`(배포본에서도 `assets/app.css` 적용 확인) · `npm run build` 2회 멱등.
 
-### 2단계 — 앱 스크립트 분리 (`<script>` → `assets/app.js`)
+### 2단계 — 앱 스크립트 분리 (`<script>` → `assets/app.js`) ✅ 완료 (2026-09-18)
 
-- 가장 큰 조각(304KB)입니다. `<script defer src="assets/app.js">` 로 바꿉니다.
-- 동시에 **데이터 배열을 `data/` 로 옮깁니다**: `UNITS`·`CONFUSABLES`·`WORD_PARTS`·`PART_BANK` 등
-  `index.html` 안에 선언된 배열은 `data/app-data.js` 한 파일로 모읍니다.
-- 도구 수정(핵심): 지금 도구들은 `index.html` 에서 **들여쓰기로 코드 블록을 떼어냅니다**
-  (`prerender-home.mjs` 의 `atLineStart`/`endOfBlock`, `test-home-ux.mjs` 의 `slice()`).
-  분리 후에는 "`index.html` + `assets/app.js`" 를 이어 붙인 문자열을 같은 방식으로 읽게 합니다.
-  `verify-generated.mjs` 대상에 `assets/app.js`·`assets/app.css` 를 추가합니다.
-- 검증: `npm run build`(프리렌더가 같은 결과를 내는지) · `npm test` · `npm run check:browser` ·
-  `npm run perf:compare`.
+- 가장 큰 조각(353KB)을 `assets/app.js` 로 옮기고, `index.html` 은
+  `<script defer src="assets/app.js"></script>` 로 부릅니다.
+  인라인으로 남는 `<script>` 는 첫 페인트 부트스트랩(테마)과 JSON-LD 3개뿐입니다(가장 큰 것 1.5KB).
+- **도구 수정(핵심)**: `index.html` 에서 들여쓰기로 코드 블록을 떼어내던 도구들은 이제
+  `tools/app-source.mjs` 의 `readAppSource()` 가 돌려주는 "`index.html` + `assets/app.js`" 를
+  같은 방식으로 읽습니다. 대상: `prerender-home.mjs`(html 은 주입용, code 는 추출용으로 분리) ·
+  `test-home-ux.mjs` · `test-grammar-quiz.mjs` · `test-tts-voice.mjs` · `audit-content.mjs` ·
+  `audit-text.mjs` · `audit-site.mjs`(3-2d·6-1 은 앱 코드까지) · `build-pages.mjs`(UNITS).
+- **회귀 방지**: `audit-site.mjs` **3-2b-3** — `index.html` 이 `assets/app.js` 를 부르지 않거나
+  인라인 `<script>` 이 8KB 를 넘으면 실패. `sw.js` — `CORE_ASSETS` 에 `./assets/app.js` 를 넣고
+  캐시 이름 `v11 → v12`(오프라인 첫 방문에도 앱이 실행되게). `verify-generated.mjs` 는
+  `assets/` 를 이미 대상에 두고 있어 `app.js` 가 자동으로 검증됩니다.
+- **하지 않은 것**: 데이터 배열을 `data/app-data.js` 로 따로 모으는 일은 미뤘습니다
+  (배열이 함수 사이에 흩어져 있어 위험이 크고, 이 단계의 목표는 "원본 문서에서 353KB 를 빼는 것"
+  이라 이미 달성). 3단계에서 다룰 후보입니다.
+- 검증(모두 통과): `npm run build` 가 "바뀐 내용 없음"(프리렌더 결과 동일) · `npm run audit` ·
+  `npm test` · `npm run check:browser`(반복) · `npm run check:staged` · `npm run perf:compare`
+  (첫 방문 965.1KB → 963.9KB, LCP 596ms → 332ms).
+
+| 항목 | 1단계 후(2단계 전) | 2단계 후(현재) |
+| --- | --- | --- |
+| `index.html` 원본 | 628KB raw · 7,362줄 | **290KB raw · 1,537줄** |
+| 그중 인라인 `<script>` | 302KB | **1.5KB**(테마 부트스트랩 + JSON-LD) |
+| `assets/app.js` | 배포본에서만 생성 | **원본 354KB(gzip 101.7KB)** |
+| 배포본 `index.html` | 270.7KB | 약 277KB(변화 없음) |
 
 ### 3단계 — 로드 전략 다듬기
 
@@ -95,7 +111,8 @@
 ## 5. 완료 기준 (1단계는 아래 첫 줄의 스타일 부분을 충족)
 
 - `index.html` ≤ 120KB(raw), 인라인 `<style>`·`<script>` 는 첫 페인트용 부트스트랩(테마·등록)만 남김.
-  → 1단계 후: 인라인 `<style>` 0KB · `<script>` 302KB(2단계 대상).
+  → 1단계 후: 인라인 `<style>` 0KB · `<script>` 302KB. → 2단계 후: `<script>` 1.5KB.
+  남은 290KB 는 **프리렌더 마크업**(검색·JS 없이 읽히는 본문)이라 3단계 이후 별도 판단이 필요합니다.
 - `npm run check:ci` 통과 · `npm run check:browser` 통과 · `npm run perf:compare` 에서
   첫 방문 총량이 늘지 않고 FCP/LCP 가 나빠지지 않음.
 - `docs/ux-review.md` §3 의 "페이지 무게" 권고를 닫고, 이 문서에 완료 기록을 남김.

@@ -3,9 +3,9 @@
  * 배포본 성능 실측 — 첫 방문·재방문 전송량, FCP·LCP, 캐시 적중 (헤드리스 Chrome).
  *
  * 왜 필요한가:
- *   "가벼워졌다"는 말은 숫자로 확인해야 합니다. 특히 `tools/stage-site.mjs` 가 배포본에서
- *   인라인 JS 를 파일로 빼는데, 이것이 실제로 (1) 첫 방문을 무겁게 하지 않고
- *   (2) 재방문을 가볍게 하는지 봐야 합니다. 캐시에 담기는지도 함께 봅니다.
+ *   "가벼워졌다"는 말은 숫자로 확인해야 합니다. 특히 `tools/stage-site.mjs` 가 배포본을
+ *   다듬는 일이 실제로 (1) 첫 방문을 무겁게 하지 않고 (2) 재방문을 가볍게 하는지,
+ *   그리고 앱 스크립트·스타일(`assets/app.js`·`app.css`)이 캐시에 담기는지 봐야 합니다.
  *
  * 하는 일:
  *   1) 첫 방문 — 빈 캐시로 문서를 열고 요청 수 · 압축 전송량 · TTFB/FCP/LCP/DCL/load
@@ -13,7 +13,7 @@
  *   3) 가장 큰 파일 몇 개 (압축된 크기 기준)
  *
  * 실행:
- *   node tools/measure-perf.mjs                    # 저장소 루트(원본 — 앱 스크립트는 아직 인라인)
+ *   node tools/measure-perf.mjs                    # 저장소 루트(원본)
  *   node tools/measure-perf.mjs --site-root _site  # 배포본(분리·최소화된 결과)
  *   node tools/measure-perf.mjs --live             # 배포된 사이트
  *   node tools/measure-perf.mjs --compare          # 원본 vs _site 를 한 번에 재고 차이를 표로

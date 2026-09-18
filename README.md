@@ -34,10 +34,12 @@ npm run serve       # http://127.0.0.1:8000 에서 미리보기
 ## 구조
 
 ```
-index.html          홈(앱) — 이 파일이 유일한 원본입니다. 인라인 앱 스크립트를 도구들이 읽습니다.
+index.html          홈(앱)의 마크업 — 첫 페인트 부트스트랩(테마)만 인라인으로 남습니다.
 units/ grammar/ conversation/ guides/   생성된 정적 페이지 124개 (build-pages.mjs)
 data/               단어·문법·회화 데이터 (unit01.js …)
-assets/             앱 스타일(app.css) · 정적 페이지 공용 스타일(site.css) · 발음(speak.js)
+assets/             앱 스크립트(app.js) · 앱 스타일(app.css) · 정적 페이지 공용 스타일(site.css) · 발음(speak.js)
+                    — 앱의 코드 원본은 index.html + assets/app.js 두 파일이고, 도구는 둘을 이어 붙여 읽습니다
+                      (`tools/app-source.mjs` · docs/app-split-plan.md 2단계).
 tools/              빌드·감사·점검·배포 도구 (Node 내장 모듈만)
 promo/              홍보 영상·게시 도구 (사이트 배포 대상 아님)
 docs/               기획·점검 기록 (사이트 배포 대상 아님)
@@ -53,10 +55,10 @@ docs/               기획·점검 기록 (사이트 배포 대상 아님)
 > **설정 유지**: 저장소 → Settings → Pages → Source 가 **GitHub Actions** 여야 합니다.
 > 브랜치 배포로 되돌리면 저장소 루트 전체가 공개됩니다.
 
-배포본은 `tools/stage-site.mjs` 에서 한 번 더 다듬습니다 — 남아 있는 큰 인라인 `<script>` 를
-`assets/app.js` 로 빼고 주석·태그 사이 공백을 걷어냅니다(앱 스타일은 이미 원본에서
-`assets/app.css` 파일입니다 — `docs/app-split-plan.md` 1단계).
-`index.html` 628KB → 276KB, 나머지는 재방문 시 캐시. 저장소의 `index.html` 은 원본 그대로입니다.
+앱 스타일(`assets/app.css` · 1단계)과 앱 스크립트(`assets/app.js` · 2단계)는 원본부터 파일이라,
+배포본(`tools/stage-site.mjs`)은 주석·태그 사이 공백을 걷고 남은 큰 인라인 블록이 있으면
+같은 방식으로 빼냅니다. 원본 `index.html` 은 628KB → **290KB** (앱 코드 354KB 는 `assets/app.js`).
+저장소의 `index.html`·`assets/*` 는 원본 그대로입니다.
 
 ## 문서
 

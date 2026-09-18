@@ -2,9 +2,10 @@
 /**
  * toeic.monster 문구·맞춤법·TTS 감사 도구
  *
- * 화면에 보이는 모든 문구(데이터 + index.html)를 모아 아래를 점검합니다.
+ * 화면에 보이는 모든 문구(데이터 + 앱 소스)를 모아 아래를 점검합니다.
  *   1) TTS로 읽히는 문자열에 낭독이 어려운 기호가 섞였는지 (|, →, ~, 한글 등)
- *   (검사 대상: data/*.js + index.html + data/grammar-*.js 문법 교재 + data/conversation-*.js 회화 교재)
+ *   (검사 대상: data/*.js + index.html·assets/app.js + data/grammar-*.js 문법 교재 +
+ *    data/conversation-*.js 회화 교재)
  *   2) 한글 맞춤법·표기 오류 (자주 틀리는 표현 사전)
  *   3) 영문 철자 오류 (자주 틀리는 비즈니스 단어 사전)
  *   4) 공통 타이포그래피 오류 (겹친 공백, 구두점 앞 공백, 중복 단어, 전각 문자)
@@ -19,6 +20,7 @@ import fs from "node:fs";
 import path from "node:path";
 import vm from "node:vm";
 import { fileURLToPath } from "node:url";
+import { readAppSource } from "./app-source.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -64,7 +66,9 @@ function loadData() {
   };
 }
 
-const html = read("index.html");
+// 앱 배열·코드는 2026-09-18 부터 assets/app.js 파일입니다(docs/app-split-plan.md 2단계).
+// html 은 마크업 본문 검사(2-5)에, code 는 배열·코드 추출(2-4)에 씁니다.
+const { html, code } = readAppSource();
 
 function sliceBalanced(src, openIdx) {
   const open = src[openIdx];
@@ -88,11 +92,11 @@ function sliceBalanced(src, openIdx) {
 }
 
 function extractArray(name) {
-  const at = html.indexOf(`var ${name} = `);
+  const at = code.indexOf(`var ${name} = `);
   if (at === -1) return null;
-  const start = html.indexOf("[", at);
+  const start = code.indexOf("[", at);
   if (start === -1) return null;
-  const src = sliceBalanced(html, start);
+  const src = sliceBalanced(code, start);
   if (!src) return null;
   try { return vm.runInNewContext(src, {}, { timeout: 5000 }); } catch { return null; }
 }
@@ -328,9 +332,9 @@ A("DIALOGUES").forEach((d, i) => {
   (d.lines || []).forEach((l, li) => push(`DIALOGUES[${i}].line${li}`, l[2] || l[1], true));
 });
 const partBank = (() => {
-  const at = html.indexOf("var PART_BANK = ");
+  const at = code.indexOf("var PART_BANK = ");
   if (at === -1) return null;
-  const src = sliceBalanced(html, html.indexOf("{", at));
+  const src = sliceBalanced(code, code.indexOf("{", at));
   try { return vm.runInNewContext("(" + src + ")", {}, { timeout: 5000 }); } catch { return null; }
 })();
 if (partBank) {

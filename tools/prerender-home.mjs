@@ -34,13 +34,18 @@ import fs from "node:fs";
 import path from "node:path";
 import vm from "node:vm";
 import { fileURLToPath } from "node:url";
+import { readAppSource } from "./app-source.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const INDEX = "index.html";
 const CHECK_ONLY = process.argv.includes("--check");
 
 const read = (p) => fs.readFileSync(path.join(ROOT, p), "utf8");
-const html = read(INDEX);
+
+// html  — index.html (마크업 파싱 · 프리렌더 주입 대상)
+// code  — index.html + assets/app.js (앱 렌더 함수·배열 추출용)
+// 앱 스크립트는 2026-09-18 부터 assets/app.js 파일입니다(docs/app-split-plan.md 2단계).
+const { html, code } = readAppSource();
 
 /* ------------------------------------------------------------------ */
 /* 1. 미리 그릴 섹션 목록                                               */
@@ -76,15 +81,15 @@ const SECTIONS = [
    (중첩 블록은 더 깊이 들여쓰기 때문에 걸리지 않습니다.) */
 const atLineStart = (needle) => {
   const re = new RegExp(`^${needle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`, "m");
-  const m = re.exec(html);
-  if (!m) throw new Error(`index.html 에서 ${needle.trim()} 를 찾지 못했습니다.`);
+  const m = re.exec(code);
+  if (!m) throw new Error(`앱 소스에서 ${needle.trim()} 를 찾지 못했습니다.`);
   return m.index;
 };
 
 /** startAt 이후에 나오는, 들여쓰기 level 칸짜리 닫는 줄의 끝 위치를 찾습니다. */
 function endOfBlock(startAt, closer, level) {
   const line = " ".repeat(level) + closer;
-  const lines = html.slice(startAt).split("\n");
+  const lines = code.slice(startAt).split("\n");
   let offset = startAt;
   for (const text of lines) {
     if (offset > startAt && text === line) return offset + text.length;
@@ -104,17 +109,17 @@ function extractVar(name) {
   } catch {
     at = -1; // 배열이 아니라 스칼라 선언입니다(아래에서 한 줄로 처리).
   }
-  if (at >= 0) return html.slice(at, endOfBlock(at, "];", 2));
+  if (at >= 0) return code.slice(at, endOfBlock(at, "];", 2));
   const re = new RegExp(`^  var ${name} = .*;$`, "m");
-  const m = re.exec(html);
-  if (!m) throw new Error(`index.html 에서 var ${name} 선언을 찾지 못했습니다.`);
+  const m = re.exec(code);
+  if (!m) throw new Error(`앱 소스에서 var ${name} 선언을 찾지 못했습니다.`);
   return m[0];
 }
 
 /** `  function NAME(...) {...}` 정의를 통째로 떼어냅니다. */
 function extractFunction(name) {
   const at = atLineStart(`  function ${name}(`);
-  return html.slice(at, endOfBlock(at, "}", 2));
+  return code.slice(at, endOfBlock(at, "}", 2));
 }
 
 /* ------------------------------------------------------------------ */
@@ -197,17 +202,17 @@ vm.runInContext(
     extractFunction("unitProgressOf"),
   ].join("\n"),
   sandbox,
-  { filename: "index.html:helpers", timeout: 5000 },
+  { filename: "assets/app.js:helpers", timeout: 5000 },
 );
 
 /** 한 섹션을 그려서 컨테이너별 HTML 을 돌려줍니다. */
 function renderSection(section) {
   for (const id of section.ids) elementOf(id).innerHTML = "";
   for (const name of section.vars || []) {
-    vm.runInContext(extractVar(name), sandbox, { filename: `index.html:var ${name}`, timeout: 5000 });
+    vm.runInContext(extractVar(name), sandbox, { filename: `assets/app.js:var ${name}`, timeout: 5000 });
   }
-  vm.runInContext(extractFunction(section.render), sandbox, { filename: `index.html:${section.render}`, timeout: 5000 });
-  vm.runInContext(`${section.render}();`, sandbox, { filename: `index.html:${section.render}()`, timeout: 5000 });
+  vm.runInContext(extractFunction(section.render), sandbox, { filename: `assets/app.js:${section.render}`, timeout: 5000 });
+  vm.runInContext(`${section.render}();`, sandbox, { filename: `assets/app.js:${section.render}()`, timeout: 5000 });
   return section.ids.map((id) => ({ id, html: elementOf(id).innerHTML }));
 }
 

@@ -1364,3 +1364,47 @@ node tools/check-browser.mjs | grep '홈 스타일'   # 인라인 0KB · 분리 
 node -e "for (const f of ['guides/part-5-grammar.html','grammar/index.html']) { const s=require('fs').readFileSync(f,'utf8'); const t=s.replace(/<(script|style)[\s\S]*?<\/\1>/g,' ').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim(); console.log(t.length, f); }"
 ```
 
+---
+
+## 20. 15차 점검 (2026-09-18) — 앱 스크립트 분리(2단계) · 섹션 이동 표시 안정화
+
+### 20-1. 앱 스크립트를 `assets/app.js` 로 분리 ✅
+
+`index.html` 628KB → **290KB**(1,537줄). 353KB짜리 앱 `<script>` 를 `assets/app.js` 파일로 옮기고
+`index.html` 은 `<script defer src="assets/app.js"></script>` 로 부릅니다. 인라인 `<script>` 는
+첫 페인트 부트스트랩(테마) + JSON-LD 3개만 남았습니다(가장 큰 것 1.5KB).
+계획·위험·검증은 `docs/app-split-plan.md` 2단계에 정리했습니다.
+
+- `index.html` 에서 들여쓰기로 코드 블록을 떼어내던 도구 8종(`prerender-home` · `test-home-ux` ·
+  `test-grammar-quiz` · `test-tts-voice` · `audit-content` · `audit-text` · `audit-site` · `build-pages`)이
+  `tools/app-source.mjs` 의 `readAppSource()` 로 "`index.html` + `assets/app.js`" 를 같은 방식으로 읽습니다.
+- 회귀 방지: `audit-site.mjs` **3-2b-3** — 인라인 `<script>` 이 8KB 를 넘거나 `assets/app.js` 를
+  부르지 않으면 실패. `sw.js` 프리캐시에 `./assets/app.js` 추가(캐시 `v11 → v12`).
+- 실측(`npm run perf:compare`): 첫 방문 965.1KB → 963.9KB(늘지 않음) · LCP 596ms → 332ms.
+- 남은 것: 인라인 데이터 배열을 `data/app-data.js` 로 모으는 일은 위험이 커서 미뤘습니다(3단계 후보).
+
+### 20-2. 섹션 이동 「지금:」 표시가 한 박자 늦던 문제 ✅
+
+- 증상: `npm run check:browser` 의 `섹션 이동: 위치 표시가 새 섹션으로 바뀝니다` 검사가
+  **간헐적으로 실패**했습니다(같은 검사를 2회 돌려 1회 실패). 배포 후 `smoke` 작업이 랜덤하게
+  빨간불이 될 수 있는 상태였습니다.
+- 원인: `지금:` 표시는 `IntersectionObserver` 가 갱신하므로, 「다음/이전 섹션」 버튼이나 섹션 칩처럼
+  코드로 옮길 때는 스크롤이 멈춘 뒤에야 반영됐습니다. 점검은 정지 직후 값을 읽어 이전 값을 보았습니다.
+- 조치: 칩 강조·`지금:` 갱신을 `setCurrentSection(label)` 한 곳으로 모으고, 코드로 옮기는 경로
+  (`move()` · 섹션 칩 클릭)가 **곧바로** 부르게 했습니다. 점검은 고정 대기 대신 표시가 실제로 바뀔
+  때까지 기다린 뒤 잽니다.
+- 확인: `npm run check:browser` 3회 연속 통과(이전에는 간헐 실패).
+
+### 20-3. 15차 재현 방법
+
+```bash
+npm run check:ci      # 감사 3종(3-2b-2·3-2b-3 포함) + 테스트 3종 + 빌드 + 생성물 최신성
+npm run check:browser # 반복 실행 — 섹션 이동 표시가 매번 갱신되는지
+npm run check:staged  # 배포본(_site)에서도 앱 스크립트가 실행되는지
+npm run perf:compare  # 원본 vs 배포본 전송량 · FCP/LCP
+
+# 앱 스크립트가 파일인가(큰 인라인으로 되돌아갔는가)
+node tools/audit-site.mjs | grep '앱 스크립트'
+grep -o '<script defer src="assets/app.js"></script>' index.html
+```
+

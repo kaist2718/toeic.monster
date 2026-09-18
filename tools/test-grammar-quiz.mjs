@@ -19,6 +19,7 @@ import fs from "node:fs";
 import path from "node:path";
 import vm from "node:vm";
 import { fileURLToPath } from "node:url";
+import { readAppSource } from "./app-source.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const read = (p) => fs.readFileSync(path.join(ROOT, p), "utf8");
@@ -42,7 +43,8 @@ const expectedTotal = books.reduce(
 /* 2. index.html 에서 문법 문제 풀이 블록 추출                          */
 /* ------------------------------------------------------------------ */
 
-const html = read("index.html");
+// 앱 코드는 2026-09-18 부터 assets/app.js 파일입니다(docs/app-split-plan.md 2단계).
+const { code: html } = readAppSource();
 const START = "// ---------- 문법 문제 풀이 (문법 교재 연습 문제 연동) ----------";
 const start = html.indexOf(START);
 if (start === -1) {

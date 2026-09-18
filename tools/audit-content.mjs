@@ -4,7 +4,8 @@
  *
  * 콘텐츠를 추가한 뒤 아래를 자동 점검합니다.
  *   1) data/*.js 어휘·숙어·확장 콘텐츠의 형식과 중복
- *   2) index.html 안의 학습 배열(콜로케이션·혼동어휘·문법 팁 등)과 문법 교재(grammar)의 중복·형식
+ *   2) 앱 소스(index.html + assets/app.js) 안의 학습 배열(콜로케이션·혼동어휘·문법 팁 등)과
+ *      문법 교재(grammar)의 중복·형식
  *   3) 정답이 보기에 없는 문항(오타성 버그)
  *   4) data/extra.js 와 index.html 배열 사이의 중복 항목
  *   5) 사이트에 표기한 어휘 총량과 실제 데이터 수 일치 여부
@@ -19,6 +20,7 @@ import fs from "node:fs";
 import path from "node:path";
 import vm from "node:vm";
 import { fileURLToPath } from "node:url";
+import { readAppSource } from "./app-source.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -61,10 +63,12 @@ function loadData() {
 }
 
 /* ------------------------------------------------------------------ */
-/* 2. index.html 안의 `var NAME = [...]` 배열 추출                     */
+/* 2. 앱 소스(index.html + assets/app.js) 안의 `var NAME = [...]` 추출  */
 /* ------------------------------------------------------------------ */
 
-const html = read("index.html");
+// 앱 배열은 2026-09-18 부터 index.html 이 아니라 assets/app.js 에 있습니다
+// (docs/app-split-plan.md 2단계). 그래서 마크업+앱 코드를 이어 붙인 문자열에서 찾습니다.
+const { html, code } = readAppSource();
 
 /** 문자열 리터럴을 건너뛰며 괄호 균형이 맞는 지점까지 잘라낸다. */
 function sliceBalanced(src, openIdx) {
@@ -90,11 +94,11 @@ function sliceBalanced(src, openIdx) {
 
 function extractArray(name) {
   const marker = `var ${name} = `;
-  const at = html.indexOf(marker);
+  const at = code.indexOf(marker);
   if (at === -1) return null;
-  const start = html.indexOf("[", at);
+  const start = code.indexOf("[", at);
   if (start === -1) return null;
-  const src = sliceBalanced(html, start);
+  const src = sliceBalanced(code, start);
   if (!src) return null;
   try {
     return vm.runInNewContext(src, {}, { timeout: 5000 });
@@ -292,9 +296,9 @@ checkAnswerInOptions("index.html WF_QUESTIONS", inHtml.WF_QUESTIONS && inHtml.WF
 checkAnswerInOptions("index.html READING_MINI", inHtml.READING_MINI && inHtml.READING_MINI.map((q) => ({ a: q.a, opts: q.opts })));
 
 const partBank = (() => {
-  const at = html.indexOf("var PART_BANK = ");
+  const at = code.indexOf("var PART_BANK = ");
   if (at === -1) return null;
-  const src = sliceBalanced(html, html.indexOf("{", at));
+  const src = sliceBalanced(code, code.indexOf("{", at));
   try { return vm.runInNewContext("(" + src + ")", {}, { timeout: 5000 }); } catch (e) { fail("PART_BANK 평가 실패 — " + e.message); return null; }
 })();
 if (partBank) {

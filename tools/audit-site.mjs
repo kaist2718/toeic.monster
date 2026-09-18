@@ -245,6 +245,40 @@ if (!has(APP_CSS)) {
   );
 }
 
+/* 3-2b-3. 앱 스크립트도 파일로 — index.html 이 큰 인라인 <script> 로 되돌아가지 않게. */
+
+// index.html 의 앱 스크립트는 2026-09-18 부터 assets/app.js 파일입니다(docs/app-split-plan.md 2단계).
+// 다시 인라인으로 넣으면 문서가 곧바로 350KB 무거워지고, 그 <script> 를 읽는 도구가
+// 조용히 어긋나도 감사가 통과해 버립니다. 그래서 여기서 막습니다.
+// (첫 페인트용 부트스트랩·JSON-LD 는 인라인으로 남습니다 — 가장 큰 것이 약 2.5KB)
+const APP_JS = "assets/app.js";
+const INLINE_SCRIPT_MAX = 8192;
+
+if (!has(APP_JS)) {
+  fail(`${APP_JS} 이 없습니다 — index.html 의 앱 스크립트는 이 파일에 있어야 합니다.`);
+} else if (has("index.html")) {
+  const home = srcOf["index.html"] || "";
+  const inlineScripts = [...home.matchAll(/<script\b(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)].map((m) => m[1]);
+  const biggest = inlineScripts.reduce((n, body) => Math.max(n, body.length), 0);
+  if (biggest > INLINE_SCRIPT_MAX) {
+    fail(`index.html: 인라인 <script> 이 ${(biggest / 1024).toFixed(1)}KB 입니다 — ${APP_JS} 로 옮기세요.`);
+  }
+  if (!/<script\b[^>]*src="(?:\.\/)?assets\/app\.js"/.test(markOf["index.html"] || "")) {
+    fail(`index.html: ${APP_JS} 를 <script src> 로 부르지 않습니다(앱이 실행되지 않습니다).`);
+  }
+  note(
+    `앱 스크립트 ${APP_JS} ${(fs.statSync(path.join(ROOT, APP_JS)).size / 1024).toFixed(1)}KB · ` +
+      `index.html 인라인 ${(biggest / 1024).toFixed(1)}KB`,
+  );
+}
+
+// index.html + 앱 스크립트 — 앱 배열·템플릿 문자열을 보는 검사(3-2d·6-1)가 씁니다.
+// 앱 코드는 2026-09-18 부터 assets/app.js 파일이라(docs/app-split-plan.md 2단계),
+// index.html 만 보면 앱이 만드는 상자·배지 목록을 놓칩니다.
+const homeFullSource = has("index.html")
+  ? (srcOf["index.html"] || "") + "\n" + (has(APP_JS) ? read(APP_JS) : "")
+  : "";
+
 for (const page of pages.filter(isGeneratedPage)) {
   const biggest = [...srcOf[page].matchAll(/<style[^>]*>([\s\S]*?)<\/style>/gi)].reduce(
     (n, m) => Math.max(n, m[1].length),
@@ -300,7 +334,7 @@ if (skipLinkPages) note(`정적 페이지 ${skipLinkPages}개에 본문 바로�
 // 듣지 못하고, 비활성화로 초점까지 잃습니다. 상자를 만드는 곳(템플릿 문자열 포함)에 표시가
 // 빠지면 나중에 알아채기 어려우므로, 홈 소스 전체에서 상자 태그를 찾아 확인합니다.
 if (has("index.html")) {
-  const home = srcOf["index.html"] || "";
+  const home = homeFullSource;
   const boxes = [...home.matchAll(/<div class="(?:quiz-feedback|bank-feedback)"[^>]*>/g)].map((m) => m[0]);
   const missing = boxes.filter((tag) => !/aria-live="polite"/.test(tag));
   if (missing.length) {
@@ -833,7 +867,8 @@ if (!countBlocks) note("docs/*.md 에 audit:counts 블록이 없습니다(문서
    자바스크립트가 값을 다시 채우기 전이라도 틀린 숫자를 보여 주면 안 되므로
    여기서 실제 값과 대조합니다(예: 숙어를 추가했는데 홈에 “표현 0개”가 남는 일). */
 
-const homeSource = read("index.html");
+// BADGES 배열은 이제 assets/app.js 에 있습니다(위 homeFullSource).
+const homeSource = homeFullSource;
 
 const badgeBlock = (homeSource.match(/var BADGES = \[([\s\S]*?)\n\s*\];/) || [])[1] || "";
 const badgeCount = (badgeBlock.match(/\{ ico:/g) || []).length;

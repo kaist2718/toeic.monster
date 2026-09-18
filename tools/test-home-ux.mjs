@@ -33,10 +33,14 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { readAppSource } from "./app-source.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const read = (p) => fs.readFileSync(path.join(ROOT, p), "utf8");
-const html = read("index.html");
+// 앱 코드는 2026-09-18 부터 assets/app.js 파일입니다(docs/app-split-plan.md 2단계).
+// 이 테스트는 마크업과 앱 코드를 함께 보므로 두 파일을 이어 붙인 문자열을 html 로 씁니다
+// (마크업이 앞이라 위치 기반 검사는 그대로 통합니다).
+const { code: html } = readAppSource();
 const css = read("assets/app.css"); // 6-1 의 CSS 규칙 검사 대상(인라인 <style> 이 아니라 파일)
 
 let failures = 0;

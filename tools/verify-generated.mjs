@@ -4,11 +4,11 @@
  *
  * 목적: "소스만 고치고 build 를 돌리지 않은 커밋"을 잡아내는 것.
  *   대상: units/ · guides/ · grammar/ · conversation/ · assets/ · 404.html · sitemap.xml
- *         (units/… 는 tools/build-pages.mjs 산출물, assets/app.css 는 손으로 고치는 원본 —
+ *         (units/… 는 tools/build-pages.mjs 산출물, assets/app.css·app.js 는 손으로 고치는 원본 —
  *          섞여 있어도 "HEAD 와 같은가" 만 보면 되므로 함께 둡니다)
  *
  * <lastmod> 만 비교에서 제외하는 이유:
- *   sitemap.xml 의 <lastmod> 는 "data·index.html 을 마지막으로 건드린 커밋 날짜"에서 나옵니다.
+ *   sitemap.xml 의 <lastmod> 는 "data·index.html·assets/app.js 를 마지막으로 건드린 커밋 날짜"에서 나옵니다.
  *   빌드는 커밋 전에 돌리므로, 커밋이 만들어지는 순간 그 날짜가 하루 앞당겨집니다.
  *   즉 이 값을 비교 대상으로 두면 커밋 직후(그리고 CI 에서) 항상 실패합니다.
  *   실제로 잡아야 할 것은 "생성물을 커밋하지 않은 경우"이므로 <lastmod> 는 제외합니다.

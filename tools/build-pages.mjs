@@ -31,6 +31,7 @@ import path from "node:path";
 import vm from "node:vm";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { readAppSource } from "./app-source.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SITE = "https://toeic.monster";
@@ -62,14 +63,14 @@ const write = (p, s) => {
 /* 1. 데이터 읽기                                                      */
 /* ------------------------------------------------------------------ */
 
-/** index.html 안의 `var UNITS = [ ... ];` 배열을 그대로 평가해서 가져온다. */
+/** 앱 소스(index.html + assets/app.js) 안의 `var UNITS = [ ... ];` 배열을 그대로 평가해서 가져온다. */
 function loadUnitMeta() {
-  const html = read("index.html");
-  const start = html.indexOf("var UNITS = [");
-  if (start === -1) throw new Error("index.html 에서 UNITS 배열을 찾지 못했습니다.");
-  const end = html.indexOf("];", start);
+  const { code } = readAppSource();
+  const start = code.indexOf("var UNITS = [");
+  if (start === -1) throw new Error("앱 소스에서 UNITS 배열을 찾지 못했습니다.");
+  const end = code.indexOf("];", start);
   if (end === -1) throw new Error("UNITS 배열의 끝을 찾지 못했습니다.");
-  const src = html.slice(start, end + 2);
+  const src = code.slice(start, end + 2);
   const units = vm.runInNewContext(src + "\nUNITS;", {}, { timeout: 5000 });
   if (!Array.isArray(units) || !units.length) throw new Error("UNITS 배열이 비어 있습니다.");
   return units;
@@ -102,7 +103,7 @@ function loadVocab() {
 function lastModified() {
   if (process.env.BUILD_DATE) return process.env.BUILD_DATE;
   try {
-    const out = execFileSync("git", ["log", "-1", "--format=%cs", "--", "data", "index.html"], {
+    const out = execFileSync("git", ["log", "-1", "--format=%cs", "--", "data", "index.html", "assets/app.js"], {
       cwd: ROOT,
       encoding: "utf8",
       stdio: ["ignore", "pipe", "ignore"],
