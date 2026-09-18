@@ -271,8 +271,11 @@ if (!has(APP_JS)) {
     fail(`index.html: ${APP_JS} 를 <script src> 로 부르지 않습니다(앱이 실행되지 않습니다).`);
   }
   // 앱 데이터는 전역으로 선언되어 앱이 이름으로 씁니다 — 코드보다 먼저 실행되어야 합니다.
-  const atData = mark.indexOf("data/app-data.js");
-  const atApp = mark.indexOf("assets/app.js");
+  // "몇 번째 글자에 그 주소가 나오는가"가 아니라 **script 태그의 순서**로 봐야 합니다
+  // (설명 주석에 파일 이름이 먼저 나오면 순서가 뒤집힌 것처럼 보입니다).
+  const scriptOrder = [...mark.matchAll(/<script\b[^>]*src="((?:\.\/)?[^"]+)"/g)].map((m) => m[1]);
+  const atData = scriptOrder.findIndex((s) => s.endsWith(APP_DATA));
+  const atApp = scriptOrder.findIndex((s) => s.endsWith(APP_JS));
   if (!has(APP_DATA)) {
     fail(`${APP_DATA} 이 없습니다 — 앱 데이터 배열은 이 파일에 있어야 합니다.`);
   } else if (atData === -1) {

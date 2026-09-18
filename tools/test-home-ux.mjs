@@ -235,8 +235,20 @@ ${code}
 console.log("\n[3] 스크립트 로딩 (defer · extra.js 지연)");
 {
   const deferred = [...html.matchAll(/<script\s+defer\s+src="(data\/[^"]+)"/g)].map((m) => m[1]);
-  // 37개(단어 30 + 숙어 + 문법 3 + 회화 3) + data/app-data.js(앱 학습 데이터) = 38개.
-  assert(deferred.length === 38, `데이터 스크립트 38개가 defer 로 내려받습니다(현재 ${deferred.length}개)`);
+  // 32개 = 단어 30 + 숙어 + data/app-data.js(앱 학습 데이터).
+  // 문법·회화 교재 6파일은 첫 화면에 필요 없어 앱이 필요할 때 받아옵니다(loadBooks).
+  assert(deferred.length === 32, `데이터 스크립트 32개가 defer 로 내려받습니다(현재 ${deferred.length}개)`);
+  assert(
+    !deferred.some((f) => /(?:grammar|conversation)-/.test(f)),
+    "교재 데이터(문법·회화 6파일)는 첫 로드 목록에 없습니다",
+    "첫 화면에 필요 없는 78KB(gzip) 를 빼야 전송량이 줄어듭니다",
+  );
+  assert(
+    /\[\"data\/grammar-basic\.js\", \"data\/grammar-intermediate\.js\", \"data\/grammar-advanced\.js\"\]/.test(html) &&
+      /function loadBooks\(kind, cb\)/.test(html),
+    "교재 데이터는 필요할 때(loadBooks) 불러옵니다",
+    "지연 로드 코드가 없으면 교재 카드·문항이 빈 상태로 남습니다",
+  );
   assert(
     /<script\s+defer\s+src="data\/unit01\.js"><\/script>/.test(html),
     "첫 데이터 스크립트가 defer 입니다",

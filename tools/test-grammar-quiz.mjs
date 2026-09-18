@@ -159,9 +159,16 @@ check("문항 id 가 모두 유일함", dupId === 0, `중복 ${dupId}건`);
 
 /* 4-3. 단계 선택 목록 */
 const sel = els.grammarLevelSel;
+// 교재 데이터는 지연 로드라(loadBooks), 데이터가 온 뒤 applyGrammarBooks 가 단계 목록·교재 카드를 그립니다.
+// 예전에는 startApp 에서 바로 그렸는데, 그러면 교재 데이터 6파일(78KB gzip)이 첫 화면 경로에 남습니다.
 check(
-  "앱이 데이터 준비 뒤(startApp)에 단계 목록을 그리도록 호출함",
-  /function startApp\(\)[\s\S]*?renderGrammarLevelSelect\(\);/.test(html),
+  "교재 데이터가 준비되면 단계 목록을 그리도록 호출함",
+  /function applyGrammarBooks\(\)[\s\S]*?renderGrammarLevelSelect\(\);/.test(html),
+);
+check(
+  "앱이 교재 데이터를 준비 시점에 불러옴(loadBooks)",
+  /function scheduleExtendedHome\(\)[\s\S]*?loadBooks\("grammar"\);/.test(html) &&
+    /function loadBooks\(kind, cb\)/.test(html),
 );
 check("단계 선택 목록이 생성됨", !!sel && sel.innerHTML.indexOf('value="basic"') !== -1);
 check("전체 문항 수가 목록에 표시됨", !!sel && sel.innerHTML.indexOf(`${expectedTotal}문항`) !== -1);

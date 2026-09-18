@@ -1974,7 +1974,9 @@
   }
 
   // ---------- 문법 문제 풀이 (문법 교재 연습 문제 연동) ----------
+  // 교재 데이터는 지연 로드(loadBooks)라, 처음에는 빈 배열이고 데이터가 온 뒤 applyGrammarBooks 가 채웁니다.
   var GRAMMAR_BOOKS = window.GRAMMAR_BOOKS || [];
+  var CONVERSATION_BOOKS = window.CONVERSATION_BOOKS || [];
   // 틀린 문항은 단계·과·해설까지 함께 저장해 두었다가 그대로 다시 풀 수 있게 합니다.
   var grammarWrong = storeObject("toeic1000_grammarwrong");
   function saveGrammarWrong() {
@@ -2093,6 +2095,11 @@
     }
   });
   function startGrammarQuiz(wrongOnly) {
+    // 교재 데이터가 아직 안 왔으면(교재 섹션을 건너뛰고 바로 온 경우) 받은 뒤에 시작합니다.
+    if (bookState.grammar !== "ready" && bookState.grammar !== "failed") {
+      loadBooks("grammar", function () { startGrammarQuiz(wrongOnly); });
+      return;
+    }
     grammarWrongOnly = !!wrongOnly;
     if (grammarWrongOnly && !grammarWrongQuestions().length) {
       showToast("오답으로 저장된 문법 문제가 아직 없어요.");
@@ -3373,7 +3380,7 @@
     var grid = document.getElementById("grammarBookGrid");
     if (!grid) return;
     var ico = { "초급": "🟢", "중급": "🟡", "고급": "🔴" };
-    var cards = (window.GRAMMAR_BOOKS || []).map(function (b) {
+    var cards = GRAMMAR_BOOKS.map(function (b) {
       var unit = (b.chapters || []).length;
       var qs = (b.chapters || []).reduce(function (n, c) { return n + ((c.practice || []).length); }, 0);
       return '<article class="guide-card"><h3>' + (ico[b.level] || "🟡") + ' ' + esc(b.title) +
@@ -3395,7 +3402,7 @@
     var grid = document.getElementById("conversationBookGrid");
     if (!grid) return;
     var ico = { "초급": "🟢", "중급": "🟡", "고급": "🔴" };
-    var cards = (window.CONVERSATION_BOOKS || []).map(function (b) {
+    var cards = CONVERSATION_BOOKS.map(function (b) {
       var unit = (b.chapters || []).length;
       var qs = (b.chapters || []).reduce(function (n, c) { return n + ((c.practice || []).length); }, 0);
       return '<article class="guide-card"><h3>' + (ico[b.level] || "🟡") + ' ' + esc(b.title) +
@@ -3651,45 +3658,60 @@
   var wrongCsvBtn = document.getElementById("dlWrongCsv");
   if (wrongCsvBtn) wrongCsvBtn.addEventListener("click", downloadWrongCsv);
 
-  function renderExtendedHome() {
-    renderPartBank("5");
-    renderRelations();
-    renderReadings();
-    renderConfusables();
-    renderWordParts();
-    renderBadges();
-    renderMixQuiz();
-    renderPart34(false);
-    renderDoubleReading(false);
-    renderPart6(false);
-    renderWordFamilies();
-    renderMnemonics();
-    renderTemplates();
-    renderReport();
-    renderSpeakingPrompt();
-    renderWritingPrompt();
-    renderShadowing();
-    renderDday();
-    renderDdayPlan();
-    renderMiniQuiz();
-    renderFrequency("");
-    renderSprint();
-    renderDictation();
-    renderTplExtra();
-    renderSwExtra();
-    renderGrammarBooks();
-    renderConversationBooks();
-    renderGrammarWrongNote();
-    renderGuides();
-    renderPace();
-    renderBattle();
+  // 확장 홈 렌더를 한 번에 다 하면 긴 작업 하나가 생겨(F12 작업량 실측: 첫 방문에 259ms 한 덩어리)
+  // 그동안 화면이 멈춥니다. 그래서 **묶음 단위로 나눠** 브라우저가 한가한 틈에 이어서 그립니다.
+  // (순서는 그대로 — 뒤 묶음이 앞 묶음의 결과를 쓰지 않도록 지금 순서를 유지합니다.)
+  var EXTENDED_STEPS = [
+    function () { renderPartBank("5"); },
+    function () { renderRelations(); renderReadings(); },
+    function () { renderConfusables(); renderWordParts(); },
+    function () { renderBadges(); renderMixQuiz(); },
+    function () { renderPart34(false); renderDoubleReading(false); },
+    function () { renderPart6(false); renderWordFamilies(); },
+    function () { renderMnemonics(); renderTemplates(); },
+    function () { renderReport(); renderSpeakingPrompt(); renderWritingPrompt(); },
+    function () { renderShadowing(); renderDday(); renderDdayPlan(); },
+    function () { renderMiniQuiz(); renderFrequency(""); },
+    function () { renderSprint(); renderDictation(); },
+    function () { renderTplExtra(); renderSwExtra(); },
+    function () { renderGrammarBooks(); renderConversationBooks(); renderGrammarWrongNote(); },
+    function () { renderGuides(); renderPace(); renderBattle(); },
     // extra.js 데이터로 문항을 만드는 미니 퀴즈들 — 데이터가 온 뒤에 첫 렌더를 합니다(wireMiniQuiz 참고).
-    lc12Quiz.render();
-    paraQuiz.render();
-    transQuiz.render();
-    prepQuiz.render();
-    part1Quiz.render();
-    numQuiz.render();
+    function () {
+      lc12Quiz.render();
+      paraQuiz.render();
+      transQuiz.render();
+      prepQuiz.render();
+      part1Quiz.render();
+      numQuiz.render();
+    }
+  ];
+
+  /** 한 묶음을 그립니다(다른 곳에서 "확장 홈을 다 그려야 할 때" 쓰는 경로). */
+  function renderExtendedHome() {
+    EXTENDED_STEPS.forEach(function (step) {
+      try { step(); } catch (e) {}
+    });
+  }
+
+  /** 한가한 틈에 한 묶음씩 — 한 번에 쓰는 시간을 묶음 하나로 제한합니다. */
+  function renderExtendedSlices() {
+    var i = 0;
+    function next(fn) {
+      if (window.requestIdleCallback) window.requestIdleCallback(fn, { timeout: 500 });
+      else setTimeout(function () { fn(null); }, 40);
+    }
+    function pump(deadline) {
+      var started = Date.now();
+      // 시간이 남아 있으면 이어서 그리고, 8ms 를 넘기면 다음 한가한 때로 미룹니다.
+      // (묶음 하나가 유난히 무거워도 긴 작업이 한 번에 쌓이지 않습니다.)
+      do {
+        var step = EXTENDED_STEPS[i++];
+        try { step(); } catch (e) {}
+      } while (i < EXTENDED_STEPS.length && Date.now() - started < 8);
+      if (i < EXTENDED_STEPS.length) next(pump);
+    }
+    next(pump);
   }
   function renderHome() {
     activeView = "homeView";
@@ -4992,6 +5014,73 @@
   // ---------- 확장 콘텐츠(data/extra.js) 지연 로드 ----------
   // 첫 화면에 필요 없는 167KB 라, 브라우저가 한가해지거나 그 내용이 필요해질 때 받아옵니다.
   // 서비스워커가 설치 때 미리 캐시해 두므로 두 번째 방문부터는 즉시 로드됩니다.
+  // ---------- 교재 데이터(문법·회화 6파일) 지연 로드 ----------
+  // index.html 이 부르지 않으므로(첫 화면에 필요 없음) 앱이 필요한 순간에 받아옵니다.
+  //   · 홈의 교재 카드  → 그 섹션이 화면에 들어올 때(미리 700px 앞에서)
+  //   · 문법·회화 학습  → 교재 데이터가 있어야 단계 목록·문항이 만들어집니다
+  // 서비스워커 프리캐시(DATA_ASSETS)에는 그대로 있으므로, 한 번 본 뒤에는 오프라인에서도 즉시 로드됩니다.
+  var BOOK_FILES = {
+    grammar: ["data/grammar-basic.js", "data/grammar-intermediate.js", "data/grammar-advanced.js"],
+    conversation: ["data/conversation-basic.js", "data/conversation-intermediate.js", "data/conversation-advanced.js"]
+  };
+  var bookState = { grammar: "idle", conversation: "idle" };
+  var bookWaiters = { grammar: [], conversation: [] };
+  function applyGrammarBooks() {
+    GRAMMAR_BOOKS = window.GRAMMAR_BOOKS || [];
+    renderGrammarLevelSelect();
+    renderGrammarWrongNote();
+    renderGrammarBooks();
+    renderGrammarChapterHint();
+  }
+  function applyConversationBooks() {
+    CONVERSATION_BOOKS = window.CONVERSATION_BOOKS || [];
+    renderConversationBooks();
+  }
+  function bookDone(kind) {
+    if (kind === "grammar") applyGrammarBooks();
+    else applyConversationBooks();
+    var waiters = bookWaiters[kind];
+    bookWaiters[kind] = [];
+    waiters.forEach(function (fn) { try { fn(); } catch (e) {} });
+  }
+  /** 교재 데이터를 받아옵니다. 이미 있으면 곧바로 cb 를 부릅니다. */
+  function loadBooks(kind, cb) {
+    if (bookState[kind] === "ready" || bookState[kind] === "failed") { if (cb) cb(); return; }
+    if (cb) bookWaiters[kind].push(cb);
+    if (bookState[kind] === "loading") return;
+    bookState[kind] = "loading";
+    var files = BOOK_FILES[kind];
+    var i = 0;
+    (function next() {
+      if (i >= files.length) { bookState[kind] = "ready"; bookDone(kind); return; }
+      var s = document.createElement("script");
+      s.src = files[i++];
+      s.onload = next;
+      // 못 받아와도 앱은 그대로 동작합니다(교재 카드·문항이 비어 보일 뿐입니다).
+      s.onerror = function () {
+        if (i >= files.length) { bookState[kind] = "failed"; bookDone(kind); }
+        else next();
+      };
+      document.head.appendChild(s);
+    })();
+  }
+  /** 교재 카드·퀴즈가 화면에 들어오려 할 때 받아옵니다(스크롤 전에 미리). */
+  function watchBookSections() {
+    if (!("IntersectionObserver" in window)) { loadBooks("grammar"); loadBooks("conversation"); return; }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) loadBooks(entry.target.getAttribute("data-books"));
+      });
+    }, { rootMargin: "700px 0px" });
+    var triggers = { grammar: ["grammarBookGrid", "grammarBox"], conversation: ["conversationBookGrid"] };
+    Object.keys(triggers).forEach(function (kind) {
+      triggers[kind].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) { el.setAttribute("data-books", kind); io.observe(el); }
+      });
+    });
+  }
+
   var extraScriptState = "idle"; // idle | loading | ready | failed
   var extraWaiters = [];
   function finishExtra(state) {
@@ -5014,7 +5103,12 @@
   }
 
   function scheduleExtendedHome() {
-    var run = function () { loadExtra(renderExtendedHome); };
+    var run = function () {
+      // 교재 데이터도 첫 화면이 뜬 뒤에 받아 둡니다(카드·퀴즈가 필요로 하기 전에 미리).
+      loadBooks("grammar");
+      loadBooks("conversation");
+      loadExtra(renderExtendedSlices);
+    };
     if (window.requestIdleCallback) window.requestIdleCallback(run, { timeout: 2500 });
     else setTimeout(run, 250);
   }
@@ -5026,8 +5120,10 @@
     IDIOMS = window.VOCAB_IDIOMS || [];
     GRAMMAR_BOOKS = window.GRAMMAR_BOOKS || [];
     if (window.TOEIC_EXTRA) { EXTRA = window.TOEIC_EXTRA; applyExtraData(); }
-    renderGrammarLevelSelect();
+    // 교재 단계 목록은 교재 데이터(지연 로드)가 온 뒤에 그립니다 — applyGrammarBooks 참고.
+    // 오답노트는 브라우저에 저장된 문항만 쓰므로 지금 그려도 됩니다.
     renderGrammarWrongNote();
+    watchBookSections();
     collectUnits();
     syncLevelButtons();
     // 단어 목록(1,000장 카드)은 홈이 아니라 사용자가 목록을 처음 열 때 그립니다(showListView).
@@ -5040,6 +5136,19 @@
     openFromQuery();
     // 초기 렌더(오늘의 학습 등)가 끝난 뒤에 이동해야 위치가 어긋나지 않습니다.
     setTimeout(function () {
+      // 교재 페이지에서 넘어온 흐름(?level=·&ch=)이면 교재 데이터가 먼저 필요합니다
+      // (지연 로드라 아직 안 왔을 수 있습니다). 받은 뒤에 단계·과를 해석하고 풀이로 들어갑니다.
+      var cfg = parseDeepLink(location.search);
+      if (cfg && bookState.grammar === "idle") {
+        loadBooks("grammar", function () {
+          var started = applyLevelQuery();
+          if (!started) {
+            goToHash(location.hash);
+            applyViewFromHistory();
+          }
+        });
+        return;
+      }
       var started = applyLevelQuery();
       if (!started) {
         goToHash(location.hash);

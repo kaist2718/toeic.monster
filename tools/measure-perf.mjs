@@ -228,8 +228,18 @@ const send = (method, params = {}) =>
  * (CDP 를 넘길 때 줄바꿈은 이스케이프하지 않고 그대로 넣습니다 — 문자열 안에 넣지 않습니다.)
  */
 const BOOTSTRAP = `
-window.__perf = { lcp: 0, cls: 0, fcp: 0 };
+window.__perf = { lcp: 0, cls: 0, fcp: 0, longTasks: 0, longMs: 0, idleUntil: 0 };
 try {
+  // 첫 화면이 뜬 뒤 브라우저가 얼마나 오래 \"바쁴\" 수 있는지를 보려고 긴 작업(long task · 50ms 이상)을 셽니다.
+  // 데이터·섹션 렌더를 뒤로 미루는 일의 효과는 전송량이 아니라 이 값으로 드러납니다.
+  new PerformanceObserver(function (list) {
+    list.getEntries().forEach(function (e) {
+      window.__perf.longTasks++;
+      window.__perf.longMs += Math.round(e.duration);
+      // 마지막 긴 작업이 끝난 시점 — \"첫 입력이 먹기 시작하는 시간\"의 근사치입니다.
+      window.__perf.idleUntil = Math.round(e.startTime + e.duration);
+    });
+  }).observe({ type: "longtask", buffered: true });
   new PerformanceObserver(function (list) {
     list.getEntries().forEach(function (e) {
       if (e.startTime > window.__perf.lcp) window.__perf.lcp = e.startTime;
@@ -305,11 +315,30 @@ async function visit({ label, url, reload }) {
           cls: Number((p.cls || 0).toFixed(3)),
           dcl: Math.round(nav.domContentLoadedEventEnd || 0),
           load: Math.round(nav.loadEventEnd || 0),
+          longTasks: p.longTasks || 0,
+          longMs: p.longMs || 0,
+          idleUntil: p.idleUntil || 0,
+          nodes: document.getElementsByTagName("*").length,
+          scripts: document.scripts.length,
         };
       })()`,
       returnByValue: true,
     });
     return r.result?.result?.value || {};
+  })();
+
+  // 브라우저가 문서를 그리는 데 쓴 작업 시간(스크립트·레이아웃·스타일) — 전송량과 별개로 "가벼운가"를 봅니다.
+  const engine = await (async () => {
+    const r = await send("Performance.getMetrics");
+    const m = new Map((r.result?.metrics || []).map((x) => [x.name, x.value]));
+    const ms = (name) => Math.round((m.get(name) || 0) * 1000);
+    return {
+      scriptMs: ms("ScriptDuration"),
+      taskMs: ms("TaskDuration"),
+      layoutMs: ms("LayoutDuration"),
+      styleMs: ms("RecalcStyleDuration"),
+      heapKB: Math.round((m.get("JSHeapUsedSize") || 0) / 1024),
+    };
   })();
 
   return {
@@ -319,6 +348,7 @@ async function visit({ label, url, reload }) {
     biggest,
     byKind,
     perf,
+    engine,
     cached: cache.disk.length + cache.serviceWorker.length + cache.memory.length,
     cache,
   };
@@ -342,7 +372,14 @@ const kindsLine = (r) => {
   return `  종류별: ${top.join(" · ")}`;
 }
 
-const fmtMs = (v) => `${v}ms`;  const line = (r) =>
+const fmtMs = (v) => `${v}ms`;
+/** 시작 작업량 — 첫 화면이 뜬 뒤 브라우저가 쓰는 시간(전송량과 별개인 "가벼움" 지표). */
+const engineLine = (r) =>
+  `  작업량: 긴 작업 ${r.perf.longTasks}개 · ${r.perf.longMs}ms · 마지막 ${r.perf.idleUntil}ms` +
+  ` · 스크립트 실행 ${r.engine.scriptMs}ms · 레이아웃 ${r.engine.layoutMs}ms` +
+  ` · DOM 노드 ${r.perf.nodes.toLocaleString("en-US")}개 · 힙 ${r.engine.heapKB}KB`;
+
+const line = (r) =>
   `${r.label.padEnd(8)} 요청 ${String(r.requests).padStart(3)}개 · 전송 ${KB(r.bytes).padStart(9)}` +
   ` · 캐시 ${String(r.cached).padStart(3)}개` +
   ` · TTFB ${fmtMs(r.perf.ttfb)} · FCP ${fmtMs(r.perf.fcp)} · LCP ${fmtMs(r.perf.lcp)}` +
@@ -366,6 +403,7 @@ async function measure(target, { fresh = false } = {}) {
 await send("Runtime.enable");
 await send("Page.enable");
 await send("Network.enable");
+await send("Performance.enable"); // 작업 시간(스크립트·레이아웃·스타일)·힙 — "가벼운가"를 보는 지표
 await send("Emulation.setDeviceMetricsOverride", { width: 1100, height: 820, deviceScaleFactor: 1, mobile: false });
 await send("Page.addScriptToEvaluateOnNewDocument", { source: BOOTSTRAP });
 
@@ -390,6 +428,7 @@ for (const [name, r] of results) {
   console.log(`[${name}]`);
   console.log(`  ${line(r.cold)}`);
   console.log(kindsLine(r.cold));
+  console.log(engineLine(r.cold));
   console.log(`  ${line(r.warm)}`);
   console.log(
     `  큰 파일: ` + r.cold.biggest.map((b) => `${b.url.replace(/^https?:\/\/[^/]+/, "")} ${KB(b.bytes)}`).join(" · "),

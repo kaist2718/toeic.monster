@@ -160,12 +160,10 @@
 <script defer src="data/unit29.js"></script>
 <script defer src="data/unit30.js"></script>
 <script defer src="data/idioms.js"></script>
-<script defer src="data/grammar-basic.js"></script>
-<script defer src="data/grammar-intermediate.js"></script>
-<script defer src="data/grammar-advanced.js"></script>
-<script defer src="data/conversation-basic.js"></script>
-<script defer src="data/conversation-intermediate.js"></script>
-<script defer src="data/conversation-advanced.js"></script>
+<!-- 문법·회화 교재 데이터 6파일(합쳐 gzip 약 78KB)은 여기서 부르지 않습니다.
+     첫 화면에는 필요 없고(교재 카드는 그 섹션이 화면에 들어올 때, 퀴즈는 그 화면을 열 때 필요),
+     첫 로드에서 빼면 요청 6개와 파싱만큼이 가벼워집니다. 앱이 필요할 때 받아옵니다
+     (assets/app.js 의 loadBooks · 서비스워커 프리캐시에는 그대로 있어 오프라인도 그대로입니다). -->
 <script defer src="data/app-data.js"></script>
 </head>
 <body>
