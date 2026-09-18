@@ -9,6 +9,7 @@
  *   3) 정답이 보기에 없는 문항(오타성 버그)
  *   4) data/extra.js 와 index.html 배열 사이의 중복 항목
  *   5) 사이트에 표기한 어휘 총량과 실제 데이터 수 일치 여부
+ *   6) LC 파트별 커버리지(실제 시험 문항 수 대비 50% 이상인지 — docs/content-roadmap.md 7절)
  *
  * 실행:  node tools/audit-content.mjs
  * 종료 코드: 문제가 있으면 1, 없으면 0 (CI·커밋 전 점검용)
@@ -341,6 +342,48 @@ if (fs.existsSync(unitPage)) {
 }
 
 /* ------------------------------------------------------------------ */
+/* 4-2. LC 파트별 커버리지 (실제 시험 문항 수 대비)                     */
+/* ------------------------------------------------------------------ */
+
+// docs/content-roadmap.md 7절 지표 — "LC 파트별 50% 이상".
+// 실제 구성: Part 1 6문항 · Part 2 25문항 · Part 3 39문항 · Part 4 30문항.
+// 여기서 세는 것은 파트별 **보유 문항**이고, 50% 아래로 떨어지면 실패로 알립니다.
+const LC_REAL = { part1: 6, part2: 25, part3: 39, part4: 30 };
+
+// Part 3·4 세트는 앱 소스의 PART34_SETS 에 있습니다(세트마다 kind · qs).
+// 파일을 통째로 실행하지 않고 블록만 잘라 세트/문항 수를 셉니다(실행은 무거운 작업이라 부담).
+const part34Block = (() => {
+  const start = code.indexOf("var PART34_SETS = [");
+  if (start < 0) return "";
+  const end = code.indexOf("\n  ];", start);
+  return code.slice(start, end < 0 ? code.length : end);
+})();
+const part34Sets = part34Block.split(/\{\s*title:/).slice(1).map((chunk) => ({
+  kind: (chunk.match(/kind: "([^"]+)"/) || [])[1] || "",
+  // qs 배열 안의 문항(객체) 수 — `q: "` 로 나옵니다.
+  questions: (chunk.match(/\bq: "/g) || []).length,
+}));
+const lcOwned = {
+  part1: (extra.part1 || []).length,
+  part2: (extra.traps || []).length,
+  part3: part34Sets.filter((s) => s.kind === "대화").reduce((n, s) => n + s.questions, 0),
+  part4: part34Sets.filter((s) => s.kind === "담화").reduce((n, s) => n + s.questions, 0),
+};
+const coverage = Object.entries(LC_REAL).map(([part, real]) => {
+  const owned = lcOwned[part] || 0;
+  return { part, owned, real, pct: Math.round((owned / real) * 100) };
+});
+
+for (const c of coverage) {
+  if (c.pct < 50) {
+    fail(
+      `LC 커버리지가 50% 아래입니다 — ${c.part.replace("part", "Part ")} ${c.owned}/${c.real}문항(${c.pct}%)\n` +
+        "     → data/extra.js 의 traps(Part 2)·app.js 의 PART34_SETS(Part 3·4)에 문항을 보충하세요.",
+    );
+  }
+}
+
+/* ------------------------------------------------------------------ */
 /* 5. 리포트                                                           */
 /* ------------------------------------------------------------------ */
 
@@ -360,6 +403,11 @@ if (conversation.length) {
   console.log(`   · 회화 교재: ${conversation.map((b) => `${b.level} ${b.chapters.length}과`).join(", ")} (총 ${ch}과 · 연습 ${q}문항)`);
 }
 if (partBank) console.log(`   · PART_BANK: ${Object.entries(partBank).map(([k, v]) => `Part ${k} ${v.length}문항`).join(", ")}`);
+console.log(
+  `   · LC 커버리지: ` +
+    coverage.map((c) => `${c.part.replace("part", "Part ")} ${c.owned}/${c.real}(${c.pct}%)`).join(" · ") +
+    ` · Part 3·4 세트 ${part34Sets.length}개`,
+);
 if (notes.length) {
   console.log("\nℹ️  참고 (실패 아님)");
   notes.forEach((n) => console.log("   - " + n));
