@@ -4,7 +4,8 @@
  *
  * 목적: "소스만 고치고 build 를 돌리지 않은 커밋"을 잡아내는 것.
  *   대상: units/ · guides/ · grammar/ · conversation/ · assets/ · 404.html · sitemap.xml
- *         (모두 tools/build-pages.mjs 산출물)
+ *         (units/… 는 tools/build-pages.mjs 산출물, assets/app.css 는 손으로 고치는 원본 —
+ *          섞여 있어도 "HEAD 와 같은가" 만 보면 되므로 함께 둡니다)
  *
  * <lastmod> 만 비교에서 제외하는 이유:
  *   sitemap.xml 의 <lastmod> 는 "data·index.html 을 마지막으로 건드린 커밋 날짜"에서 나옵니다.

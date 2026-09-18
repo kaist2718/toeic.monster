@@ -20,7 +20,7 @@ idioms = 126
 |---|---|
 | 호스팅 | 정적 (GitHub Pages, `CNAME`) — **서버 없음** |
 | 학습 데이터 | 브라우저 `localStorage`에만 저장 |
-| 코드 구조 | `index.html` 단일 파일(인라인 CSS/JS, 8천 줄 규모) + 사전 렌더링 `units/*.html` + `data/*.js` |
+| 코드 구조 | `index.html` 단일 파일(인라인 앱 스크립트, 8천 줄 규모) + `assets/app.css` + 사전 렌더링 `units/*.html` + `data/*.js` |
 | 현재 포지션 | "웹에서 제공하는 학습 기능은 모두 무료입니다…" (`index.html` 의 FAQPage JSON-LD + 화면 FAQ 섹션) |
 
 **핵심 원칙**

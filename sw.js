@@ -1,8 +1,11 @@
 /* toeic.monster Service Worker - 오프라인 학습 지원 */
-var CACHE_NAME = "toeic-monster-v10";
+var CACHE_NAME = "toeic-monster-v11";
 var CORE_ASSETS = [
   "./",
   "./index.html",
+  // 앱 스타일 — index.html 이 더 이상 인라인으로 들고 있지 않으므로 파일로 함께 담습니다
+  // (없으면 오프라인에서 스타일 없는 화면이 됩니다).
+  "./assets/app.css",
   "./manifest.webmanifest",
   "./icon.svg",
   "./icon-192.png",

@@ -4,7 +4,7 @@
  *
  * 왜 필요한가:
  *   "가벼워졌다"는 말은 숫자로 확인해야 합니다. 특히 `tools/stage-site.mjs` 가 배포본에서
- *   인라인 CSS·JS 를 파일로 빼는데, 이것이 실제로 (1) 첫 방문을 무겁게 하지 않고
+ *   인라인 JS 를 파일로 빼는데, 이것이 실제로 (1) 첫 방문을 무겁게 하지 않고
  *   (2) 재방문을 가볍게 하는지 봐야 합니다. 캐시에 담기는지도 함께 봅니다.
  *
  * 하는 일:
@@ -13,7 +13,7 @@
  *   3) 가장 큰 파일 몇 개 (압축된 크기 기준)
  *
  * 실행:
- *   node tools/measure-perf.mjs                    # 저장소 루트(원본 — 인라인 그대로)
+ *   node tools/measure-perf.mjs                    # 저장소 루트(원본 — 앱 스크립트는 아직 인라인)
  *   node tools/measure-perf.mjs --site-root _site  # 배포본(분리·최소화된 결과)
  *   node tools/measure-perf.mjs --live             # 배포된 사이트
  *   node tools/measure-perf.mjs --compare          # 원본 vs _site 를 한 번에 재고 차이를 표로

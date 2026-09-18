@@ -213,6 +213,11 @@ footer.ft p{margin-top:8px}
 .jump>summary::after{content:"▾";margin-left:8px;font-size:11px}
 .jump[open]>summary::after{content:"▴"}
 .jump-body{padding:14px 0 0}
+/* 본문 바로가기 — 정적 페이지는 상단바(사이트명·설명)가 앞에 있어, 키보드 사용자가
+   페이지마다 Tab 을 여러 번 눌러야 본문에 닿습니다. 첫 Tab 에서 나타나게 합니다.
+   평소에는 화면 밖(left:-9999px)에 두어 레이아웃을 건드리지 않습니다. */
+.skip-link{position:absolute;left:-9999px;top:0;z-index:100;background:var(--primary-solid);color:#fff;padding:10px 16px;border-radius:0 0 8px 0;font-size:14px;font-weight:700;text-decoration:none}
+.skip-link:focus{left:0}
 .totop{display:inline-flex;align-items:center;min-height:44px;padding:9px 12px;font-weight:700;font-size:13px;text-decoration:none}
 .gram{margin:30px 0 0;padding-top:6px}
 .gram-head{display:flex;align-items:baseline;gap:10px;border-bottom:2px solid var(--border);padding-bottom:8px;margin-bottom:10px}
@@ -401,13 +406,14 @@ ${ld}
 </script>
 </head>
 <body id="top">
+<a class="skip-link" href="#main">본문으로 바로가기</a>
 <header class="bar">
   <div class="wrap">
     <a href="../">toeic.monster</a>
     <small>발음·예문으로 외우는 TOEIC 필수 어휘 1,000</small>
   </div>
 </header>
-<main class="wrap">
+<main class="wrap" id="main">
 ${body}
 </main>
 <footer class="ft wrap">
@@ -754,7 +760,17 @@ ${guides
     </a></li>`,
   )
   .join("\n")}
-  </ul>`;
+  </ul>
+
+  <h2 class="sec">어떤 순서로 읽으면 좋을까요</h2>
+  <p class="lead">아홉 편은 따로 봐도 되지만, 약한 파트부터 이어서 보면 더 빠릅니다. 지금 점수가 막힌 지점에서 시작하세요.</p>
+  <ol class="words">
+    <li><span class="w-mean"><b>RC 기초가 약하다면</b> Part 5 빈출 문법 → 어형 변화 → 접속사·전치사 구분법 순서로 보세요. 세 편이 같은 빈칸 문제를 서로 다른 각도에서 다룹니다.</span></li>
+    <li><span class="w-mean"><b>긴 지문에서 시간이 모자라다면</b> Part 6 장문 공란 → Part 7 복수 지문 순서로 보세요. 지문을 읽는 순서와 시간 배분을 먼저 정하는 것이 핵심입니다.</span></li>
+    <li><span class="w-mean"><b>LC 점수가 정체되어 있다면</b> Part 2 함정 유형 → LC 숫자·금액·시간 순서로 보세요. 듣기에서 실수하는 지점은 대부분 이 두 가지입니다.</span></li>
+    <li><span class="w-mean"><b>단어가 부족하다면</b> 30일 커리큘럼으로 계획을 세우고, 하루 분량을 줄이더라도 매일 이어 가세요.</span></li>
+    <li><span class="w-mean"><b>900점 이상을 목표로 한다면</b> Speaking·Writing 유형 정리로 4기능 점수까지 함께 준비하세요.</span></li>
+  </ol>`;
 
   return { file: "guides/index.html", html: page({ title, description, canonical, ld, body, footerNav: GUIDE_FOOTER }) };
 }
@@ -939,6 +955,29 @@ function buildGrammarHub(books) {
     ],
   });
 
+  // 단계별 소개·학습 목표·과 목차를 허브에서 바로 보여 줍니다.
+  // 학습자는 "어느 단계부터 볼지"를 정하려고 페이지를 옮겨 다니지 않아도 되고,
+  // 검색엔진에는 과별 페이지로 가는 링크가 허브 한 곳에 모입니다.
+  const bookSections = books
+    .map(
+      (b) => `  <details class="jump">
+    <summary>${LEVEL_ICON[b.level] || "🟡"} ${esc(b.level)} · CEFR ${esc(b.cefr || "")} — ${esc(b.title)} (${b.chapters.length}과)</summary>
+    <div class="jump-body">
+      <p class="lead">${esc(b.desc || b.subtitle)}</p>
+      <p><b>이런 분께</b> ${esc(b.audience || "")}</p>
+      <p><b>학습 목표</b> ${esc(b.goal || "")}</p>
+      <ol class="words">
+${(b.howto || []).map((t) => `        <li><span class="w-mean">${esc(t)}</span></li>`).join("\n")}
+      </ol>
+      <a class="cta" href="${b.id}.html">📘 ${esc(b.title)} 열기</a>
+      <ul class="toc">
+${chapterLinkList(b)}
+      </ul>
+    </div>
+  </details>`,
+    )
+    .join("\n");
+
   const body = `  <nav class="crumb" aria-label="breadcrumb">
     <a href="../">toeic.monster</a> › <span>문법 교재</span>
   </nav>
@@ -961,11 +1000,41 @@ ${books
   .join("\n")}
   </ul>
 
+  <h2 class="sec">한눈에 보기</h2>
+  <ol class="words">
+    <li><span class="w-mean">기초·중급·고급 3단계, 모두 ${totalCh}과입니다.</span></li>
+    <li><span class="w-mean">과마다 개념 설명 · 형태 표 · 예문 · 흔한 실수 · 연습 문제로 구성됩니다.</span></li>
+    <li><span class="w-mean">연습 문제는 모두 ${totalQ}문항이고, 앱에서 단계와 문항 수를 골라 풀 수 있습니다.</span></li>
+    <li><span class="w-mean">설치나 가입 없이 모든 페이지를 무료로 열 수 있고, 학습 기록은 브라우저에만 저장됩니다.</span></li>
+  </ol>
+
+  <h2 class="sec">단계별 안내</h2>
+  <p class="lead">각 단계를 눌러 학습 목표와 과별 목차를 확인하세요. 과 제목을 누르면 그 과만 따로 볼 수 있습니다.</p>
+${bookSections}
+
   <h2 class="sec">학습 순서</h2>
   <ol class="words">
-    <li><span class="w-mean">기초 영문법으로 문장의 뼈대와 기본 시제를 먼저 정리합니다.</span></li>
+    <li><span class="w-mean">기초 영문법으로 문장의 뼈대(주어·동사)와 기본 시제를 먼저 정리합니다.</span></li>
     <li><span class="w-mean">중급 영문법에서 완료시제·수동태·관계사·준동사를 익힙니다.</span></li>
-    <li><span class="w-mean">고급 영문법으로 도치·강조·문어체 표현을 다듬습니다.</span></li>
+    <li><span class="w-mean">고급 영문법으로 도치·강조·분사구문 같은 문어체 표현을 다듬습니다.</span></li>
+    <li><span class="w-mean">과를 읽은 직후에 그 과의 연습 문제를 풀고, 틀린 과만 다음 날 다시 봅니다.</span></li>
+    <li><span class="w-mean">한 장 요약으로 전체 형태를 확인한 뒤, 앱의 문법 문제로 실전 감각을 유지합니다.</span></li>
+  </ol>
+
+  <h2 class="sec">연습 문제 활용법</h2>
+  <ol class="words">
+    <li><span class="w-mean">개념을 읽은 직후에 바로 풀면 가장 오래 남습니다. 과를 넘긴 뒤에 몰아 풀면 효과가 떨어집니다.</span></li>
+    <li><span class="w-mean">앱의 "문법 문제 풀이"에서 단계와 문항 수(5 · 8 · 10 · 20 · 전체)를 골라 풀 수 있습니다.</span></li>
+    <li><span class="w-mean">틀린 문항은 오답노트에 쌓이고, 정답·해설과 함께 완성 문장을 소리 내어 들을 수 있습니다.</span></li>
+    <li><span class="w-mean">점수가 오르지 않으면 새 단계로 넘어가지 말고 같은 과의 문제를 다시 풉니다.</span></li>
+  </ol>
+
+  <h2 class="sec">자주 묻는 질문</h2>
+  <ol class="words">
+    <li><span class="w-mean"><b>문법을 처음 시작한다면 어디서부터 보면 되나요?</b> 기초 영문법 1과부터 순서대로 보세요. 문법 용어가 낯설어도 형태 표와 예문만 따라가면 이해할 수 있게 썼습니다.</span></li>
+    <li><span class="w-mean"><b>하루에 몇 과씩 보면 좋나요?</b> 하루 1과를 권합니다. 개념 읽기 10분, 연습 문제 7분이면 한 과가 끝납니다.</span></li>
+    <li><span class="w-mean"><b>교재와 앱의 문제가 같은 문항인가요?</b> 개념은 같지만 문항은 다릅니다. 교재로 개념을 잡고 앱에서 반복해 푸는 구조입니다.</span></li>
+    <li><span class="w-mean"><b>학습 기록이 서버로 전송되나요?</b> 전송되지 않습니다. 기록은 브라우저(localStorage)에만 저장되고, 초기화하면 바로 지워집니다.</span></li>
   </ol>`;
 
   return { file: "grammar/index.html", html: page({ title, description, canonical, ld, body, footerNav: GRAMMAR_FOOTER }) };
@@ -1614,14 +1683,15 @@ function build404Page() {
 <link rel="preconnect" href="https://cloud.umami.is" crossorigin>
 <script async defer src="https://cloud.umami.is/script.js" data-website-id="04c3b8cf-c418-4a70-8549-9f21e09b8cbf"><\/script>
 </head>
-<body>
+<body id="top">
+<a class="skip-link" href="#main">본문으로 바로가기</a>
 <header class="bar">
   <div class="wrap">
     <a href="/">toeic.monster</a>
     <small>발음·예문으로 외우는 TOEIC 필수 어휘 1,000</small>
   </div>
 </header>
-<main class="wrap">
+<main class="wrap" id="main">
   <h1>페이지를 찾을 수 없습니다</h1>
   <p class="lead">주소가 바뀌었거나 오타가 있을 수 있습니다. 아래 학습 자료는 그대로 볼 수 있습니다.</p>
   <p><a class="cta" href="/">홈으로 가서 학습 시작하기</a></p>

@@ -29,11 +29,13 @@
  * 외부 의존성 없음(Node 내장 모듈만 사용).
  *
  * 서빙 범위 (주의):
- *   이 서버는 프로젝트 루트를 그대로 서빙합니다. GitHub Pages 도 main 브랜치 루트를
- *   그대로 배포하므로 tools/·promo/·docs/·package.json 같은 운영 파일도 함께 공개됩니다.
- *   (검색 색인은 robots.txt 의 Disallow 로 막아 두었습니다.)
- *   .git/ 과 promo/config.json·.secrets/ 도 로컬 서버로는 읽히므로, 이 서버를
- *   127.0.0.1 밖으로 열지 마세요.
+ *   이 서버는 로컬 확인용으로 프로젝트 루트를 그대로 서빙합니다(배포와 같은 경로 구조).
+ *   다만 **배포본은 다릅니다** — `.github/workflows/deploy.yml` 이 `tools/stage-site.mjs` 로
+ *   공개 목록만 추려 `_site/` 를 만들고 **그 폴더만** GitHub Pages 에 올립니다.
+ *   그래서 tools/·promo/·docs/·package.json 은 인터넷에 공개되지 않습니다
+ *   (robots.txt 의 Disallow 로 막을 필요 없이 배포본에 아예 들어가지 않습니다).
+ *   이 서버만 루트를 그대로 읽으므로 .git/ 과 promo/config.json·.secrets/ 도 로컬에서는
+ *   열립니다 — 127.0.0.1 밖으로 열지 마세요.
  */
 
 import http from "node:http";

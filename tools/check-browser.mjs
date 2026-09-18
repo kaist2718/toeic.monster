@@ -606,8 +606,8 @@ try {
     note(`다른 출처 자원 ${externalFailed.length}건이 응답하지 않았습니다 — 우리 자산은 아닙니다 (${externalFailed[0]})`);
   }
 
-  /* 홈 스타일의 출처 — 원본은 index.html 안의 <style>, 배포본(_site)은 tools/stage-site.mjs 가
-     assets/app.css 로 분리합니다. 어느 쪽이든 실제로 적용되어야 합니다(분리 뒤 경로가 틀리면 화면이 무너집니다). */
+  /* 홈 스타일의 출처 — index.html 이 assets/app.css 를 <link> 로 부릅니다(원본·배포본 공통 ·
+     docs/app-split-plan.md 1단계). 경로가 틀리면 화면이 통째로 무너지므로 여기서 확인합니다. */
   const homeStyle = await evaluate(`(() => {
     const cs = getComputedStyle(document.documentElement);
     const read = (n) => cs.getPropertyValue(n).trim();
@@ -818,6 +818,30 @@ try {
       // 공용 스타일이 실제로 붙었는지 — 파일이 404 면 .wrap 의 max-width 가 사라집니다.
       check(wide.sheets.includes("site.css"), `${label}(${file}): 공용 스타일(site.css)을 불러옵니다`);
       check(wide.wrapMax === "880px", `${label}(${file}): 공용 스타일이 적용됩니다 (.wrap max-width ${wide.wrapMax})`);
+
+      // 본문 바로가기 — 정적 페이지는 상단바가 앞에 있어 키보드 사용자가 페이지마다 Tab 을
+      // 세 번씩 눌러야 본문에 닿습니다. ① 문서에서 첫 번째 초점 대상이어야 하고,
+      // ② 초점을 받으면 화면 안으로 들어와야 합니다(화면 밖에 두는 숨김이라 표시가 없으면
+      // 눌러도 보이지 않습니다). ③ 가리키는 곳이 실제 <main> 이어야 합니다.
+      const skip = await evaluate(`(() => {
+        const link = document.querySelector("a.skip-link");
+        if (!link) return { found: false };
+        const first = document.querySelectorAll("a[href], button, select, input, textarea, [tabindex]:not([tabindex='-1'])")[0];
+        const target = document.getElementById("main");
+        const before = Math.round(link.getBoundingClientRect().left);
+        link.focus();
+        const after = Math.round(link.getBoundingClientRect().left);
+        const focused = document.activeElement === link;
+        link.blur();
+        return { found: true, first: first === link, target: !!target && target.tagName === "MAIN", before, after, focused };
+      })()`);
+      check(
+        skip.found && skip.first && skip.target && skip.focused && skip.before < 0 && skip.after >= 0,
+        `${label}(${file}): 본문 바로가기가 첫 Tab 이고 초점을 받으면 나타납니다` +
+          (skip.found
+            ? ` (첫 Tab ${skip.first} · 대상 <main> ${skip.target} · 초점 ${skip.focused} · 왼쪽 ${skip.before}→${skip.after}px)`
+            : " — a.skip-link 가 없습니다"),
+      );
     }
 
     // 예문 듣기 버튼이 있으면 공용 스크립트가 붙어 클릭에 반응해야 합니다.
@@ -899,6 +923,42 @@ try {
     );
   }
   note(`앱 화면 ${APP_SCREENS.length}개를 375px 에서 점검(넘침 · 오류 · 히트 영역)`);
+
+  // 채점 결과가 화면 낭독기에서 읽히는가 — 결과 상자가 라이브 영역이어야 하고(role=status +
+  // aria-live), 보기가 비활성화되어 초점을 잃으면 그 상자로 초점이 옴겨야 합니다.
+  // (합성 클릭은 실제 Tab 이동과 달리 버튼에 초점을 주지 않습니다. 그래도 "초점을 잃은 경우"에
+  //  해당하므로 같은 경로를 탑니다.)
+  // 앞의 화면 점검은 마지막에 「가이드」로 끝납니다. 퀴즈 화면으로 돌아와야 결과 상자가
+  // 실제로 보이는 상태가 되고(숨은 화면의 요소에는 초점을 줄 수 없습니다) 초점을 확인할 수 있습니다.
+  await evaluate(`document.getElementById("btnQuiz").click()`);
+  await wait(500);
+  const quizA11y = await evaluate(`(() => {
+    const start = document.getElementById("quizStart");
+    if (start) start.click();
+    const opt = document.querySelector("#quizBox .quiz-opt");
+    if (!opt) return { found: false };
+    // 실제 Tab 조작과 같은 상황을 만듭니다 — 보기를 누르면 그 버튼이 비활성화되어
+    // 초점이 문서 밖(body)으로 떨어지고, 그때만 결과 상자로 초점을 옴깁니다.
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    opt.click();
+    const fb = document.getElementById("quizFeedback");
+    if (!fb) return { found: false };
+    const active = document.activeElement;
+    return {
+      found: true,
+      live: fb.getAttribute("role") === "status" && fb.getAttribute("aria-live") === "polite",
+      graded: /정답|오답/.test(fb.textContent || ""),
+      focused: active === fb,
+      active: active ? (active.id || active.tagName) : "none",
+    };
+  })()`);
+  check(
+    quizA11y.found && quizA11y.live && quizA11y.graded && quizA11y.focused,
+    "퀴즈 채점: 결과가 라이브 영역에 표시되고 초점이 그곳으로 옴깁니다" +
+      (quizA11y.found
+        ? ` (라이브 ${quizA11y.live} · 채점 문구 ${quizA11y.graded} · 초점 ${quizA11y.focused}${quizA11y.focused ? "" : " · 초점대상 " + quizA11y.active})`
+        : " — #quizBox .quiz-opt 를 찾지 못했습니다"),
+  );
 
   /* ---------------------------------------------------------------- */
   /* 3-10. 배포 상태(--live) — 색인·자산이 실제 주소에서 살아 있는지     */

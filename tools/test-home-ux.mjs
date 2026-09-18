@@ -25,6 +25,9 @@
  * 종료 코드: 실패가 있으면 1, 없으면 0
  *
  * 외부 의존성 없음(Node 내장 모듈만 사용).
+ *
+ * 2026-09-18: 앱 스타일은 index.html 인라인 <style> 에서 assets/app.css 파일로 옮겼습니다
+ * (docs/app-split-plan.md 1단계). CSS 규칙을 보는 검사(6-1)는 그 파일을 읽습니다.
  */
 
 import fs from "node:fs";
@@ -34,6 +37,7 @@ import { fileURLToPath } from "node:url";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const read = (p) => fs.readFileSync(path.join(ROOT, p), "utf8");
 const html = read("index.html");
+const css = read("assets/app.css"); // 6-1 의 CSS 규칙 검사 대상(인라인 <style> 이 아니라 파일)
 
 let failures = 0;
 let checks = 0;
@@ -368,7 +372,7 @@ console.log("\n[5] 테마 기본값 (OS 설정 우선)");
 console.log("\n[6] 모바일 햄버거 메뉴 (스크롤 · 뒤로가기)");
 {
   // 6-1. 항목이 화면보다 길어지면 메뉴 안에서 스크롤할 수 있어야 합니다.
-  const mobileCss = slice("@media (max-width: 1023px) {", ".skip-link {", html, "모바일 메뉴 CSS");
+  const mobileCss = slice("@media (max-width: 1023px) {", ".skip-link {", css, "모바일 메뉴 CSS");
   const navCss = (mobileCss.match(/\.topbar-nav\s*\{[^}]*\}/) || [""])[0];
   assert(/max-height:\s*[^;]+;/.test(navCss), "메뉴 패널에 최대 높이가 있습니다(화면 밖으로 넘치지 않음)", navCss.slice(0, 60));
   assert(
@@ -377,7 +381,7 @@ console.log("\n[6] 모바일 햄버거 메뉴 (스크롤 · 뒤로가기)");
     "overflow 가 없으면 잘린 항목은 영영 누를 수 없습니다",
   );
   assert(
-    /\.topbar-nav\.open\s+\.btn\.active/.test(html),
+    /\.topbar-nav\.open\s+\.btn\.active/.test(css),
     "펼친 메뉴에서 지금 보고 있는 화면을 왼쪽 띠로 표시합니다",
     "열어 놓고도 내가 어느 화면에 있는지 알기 어렵습니다",
   );
@@ -390,7 +394,7 @@ console.log("\n[6] 모바일 햄버거 메뉴 (스크롤 · 뒤로가기)");
   // 6-1b. 데스크톱 PC 의 ⋯ 더 보기 패널도 같은 규칙이어야 합니다.
   //       상단바는 고정(sticky)이라 페이지를 스크롤해도 패널이 붙어 다니므로,
   //       높이를 제한하지 않으면 창이 낮을 때 아래쪽 항목(진단·대시보드·가이드)을 고를 수 없습니다.
-  const desktopCss = slice("@media (min-width: 1024px) {", "/* ---------- 모바일·태블릿 햄버거 메뉴 ---------- */", html, "데스크톱 ⋯ 패널 CSS");
+  const desktopCss = slice("@media (min-width: 1024px) {", "/* ---------- 모바일·태블릿 햄버거 메뉴 ---------- */", css, "데스크톱 ⋯ 패널 CSS");
   const moreCss = (desktopCss.match(/\.topbar-more\.open\s*\{[^}]*\}/) || [""])[0];
   assert(moreCss.length > 0, "데스크톱 ⋯ 더 보기 패널 규칙을 찾았습니다", "@media (min-width: 1024px)");
   assert(
@@ -404,10 +408,10 @@ console.log("\n[6] 모바일 햄버거 메뉴 (스크롤 · 뒤로가기)");
     moreCss.slice(0, 60),
   );
   // 두 패널이 같은 값을 쓰도록 한 곳에 둔 토큰인지(한쪽만 고쳐지는 일 방지)
-  const sharedUses = (html.match(/max-height:\s*var\(--menu-panel-max-h\)/g) || []).length;
+  const sharedUses = (css.match(/max-height:\s*var\(--menu-panel-max-h\)/g) || []).length;
   assert(sharedUses === 2, `☰ 메뉴와 ⋯ 패널이 같은 높이 토큰을 씁니다(${sharedUses}곳)`);
   assert(
-    /--menu-panel-max-h:\s*min\(74vh/.test(html),
+    /--menu-panel-max-h:\s*min\(74vh/.test(css),
     "높이 토큰은 뷰포트 기준(74vh·dvh)으로 정의돼 있습니다",
     "dvh 를 모르는 브라우저를 위해 vh 대체값도 함께 둡니다",
   );

@@ -9,11 +9,13 @@
  *   **공개 목록에 있는 파일만** _site 로 복사하고, 빠진 것이 없는지 검증합니다.
  *
  * 무엇을 하는가:
- *   0) 담으면서 배포본을 다듬습니다 — 큰 인라인 <style>·<script> 를 assets/*.css·
- *      assets/*.js 로 빼고, 주석과 태그 사이 공백을 걷어냅니다. 저장소의 원본은 그대로
- *      두고 _site 에만 적용하므로, 이 파일이 index.html 의 유일한 원본이라는 규칙이
- *      유지됩니다(도구 여섯이 index.html 안의 인라인 JS·CSS 를 읽습니다).
- *      실측: index.html 719KB → 276KB + app.css 80KB·app.js 348KB(캐시 대상)
+ *   0) 담으면서 배포본을 다듬습니다 — 남아 있는 큰 인라인 <script> 를 assets/*.js 로 빼고,
+ *      주석과 태그 사이 공백을 걷어냅니다. 스타일은 2026-09-18 부터 저장소 원본이
+ *      assets/app.css 파일이라(index.html 은 <link> 로 부릅니다 — docs/app-split-plan.md
+ *      1단계) 배포본에서 따로 빼내지 않습니다.
+ *      저장소의 원본은 그대로 두고 _site 에만 적용하므로, index.html 이 앱의 유일한
+ *      원본이라는 규칙이 유지됩니다(도구들이 index.html 안의 인라인 JS 를 읽습니다).
+ *      실측: index.html 628KB → 276KB + app.js 345KB · app.css 80KB(캐시 대상)
  *
  * 무엇을 검사하는가:
  *   ① 공개 목록의 파일·폴더가 실제로 있는가 (없으면 실패 — 조용히 빠지는 것을 막습니다)
@@ -131,13 +133,16 @@ function minifyHtml(html) {
 }
 
 /**
- * 큰 인라인 <style>·<script> 를 assets/*.css·assets/*.js 로 빼고 link·script src 로 바꿉니다.
+ * 남아 있는 큰 인라인 <style>·<script> 를 assets/*.css·assets/*.js 로 빼고 link·script src 로 바꿉니다.
  * 반환: {html, files}(파일은 _site 기준 상대 경로).
  *
  * 왜 이렇게 하나:
- *   index.html 은 도구 여섯이 안쪽 블록을 읽는 **유일한 원본**이라 저장소에서는 쪼개지 않습니다.
- *   대신 배포본에서만 빼내면, 원본 규칙을 건드리지 않고 첫/재방문 전송량을 줄일 수 있습니다.
- *   (실측: index.html 719KB → 276KB, app.js 348KB·app.css 80KB 는 재방문 시 캐시)
+ *   index.html 안의 앱 스크립트(345KB)는 도구들이 안쪽 블록을 읽는 **유일한 원본**이라
+ *   저장소에서는 아직 쪼개지 않습니다(docs/app-split-plan.md 2단계). 배포본에서만 빼내면
+ *   원본 규칙을 건드리지 않고 첫/재방문 전송량을 줄일 수 있습니다.
+ *   스타일은 1단계에서 원본부터 assets/app.css 파일이 되었고, 여기서는 큰 인라인 블록이
+ *   남아 있을 때만(정적 페이지·앞으로 추가될 코드) 같은 방식으로 빼냅니다.
+ *   (실측: index.html 628KB → 276KB, app.js 345KB · app.css 80KB 는 재방문 시 캐시)
  */
 function splitInlineBlocks(html, page) {
   const dir = path.posix.dirname(page);

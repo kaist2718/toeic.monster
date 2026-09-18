@@ -219,6 +219,32 @@ if (!has(SHARED_CSS)) {
   note(`공용 스타일 ${SHARED_CSS} — ${(fs.statSync(path.join(ROOT, SHARED_CSS)).size / 1024).toFixed(1)}KB`);
 }
 
+/* 3-2b-2. 앱 스타일도 파일로 — index.html 이 큰 인라인 <style> 로 되돌아가지 않게. */
+
+// index.html 의 스타일은 2026-09-18 부터 assets/app.css 파일입니다(docs/app-split-plan.md 1단계).
+// 다시 인라인으로 넣으면 문서가 곧바로 80KB 무거워지고, 그 <style> 을 다른 페이지 함수들이
+// 읽지 않아도 감사·테스트가 통과해 버립니다. 그래서 여기서 막습니다.
+const APP_CSS = "assets/app.css";
+if (!has(APP_CSS)) {
+  fail(`${APP_CSS} 이 없습니다 — index.html 의 스타일은 이 파일에 있어야 합니다.`);
+} else if (has("index.html")) {
+  const home = srcOf["index.html"] || "";
+  const biggest = [...home.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/gi)].reduce(
+    (n, m) => Math.max(n, m[1].length),
+    0,
+  );
+  if (biggest > INLINE_STYLE_MAX) {
+    fail(`index.html: 인라인 <style> 이 ${(biggest / 1024).toFixed(1)}KB 입니다 — ${APP_CSS} 로 옮기세요.`);
+  }
+  if (!/<link\b[^>]*href="(?:\.\/)?assets\/app\.css"/.test(markOf["index.html"] || "")) {
+    fail(`index.html: ${APP_CSS} 를 <link> 하지 않습니다(스타일이 적용되지 않습니다).`);
+  }
+  note(
+    `앱 스타일 ${APP_CSS} ${(fs.statSync(path.join(ROOT, APP_CSS)).size / 1024).toFixed(1)}KB · ` +
+      `index.html 인라인 ${(biggest / 1024).toFixed(1)}KB`,
+  );
+}
+
 for (const page of pages.filter(isGeneratedPage)) {
   const biggest = [...srcOf[page].matchAll(/<style[^>]*>([\s\S]*?)<\/style>/gi)].reduce(
     (n, m) => Math.max(n, m[1].length),
@@ -238,6 +264,56 @@ for (const page of pages.filter(isGeneratedPage)) {
   if (!speakButtons && loadsSpeak) {
     fail(`${page}: 예문 듣기 버튼이 없는데 ${SHARED_SPEAK} 를 불러옵니다(쓸데없는 요청).`);
   }
+}
+
+/* ------------------------------------------------------------------ */
+/* 3-2c. 정적 페이지 본문 바로가기(건너뛰기 링크)                        */
+/* ------------------------------------------------------------------ */
+
+// 정적 페이지는 상단바 → 빵부스러기 → 본문 순서입니다. 그래서 키보드 사용자는 페이지마다
+// Tab 을 여러 번 눌러야 본문에 닿습니다. 앱(index.html)에는 처음부터 있었지만 정적 페이지에는
+// 없어서, 한 페이지에서 다음 페이지로 넘어갈 때마다 같은 수고를 되풀이해야 했습니다.
+// 124개 페이지를 손으로 고치지 않도록 생성기(build-pages.mjs)가 넣고, 감사가 지킵니다.
+const isStaticPage = (p) => p === "404.html" || /^(?:units|guides|grammar|conversation)\//.test(p);
+let skipLinkPages = 0;
+for (const page of pages.filter(isStaticPage)) {
+  const src = srcOf[page] || "";
+  if (!/<a class="skip-link" href="#main">/.test(src)) {
+    fail(`${page}: 본문 바로가기 링크가 없습니다 — build-pages.mjs 의 page() 에 넣으세요.`);
+    continue;
+  }
+  const main = src.match(/<main\b[^>]*>/i);
+  if (!main || !/\bid="main"/.test(main[0])) {
+    fail(`${page}: 건너뛰기 링크가 가리킬 <main id="main"> 이 없습니다 (${main ? main[0] : "<main> 없음"}).`);
+    continue;
+  }
+  skipLinkPages++;
+}
+if (skipLinkPages) note(`정적 페이지 ${skipLinkPages}개에 본문 바로가기 링크(<main id="main">)`);
+
+/* ------------------------------------------------------------------ */
+/* 3-2d. 채점 피드백은 라이브 영역이어야 합니다(화면 낭독기)            */
+/* ------------------------------------------------------------------ */
+
+// 퀴즈·시험·연습은 정답을 고른 순간 “정답입니다 / 오답입니다. 정답: X” 를 화면에 끼워 넣고
+// 보기 버튼을 비활성화합니다. 그 상자가 라이브 영역이 아니면 화면 낭독기 사용자는 결과를
+// 듣지 못하고, 비활성화로 초점까지 잃습니다. 상자를 만드는 곳(템플릿 문자열 포함)에 표시가
+// 빠지면 나중에 알아채기 어려우므로, 홈 소스 전체에서 상자 태그를 찾아 확인합니다.
+if (has("index.html")) {
+  const home = srcOf["index.html"] || "";
+  const boxes = [...home.matchAll(/<div class="(?:quiz-feedback|bank-feedback)"[^>]*>/g)].map((m) => m[0]);
+  const missing = boxes.filter((tag) => !/aria-live="polite"/.test(tag));
+  if (missing.length) {
+    fail(
+      `index.html: 채점 피드백 상자 ${missing.length}개에 aria-live 가 없습니다 — ` +
+        `role="status" aria-live="polite" aria-atomic="true" 를 상자 태그에 함께 넣으세요.`,
+    );
+  }
+  for (const id of ["writingFeedback", "shadowingFeedback", "cdFeedback", "dictFeedback", "toast"]) {
+    const tag = home.match(new RegExp(`<[a-z]+[^>]*\\bid="${id}"[^>]*>`));
+    if (tag && !/aria-live=/.test(tag[0])) fail(`index.html: #${id} 이 라이브 영역이 아닙니다.`);
+  }
+  if (boxes.length) note(`채점 피드백 라이브 영역 ${boxes.length}개(퀴즈·시험·연습)`);
 }
 
 /* ------------------------------------------------------------------ */

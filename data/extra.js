@@ -946,47 +946,234 @@ window.TOEIC_EXTRA = {
         { h: "2. 주어-동사 수 일치", list: ["each·every·one of는 단수, all·several은 복수를 취합니다.", "Each employee has a laptop."] },
         { h: "3. 시제", list: ["since·for와 함께 쓰이면 현재완료를 고릅니다.", "Sales have increased since May."] },
         { h: "4. 전치사", list: ["시각=at, 날짜·요일=on, 월·년=in, 마감 기한=by.", "The seminar starts at 9 a.m. on Monday in June."] },
-        { h: "5. 관계사", list: ["사람=who, 사물=which, 소유=whose, 모두 가능=that.", "The manager who joined last year is retiring."] }
+        { h: "5. 관계사", list: ["사람=who, 사물=which, 소유=whose, 모두 가능=that.", "The manager who joined last year is retiring."] },
+        { h: "6. 대명사·한정사", list: [
+          "인칭대명사는 격에 따라 달라집니다: I(주격) / me(목적격) / my(소유격) / mine(소유대명사).",
+          "재귀대명사는 주어와 목적어가 같을 때 씁니다: The director wrote the memo himself.",
+          "another 는 단수 명사 앞에, other 는 복수 명사 앞에 씁니다: another option / other options.",
+          "a few 는 셀 수 있는 명사, a little 은 셀 수 없는 명사와 함께 씁니다."
+        ] },
+        { h: "7. 비교 표현", list: [
+          "비교급 + than: Our new plan is cheaper than the previous one.",
+          "the + 최상급 + in/of: This is the busiest branch in the region.",
+          "as + 원급 + as: The second draft was as detailed as the first.",
+          "접속사 as 를 쓴 비례 표현: As the price rose, demand fell."
+        ] },
+        { h: "8. 자주 나오는 함정", list: [
+          "주어와 동사 사이에 긴 수식어가 끼면 수 일치를 놓치기 쉽습니다: The list of items is long.",
+          "수량 표현은 of 뒤 명사에 맞춥니다: Most of the files were deleted.",
+          "동명사를 목적어로 쓰는 동사(avoid, consider, suggest)와 to부정사를 쓰는 동사(decide, agree, plan)를 구분합니다.",
+          "for · since · so far 가 보이면 현재완료를 먼저 확인합니다."
+        ] },
+        { h: "시험장 5분 점검표", list: [
+          "빈칸 앞뒤만 보고 품사를 판단했는가.",
+          "절인지 명사구인지 확인해 접속사와 전치사를 갈랐는가.",
+          "주어와 동사가 떨어져 있을 때 수 일치를 다시 확인했는가.",
+          "확신이 없는 문항은 표시해 두고 마지막에 돌아왔는가."
+        ] },
+        { h: "예문으로 확인하기", list: [
+          "The report was submitted on time. — be동사 뒤 과거분사로 수동태를 만들었습니다.",
+          "Each of the applicants has a different background. — Each 는 단수로 취급합니다.",
+          "The company has expanded its business since 2019. — since + 시점이면 현재완료.",
+          "The manager whose team won the award will speak today. — 소유격 관계사 whose.",
+          "This year's sales are higher than last year's. — 비교급 + than."
+        ] }
       ] },
     { slug: "part-6-text-completion", title: "TOEIC Part 6 장문 공란 공략법", desc: "한 지문에 4개의 빈칸이 있는 Part 6를 빠르게 푸는 순서와 유형별 판단 기준을 정리했습니다.",
       sections: [
         { h: "문항 유형", list: ["품사·어형 문제 (가장 많음)", "접속사·전치사 문제", "문맥에 맞는 어휘 선택", "문장 삽입"] },
-        { h: "푸는 순서", list: ["빈칸이 있는 문장만 먼저 읽고 문법 문제를 빠르게 처리합니다.", "문맥 문제는 앞뒤 한 문장씩을 근거로 판단합니다.", "문장 삽입은 지시어(this, these)와 연결어(however, therefore)를 단서로 씁니다."] }
+        { h: "푸는 순서", list: ["빈칸이 있는 문장만 먼저 읽고 문법 문제를 빠르게 처리합니다.", "문맥 문제는 앞뒤 한 문장씩을 근거로 판단합니다.", "문장 삽입은 지시어(this, these)와 연결어(however, therefore)를 단서로 씁니다."] },
+        { h: "지문 유형별 단서", list: [
+          "이메일·편지: 보낸 사람, 받는 사람, 요청 사항이 빈칸의 근거가 됩니다.",
+          "공지·광고: 날짜·장소·대상이 글 안에서 두 번 이상 반복됩니다.",
+          "기사·안내문: 첫 문장이 주제를, 마지막 문장이 결론을 담고 있습니다."
+        ] },
+        { h: "문장 삽입 문제 푸는 법", list: [
+          "삽입할 문장의 주어가 무엇을 가리키는지 먼저 찾습니다.",
+          "지시어(this, these, such)는 바로 앞 문장에 그 대상이 있어야 합니다.",
+          "연결어(however, therefore, in addition)는 앞뒤 문장의 관계를 알려 줍니다.",
+          "두 단서를 함께 확인하면 들어갈 자리가 한 곳으로 좁혀집니다."
+        ] },
+        { h: "자주 하는 실수", list: [
+          "문법 문제를 끝까지 읽느라 시간을 다 씁니다 — 빈칸 문장만 읽고 넘어갑니다.",
+          "앞 문장만 보고 문맥 문제를 고릅니다 — 뒤 문장의 근거를 함께 봅니다.",
+          "지문을 모두 읽고 문제를 풉니다 — 빈칸 위치를 먼저 확인한 뒤 필요한 부분만 읽습니다."
+        ] },
+        { h: "예문으로 확인하기", list: [
+          "We are pleased to announce that the branch will reopen on May 3. — 공지문에서 자주 쓰는 도입 표현입니다.",
+          "Please contact the front desk if you need assistance. — 조건의 if 절이 뒤에 붙었습니다.",
+          "The event was postponed due to heavy rain. — due to 는 명사구와 함께 씁니다.",
+          "However, the deadline for applications has been extended. — 문장 첫머리 접속부사 뒤에 콤마."
+        ] }
       ] },
     { slug: "part-7-double-passage", title: "TOEIC Part 7 복수 지문(이중·삼중) 공략", desc: "표·양식 지문과 연계 문제를 빠르게 푸는 순서, 자주 나오는 연계 유형을 정리했습니다.",
       sections: [
         { h: "먼저 읽을 지문", list: ["표·양식·일정표가 있으면 먼저 훑습니다.", "숫자와 날짜를 먼저 표시해 두면 연계 문제가 빨라집니다."] },
         { h: "연계 문제 유형", list: ["지문 1의 조건이 지문 2에서 충족되는지 판단", "한 지문의 요청이 다른 지문에서 어떻게 처리되는지", "두 지문의 정보를 종합한 추론"] },
-        { h: "시간 배분", list: ["단일 지문은 1문항당 30~40초, 복수 지문은 세트당 2분 30초를 목표로 합니다."] }
+        { h: "시간 배분", list: ["단일 지문은 1문항당 30~40초, 복수 지문은 세트당 2분 30초를 목표로 합니다."] },
+        { h: "복수 지문에서 자주 나오는 조합", list: [
+          "안내문 + 신청서: 안내문의 조건이 신청서에 어떻게 반영됐는지 묻습니다.",
+          "이메일 + 회신 이메일: 첫 메일의 요청이 두 번째 메일에서 어떻게 처리됐는지 묻습니다.",
+          "광고 + 주문 내역: 광고의 조건과 실제 주문의 차이를 묻습니다.",
+          "일정표 + 공지: 바뀐 일정이 언제부터 적용되는지 묻습니다."
+        ] },
+        { h: "읽기 전에 표시할 것", list: [
+          "지문마다 종류와 보낸 사람·받는 사람을 한 줄로 적어 둡니다.",
+          "날짜·금액·수량·이름을 동그라미로 표시합니다.",
+          "문제가 어느 지문을 근거로 하는지 알려 주면 그 지문부터 봅니다."
+        ] },
+        { h: "자주 하는 실수", list: [
+          "지문을 모두 읽고 문제를 풉니다 — 문제를 먼저 읽고 필요한 부분만 찾습니다.",
+          "숫자를 눈으로만 봅니다 — 지문 옆에 옮겨 적으면 연계 문제가 빨라집니다.",
+          "한 세트에 매달려 뒤 문제를 놓칩니다 — 2분 30초를 넘기면 표시하고 넘어갑니다."
+        ] },
+        { h: "지문에서 답을 찾는 예", list: [
+          "안내문 마감 3월 10일 + 신청서 3월 8일 → 기한 안에 제출했습니다.",
+          "이메일의 재고 확인 요청 + 회신의 5월 2일 발송 → 그날부터 보낼 수 있습니다.",
+          "광고의 첫 구매 20% 할인 + 주문 내역 → 할인이 적용됐는지 확인합니다.",
+          "일정표의 2일차 오전 + 공지의 오후로 변경 → 바뀐 시각을 고릅니다."
+        ] }
       ] },
     { slug: "part-2-traps", title: "TOEIC Part 2 오답 함정 유형 정리", desc: "간접 응답, 부정 의문문, 유사 발음 등 Part 2에서 함정에 빠지기 쉬운 유형을 정리했습니다.",
       sections: [
         { h: "함정 유형", list: ["간접 응답: Do you know when ~?에는 yes/no가 아니라 정보로 답합니다.", "부정 의문문: Didn't you ~?에는 사실을 바로잡는 답이 옵니다.", "유사 발음: work/walk, fourth/fourteenth를 구분합니다.", "제안·요청: Why don't we ~? / Would you mind ~?"] },
-        { h: "대응 전략", list: ["의문사(Who/When/Where/Why/How)를 먼저 듣고 기대되는 답의 종류를 예측합니다.", "들리지 않으면 첫 단어만으로 소거해도 정답률이 올라갑니다."] }
+        { h: "대응 전략", list: ["의문사(Who/When/Where/Why/How)를 먼저 듣고 기대되는 답의 종류를 예측합니다.", "들리지 않으면 첫 단어만으로 소거해도 정답률이 올라갑니다."] },
+        { h: "의문사별 기대 응답", list: [
+          "Who — 사람 이름이나 직함이 답이 됩니다.",
+          "When — 날짜와 시각이 답이 됩니다.",
+          "Where — 장소가 답이 됩니다.",
+          "Why — To + 동사원형, Because + 절 형태로 이유를 말합니다.",
+          "How — by + 수단, about + 정도가 답이 됩니다."
+        ] },
+        { h: "우회 응답 유형", list: [
+          "직접 답하는 대신 장소를 말합니다: Where is the meeting? — It was moved to the second floor.",
+          "확신이 없으면 되묻습니다: I am not sure. Let me check the schedule.",
+          "요청을 다른 방식으로 수락합니다: I will do it right away."
+        ] },
+        { h: "연습 방법", list: [
+          "스크립트를 보지 않고 듣고, 선택지를 보기 전에 답을 예상해 봅니다.",
+          "틀린 문항은 스크립트를 소리 내어 읽으며 함정 유형을 표시합니다.",
+          "하루 10문항씩 짧게 반복하는 편이 한 번에 30문항보다 오래 남습니다."
+        ] },
+        { h: "예문으로 확인하기", list: [
+          "Where did you put the invoice? — It is on your desk. — 장소를 묻는 질문에는 장소로 답합니다.",
+          "Why was the shipment delayed? — Because the supplier was closed. — 이유를 묻는 질문에는 Because 절로 답합니다.",
+          "Would you mind closing the window? — Not at all. — Would you mind 는 Not at all 로 수락합니다.",
+          "Didn't you send the report yesterday? — I sent it this morning. — 부정 의문문에는 사실을 바로잡는 답이 옵니다."
+        ] }
       ] },
     { slug: "vocabulary-30day", title: "TOEIC 어휘 30일 완성 커리큘럼", desc: "하루 1유닛 30개 단어를 기준으로 30일 동안 1,000단어를 끝내는 학습 계획입니다.",
       sections: [
         { h: "하루 루틴", list: ["복습 3분 → 새 유닛 10분 → 퀴즈 7분", "예문은 소리 내어 3번 읽습니다."] },
         { h: "주간 점검", list: ["7일차·14일차·21일차에 미니 테스트와 콜로케이션 드릴을 합니다.", "30일차에는 모의고사 1회로 마무리합니다."] },
-        { h: "복습 주기", list: ["1일·3일·7일 간격으로 복습하면 기억 유지율이 크게 올라갑니다."] }
+        { h: "복습 주기", list: ["1일·3일·7일 간격으로 복습하면 기억 유지율이 크게 올라갑니다."] },
+        { h: "단어를 오래 기억하는 3단계", list: [
+          "1단계(인식): 뜻과 발음을 확인하며 30개를 훑습니다.",
+          "2단계(회상): 뜻을 가리고 단어만 보고 뜻을 말해 봅니다.",
+          "3단계(사용): 예문을 소리 내어 읽고, 그 단어로 짧은 문장을 하나 만듭니다."
+        ] },
+        { h: "유닛을 마친 뒤", list: [
+          "그날 배운 30개 중 틀린 것만 오답노트에 남깁니다.",
+          "다음 날 시작하기 전에 어제 유닛 퀴즈를 한 번 더 풉니다.",
+          "3일 뒤와 7일 뒤에 같은 유닛을 다시 확인합니다."
+        ] },
+        { h: "계속하기 어려울 때", list: [
+          "하루 30개가 부담되면 15개로 줄이고 60일 계획으로 바꿉니다 — 멈추는 것보다 낫습니다.",
+          "출퇴근 시간에는 암기 카드, 앉아서는 퀴즈처럼 상황에 맞춰 나눕니다.",
+          "점수가 오르지 않는 주에는 새 유닛을 멈추고 복습만 합니다."
+        ] },
+        { h: "시험 전 마무리", list: [
+          "시험 3일 전부터는 새 단어를 줄이고 오답노트만 반복합니다.",
+          "헷갈리는 단어 100개를 따로 표시해 두고 시험 당일 아침에 훑습니다."
+        ] },
+        { h: "예문으로 확인하기", list: [
+          "The manager approved the budget. — approve 는 업무 문장에서 자주 쓰는 격식 동사입니다.",
+          "We need to confirm the delivery date. — confirm = 확인하다.",
+          "The staff attended a training session. — attend 뒤에는 전치사 없이 목적어를 씁니다.",
+          "Sales increased by 12 percent. — increase by + 증가폭."
+        ] }
       ] },
     { slug: "listening-numbers", title: "TOEIC LC 숫자·금액·시간 함정 정리", desc: "숫자, 금액, 날짜, 전화번호가 나오는 LC 문제에서 실수를 줄이는 방법을 정리했습니다.",
       sections: [
         { h: "자주 틀리는 표현", list: ["thirteen(13) / thirty(30)", "fourth(4th) / fourteenth(14th)", "a quarter to nine = 8시 45분", "double seven = 77, triple three = 333"] },
-        { h: "대응 전략", list: ["숫자는 들리는 대로 메모합니다.", "금액은 통화 단위(dollars, won)까지 함께 적습니다.", "날짜는 월·일 순서를 기호로 표시합니다."] }
+        { h: "대응 전략", list: ["숫자는 들리는 대로 메모합니다.", "금액은 통화 단위(dollars, won)까지 함께 적습니다.", "날짜는 월·일 순서를 기호로 표시합니다."] },
+        { h: "숫자 표현 정리", list: [
+          "10 단위 읽기: 20 twenty, 30 thirty, 40 forty, 50 fifty (철자 주의).",
+          "100 이상: 250 = two hundred fifty, 1,500 = fifteen hundred.",
+          "분수와 비율: a third, two thirds, half of.",
+          "배수: double(2배), triple(3배), twice as much as."
+        ] },
+        { h: "유형별 메모 요령", list: [
+          "가격 문제: 숫자와 통화 단위를 함께 적고, 할인율이 나오면 계산식을 옆에 씁니다.",
+          "시간 문제: 시작 시각과 걸린 시간을 따로 적습니다.",
+          "인원·수량 문제: 전체와 일부를 구분해 적습니다.",
+          "전화번호: 0 을 zero 와 oh 로 모두 읽을 수 있으므로 두 가지를 함께 대비합니다."
+        ] },
+        { h: "시험장 점검", list: [
+          "계산이 필요한 문항은 답을 고르지 말고 숫자만 메모한 뒤 마지막에 계산합니다.",
+          "놓친 숫자는 되돌아가려 하지 말고 다음 문항에 집중합니다."
+        ] },
+        { h: "예문으로 확인하기", list: [
+          "The train leaves at a quarter to nine. — a quarter to nine = 8시 45분입니다.",
+          "The total came to three hundred fifty dollars. — 350달러.",
+          "We ordered two dozen boxes. — dozen = 12개입니다.",
+          "The meeting is scheduled for the fourteenth. — fourteenth = 14일입니다."
+        ] }
       ] },
     { slug: "part-5-connectors", title: "TOEIC 접속사·전치사·접속부사 구분법", desc: "뒤에 절이 오는지 명사구가 오는지로 접속사와 전치사를 가르고, however·therefore 같은 접속부사의 위치를 정리했습니다.",
       sections: [
         { h: "세 가지를 구분하는 기준", list: ["뒤에 주어+동사(절)가 오면 접속사: although, because, while", "뒤에 명사(구)가 오면 전치사: despite, because of, during", "문장과 문장 사이에서 의미만 연결하면 접속부사: however, therefore, moreover"] },
         { h: "접속부사의 위치와 문장부호", list: ["접속부사는 두 문장을 세미콜론(;)과 콤마(,)로 연결합니다: The plan was costly; however, we approved it.", "문장 맨 앞에서는 보통 콤마를 뒤에 붙입니다: Therefore, the meeting was postponed.", "however·therefore는 접속사가 아니므로 한 문장 안에서 두 절을 직접 연결하지 않습니다."] },
         { h: "빈출 연결어 목록", list: ["대조: however, in contrast, on the other hand", "결과: therefore, consequently, as a result", "추가: moreover, in addition, besides", "조건: otherwise, provided that", "정리: in conclusion, in short"] },
-        { h: "실전 판단 순서", list: ["빈칸 뒤를 먼저 봅니다. 명사구면 전치사, 절이면 접속사를 고릅니다.", "둘 다 아니고 문장 첫머리라면 접속부사를 의심합니다."] }
+        { h: "실전 판단 순서", list: ["빈칸 뒤를 먼저 봅니다. 명사구면 전치사, 절이면 접속사를 고릅니다.", "둘 다 아니고 문장 첫머리라면 접속부사를 의심합니다."] },
+        { h: "뜻이 비슷해 헷갈리는 짝", list: [
+          "although 는 절, despite 는 명사구와 함께 씁니다: Although it rained / Despite the rain.",
+          "because 는 절, because of 는 명사구와 함께 씁니다.",
+          "during 은 특정 기간, for 는 걸린 시간과 함께 씁니다: during the meeting / for two hours.",
+          "while 은 절을 이끄는 접속사, meanwhile 은 문장을 잇는 접속부사입니다."
+        ] },
+        { h: "자주 하는 실수", list: [
+          "however 를 접속사처럼 써서 두 절을 직접 연결합니다 — 세미콜론이나 마침표가 필요합니다.",
+          "despite 뒤에 절을 씁니다 — despite the fact that 처럼 명사절로 바꿔야 합니다.",
+          "therefore 와 because 를 같은 자리에 놓습니다 — 원인과 결과의 방향이 반대입니다."
+        ] },
+        { h: "예문으로 확인하기", list: [
+          "Although the price rose, sales remained steady. — 절을 이끄는 양보 접속사입니다.",
+          "Despite the price increase, sales remained steady. — 같은 뜻을 명사구로 바꾸면 Despite 입니다.",
+          "The price rose; however, sales remained steady. — 세미콜론 + 접속부사 구조입니다.",
+          "Because of the delay, we missed the connection. — because of + 명사구."
+        ] }
       ] },
     { slug: "part-5-word-forms", title: "TOEIC 어형 변화(품사 변환) 공략", desc: "한 어근이 명사·동사·형용사·부사로 바뀌는 규칙과 Part 5·6에서 빈칸 자리로 품사를 판단하는 방법을 정리했습니다.",
       sections: [
         { h: "품사별 자리", list: ["관사·소유격·전치사 뒤 → 명사", "주어 뒤·조동사 뒤·to 뒤 → 동사(원형)", "명사 앞·be동사 뒤 → 형용사", "동사·형용사·문장 전체 수식 → 부사"] },
         { h: "빈출 어형 세트", list: ["success / succeed / successful / successfully", "decide / decision / decisive / decisively", "compete / competition / competitive / competitively", "analyze / analysis / analytical / analytically", "apply / application / applicant / applicable"] },
-        { h: "주의할 함정", list: ["-ly로 끝나도 형용사인 경우가 있습니다: costly, friendly, timely", "명사와 형용사 형태가 같은 단어도 있습니다: available, reliable는 형용사만 있습니다.", "수식 대상이 사람이면 -ed, 사물이면 -ing: confused staff / confusing instructions"] }
+        { h: "주의할 함정", list: ["-ly로 끝나도 형용사인 경우가 있습니다: costly, friendly, timely", "명사와 형용사 형태가 같은 단어도 있습니다: available, reliable는 형용사만 있습니다.", "수식 대상이 사람이면 -ed, 사물이면 -ing: confused staff / confusing instructions"] },
+        { h: "빈칸 자리 판단 5초 규칙", list: [
+          "빈칸 앞이 관사·소유격·전치사면 명사를 고릅니다.",
+          "앞에 주어가 있고 빈칸 뒤에 목적어가 있으면 동사를 고릅니다.",
+          "빈칸이 명사를 꾸미면 형용사를 고릅니다.",
+          "빈칸이 동사·형용사·문장 전체를 꾸미면 부사를 고릅니다."
+        ] },
+        { h: "접미사로 품사 빠르게 보기", list: [
+          "명사 접미사: -tion, -ment, -ance, -ity, -ness",
+          "형용사 접미사: -ful, -ous, -ive, -able, -al",
+          "부사 접미사: -ly (다만 costly·friendly 는 형용사입니다)",
+          "동사 접미사: -ize, -ify, -ate"
+        ] },
+        { h: "더 많은 어형 세트", list: [
+          "produce / product / production / productive / productively",
+          "assist / assistance / assistant",
+          "create / creation / creative / creatively",
+          "inform / information / informative / informatively",
+          "require / requirement / required"
+        ] },
+        { h: "예문으로 확인하기", list: [
+          "The manager gave a detailed explanation. — 관사 뒤에는 형용사 + 명사가 옵니다.",
+          "The team completed the project successfully. — 동사를 꾸미는 부사 자리입니다.",
+          "Applicants must submit the form by Friday. — 조동사 뒤에는 동사원형.",
+          "The company's performance was impressive. — be동사 뒤에는 형용사."
+        ] }
       ] },
     { slug: "speaking-writing-guide", title: "TOEIC Speaking·Writing 유형 완전 정리", desc: "Speaking 11문항과 Writing 8문항의 공식 구성, 유형별 시간 배분과 답변 프레임을 한 페이지에 정리했습니다.",
       sections: [
@@ -1012,6 +1199,33 @@ window.TOEIC_EXTRA = {
         { h: "점수와 시간", list: [
           "Speaking은 약 20분, Writing은 약 60분이며 각각 0~200점으로 평가됩니다.",
           "두 시험은 함께 또는 따로 응시할 수 있고, LC·RC와 합산하면 4기능 점수가 됩니다."
+        ] },
+        { h: "고득점 표현", list: [
+          "의견 제시: In my opinion, / I believe that / The main reason is that",
+          "이메일 시작: Thank you for your email regarding / I am writing to",
+          "이메일 마무리: I look forward to hearing from you. / Please let me know if you need anything else.",
+          "사진 묘사: In the foreground / In the background / On the left side"
+        ] },
+        { h: "감점을 줄이는 습관", list: [
+          "침묵이 길면 유창성 점수가 떨어집니다 — 틀려도 계속 말합니다.",
+          "준비 시간에는 한국어로 내용을 정하고, 영어 문장은 말하면서 만듭니다.",
+          "같은 표현이 반복되지 않도록 비슷한 말을 두세 개 준비합니다."
+        ] },
+        { h: "답변 시간 관리", list: [
+          "사진 묘사 30초는 문장 3개 분량입니다 — 인물, 행동, 배경 순서로 말합니다.",
+          "15초 문항은 한 문장으로 끝내되 이유를 한 번 붙입니다.",
+          "60초 의견 제시는 입장, 근거, 예시, 마무리 순서를 지킵니다."
+        ] },
+        { h: "연습 순서", list: [
+          "먼저 답변을 소리 내어 녹음하고 시간을 잽니다.",
+          "스크립트로 옮겨 반복 표현과 군더더기를 지웁니다.",
+          "다시 녹음해 같은 실수가 줄었는지 확인합니다."
+        ] },
+        { h: "예문으로 확인하기", list: [
+          "In the picture, a woman is checking a document at her desk. — 사진 묘사의 기본 문장입니다.",
+          "I am writing to ask about the schedule for next week. — 이메일의 첫 문장으로 자주 씁니다.",
+          "In my opinion, working from home increases productivity. — 의견 제시의 첫 문장입니다.",
+          "I look forward to hearing from you. — 이메일을 맺는 격식 표현입니다."
         ] }
       ] }
   ],
