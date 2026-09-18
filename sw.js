@@ -1,5 +1,5 @@
 /* toeic.monster Service Worker - 오프라인 학습 지원 */
-var CACHE_NAME = "toeic-monster-v14";
+var CACHE_NAME = "toeic-monster-v15";
 var CORE_ASSETS = [
   "./",
   "./index.html",
@@ -22,6 +22,7 @@ var CORE_ASSETS = [
   // 단어장 허브에서 바로 가는 두 목록 페이지 — 오프라인에서도 열리도록 함께 담습니다
   // (둘 다 단어·뜻이 전부 텍스트라 용량 부담이 작습니다).
   "./units/frequency.html",
+  "./units/confusion.html",
   "./units/idioms.html",
   "./guides/",
   "./guides/index.html",

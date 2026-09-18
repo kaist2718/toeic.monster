@@ -57,7 +57,8 @@ const { html, code } = readAppSource();
 /* ------------------------------------------------------------------ */
 
 const SECTIONS = [
-  { label: "혼동 어휘", ids: ["confuseGrid"], vars: ["CONFUSABLES"], render: "renderConfusables", items: /confuse-card/g },
+  // 혼동 어휘도 참고 목록입니다 — 홈에는 앞의 6쌍만 심고 전체 20쌍은 units/confusion.html 이 담당합니다.
+  { label: "혼동 어휘", ids: ["confuseGrid"], vars: ["CONFUSABLES"], render: "renderConfusables", args: "6", items: /confuse-card/g },
   { label: "어근·접두사", ids: ["wordpartGrid"], vars: ["WORD_PARTS"], render: "renderWordParts", items: /wordpart-card/g },
   { label: "단어 패밀리", ids: ["wordfamilyGrid"], vars: ["WORD_FAMILIES"], render: "renderWordFamilies", items: /wordfamily-card/g },
   // 빈도순 어휘는 200개짜리 참고 목록이라 별도 정적 페이지(units/frequency.html)로 뺐습니다.
@@ -273,6 +274,7 @@ const sections = home.split(/(?=<section class="home-section")/).slice(1).map((c
 const STATIC_LINKS = [
   ["units/", "주제별 단어장 30개 유닛 · 단어 1,000개"],
   ["units/frequency.html", "빈도순 기출 어휘 200선"],
+  ["units/confusion.html", "헷갈리는 단어 20쌍"],
   ["units/idioms.html", "빈출 구동사·숙어 126개"],
   ["grammar/", "문법 교재 3단계 (36과 · 연습 108문항)"],
   ["grammar/cheatsheet.html", "문법 한 장 요약"],

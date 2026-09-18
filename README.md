@@ -36,7 +36,8 @@ npm run serve       # http://127.0.0.1:8000 에서 미리보기
 ```
 index.html          홈(앱)의 마크업 — 첫 페인트 부트스트랩(테마)만 인라인으로 남습니다.
 units/ grammar/ conversation/ guides/   생성된 정적 페이지 (build-pages.mjs)
-                    — units/ 안에 단어장 허브 · 유닛 30개 · 빈출 어휘 200선(frequency.html) · 숙어(idioms.html)
+                    — units/ 안에 단어장 허브 · 유닛 30개 · 빈출 어휘 200선(frequency.html)
+                      · 혼동 어휘 20쌍(confusion.html) · 숙어(idioms.html)
 data/               단어·문법·회화 데이터 (unit01.js …) + 홈 앱 학습 데이터(app-data.js)
 assets/             앱 스크립트(app.js) · 앱 스타일(app.css) · 정적 페이지 공용 스타일(site.css) · 발음(speak.js)
                     — 홈 앱의 원본은 index.html · data/app-data.js · assets/app.js 세 파일이고,

@@ -205,6 +205,12 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://toeic.monster/units/confusion.html</loc>
+    <lastmod>2026-09-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://toeic.monster/guides/</loc>
     <lastmod>2026-09-18</lastmod>
     <changefreq>monthly</changefreq>

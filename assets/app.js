@@ -1648,10 +1648,13 @@
 
   // ---------- 자주 헷갈리는 혼동 어휘 ----------
 
-  function renderConfusables() {
+  // limit — 홈 프리렌더가 "앞의 6쌍만" 심을 때 씁니다(전체 20쌍은 units/confusion.html).
+  //        앱이 뜨면 인자 없이 다시 그려서 사용자는 20쌍을 그대로 봅니다.
+  function renderConfusables(limit) {
     var grid = document.getElementById("confuseGrid");
     if (!grid) return;
-    grid.innerHTML = CONFUSABLES.map(function (c) {
+    var list = limit ? CONFUSABLES.slice(0, limit) : CONFUSABLES;
+    grid.innerHTML = list.map(function (c) {
       return '<article class="confuse-card">' +
         '<div class="confuse-head"><span class="confuse-pair" lang="en">' + esc(c.pair) + '</span><span class="confuse-tag">' + esc(c.tag) + '</span></div>' +
         '<div class="confuse-row"><div class="confuse-en" lang="en">' + esc(c.a.en) + ttsBtn(c.a.en, "예문 듣기") + '</div><div class="confuse-ko">' + esc(c.a.ko) + '</div></div>' +
@@ -2560,12 +2563,17 @@
 
   // 섹션 메뉴: 자주 쓰는 8개만 먼저 보여 주고, 나머지는 주제별로 접어 둡니다.
   // 넓은 화면에서는 스크롤 부담이 적으므로 전체를 펼친 상태로 시작합니다.
+  //
+  // 그 "기본 상태"는 CSS 미디어 쿼리가 정합니다(.sn-groups 참고) — JS 가 여기서 hidden 을
+  // 토글하면 첫 화면(HTML)과 로드 뒤 모습이 달라져 목차가 펼쳐지며 내용이 150px 넘게 밀립니다.
+  // 그래서 JS 는 "기본과 반대일 때만" 클래스를 붙입니다.
   var snToggle = document.getElementById("snToggle");
   var snMore = document.getElementById("snMore");
   function setSnExpanded(on) {
     if (!snToggle || !snMore) return;
     snToggle.setAttribute("aria-expanded", on ? "true" : "false");
-    snMore.hidden = !on;
+    snMore.classList.toggle("sn-closed", !on);
+    snMore.classList.toggle("sn-open", on);
   }
   if (snToggle && snMore) {
     var wideScreen = false;

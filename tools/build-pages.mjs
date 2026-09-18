@@ -84,7 +84,8 @@ function loadVocab() {
     const file = `data/unit${String(i).padStart(2, "0")}.js`;
     vm.runInContext(read(file), sandbox, { filename: file, timeout: 5000 });
   }
-  for (const file of ["data/idioms.js", "data/extra.js", GRAMMAR_FILES, CONVERSATION_FILES].flat()) {
+  // 홈 앱의 데이터(혼동 어휘·어근 등)도 함께 읽습니다 — 정적 페이지가 같은 값을 써야 화면과 어긋나지 않습니다.
+  for (const file of ["data/idioms.js", "data/extra.js", "data/app-data.js", GRAMMAR_FILES, CONVERSATION_FILES].flat()) {
     vm.runInContext(read(file), sandbox, { filename: file, timeout: 5000 });
   }
   const vocab = sandbox.window.VOCAB_UNITS || {};
@@ -96,7 +97,9 @@ function loadVocab() {
   if (!idioms.length) throw new Error("숙어 데이터를 읽지 못했습니다.");
   if (!grammar.length) throw new Error("문법 교재 데이터를 읽지 못했습니다.");
   if (!conversation.length) throw new Error("회화 교재 데이터를 읽지 못했습니다.");
-  return { vocab, idioms, extra, grammar, conversation };
+  // CONFUSABLES 는 app-data.js 의 최상위 var 라 샌드박스 전역으로 올라옵니다.
+  const confusables = sandbox.CONFUSABLES || [];
+  return { vocab, idioms, extra, grammar, conversation, confusables };
 }
 
 /** 데이터가 마지막으로 바뀐 날짜(git 기준). 재실행 시 결과가 같도록 고정값을 쓴다. */
@@ -184,6 +187,16 @@ ol.words li{background:var(--card);border:1px solid var(--border);border-radius:
 .freq-range{font-size:14px;color:var(--muted);margin:22px 0 8px;letter-spacing:.2px}
 /* 가이드 도입 문단 — 목록(.lead)보다 읽기 편한 본문 폭으로 둡니다. */
 .g-intro{font-size:14.5px;line-height:1.8;margin:10px 0 14px;color:var(--text)}
+/* 혼동 어휘 카드 — 앱(assets/app.css)과 같은 모양을 공용 변수로 다시 씁니다(토큰 이름이 일부 다릅니다). */
+.confuse-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(285px,1fr));gap:12px;margin-top:6px}
+.confuse-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px 18px}
+.confuse-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.confuse-pair{font-size:15.5px;font-weight:800;color:var(--primary-dark);word-break:keep-all}
+.confuse-tag{font-size:11px;font-weight:800;color:var(--cyan);background:var(--soft);border-radius:99px;padding:2px 8px}
+.confuse-row{margin-top:9px;font-size:13px;line-height:1.5}
+.confuse-en{font-style:italic;color:var(--ex-text)}
+.confuse-ko{color:var(--muted);font-size:12.5px}
+.confuse-tip{margin-top:10px;font-size:12px;background:var(--soft);border-radius:8px;padding:8px 10px;color:var(--muted)}
 .qa h3{font-size:15px;margin:16px 0 4px;color:var(--text)}
 .qa p{font-size:14px;color:var(--text);margin-bottom:4px}
 .pager{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:center;margin-top:28px;font-size:14px;font-weight:700}
@@ -706,6 +719,11 @@ ${faqSection(FAQ_UNITS)}  <h2 class="sec">함께 보면 좋은 자료</h2>
       <span>📈 빈도순 기출 어휘 200선</span>
       <em>무엇부터 외울지 순서 잡기</em>
     </a></li>
+    <li><a href="confusion.html">
+      <b>혼동 어휘</b>
+      <span>⚠️ 헷갈리는 단어 20쌍</span>
+      <em>철자·뜻 비교와 예문</em>
+    </a></li>
     <li><a href="idioms.html">
       <b>구동사·숙어</b>
       <span>💡 빈출 구동사·숙어 모음</span>
@@ -985,6 +1003,186 @@ ${faqHtml}
 ${units && units.length ? unitJumpList(units, -1, `📚 단어장 유닛 바로 가기 (${units.length}개)`) : ""}`;
 
   return { file: "units/frequency.html", html: page({ title, description, canonical, ld, body, speak: true }) };
+}
+
+/* ------------------------------------------------------------------ */
+/* 6-1c. 헷갈리는 단어(혼동 어휘) — data/app-data.js CONFUSABLES        */
+/* ------------------------------------------------------------------ */
+
+/**
+ * 혼동 어휘 20쌍 — 홈의 학습 카드와 같은 데이터(`CONFUSABLES`)로 만드는 정적 페이지입니다
+ * (docs/prerender-split-plan.md 2단계 · 2026-09-18).
+ *
+ * 홈에는 앞의 6쌍만 미리 심고(웹에서는 어차피 앱이 20쌍을 다시 그립니다) 이 페이지가 전체를 담습니다.
+ * 카드에 팁뿐 아니라 예문 발음까지 붙여, 검색으로 바로 들어온 사람도 한 페이지에서 끝낼 수 있게 했습니다.
+ */
+function buildConfusionPage(confusables, units) {
+  const canonical = `${SITE}/units/confusion.html`;
+  const n = confusables.length;
+  const title = `헷갈리는 TOEIC 영단어 ${n}쌍 — 철자·뜻 비교 | toeic.monster`;
+  const description =
+    `토익에서 자주 헷갈리는 단어 ${n}쌍을 예문과 함께 비교했습니다. ` +
+    "affect와 effect, adapt와 adopt 처럼 철자가 비슷해 틀리기 쉬운 단어를 한 페이지에서 구분하며 익히세요.";
+
+  const FAQ = [
+    {
+      q: "헷갈리는 단어는 어떻게 외우는 게 좋은가요?",
+      a:
+        "뜻을 따로 외우기보다 짧은 예문 한 쌕으로 묶어서 기억하세요. " +
+        "예를 들면 affect 는 '정책이 직원에게 영향을 준다', effect 는 '그 변화의 효과'처럼 문장과 함께 익히면 시험장에서 문장 구조만 보고도 갈립니다.",
+    },
+    {
+      q: "철자가 비슷한 단어가 자주 나오나요?",
+      a:
+        "Part 5·6 어휘 문제와 Part 7 지문에 반복해 나옵니다. " +
+        "보기에 철자가 비슷한 단어가 나란히 오면 뜻이 아니라 문장에서의 자리(품사)가 단서가 되므로, 태그에 적힌 품사도 함께 눈에 익혀 두세요.",
+    },
+    {
+      q: "품사 태그는 어떻게 활용하나요?",
+      a: "affect(동사)·effect(명사) 처럼 각 단어 옆에 적어 두었습니다. 빈칸 앞뒤로 명사 자리인지 동사 자리인지만 판단되면 오답이 바로 걸러집니다.",
+    },
+    {
+      q: "목록에 있는 단어만 외우면 되나요?",
+      a:
+        `이 ${n}쌍은 “자주 틀리는 것”을 모은 목록입니다. 빈출 어휘 200선으로 우선순위를 잡고, ` +
+        "주제별 단어장으로 어휘를 넓힌 뒤 이 페이지로 돌아와 점검하는 순서를 추천합니다.",
+    },
+  ];
+
+  const ld = jsonLd({
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "LearningResource",
+        name: `헷갈리는 TOEIC 영단어 ${n}쌍`,
+        description,
+        url: canonical,
+        inLanguage: "ko",
+        learningResourceType: "어휘 비교 목록",
+        educationalUse: "self-study",
+        numberOfItems: n,
+        provider: { "@type": "Organization", name: "toeic.monster", url: `${SITE}/` },
+      },
+      {
+        "@type": "ItemList",
+        name: `헷갈리는 TOEIC 영단어 ${n}쌍`,
+        numberOfItems: n,
+        itemListElement: confusables.map((c, i) => ({
+          "@type": "ListItem",
+          position: i + 1,
+          name: c.pair,
+          description: `${c.tag} — ${c.tip}`,
+        })),
+      },
+      {
+        "@type": "FAQPage",
+        mainEntity: FAQ.map((f) => ({
+          "@type": "Question",
+          name: f.q,
+          acceptedAnswer: { "@type": "Answer", text: f.a },
+        })),
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "toeic.monster", item: `${SITE}/` },
+          { "@type": "ListItem", position: 2, name: "주제별 단어장", item: `${SITE}/units/` },
+          { "@type": "ListItem", position: 3, name: `혼동 어휘 ${n}쌍`, item: canonical },
+        ],
+      },
+    ],
+  });
+
+  const cards = confusables
+    .map(
+      (c) => `    <article class="confuse-card">
+      <div class="confuse-head"><span class="confuse-pair" lang="en">${esc(c.pair)}</span><span class="confuse-tag">${esc(c.tag)}</span></div>
+      <div class="confuse-row"><div class="confuse-en" lang="en">${esc(c.a.en)}${speakBtn(c.a.en)}</div><div class="confuse-ko">${esc(c.a.ko)}</div></div>
+      <div class="confuse-row"><div class="confuse-en" lang="en">${esc(c.b.en)}${speakBtn(c.b.en)}</div><div class="confuse-ko">${esc(c.b.ko)}</div></div>
+      <div class="confuse-tip">💡 ${esc(c.tip)}</div>
+    </article>`,
+    )
+    .join("\n");
+
+  const bullet = (text) => `    <li><span class="w-mean">${text}</span></li>`;
+  const bullets = (list) => `  <ol class="words">\n${list.map(bullet).join("\n")}\n  </ol>`;
+
+  const body = `  <nav class="crumb" aria-label="breadcrumb">
+    <a href="../">toeic.monster</a> › <a href="./">주제별 단어장</a> › <span>혼동 어휘 ${n}쌍</span>
+  </nav>
+
+  <h1>헷갈리는 TOEIC 영단어 ${n}쌍</h1>
+  <p class="lead">철자가 비슷해 자주 틀리는 단어 ${n}쌍을 예문과 함께 비교했습니다. 각 카드의 🔊 를 눌러 문장 발음까지 확인해 보세요.</p>
+  <p class="g-intro">토익에서 틀리는 어휘는 “모르는 단어”보다 “안다고 생각한 단어”에서 나옵니다. affect와 effect, adapt와 adopt 처럼 철자가 비슷한 단어는 뜻을 따로 외우면 시험장에서 다시 헷갈리고, 문장으로 묶어 두면 문장 구조만 보고도 골라낼 수 있습니다.</p>
+  <a class="cta" href="../">🃏 암기 카드·퀴즈로 바로 학습하기</a>
+
+  <h2 class="sec">왜 혼동 단어부터 정리해야 하나요?</h2>
+${bullets([
+  "오답의 상당수가 “뜻은 알지만 골라내지 못한” 단어에서 나옵니다 — 문장에서의 자리(품사)만 보면 답이 갈립니다.",
+  "Part 5·6에서는 같은 어근의 명사·동사·형용사가 보기에 나란히 놓입니다. 두 번째 단어가 아니라 “자리”가 단서입니다.",
+  "Part 7 지문에서 비슷한 단어가 반복되면 지문의 흐름을 놓칩니다. 한 번 구분해 두면 읽는 속도가 함께 올라갑니다.",
+  "듣기에서도 소리가 비슷한 짝(accept·except)이 자주 나와, 눈으로 익힌 구분이 그대로 점수가 됩니다.",
+])}
+
+  <h2 class="sec">이렇게 구분하세요</h2>
+${bullets([
+  "① 카드의 예문을 소리 내어 읽고, 두 문장에서 각 단어가 하는 일을 말해 봅니다.",
+  "② 품사 태그를 가리고 pair만 보고 “왼쪽은 동사, 오른쪽은 명사”처럼 되뇌어 봅니다.",
+  "③ 뜻이 아니라 자리로 고르는 연습을 합니다 — 빈칸 앞뒤에 관사·조동사가 있는지 봅니다.",
+  "④ 하루에 5쌍씩 나누고, 사흘 뒤 앞 구간을 다시 훑습니다.",
+  "⑤ 다 돈 뒤에는 <a href='../'>홈</a>의 퀴즈와 암기 카드로 실제 문제에서 구분되는지 확인합니다.",
+])}
+
+  <h2 class="sec">헷갈리는 단어 ${n}쌍</h2>
+  <div class="confuse-grid">
+${cards}
+  </div>
+
+  <h2 class="sec">시험에서는 이렇게 나옵니다</h2>
+${bullets([
+  "Part 5 어휘 — 보기에 affect·effect 처럼 같은 어근이 오면, 문장의 자리로 정답이 하나로 좁혀집니다.",
+  "Part 6 지문 완성 — 접속부사와 함께 “의미가 반대인 단어”가 함정으로 쓰입니다.",
+  "Part 7 안내문·이메일 — proceed·precede, stationary·stationery 처럼 비슷한 철자가 실제 지문에 나옵니다.",
+  "듣기 Part 2·3 — accept·except, borrow·lend 처럼 소리가 비슷한 짝이 응답 함정으로 쓰입니다.",
+])}
+
+  <h2 class="sec">자주 묻는 질문</h2>
+  <div class="qa">
+${FAQ.map((f) => `  <h3>${esc(f.q)}</h3>\n  <p>${esc(f.a)}</p>`).join("\n")}
+  </div>
+
+  <h2 class="sec">함께 보면 좋은 자료</h2>
+  <ul class="unitlist">
+    <li><a href="frequency.html">
+      <b>빈출 어휘</b>
+      <span>📈 빈도순 기출 어휘 200선</span>
+      <em>무엇부터 외울지 순서 잡기</em>
+    </a></li>
+    <li><a href="./">
+      <b>주제별 단어장</b>
+      <span>📚 30개 유닛 · 단어 1,000개</span>
+      <em>주제별로 어휘 넓히기</em>
+    </a></li>
+    <li><a href="../guides/part-5-word-forms.html">
+      <b>어형 변화 공략</b>
+      <span>✏️ 품사 변환 규칙</span>
+      <em>빈칸 자리로 품사 고르기</em>
+    </a></li>
+    <li><a href="idioms.html">
+      <b>구동사·숙어</b>
+      <span>💡 빈출 표현 모음</span>
+      <em>뜻과 예문, 해석까지</em>
+    </a></li>
+  </ul>
+
+  <nav class="pager" aria-label="이동">
+    <span></span>
+    <a class="mid" href="./">📚 주제별 단어장 전체 보기</a>
+    <span></span>
+  </nav>
+${units && units.length ? unitJumpList(units, -1, `📚 단어장 유닛 바로 가기 (${units.length}개)`) : ""}`;
+
+  return { file: "units/confusion.html", html: page({ title, description, canonical, ld, body, speak: true }) };
 }
 
 /* ------------------------------------------------------------------ */
@@ -1410,9 +1608,11 @@ function grammarChapter(c, nav) {
     </div>`
     : "";
 
+  // intro(선택) — summary 가 "무엇을 배우는지"라면, intro 는 "시험에서 어떻게 나오고 어떻게 공부하면 되는지"입니다.
+  // 기본 12과에 넣어 두었고, 없으면 그 줄만 빠집니다.
   return `  <section class="gram" id="${chapterAnchor(c.no)}">
     <div class="gram-head"><span class="gram-no">${String(c.no).padStart(2, "0")}과</span><h2>${esc(c.title)}</h2></div>
-    <p class="gram-sum">${esc(c.summary)}</p>
+    <p class="gram-sum">${esc(c.summary)}</p>${c.intro ? `\n    <p class="g-intro">${esc(c.intro)}</p>` : ""}
 ${points}${mistakes}${practice}${nav}
   </section>`;
 }
@@ -1755,9 +1955,11 @@ function conversationChapter(c, nav) {
     </div>`
     : "";
 
+  // intro(선택) — summary 가 "무엇을 배우는지"라면, intro 는 "시험에서 어떻게 나오고 어떻게 공부하면 되는지"입니다.
+  // 기본 12과에 넣어 두었고, 없으면 그 줄만 빠집니다.
   return `  <section class="gram" id="${chapterAnchor(c.no)}">
     <div class="gram-head"><span class="gram-no">${String(c.no).padStart(2, "0")}과</span><h2>${esc(c.title)}</h2></div>
-    <p class="gram-sum">${esc(c.summary)}</p>
+    <p class="gram-sum">${esc(c.summary)}</p>${c.intro ? `\n    <p class="g-intro">${esc(c.intro)}</p>` : ""}
 ${points}${mistakes}${practice}${nav}
   </section>`;
 }
@@ -1934,6 +2136,35 @@ function buildChapterPage(kind, book, chapter, books) {
     ],
   });
 
+  // 낱개 과 페이지는 검색으로 바로 들어오는 주소라, 다음에 볼 자료로 가는 길을 페이지 안에 둡니다.
+  // (꼭대기에 있는 빵부스러기·하단 이동 링크만으로는 무엇을 더 볼지가 드러나지 않습니다.)
+  const related = isGrammar
+    ? [
+        { href: "./", t: "문법 교재 3단계", d: `기초·중급·고급 (${books.length}권)` },
+        { href: "cheatsheet.html", t: "문법 한 장 요약", d: "Part 5 필수 문법을 한 페이지에" },
+        { href: bookFile, t: `${esc(book.title)} 전체`, d: `${book.chapters.length}과를 순서대로` },
+        { href: "../units/frequency.html", t: "빈출 어휘 200선", d: "문법과 함께 잡으면 좋은 어휘" },
+      ]
+    : [
+        { href: "./", t: "영어회화 교재 3단계", d: `초급·중급·고급 (${books.length}권)` },
+        { href: bookFile, t: `${esc(book.title)} 전체`, d: `${book.chapters.length}과를 순서대로` },
+        { href: "../grammar/", t: "문법 교재", d: "막히는 문법을 같은 단계에서 찾기" },
+        { href: "../units/", t: "주제별 단어장 30개", d: "상황별 어휘로 표현 넓히기" },
+      ];
+  const relatedHtml = `  <h2 class="sec">함께 보면 좋은 자료</h2>
+  <ul class="unitlist">
+${related
+    .map(
+      (r) => `    <li><a href="${r.href}">
+      <b>${r.t}</b>
+      <span>${r.d}</span>
+    </a></li>`,
+    )
+    .join("\n")}
+  </ul>
+
+`;
+
   const body = `  <nav class="crumb" aria-label="breadcrumb">
     <a href="../">toeic.monster</a> › <a href="./">${sectionName}</a> › <a href="${bookFile}">${esc(book.title)}</a> › <span>${esc(label)}</span>
   </nav>
@@ -1952,7 +2183,7 @@ ${buildSection(
   )}
 
 ${isGrammar ? `  <a class="cta" href="../index.html?level=${book.id}&ch=${chapter.no}#grammar-quiz">✏️ 앱에서 이 과 문제 풀기</a>\n` : ""}${crossBook.join("\n")}${crossBook.length ? "\n" : ""}
-  <h2 class="sec">🗂 ${esc(book.title)}의 다른 과</h2>
+${relatedHtml}  <h2 class="sec">🗂 ${esc(book.title)}의 다른 과</h2>
   <p class="lead">과를 옮기면 책 페이지의 해당 위치로도 바로 갈 수 있습니다.</p>
   <ul class="toc">
 ${chapterLinkList(book, chapter.no)}
@@ -2087,6 +2318,8 @@ function buildSitemap(units, lastmod, guides, grammar, conversation) {
   add(`${SITE}/units/idioms.html`, "monthly", "0.7");
   // 빈도순 어휘 — 홈에 프리렌더로 심던 200개 목록을 옮긴 페이지(2026-09-18).
   add(`${SITE}/units/frequency.html`, "monthly", "0.7");
+  // 혼동 어휘 — 홈 카드와 같은 데이터로 만든 비교 페이지(2026-09-18).
+  add(`${SITE}/units/confusion.html`, "monthly", "0.7");
   if (guides && guides.length) {
     add(`${SITE}/guides/`, "monthly", "0.6");
     guides.forEach((g) => add(`${SITE}/guides/${g.slug}.html`, "monthly", "0.6"));
@@ -2119,7 +2352,7 @@ function buildSitemap(units, lastmod, guides, grammar, conversation) {
 
 function main() {
   const meta = loadUnitMeta();
-  const { vocab, idioms, extra, grammar, conversation } = loadVocab();
+  const { vocab, idioms, extra, grammar, conversation, confusables } = loadVocab();
   const guides = Array.isArray(extra.guides) ? extra.guides : [];
   const lastmod = lastModified();
 
@@ -2149,9 +2382,11 @@ function main() {
   const hub = buildHubPage(units);
   const idiomsPage = buildIdiomsPage(idioms, units);
   const freqPage = buildFrequencyPage(Array.isArray(extra.frequency) ? extra.frequency : [], units);
+  const confusionPage = buildConfusionPage(Array.isArray(confusables) ? confusables : [], units);
   write(hub.file, hub.html);
   write(idiomsPage.file, idiomsPage.html);
   write(freqPage.file, freqPage.html);
+  write(confusionPage.file, confusionPage.html);
 
   guides.forEach((g, i) => {
     const gp = buildGuidePage(g, guides[i - 1], guides[i + 1], guides);
@@ -2203,6 +2438,7 @@ function main() {
   console.log(`   · 유닛 페이지 ${written}개 (단어 ${words.toLocaleString("en-US")}개)`);
   console.log(`   · 허브 1개 · 숙어 페이지 1개 (숙어 ${idioms.length}개)`);
   console.log(`   · 빈도순 어휘 페이지 1개 (어휘 ${(extra.frequency || []).length}개)`);
+  console.log(`   · 혼동 어휘 페이지 1개 (${(confusables || []).length}쌍)`);
   console.log(`   · 가이드 페이지 ${guides.length}개 + 허브 1개`);
   console.log(`   · 문법 교재 ${grammar.length}권 + 허브 1개 + 한 장 요약 (${chapters}과 · 연습 문제 ${quizzes}문항)`);
   const convChapters = conversation.reduce((n, b) => n + b.chapters.length, 0);

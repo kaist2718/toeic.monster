@@ -79,6 +79,7 @@
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
+
   /* 버튼·입력 요소는 브라우저 기본 글자색(검정)을 사용합니다.
      다크 모드에서 어두운 배경과 겹쳐 글자가 보이지 않는 문제를 막기 위해 색을 명시합니다. */
   button, input, select, textarea { color: var(--text); }
@@ -123,9 +124,12 @@
     opacity: .85;
     letter-spacing: 0;
   }
+  /* min-width 는 "공간이 빠듯할 때 먼저 줄어드는 정도"입니다. 160px 이면 상단바가
+     글꼴 너비에 따라 1줄 ↔ 2줄로 갈리는 경계에 딱 걸려(본문이 47px 밀리는 CLS),
+     120px 로 여유를 두어 어느 글꼴에서든 같은 줄바꿈이 나오게 했습니다. */
   .progress-wrap {
     flex: 1;
-    min-width: 160px;
+    min-width: 120px;
   }
   .progress-label {
     font-size: 12px;
@@ -1381,6 +1385,9 @@
     font-weight: 700;
     color: var(--primary);
     margin: -8px auto 18px;
+    /* 응원 문구는 로드 뒤에 채워집니다. 자리를 미리 잡아 두지 않으면 문구가 들어오는 순간
+       아래 통계·버튼이 한 줄(약 40px) 밀립니다(CLS). 한 줄 높이만큼 비워 둡니다. */
+    min-height: 1.6em;
   }
   .section-head {
     display: flex;
@@ -1774,6 +1781,12 @@
     border-top: 1px solid var(--border);
   }
   /* hidden 속성이 display:grid 를 이기지 못하므로 명시합니다. */
+  /* 전체 목차(접기·펴기)의 기본 상태 — 좁은 화면은 접힘, 넓은 화면은 펼침.
+     이 판단을 자바스크립트에만 맡기면 로드 직후 목차가 펼쳐지면서 아래 내용이 150px 넘게
+     밀립니다(CLS 0.35). 그래서 CSS 미디어 쿼리가 먼저 정하고, JS 는 접기(.sn-closed)·
+     펴기(.sn-open)만 덧붙입니다 — 어느 화면 폭에서도 첫 화면과 로드 뒤 모습이 같습니다. */
+  @media (max-width: 899px) { .sn-groups:not(.sn-open) { display: none; } }
+  .sn-groups.sn-closed { display: none; }
   .sn-groups[hidden] { display: none; }
   .sn-group { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
   .sn-group-label {

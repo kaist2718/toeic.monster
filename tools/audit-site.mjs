@@ -768,16 +768,13 @@ for (const { page, chars } of textSizes) {
     fail(`${page}: 본문이 너무 얇습니다 — ${chars}자 (기준 ${THIN_FLOOR}자 이상)`);
   }
 }
+// 항상 하위 5개를 적어 둡니다 — "얇은 페이지"가 어느 것인지 매번 눈에 보여야 다음에 또 넘지 않습니다.
 if (textSizes.length) {
-  const thin = textSizes.filter((t) => t.chars < THIN_OK).slice(0, 5);
-  if (thin.length) {
-    note(
-      `본문이 얇은 페이지 ${thin.length}개(기준 ${THIN_OK}자): ` +
-        thin.map((t) => `${t.page} ${t.chars}자`).join(" · "),
-    );
-  } else {
-    note(`모든 색인 페이지 본문 ${THIN_FLOOR}자 이상 (가장 얇은 곳 ${textSizes[0].page} ${textSizes[0].chars}자)`);
-  }
+  const below = textSizes.filter((t) => t.chars < THIN_OK).length;
+  note(
+    `본문 분량 하위 5개${below ? ` (기준 ${THIN_OK}자 미만 ${below}개)` : ""}: ` +
+      textSizes.slice(0, 5).map((t) => `${t.page} ${t.chars}자`).join(" · "),
+  );
 }
 
 /* ------------------------------------------------------------------ */
