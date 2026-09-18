@@ -61,8 +61,10 @@ docs/               기획·점검 기록 (사이트 배포 대상 아님)
 
 앱 스타일(`assets/app.css` · 1단계)과 앱 스크립트·데이터(`assets/app.js`·`data/app-data.js` · 2단계)는
 원본부터 파일이라, 배포본(`tools/stage-site.mjs`)은 주석·태그 사이 공백을 걷고 남은 큰 인라인 블록이
-있으면 같은 방식으로 빼냅니다. 원본 `index.html` 은 628KB → **283.5KB** (앱 코드 260KB · 앱 데이터 86KB 는
-각각 `assets/app.js`·`data/app-data.js`). 저장소의 원본 파일들은 그대로입니다.
+있으면 같은 방식으로 빼냅니다. 원본 `index.html` 은 628KB → **222KB**(앱 코드 277KB · 앱 데이터 86KB 는
+각각 `assets/app.js`·`data/app-data.js`)이고, 남은 분량의 대부분은 검색·JS 없이 읽히는 **프리렌더 본문**입니다.
+본문 서체도 CDN 조각(574KB) 대신 사이트 글자만 담은 서브셋(`assets/fonts/`, 195KB)을 씁니다 —
+`python tools/make-font-subset.py` 로 다시 만듭니다.
 
 ## 문서
 
