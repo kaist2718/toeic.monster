@@ -21,8 +21,8 @@ conversation_chapters = 36
 conversation_quizzes = 108
 speaking_questions = 11
 writing_questions = 8
-sitemap_urls = 124
-pages = 127
+sitemap_urls = 125
+pages = 128
 chapter_pages = 72
 -->
 

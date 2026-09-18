@@ -22,10 +22,14 @@
 <meta name="twitter:title" content="09과 비교 표현 심화 — 중급 영문법 | toeic.monster">
 <meta name="twitter:description" content="the 비교급, 원급 관용 표현, 배수 표현으로 정확한 비교를 만듭니다. 중급 영문법 09과 · 연습 3문항">
 <meta name="twitter:image" content="https://toeic.monster/og-image.png">
-<!-- 본문 서체 — Pretendard Variable. 필요한 글자 조각만 내려받는 dynamic subset 이라 첫 로드 부담이 작습니다. -->
+<!-- 본문 서체 — Pretendard Variable. 필요한 글자 조각만 내려받는 dynamic subset 이라 첫 로드 부담이 작습니다.
+     외부 CDN stylesheet 를 그대로 두면 첫 페인트가 그만큼 늦어져서, preload 로 받아 두고 도착하면 스타일로 바꿉니다.
+     (자바스크립트를 끈 사용자는 아래 <noscript> 의 stylesheet 을 그대로 씁니다.)
+     실측(2026-09-18 · npm run perf): 홈 첫 방문 FCP·LCP 가 약 530ms → 약 460ms, load 약 1.5s → 약 1.0s. -->
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-<!-- 공용 스타일·스크립트 — 124개 정적 페이지가 한 파일을 함께 받아 씁니다(서비스워커가 캐시). -->
+<link rel="preload" as="style" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"></noscript>
+<!-- 공용 스타일·스크립트 — 모든 정적 페이지가 한 파일을 함께 받아 씁니다(서비스워커가 캐시). -->
 <link rel="stylesheet" href="../assets/site.css">
 <script defer src="../assets/speak.js"></script>
 <link rel="icon" href="../icon.svg" type="image/svg+xml">

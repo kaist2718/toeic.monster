@@ -52,6 +52,7 @@ const { html, code } = readAppSource();
 /*    ids:    index.html 의 컨테이너 id (한 함수가 여러 개를 채우기도 합니다) */
 /*    vars:   그리는 데 필요한 값 — `var NAME = [...]` 는 배열, 그 밖에는 한 줄 선언 */
 /*    render: 앱의 렌더 함수 이름                                        */
+/*    args:   렌더 함수에 넘길 인자(문자열 그대로 실행됨) — 홈에 일부만 심을 때 */
 /*    items:  로그에 쓸 항목 수 세는 정규식 (없으면 크기만 표시)             */
 /* ------------------------------------------------------------------ */
 
@@ -59,7 +60,10 @@ const SECTIONS = [
   { label: "혼동 어휘", ids: ["confuseGrid"], vars: ["CONFUSABLES"], render: "renderConfusables", items: /confuse-card/g },
   { label: "어근·접두사", ids: ["wordpartGrid"], vars: ["WORD_PARTS"], render: "renderWordParts", items: /wordpart-card/g },
   { label: "단어 패밀리", ids: ["wordfamilyGrid"], vars: ["WORD_FAMILIES"], render: "renderWordFamilies", items: /wordfamily-card/g },
-  { label: "빈도순 기출 어휘", ids: ["freqGrid"], render: "renderFrequency", items: /freq-item/g },
+  // 빈도순 어휘는 200개짜리 참고 목록이라 별도 정적 페이지(units/frequency.html)로 뺐습니다.
+  // 홈에는 앞의 20개만 심어 "무엇이 있는지" 보여 주고, 전체는 그 페이지가 담당합니다
+  // (그래서 여기 items 는 20, 앱이 뜬 뒤 화면에 그려지는 개수는 200입니다).
+  { label: "빈도순 기출 어휘", ids: ["freqGrid"], render: "renderFrequency", args: '"", 20', items: /freq-item/g },
   { label: "어원 암기 팁", ids: ["mnemonicGrid"], vars: ["MNEMONICS"], render: "renderMnemonics", items: /mnemonic-card/g },
   { label: "동의어·반의어", ids: ["relationGrid"], vars: ["RELATIONS"], render: "renderRelations", items: /relation-card/g },
   { label: "리딩 미니 지문", ids: ["readingGrid"], vars: ["READING_MINI"], render: "renderReadings", items: /reading-card/g },
@@ -220,7 +224,10 @@ function renderSection(section) {
     vm.runInContext(extractVar(name), sandbox, { filename: `assets/app.js:var ${name}`, timeout: 5000 });
   }
   vm.runInContext(extractFunction(section.render), sandbox, { filename: `assets/app.js:${section.render}`, timeout: 5000 });
-  vm.runInContext(`${section.render}();`, sandbox, { filename: `assets/app.js:${section.render}()`, timeout: 5000 });
+  vm.runInContext(`${section.render}(${section.args || ""});`, sandbox, {
+    filename: `assets/app.js:${section.render}()`,
+    timeout: 5000,
+  });
   return section.ids.map((id) => ({ id, html: elementOf(id).innerHTML }));
 }
 
@@ -265,6 +272,7 @@ const sections = home.split(/(?=<section class="home-section")/).slice(1).map((c
 
 const STATIC_LINKS = [
   ["units/", "주제별 단어장 30개 유닛 · 단어 1,000개"],
+  ["units/frequency.html", "빈도순 기출 어휘 200선"],
   ["units/idioms.html", "빈출 구동사·숙어 126개"],
   ["grammar/", "문법 교재 3단계 (36과 · 연습 108문항)"],
   ["grammar/cheatsheet.html", "문법 한 장 요약"],

@@ -22,10 +22,14 @@
 <meta name="twitter:title" content="주제별 TOEIC 단어장 30개 — 유닛별 필수 어휘 모음 | toeic.monster">
 <meta name="twitter:description" content="TOEIC 필수 어휘 1,000개를 비즈니스·금융·여행·IT 등 30개 주제로 나눴습니다. 유닛별 단어 목록에서 발음기호·한글 발음·예문·해석을 한 번에 확인하세요.">
 <meta name="twitter:image" content="https://toeic.monster/og-image.png">
-<!-- 본문 서체 — Pretendard Variable. 필요한 글자 조각만 내려받는 dynamic subset 이라 첫 로드 부담이 작습니다. -->
+<!-- 본문 서체 — Pretendard Variable. 필요한 글자 조각만 내려받는 dynamic subset 이라 첫 로드 부담이 작습니다.
+     외부 CDN stylesheet 를 그대로 두면 첫 페인트가 그만큼 늦어져서, preload 로 받아 두고 도착하면 스타일로 바꿉니다.
+     (자바스크립트를 끈 사용자는 아래 <noscript> 의 stylesheet 을 그대로 씁니다.)
+     실측(2026-09-18 · npm run perf): 홈 첫 방문 FCP·LCP 가 약 530ms → 약 460ms, load 약 1.5s → 약 1.0s. -->
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-<!-- 공용 스타일·스크립트 — 124개 정적 페이지가 한 파일을 함께 받아 씁니다(서비스워커가 캐시). -->
+<link rel="preload" as="style" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"></noscript>
+<!-- 공용 스타일·스크립트 — 모든 정적 페이지가 한 파일을 함께 받아 씁니다(서비스워커가 캐시). -->
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="icon" href="../icon.svg" type="image/svg+xml">
 <link rel="icon" href="../icon-192.png" type="image/png" sizes="192x192">
@@ -254,6 +258,43 @@
       ]
     },
     {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "유닛은 어떤 순서로 보면 좋나요?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "처음이라면 UNIT 1부터 순서대로 보세요. 쉬운 주제에서 어려운 주제로 이어지도록 배열했고, 앞 유닛의 단어가 뒤 유닛 예문에 다시 나오도록 만들었습니다."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "단어 1,000개를 다 외워야 하나요?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "전부 외우기보다 시험에 자주 나오는 단어를 먼저 굳히는 편이 효율적입니다. 빈출 어휘 200선으로 우선순위를 잡고, 유닛은 주제를 넓히는 용도로 쓰세요."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "발음기호를 몰라도 공부할 수 있나요?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "한글 발음을 함께 적어 두었으니 괜찮습니다. 다만 듣기 점수까지 올리려면 발음기호를 나란히 보며 소리 내어 읽는 편이 좋습니다."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "학습 기록은 어디에 저장되나요?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "외운 표시와 진행률은 브라우저 저장소에만 남습니다. 서버로 보내지 않아 로그인이 필요 없고, 브라우저 기록을 지우면 함께 초기화됩니다."
+          }
+        }
+      ]
+    },
+    {
       "@type": "BreadcrumbList",
       "itemListElement": [
         {
@@ -290,6 +331,8 @@
   <h1>주제별 TOEIC 단어장 30개</h1>
   <p class="lead">토익에 자주 나오는 필수 어휘 1,000개를 주제별 30개 유닛으로 나눴습니다. 유닛을 누르면 단어·발음기호·한글 발음·예문·해석을 한 번에 볼 수 있습니다.</p>
   <a class="cta" href="../">🃏 암기 카드·퀴즈·실전 시험으로 학습하기</a>
+
+  <p class="g-intro">유닛은 시험에 자주 나오는 <b>상황과 주제</b>를 축으로 나눴습니다. 한 유닛에 단어 30여 개와 예문·해석을 담았고, 앞 유닛에서 배운 단어가 뒤 유닛 예문에 다시 나오도록 엮어 두었습니다. 하루 한 유닛씩 30일이면 1,000단어를 한 번 도는 셈입니다.</p>
 
   <h2 class="sec">유닛 목록</h2>
   <ul class="unitlist">
@@ -445,8 +488,25 @@
     </a></li>
   </ul>
 
+  <h2 class="sec">자주 묻는 질문</h2>
+  <div class="qa">
+  <h3>유닛은 어떤 순서로 보면 좋나요?</h3>
+  <p>처음이라면 UNIT 1부터 순서대로 보세요. 쉬운 주제에서 어려운 주제로 이어지도록 배열했고, 앞 유닛의 단어가 뒤 유닛 예문에 다시 나오도록 만들었습니다.</p>
+  <h3>단어 1,000개를 다 외워야 하나요?</h3>
+  <p>전부 외우기보다 시험에 자주 나오는 단어를 먼저 굳히는 편이 효율적입니다. 빈출 어휘 200선으로 우선순위를 잡고, 유닛은 주제를 넓히는 용도로 쓰세요.</p>
+  <h3>발음기호를 몰라도 공부할 수 있나요?</h3>
+  <p>한글 발음을 함께 적어 두었으니 괜찮습니다. 다만 듣기 점수까지 올리려면 발음기호를 나란히 보며 소리 내어 읽는 편이 좋습니다.</p>
+  <h3>학습 기록은 어디에 저장되나요?</h3>
+  <p>외운 표시와 진행률은 브라우저 저장소에만 남습니다. 서버로 보내지 않아 로그인이 필요 없고, 브라우저 기록을 지우면 함께 초기화됩니다.</p>
+  </div>
+
   <h2 class="sec">함께 보면 좋은 자료</h2>
   <ul class="unitlist">
+    <li><a href="frequency.html">
+      <b>빈출 어휘</b>
+      <span>📈 빈도순 기출 어휘 200선</span>
+      <em>무엇부터 외울지 순서 잡기</em>
+    </a></li>
     <li><a href="idioms.html">
       <b>구동사·숙어</b>
       <span>💡 빈출 구동사·숙어 모음</span>

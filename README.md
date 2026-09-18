@@ -17,7 +17,7 @@ npm run serve       # http://127.0.0.1:8000 에서 미리보기
 
 | 명령 | 하는 일 |
 | --- | --- |
-| `npm run build` | 정적 페이지 124개 생성 + 홈 사전 렌더 (결과물은 커밋 대상) |
+| `npm run build` | 정적 페이지 전체 생성 + 홈 사전 렌더 (결과물은 커밋 대상) |
 | `npm run audit` | 콘텐츠·문구·사이트 감사 (빠진 파일·오타·프리캐시 어긋남) |
 | `npm test` | DOM 을 흉내 낸 UX·TTS·문법 퀴즈 테스트 |
 | `npm run verify` | 생성물이 소스와 어긋나지 않는지 확인 |
@@ -35,7 +35,8 @@ npm run serve       # http://127.0.0.1:8000 에서 미리보기
 
 ```
 index.html          홈(앱)의 마크업 — 첫 페인트 부트스트랩(테마)만 인라인으로 남습니다.
-units/ grammar/ conversation/ guides/   생성된 정적 페이지 124개 (build-pages.mjs)
+units/ grammar/ conversation/ guides/   생성된 정적 페이지 (build-pages.mjs)
+                    — units/ 안에 단어장 허브 · 유닛 30개 · 빈출 어휘 200선(frequency.html) · 숙어(idioms.html)
 data/               단어·문법·회화 데이터 (unit01.js …) + 홈 앱 학습 데이터(app-data.js)
 assets/             앱 스크립트(app.js) · 앱 스타일(app.css) · 정적 페이지 공용 스타일(site.css) · 발음(speak.js)
                     — 홈 앱의 원본은 index.html · data/app-data.js · assets/app.js 세 파일이고,

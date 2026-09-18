@@ -19,7 +19,7 @@
  *   sitemap.xml             — 위 페이지들을 포함한 전체 사이트맵
  *
  * 왜 CSS 를 따로 굽는가:
- *   정적 페이지는 124개인데 모두 같은 스타일을 씁니다. 페이지마다 인라인으로 넣으면
+ *   정적 페이지는 모두 같은 스타일을 씁니다. 페이지마다 인라인으로 넣으면
  *   같은 9KB 를 43번 다시 받게 되어 합쳐서 380KB 가 됩니다. 공용 파일로 빼고
  *   최소화하면 한 번만 받고 모든 페이지에서 재사용합니다.
  *
@@ -177,6 +177,15 @@ ol.words li{background:var(--card);border:1px solid var(--border);border-radius:
 .w-ex{font-size:13.5px;font-style:italic;color:var(--ex-text)}
 .w-expron{font-size:12.5px;font-weight:600;color:var(--cyan)}
 .w-exko{font-size:12.5px;color:var(--muted)}
+/* 빈도순 어휘 페이지 — 구간 이동 칩과 구간 제목, 문답 블록(.qa). */
+.freq-jump{margin:8px 0 6px;font-size:13px;color:var(--muted)}
+.freq-jump a{display:inline-block;margin:0 6px 6px 0;padding:5px 11px;border:1px solid var(--border);border-radius:999px;text-decoration:none;color:var(--primary);background:var(--card);font-weight:700}
+.freq-jump a:hover{border-color:var(--primary)}
+.freq-range{font-size:14px;color:var(--muted);margin:22px 0 8px;letter-spacing:.2px}
+/* 가이드 도입 문단 — 목록(.lead)보다 읽기 편한 본문 폭으로 둡니다. */
+.g-intro{font-size:14.5px;line-height:1.8;margin:10px 0 14px;color:var(--text)}
+.qa h3{font-size:15px;margin:16px 0 4px;color:var(--text)}
+.qa p{font-size:14px;color:var(--text);margin-bottom:4px}
 .pager{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:center;margin-top:28px;font-size:14px;font-weight:700}
 .pager a{display:inline-block;padding:10px 0;text-decoration:none}
 .pager a:hover{text-decoration:underline}
@@ -374,10 +383,14 @@ function page({ title, description, canonical, ld, body, footerNav, speak, chapt
 <meta name="twitter:title" content="${esc(title)}">
 <meta name="twitter:description" content="${esc(description)}">
 <meta name="twitter:image" content="${OG_IMAGE}">
-<!-- 본문 서체 — Pretendard Variable. 필요한 글자 조각만 내려받는 dynamic subset 이라 첫 로드 부담이 작습니다. -->
+<!-- 본문 서체 — Pretendard Variable. 필요한 글자 조각만 내려받는 dynamic subset 이라 첫 로드 부담이 작습니다.
+     외부 CDN stylesheet 를 그대로 두면 첫 페인트가 그만큼 늦어져서, preload 로 받아 두고 도착하면 스타일로 바꿉니다.
+     (자바스크립트를 끈 사용자는 아래 <noscript> 의 stylesheet 을 그대로 씁니다.)
+     실측(2026-09-18 · npm run perf): 홈 첫 방문 FCP·LCP 가 약 530ms → 약 460ms, load 약 1.5s → 약 1.0s. -->
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-<!-- 공용 스타일·스크립트 — 124개 정적 페이지가 한 파일을 함께 받아 씁니다(서비스워커가 캐시). -->
+<link rel="preload" as="style" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"></noscript>
+<!-- 공용 스타일·스크립트 — 모든 정적 페이지가 한 파일을 함께 받아 씁니다(서비스워커가 캐시). -->
 <link rel="stylesheet" href="${ASSET_REL}site.css">${speak ? `\n<script defer src="${ASSET_REL}speak.js"><\/script>` : ""}
 <link rel="icon" href="../icon.svg" type="image/svg+xml">
 <link rel="icon" href="../icon-192.png" type="image/png" sizes="192x192">
@@ -431,13 +444,39 @@ ${chapterBar ? CHAPTER_BAR + "\n" : ""}</body>
 
 /**
  * 예문 듣기 버튼 스크립트는 이제 공용 파일(assets/speak.js)로 분리했습니다.
- * 124개 페이지가 같은 2.3KB 를 각각 받지 않도록, 페이지는 defer 로 그 파일을 불러옵니다.
+ * 페이지가 같은 2.3KB 를 각각 받지 않도록, 페이지는 defer 로 그 파일을 불러옵니다.
  */
 /** 📘 버튼을 예문 옆에 붙입니다(듣기 대상 문장은 data-say 에 담습니다). */
 function speakBtn(text) {
   // 같은 문장이 여러 번 나오므로, 낭독기에서 어떤 문장인지 구분되도록 문장을 라벨에 넣습니다.
   return ` <button type="button" class="gex-speak" data-say="${esc(text)}" aria-label="예문 듣기: ${esc(text)}" title="예문 듣기">🔊</button>`;
 }
+
+/**
+ * 문답 블록 — 허브·가이드가 함께 씁니다.
+ * 화면에 보이는 문장과 구조화 데이터(FAQPage)가 반드시 같아야 해서(어긋나면 검색엔진이 무시합니다),
+ * 문답은 한 곳에만 적고 두 곳에서 같은 값을 씁니다.
+ */
+const faqSection = (faq) =>
+  faq && faq.length
+    ? `  <h2 class="sec">자주 묻는 질문</h2>\n  <div class="qa">\n${faq
+        .map((f) => `  <h3>${esc(f.q)}</h3>\n  <p>${esc(f.a)}</p>`)
+        .join("\n")}\n  </div>\n\n`
+    : "";
+
+const faqNodes = (faq) =>
+  faq && faq.length
+    ? [
+        {
+          "@type": "FAQPage",
+          mainEntity: faq.map((f) => ({
+            "@type": "Question",
+            name: f.q,
+            acceptedAnswer: { "@type": "Answer", text: f.a },
+          })),
+        },
+      ]
+    : [];
 
 /* ------------------------------------------------------------------ */
 /* 4. 유닛 페이지                                                      */
@@ -578,6 +617,26 @@ ${allUnits && allUnits.length ? unitJumpList(allUnits, u.id) : ""}`;
 /* 5. 허브 페이지                                                      */
 /* ------------------------------------------------------------------ */
 
+/** 주제별 단어장 허브의 문답 — 화면과 구조화 데이터가 함께 씁니다. */
+const FAQ_UNITS = [
+  {
+    q: "유닛은 어떤 순서로 보면 좋나요?",
+    a: "처음이라면 UNIT 1부터 순서대로 보세요. 쉬운 주제에서 어려운 주제로 이어지도록 배열했고, 앞 유닛의 단어가 뒤 유닛 예문에 다시 나오도록 만들었습니다.",
+  },
+  {
+    q: "단어 1,000개를 다 외워야 하나요?",
+    a: "전부 외우기보다 시험에 자주 나오는 단어를 먼저 굳히는 편이 효율적입니다. 빈출 어휘 200선으로 우선순위를 잡고, 유닛은 주제를 넓히는 용도로 쓰세요.",
+  },
+  {
+    q: "발음기호를 몰라도 공부할 수 있나요?",
+    a: "한글 발음을 함께 적어 두었으니 괜찮습니다. 다만 듣기 점수까지 올리려면 발음기호를 나란히 보며 소리 내어 읽는 편이 좋습니다.",
+  },
+  {
+    q: "학습 기록은 어디에 저장되나요?",
+    a: "외운 표시와 진행률은 브라우저 저장소에만 남습니다. 서버로 보내지 않아 로그인이 필요 없고, 브라우저 기록을 지우면 함께 초기화됩니다.",
+  },
+];
+
 function buildHubPage(units) {
   const canonical = `${SITE}/units/`;
   const total = units.reduce((n, u) => n + u.words.length, 0);
@@ -606,6 +665,7 @@ function buildHubPage(units) {
           url: unitUrl(u.id),
         })),
       },
+      ...faqNodes(FAQ_UNITS),
       {
         "@type": "BreadcrumbList",
         itemListElement: [
@@ -624,6 +684,8 @@ function buildHubPage(units) {
   <p class="lead">토익에 자주 나오는 필수 어휘 ${total.toLocaleString("en-US")}개를 주제별 30개 유닛으로 나눴습니다. 유닛을 누르면 단어·발음기호·한글 발음·예문·해석을 한 번에 볼 수 있습니다.</p>
   <a class="cta" href="../">🃏 암기 카드·퀴즈·실전 시험으로 학습하기</a>
 
+  <p class="g-intro">유닛은 시험에 자주 나오는 <b>상황과 주제</b>를 축으로 나눴습니다. 한 유닛에 단어 30여 개와 예문·해석을 담았고, 앞 유닛에서 배운 단어가 뒤 유닛 예문에 다시 나오도록 엮어 두었습니다. 하루 한 유닛씩 30일이면 1,000단어를 한 번 도는 셈입니다.</p>
+
   <h2 class="sec">유닛 목록</h2>
   <ul class="unitlist">
 ${units
@@ -637,8 +699,13 @@ ${units
   .join("\n")}
   </ul>
 
-  <h2 class="sec">함께 보면 좋은 자료</h2>
+${faqSection(FAQ_UNITS)}  <h2 class="sec">함께 보면 좋은 자료</h2>
   <ul class="unitlist">
+    <li><a href="frequency.html">
+      <b>빈출 어휘</b>
+      <span>📈 빈도순 기출 어휘 200선</span>
+      <em>무엇부터 외울지 순서 잡기</em>
+    </a></li>
     <li><a href="idioms.html">
       <b>구동사·숙어</b>
       <span>💡 빈출 구동사·숙어 모음</span>
@@ -718,6 +785,209 @@ ${units && units.length ? unitJumpList(units, -1, `📚 단어장 유닛 바로 
 }
 
 /* ------------------------------------------------------------------ */
+/* 6-1b. 빈도순 기출 어휘 (data/extra.js frequency)                     */
+/* ------------------------------------------------------------------ */
+
+/**
+ * 빈도순 기출 어휘 200선 — 홈에 프리렌더로 심던 200개 목록을 별도 페이지로 옮겼습니다
+ * (docs/prerender-split-plan.md 1단계 · 2026-09-18).
+ *
+ * 왜 페이지로 옮겼나:
+ *   홈 index.html 의 프리렌더 마크업 중 혼자 48.6KB(가장 큼)를 차지했는데, 성격은
+ *   "참고 목록"이라 홈의 도구 섹션들과 달리 **검색 없이도 끝까지 읽히는** 자료입니다.
+ *   그래서 이 페이지가 전체 200개를 담고, 홈에는 상위 20개와 이 페이지로 가는 링크만 둡니다.
+ */
+function buildFrequencyPage(freq, units) {
+  const canonical = `${SITE}/units/frequency.html`;
+  const n = freq.length;
+  const title = `TOEIC 빈출 어휘 ${n}선 — 빈도순 필수 단어 목록 | toeic.monster`;
+  const description =
+    `토익에 반복 출제되는 어휘 ${n}개를 빈도순으로 정리했습니다. ` +
+    "단어·품사·뜻을 한 줄씩 확인하며 앞에서부터 외우고, 발음 버튼으로 소리까지 들어 보세요.";
+
+  // 화면과 구조화 데이터가 같은 문답을 쓰도록 한 곳에서 만듭니다(둘이 어긋나면 검색엔진이 신뢰하지 않습니다).
+  const FAQ = [
+    {
+      q: "빈도순은 어떤 기준으로 정렬한 건가요?",
+      a:
+        "시험에 반복 출제되는 순서를 감각적으로 묶은 " +
+        `학습 우선순위입니다. 통계 코퍼스의 정확한 순위표가 아니라 "먼저 외우면 이득인 순서"이고, 상위 구간일수록 Part 5·6·7에서 만날 확률이 높습니다.`,
+    },
+    {
+      q: `이 ${n}개만 외우면 되나요?`,
+      a:
+        `아닙니다. 이 목록은 "무엇부터"를 정하는 우선순위이고, 수량은 주제별 단어장(1,000개)이 담당합니다. ` +
+        "여기서 200개를 끝낸 뒤 주제별 단어장으로 넓히면 같은 단어를 여러 맥락에서 다시 만나게 됩니다.",
+    },
+    {
+      q: "며칠에 걸쳐 외우는 게 좋은가요?",
+      a:
+        "하루 20개씩 열흘을 권합니다. 소리 내어 세 번 읽고 품사·뜻을 확인한 뒤, " +
+        "이튿날에는 앞 구간을 먼저 훑고 새 구간으로 넘어가세요(3일·7일 간격 복습이면 더 좋습니다).",
+    },
+    {
+      q: "홈에서 보던 목록과 같은 건가요?",
+      a: "같은 목록입니다. 홈에는 상위 20개만 보여 주고, 전체 200개는 이 페이지가 담당합니다.",
+    },
+    {
+      q: "발음은 어떻게 듣나요?",
+      a:
+        "각 단어 옆의 🔊 버튼을 누르면 브라우저가 읽어 줍니다(별도 음원 파일을 내려받지 않아 데이터를 쓰지 않습니다). " +
+        "Part 2·3 듣기 점수는 결국 발음이 귀에 익었는지의 문제라, 눈으로만 읽지 말고 소리 내어 따라 읽어 보세요.",
+    },
+  ];
+
+  const ld = jsonLd({
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "LearningResource",
+        name: `TOEIC 빈출 어휘 ${n}선`,
+        description,
+        url: canonical,
+        inLanguage: "ko",
+        learningResourceType: "어휘 목록",
+        educationalUse: "self-study",
+        numberOfItems: n,
+        provider: { "@type": "Organization", name: "toeic.monster", url: `${SITE}/` },
+      },
+      {
+        // 목록 전체를 구조화 데이터로 알립니다 — 개수는 ${n}개, 항목은 상위 50개만 적습니다
+        // (200개를 모두 적으면 블록만 15KB 를 넘어 첫 화면을 해칩니다).
+        "@type": "ItemList",
+        name: `TOEIC 빈출 어휘 ${n}선 (빈도순)`,
+        numberOfItems: n,
+        itemListOrder: "https://schema.org/ItemListOrderDescending",
+        itemListElement: freq.slice(0, 50).map((w, i) => ({
+          "@type": "ListItem",
+          position: i + 1,
+          name: w[0],
+          description: `${w[2]} · ${w[1]}`,
+        })),
+      },
+      {
+        "@type": "FAQPage",
+        mainEntity: FAQ.map((f) => ({
+          "@type": "Question",
+          name: f.q,
+          acceptedAnswer: { "@type": "Answer", text: f.a },
+        })),
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "toeic.monster", item: `${SITE}/` },
+          { "@type": "ListItem", position: 2, name: "주제별 단어장", item: `${SITE}/units/` },
+          { "@type": "ListItem", position: 3, name: `빈출 어휘 ${n}선`, item: canonical },
+        ],
+      },
+    ],
+  });
+
+  const bullet = (text) => `    <li><span class="w-mean">${text}</span></li>`;
+  const bullets = (list) => `  <ol class="words">\n${list.map(bullet).join("\n")}\n  </ol>`;
+
+  // 50개씩 끊어 네 구간으로 나눕니다 — 한 덩어리로 두면 200번째 단어 찾기가 어렵습니다.
+  const groups = [];
+  for (let start = 0; start < n; start += 50) {
+    const end = Math.min(start + 50, n);
+    const items = freq
+      .slice(start, end)
+      .map(
+        (w, i) => `    <li>
+      <div class="w-row"><span class="w-kr">${start + i + 1}위</span><span class="w-word" lang="en">${esc(w[0])}</span><span class="w-ipa">${esc(w[2])}</span></div>
+      <p class="w-mean">${esc(w[1])}${speakBtn(w[0])}</p>
+    </li>`,
+      )
+      .join("\n");
+    groups.push(
+      `  <h3 class="freq-range" id="rank-${start + 1}">${start + 1}~${end}위</h3>\n` +
+        `  <ol class="words" start="${start + 1}">\n${items}\n  </ol>`,
+    );
+  }
+
+  const faqHtml = FAQ.map((f) => `  <h3>${f.q}</h3>\n  <p>${f.a}</p>`).join("\n");
+
+  const body = `  <nav class="crumb" aria-label="breadcrumb">
+    <a href="../">toeic.monster</a> › <a href="./">주제별 단어장</a> › <span>빈출 어휘 ${n}선</span>
+  </nav>
+
+  <h1>TOEIC 빈출 어휘 ${n}선 — 빈도순 필수 단어 목록</h1>
+  <p class="lead">토익에 반복 출제되는 어휘 ${n}개를 빈도 감각 순서로 정리했습니다. 단어·품사·뜻을 한 줄씩 확인하며 앞에서부터 외우고, 🔊 버튼으로 소리까지 들어 보세요.</p>
+  <a class="cta" href="../">🃏 암기 카드·퀴즈로 바로 학습하기</a>
+
+  <h2 class="sec">왜 빈도순으로 외워야 하나요?</h2>
+${bullets([
+  "시험에 나오는 단어는 정해져 있습니다 — 반복 출제되는 어휘를 먼저 외우면 같은 시간에 더 많은 문제를 만납니다.",
+  "Part 7 지문에서 막히는 지점은 대부분 이 목록의 단어입니다. 뜻이 즉시 떠오르면 읽는 속도가 달라집니다.",
+  "순서가 있으면 계획이 생깁니다 — 오늘 20개, 열흘이면 200개처럼 진도를 숫자로 확인할 수 있습니다.",
+  "품사까지 함께 보면 Part 5 어휘 문제가 그대로 풀립니다(빈칸 앞뒤의 문법 신호가 답을 정합니다).",
+])}
+
+  <h2 class="sec">이 목록, 이렇게 쓰세요</h2>
+${bullets([
+  "① 하루 20개씩 위에서부터 소리 내어 세 번 읽습니다(🔊 로 발음을 확인합니다).",
+  "② 뜻을 눈으로만 보지 말고, 그 단어로 짧은 문장 하나를 만들어 말해 봅니다.",
+  "③ 뜻이 바로 떠오르지 않은 단어만 표시해 두고, 다음 날 그 단어부터 봅니다.",
+  "④ 3일·7일 간격으로 앞 구간을 다시 훑습니다 — 이 목록은 위에서 아래로 다시 읽는 것만으로 복습이 됩니다.",
+  "⑤ 끝까지 한 번 돌았으면 <a href='../'>홈</a>의 퀴즈·암기 카드와 <a href='./'>주제별 단어장</a>으로 넓혀 갑니다.",
+])}
+
+  <h2 class="sec">빈도순 기출 어휘 ${n}선</h2>
+  <p class="lead">아래로 갈수록 "알아두면 좋은" 단어에 가까워집니다. 상위 50개는 반드시, 나머지는 눈에 익히는 정도로 시작하세요.</p>
+  <nav class="freq-jump" aria-label="구간 이동">구간: ${groups
+    .map((_, i) => `<a href="#rank-${i * 50 + 1}">${i * 50 + 1}~${Math.min(i * 50 + 50, n)}위</a>`)
+    .join(" ")}</nav>
+${groups.join("\n")}
+
+  <h2 class="sec">시험에서는 이렇게 나옵니다</h2>
+${bullets([
+  "Part 5 어휘 문제 — 빈칸의 품사와 어울리는 단어를 고르는 문제라, 이 목록의 품사 칩이 그대로 단서가 됩니다.",
+  "Part 6 지문 완성 — 접속부사와 동의어 반복이 단서입니다. 문장 사이의 연결어를 함께 눈여겨보세요.",
+  "Part 7 안내문·이메일 — 일정·비용·승인 어휘가 반복됩니다(confirm, invoice, deadline, reimburse 계열).",
+  "듣기 Part 2·3 — 철자가 아니라 소리로 구별됩니다. 소리 내어 읽는 습관이 점수를 바꿉니다.",
+])}
+
+  <h2 class="sec">자주 묻는 질문</h2>
+  <div class="qa">
+${faqHtml}
+  </div>
+
+  <h2 class="sec">함께 보면 좋은 자료</h2>
+  <ul class="unitlist">
+    <li><a href="./">
+      <b>주제별 단어장</b>
+      <span>📚 30개 유닛 · 단어 1,000개</span>
+      <em>발음기호·한글 발음·예문·해석까지</em>
+    </a></li>
+    <li><a href="idioms.html">
+      <b>구동사·숙어</b>
+      <span>💡 빈출 구동사·숙어 모음</span>
+      <em>뜻과 예문, 해석까지</em>
+    </a></li>
+    <li><a href="../guides/vocabulary-30day.html">
+      <b>30일 어휘 플랜</b>
+      <span>🗓 매일 무엇을 얼마나</span>
+      <em>어휘 공부 순서와 분량 잡기</em>
+    </a></li>
+    <li><a href="../grammar/cheatsheet.html">
+      <b>문법 한 장 요약</b>
+      <span>📄 Part 5 필수 문법</span>
+      <em>품사·시제·태 한눈에</em>
+    </a></li>
+  </ul>
+
+  <nav class="pager" aria-label="이동">
+    <span></span>
+    <a class="mid" href="./">📚 주제별 단어장 전체 보기</a>
+    <span></span>
+  </nav>
+${units && units.length ? unitJumpList(units, -1, `📚 단어장 유닛 바로 가기 (${units.length}개)`) : ""}`;
+
+  return { file: "units/frequency.html", html: page({ title, description, canonical, ld, body, speak: true }) };
+}
+
+/* ------------------------------------------------------------------ */
 /* 6-2. 전략·공략 가이드 (data/extra.js)                                */
 /* ------------------------------------------------------------------ */
 
@@ -725,6 +995,22 @@ const GUIDE_FOOTER =
   '<a href="../">홈</a><a href="../units/">주제별 단어장</a><a href="index.html">전략·공략 가이드</a>' +
   '<a href="../grammar/">문법 교재</a><a href="../conversation/">회화 교재</a>' +
   '<a href="../privacy.html">개인정보처리방침</a><a href="../terms.html">이용약관</a>';
+
+/** 전략·공략 가이드 허브의 문답. */
+const FAQ_GUIDES = [
+  {
+    q: "가이드는 어떤 순서로 읽으면 좋나요?",
+    a: "약한 파트부터 보세요. RC 기초가 약하면 Part 5 문법 → 어형 변화 → 접속사·전치사 순서, LC 점수가 정체돼 있으면 Part 2 함정 → 숫자·금액·시간 순서가 효율적입니다.",
+  },
+  {
+    q: "가이드만 읽으면 점수가 오르나요?",
+    a: "가이드는 무엇을 어떤 순서로 볼지 정하는 지도입니다. 읽은 뒤 홈의 퀴즈와 암기 카드로 같은 내용을 문제로 풀어 봐야 점수로 이어집니다.",
+  },
+  {
+    q: "Part 5 가이드와 문법 교재는 무엇이 다른가요?",
+    a: "가이드는 시험장 판단 기준(빈칸 신호 → 정답 유형) 중심이고, 문법 교재는 개념을 단계별로 설명하는 교재입니다. 시간이 없으면 가이드, 기초부터 세우려면 교재를 보세요.",
+  },
+];
 
 function buildGuidesHub(guides) {
   const canonical = `${SITE}/guides/`;
@@ -734,12 +1020,17 @@ function buildGuidesHub(guides) {
 
   const ld = jsonLd({
     "@context": "https://schema.org",
-    "@type": "CollectionPage",
-    name: "TOEIC 파트별 전략·공략 가이드",
-    description,
-    url: canonical,
-    inLanguage: "ko",
-    isPartOf: { "@type": "WebSite", name: "toeic.monster", url: `${SITE}/` },
+    "@graph": [
+      {
+        "@type": "CollectionPage",
+        name: "TOEIC 파트별 전략·공략 가이드",
+        description,
+        url: canonical,
+        inLanguage: "ko",
+        isPartOf: { "@type": "WebSite", name: "toeic.monster", url: `${SITE}/` },
+      },
+      ...faqNodes(FAQ_GUIDES),
+    ],
   });
 
   const body = `  <nav class="crumb" aria-label="breadcrumb">
@@ -771,7 +1062,9 @@ ${guides
     <li><span class="w-mean"><b>LC 점수가 정체되어 있다면</b> Part 2 함정 유형 → LC 숫자·금액·시간 순서로 보세요. 듣기에서 실수하는 지점은 대부분 이 두 가지입니다.</span></li>
     <li><span class="w-mean"><b>단어가 부족하다면</b> 30일 커리큘럼으로 계획을 세우고, 하루 분량을 줄이더라도 매일 이어 가세요.</span></li>
     <li><span class="w-mean"><b>900점 이상을 목표로 한다면</b> Speaking·Writing 유형 정리로 4기능 점수까지 함께 준비하세요.</span></li>
-  </ol>`;
+  </ol>
+
+${faqSection(FAQ_GUIDES)}`;
 
   return { file: "guides/index.html", html: page({ title, description, canonical, ld, body, footerNav: GUIDE_FOOTER }) };
 }
@@ -780,6 +1073,8 @@ function buildGuidePage(g, prev, next, guides) {
   const canonical = `${SITE}/guides/${g.slug}.html`;
   const title = `${g.title} | toeic.monster`;
   const description = g.desc;
+  const faq = Array.isArray(g.faq) ? g.faq : [];
+  const related = Array.isArray(g.related) ? g.related : [];
 
   const ld = jsonLd({
     "@context": "https://schema.org",
@@ -794,6 +1089,19 @@ function buildGuidePage(g, prev, next, guides) {
         educationalUse: "self-study",
         provider: { "@type": "Organization", name: "toeic.monster", url: `${SITE}/` },
       },
+      // 가이드마다 화면에 보이는 문답을 그대로 구조화 데이터로도 넣습니다(둘이 어긋나면 검색엔진이 무시합니다).
+      ...(faq.length
+        ? [
+            {
+              "@type": "FAQPage",
+              mainEntity: faq.map((f) => ({
+                "@type": "Question",
+                name: f.q,
+                acceptedAnswer: { "@type": "Answer", text: f.a },
+              })),
+            },
+          ]
+        : []),
       {
         "@type": "BreadcrumbList",
         itemListElement: [
@@ -823,17 +1131,35 @@ function buildGuidePage(g, prev, next, guides) {
     )
     .join("\n");
 
+  // 화면에 보이는 문답과 구조화 데이터가 같은 문장을 쓰도록 한 곳에서 만듭니다.
+  const faqHtml = faq.length
+    ? `  <h2 class="sec">자주 묻는 질문</h2>\n  <div class="qa">\n${faq
+        .map((f) => `  <h3>${esc(f.q)}</h3>\n  <p>${esc(f.a)}</p>`)
+        .join("\n")}\n  </div>\n\n`
+    : "";
+
+  const relatedHtml = related.length
+    ? `  <h2 class="sec">함께 보면 좋은 자료</h2>\n  <ul class="unitlist">\n${related
+        .map(
+          (r) => `    <li><a href="${esc(r.href)}">
+      <b>${esc(r.t)}</b>
+      <span>${esc(r.d)}</span>
+    </a></li>`,
+        )
+        .join("\n")}\n  </ul>\n\n`
+    : "";
+
   const body = `  <nav class="crumb" aria-label="breadcrumb">
     <a href="../">toeic.monster</a> › <a href="./">전략·공략 가이드</a> › <span>${esc(g.title)}</span>
   </nav>
 
   <h1>${esc(g.title)}</h1>
   <p class="lead">${esc(g.desc)}</p>
-  <a class="cta" href="../">🃏 단어·퀴즈로 바로 학습하기</a>
+${g.intro ? `  <p class="g-intro">${esc(g.intro)}</p>\n` : ""}  <a class="cta" href="../">🃏 단어·퀴즈로 바로 학습하기</a>
 
 ${sections}
 
-  <nav class="pager" aria-label="이동">
+${faqHtml}${relatedHtml}  <nav class="pager" aria-label="이동">
     ${guidePager}
   </nav>
 ${guides && guides.length ? guideJumpList(guides, g.slug) : ""}`;
@@ -1277,6 +1603,26 @@ const CONVERSATION_FOOTER =
   '<a href="../grammar/">문법 교재</a><a href="../guides/">전략·공략 가이드</a>' +
   '<a href="../privacy.html">개인정보처리방침</a><a href="../terms.html">이용약관</a>';
 
+/** 회화 교재 허브의 문답. */
+const FAQ_CONVERSATION = [
+  {
+    q: "어느 단계부터 시작해야 하나요?",
+    a: "문장을 만들어 말하기 어렵다면 초급(A1~A2), 일상 대화는 되지만 업무 상황에서 막힌다면 중급(B1~B2), 표현은 알지만 뉘앙스 조절이 어렵다면 고급(C1)부터 시작하세요.",
+  },
+  {
+    q: "회화 교재와 문법 교재를 함께 봐도 되나요?",
+    a: "함께 보는 편이 좋습니다. 회화 교재로 상황 표현을 익히고, 막히는 문법은 같은 단계의 문법 교재에서 찾아보는 순서가 오래 남습니다.",
+  },
+  {
+    q: "혼자서도 말하기 연습이 되나요?",
+    a: "됩니다. 각 과의 예문을 🔊로 듣고 따라 말한 뒤, 표현 표를 가리고 우리말 뜻만 보고 영어로 말해 보세요. 연습 문제로 확인까지 하면 한 과가 끝납니다.",
+  },
+  {
+    q: "토익 시험 대비에도 도움이 되나요?",
+    a: "Part 2 응답 감각과 Part 3·4 대화 흐름을 익히는 데 도움이 됩니다. 회화 표현이 듣기 지문에 그대로 나오기 때문입니다.",
+  },
+];
+
 function buildConversationHub(books) {
   const canonical = `${SITE}/conversation/`;
   const totalCh = books.reduce((n, b) => n + b.chapters.length, 0);
@@ -1310,6 +1656,7 @@ function buildConversationHub(books) {
           url: `${SITE}/conversation/${b.id}.html`,
         })),
       },
+      ...faqNodes(FAQ_CONVERSATION),
       {
         "@type": "BreadcrumbList",
         itemListElement: [
@@ -1328,6 +1675,8 @@ function buildConversationHub(books) {
   <p class="lead">${esc(description)}</p>
   <a class="cta" href="../">🃏 단어·퀴즈로 바로 학습하기</a>
   <a class="cta" href="../grammar/">📘 문법 교재 보기</a>
+
+  <p class="g-intro">회화는 어려운 문법보다 <b>상황을 버티는 표현</b>이 먼저 필요합니다. 그래서 이 교재는 문법 항목이 아니라 상황(인사·주문·길 묻기·협상·갈등 완화)을 축으로 삼고, 각 과에 표현 표·발음 안내·흔한 실수·연습 문제를 담았습니다. 두 교재를 나란히 오갈 수 있도록 단계 이름(A1~A2·B1~B2·C1)을 문법 교재와 맞춰 두었습니다.</p>
 
   <h2 class="sec">교재 목록</h2>
   <ul class="unitlist">
@@ -1356,7 +1705,9 @@ ${books
     <li><span class="w-mean">단계는 <b>초급 A1~A2 · 중급 B1~B2 · 고급 C1</b> 세 가지로 고정하고 CEFR 을 함께 적었습니다. 문법 교재와 같은 이름·같은 표기를 써서 두 교재를 나란히 오갈 수 있습니다.</span></li>
     <li><span class="w-mean">한 과는 <b>상황 요약 → 표현 표 → 예문 → 흔한 실수 → 연습 문제</b> 순서입니다. 예문마다 🔊 를 붙여 눈으로만 읽지 않고 소리로 확인하게 했습니다.</span></li>
     <li><span class="w-mean">이 구성은 <b>British Council LearnEnglish</b>(CEFR 6단계), <b>VOA Let's Learn English</b>(2단계), <b>ELLLO</b>(레벨별 레슨과 퀴즈), <b>BBC Learning English</b>(단원 단위)의 단계 구성을 조사해 세 단계로 정리한 것입니다.</span></li>
-  </ol>`;
+  </ol>
+
+${faqSection(FAQ_CONVERSATION)}`;
 
   return { file: "conversation/index.html", html: page({ title, description, canonical, ld, body, footerNav: CONVERSATION_FOOTER }) };
 }
@@ -1664,7 +2015,8 @@ function build404Page() {
 <link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="preload" as="style" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"></noscript>
 <script>
   // 앱(index.html)에서 고른 테마를 그대로 적용합니다. 직접 고른 적이 없으면 OS 설정을 따릅니다.
   (function () {
@@ -1733,6 +2085,8 @@ function buildSitemap(units, lastmod, guides, grammar, conversation) {
   add(`${SITE}/units/`, "weekly", "0.9");
   units.forEach((u) => add(unitUrl(u.id), "monthly", "0.7"));
   add(`${SITE}/units/idioms.html`, "monthly", "0.7");
+  // 빈도순 어휘 — 홈에 프리렌더로 심던 200개 목록을 옮긴 페이지(2026-09-18).
+  add(`${SITE}/units/frequency.html`, "monthly", "0.7");
   if (guides && guides.length) {
     add(`${SITE}/guides/`, "monthly", "0.6");
     guides.forEach((g) => add(`${SITE}/guides/${g.slug}.html`, "monthly", "0.6"));
@@ -1779,7 +2133,7 @@ function main() {
 
   fs.mkdirSync(OUT_DIR, { recursive: true });
 
-  // 공용 스타일 — 정적 페이지 124개가 이 한 파일을 함께 받아 씁니다.
+  // 공용 스타일 — 모든 정적 페이지가 이 한 파일을 함께 받아 씁니다.
   // (페이지마다 인라인으로 넣으면 같은 내용을 43번 다시 받게 됩니다.)
   const siteCss = minifyCss(CSS);
   write("assets/site.css", siteCss);
@@ -1794,8 +2148,10 @@ function main() {
 
   const hub = buildHubPage(units);
   const idiomsPage = buildIdiomsPage(idioms, units);
+  const freqPage = buildFrequencyPage(Array.isArray(extra.frequency) ? extra.frequency : [], units);
   write(hub.file, hub.html);
   write(idiomsPage.file, idiomsPage.html);
+  write(freqPage.file, freqPage.html);
 
   guides.forEach((g, i) => {
     const gp = buildGuidePage(g, guides[i - 1], guides[i + 1], guides);
@@ -1846,6 +2202,7 @@ function main() {
   console.log(`✅ 정적 페이지 생성 완료`);
   console.log(`   · 유닛 페이지 ${written}개 (단어 ${words.toLocaleString("en-US")}개)`);
   console.log(`   · 허브 1개 · 숙어 페이지 1개 (숙어 ${idioms.length}개)`);
+  console.log(`   · 빈도순 어휘 페이지 1개 (어휘 ${(extra.frequency || []).length}개)`);
   console.log(`   · 가이드 페이지 ${guides.length}개 + 허브 1개`);
   console.log(`   · 문법 교재 ${grammar.length}권 + 허브 1개 + 한 장 요약 (${chapters}과 · 연습 문제 ${quizzes}문항)`);
   const convChapters = conversation.reduce((n, b) => n + b.chapters.length, 0);

@@ -22,10 +22,14 @@
 <meta name="twitter:title" content="영어회화 교재 3단계 — 초급·중급·고급 | toeic.monster">
 <meta name="twitter:description" content="인사와 주문부터 협상·설득·갈등 완화까지, 초급·중급·고급 3단계 회화 교재 36과와 연습 문제 108문항을 상황별 표현·발음 안내와 함께 무료로 정리했습니다.">
 <meta name="twitter:image" content="https://toeic.monster/og-image.png">
-<!-- 본문 서체 — Pretendard Variable. 필요한 글자 조각만 내려받는 dynamic subset 이라 첫 로드 부담이 작습니다. -->
+<!-- 본문 서체 — Pretendard Variable. 필요한 글자 조각만 내려받는 dynamic subset 이라 첫 로드 부담이 작습니다.
+     외부 CDN stylesheet 를 그대로 두면 첫 페인트가 그만큼 늦어져서, preload 로 받아 두고 도착하면 스타일로 바꿉니다.
+     (자바스크립트를 끈 사용자는 아래 <noscript> 의 stylesheet 을 그대로 씁니다.)
+     실측(2026-09-18 · npm run perf): 홈 첫 방문 FCP·LCP 가 약 530ms → 약 460ms, load 약 1.5s → 약 1.0s. -->
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-<!-- 공용 스타일·스크립트 — 124개 정적 페이지가 한 파일을 함께 받아 씁니다(서비스워커가 캐시). -->
+<link rel="preload" as="style" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"></noscript>
+<!-- 공용 스타일·스크립트 — 모든 정적 페이지가 한 파일을 함께 받아 씁니다(서비스워커가 캐시). -->
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="icon" href="../icon.svg" type="image/svg+xml">
 <link rel="icon" href="../icon-192.png" type="image/png" sizes="192x192">
@@ -92,6 +96,43 @@
       ]
     },
     {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "어느 단계부터 시작해야 하나요?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "문장을 만들어 말하기 어렵다면 초급(A1~A2), 일상 대화는 되지만 업무 상황에서 막힌다면 중급(B1~B2), 표현은 알지만 뉘앙스 조절이 어렵다면 고급(C1)부터 시작하세요."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "회화 교재와 문법 교재를 함께 봐도 되나요?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "함께 보는 편이 좋습니다. 회화 교재로 상황 표현을 익히고, 막히는 문법은 같은 단계의 문법 교재에서 찾아보는 순서가 오래 남습니다."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "혼자서도 말하기 연습이 되나요?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "됩니다. 각 과의 예문을 🔊로 듣고 따라 말한 뒤, 표현 표를 가리고 우리말 뜻만 보고 영어로 말해 보세요. 연습 문제로 확인까지 하면 한 과가 끝납니다."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "토익 시험 대비에도 도움이 되나요?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Part 2 응답 감각과 Part 3·4 대화 흐름을 익히는 데 도움이 됩니다. 회화 표현이 듣기 지문에 그대로 나오기 때문입니다."
+          }
+        }
+      ]
+    },
+    {
       "@type": "BreadcrumbList",
       "itemListElement": [
         {
@@ -130,6 +171,8 @@
   <a class="cta" href="../">🃏 단어·퀴즈로 바로 학습하기</a>
   <a class="cta" href="../grammar/">📘 문법 교재 보기</a>
 
+  <p class="g-intro">회화는 어려운 문법보다 <b>상황을 버티는 표현</b>이 먼저 필요합니다. 그래서 이 교재는 문법 항목이 아니라 상황(인사·주문·길 묻기·협상·갈등 완화)을 축으로 삼고, 각 과에 표현 표·발음 안내·흔한 실수·연습 문제를 담았습니다. 두 교재를 나란히 오갈 수 있도록 단계 이름(A1~A2·B1~B2·C1)을 문법 교재와 맞춰 두었습니다.</p>
+
   <h2 class="sec">교재 목록</h2>
   <ul class="unitlist">
     <li><a href="conversation-basic.html">
@@ -164,6 +207,20 @@
     <li><span class="w-mean">한 과는 <b>상황 요약 → 표현 표 → 예문 → 흔한 실수 → 연습 문제</b> 순서입니다. 예문마다 🔊 를 붙여 눈으로만 읽지 않고 소리로 확인하게 했습니다.</span></li>
     <li><span class="w-mean">이 구성은 <b>British Council LearnEnglish</b>(CEFR 6단계), <b>VOA Let's Learn English</b>(2단계), <b>ELLLO</b>(레벨별 레슨과 퀴즈), <b>BBC Learning English</b>(단원 단위)의 단계 구성을 조사해 세 단계로 정리한 것입니다.</span></li>
   </ol>
+
+  <h2 class="sec">자주 묻는 질문</h2>
+  <div class="qa">
+  <h3>어느 단계부터 시작해야 하나요?</h3>
+  <p>문장을 만들어 말하기 어렵다면 초급(A1~A2), 일상 대화는 되지만 업무 상황에서 막힌다면 중급(B1~B2), 표현은 알지만 뉘앙스 조절이 어렵다면 고급(C1)부터 시작하세요.</p>
+  <h3>회화 교재와 문법 교재를 함께 봐도 되나요?</h3>
+  <p>함께 보는 편이 좋습니다. 회화 교재로 상황 표현을 익히고, 막히는 문법은 같은 단계의 문법 교재에서 찾아보는 순서가 오래 남습니다.</p>
+  <h3>혼자서도 말하기 연습이 되나요?</h3>
+  <p>됩니다. 각 과의 예문을 🔊로 듣고 따라 말한 뒤, 표현 표를 가리고 우리말 뜻만 보고 영어로 말해 보세요. 연습 문제로 확인까지 하면 한 과가 끝납니다.</p>
+  <h3>토익 시험 대비에도 도움이 되나요?</h3>
+  <p>Part 2 응답 감각과 Part 3·4 대화 흐름을 익히는 데 도움이 됩니다. 회화 표현이 듣기 지문에 그대로 나오기 때문입니다.</p>
+  </div>
+
+
 </main>
 <footer class="ft wrap">
   <nav>

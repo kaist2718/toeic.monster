@@ -22,10 +22,14 @@
 <meta name="twitter:title" content="TOEIC Part 5 빈출 문법 10가지 | toeic.monster">
 <meta name="twitter:description" content="품사·수일치·시제·전치사·관계사 등 Part 5에서 반복 출제되는 문법 포인트를 예문과 함께 정리했습니다.">
 <meta name="twitter:image" content="https://toeic.monster/og-image.png">
-<!-- 본문 서체 — Pretendard Variable. 필요한 글자 조각만 내려받는 dynamic subset 이라 첫 로드 부담이 작습니다. -->
+<!-- 본문 서체 — Pretendard Variable. 필요한 글자 조각만 내려받는 dynamic subset 이라 첫 로드 부담이 작습니다.
+     외부 CDN stylesheet 를 그대로 두면 첫 페인트가 그만큼 늦어져서, preload 로 받아 두고 도착하면 스타일로 바꿉니다.
+     (자바스크립트를 끈 사용자는 아래 <noscript> 의 stylesheet 을 그대로 씁니다.)
+     실측(2026-09-18 · npm run perf): 홈 첫 방문 FCP·LCP 가 약 530ms → 약 460ms, load 약 1.5s → 약 1.0s. -->
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-<!-- 공용 스타일·스크립트 — 124개 정적 페이지가 한 파일을 함께 받아 씁니다(서비스워커가 캐시). -->
+<link rel="preload" as="style" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"></noscript>
+<!-- 공용 스타일·스크립트 — 모든 정적 페이지가 한 파일을 함께 받아 씁니다(서비스워커가 캐시). -->
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="icon" href="../icon.svg" type="image/svg+xml">
 <link rel="icon" href="../icon-192.png" type="image/png" sizes="192x192">
@@ -69,6 +73,35 @@
       }
     },
     {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Part 5는 몇 분 안에 풀어야 하나요?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "30문항에 8~9분을 권합니다. 빈칸 앞뒤만 보고 풀리는 문법 문제를 먼저 처리하고, 문맥을 봐야 하는 어휘 문제에 시간을 남기는 순서가 안전합니다."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "문법을 다 외운 뒤에 문제를 풀어야 하나요?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "아닙니다. 위의 10가지를 '빈칸 신호 → 정답 유형'으로 짝지어 익히면, 모르는 문법이 남아 있어도 정답률이 먼저 올라갑니다."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "어휘와 문법 중 무엇부터 잡아야 하나요?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "정답률이 낮다면 품사·수일치·시제부터입니다. 신호만 알아도 답이 보이는 문항이 많고, 그다음에 빈출 어휘로 어휘 문제를 메우면 됩니다."
+          }
+        }
+      ]
+    },
+    {
       "@type": "BreadcrumbList",
       "itemListElement": [
         {
@@ -110,6 +143,7 @@
 
   <h1>TOEIC Part 5 빈출 문법 10가지</h1>
   <p class="lead">품사·수일치·시제·전치사·관계사 등 Part 5에서 반복 출제되는 문법 포인트를 예문과 함께 정리했습니다.</p>
+  <p class="g-intro">Part 5는 30문항을 8~9분 안에 처리해야 하는 구간입니다. 그래서 문법을 많이 아는 것보다, 빈칸을 보고 3초 안에 답의 유형을 고르는 힘이 점수를 만듭니다. 이 가이드는 그 판단 신호를 반복 출제 순서대로 묶었습니다.</p>
   <a class="cta" href="../">🃏 단어·퀴즈로 바로 학습하기</a>
 
   <h2 class="sec">1. 품사 구분</h2>
@@ -173,6 +207,32 @@
     <li><span class="w-mean">The manager whose team won the award will speak today. — 소유격 관계사 whose.</span></li>
     <li><span class="w-mean">This year's sales are higher than last year's. — 비교급 + than.</span></li>
   </ol>
+
+  <h2 class="sec">자주 묻는 질문</h2>
+  <div class="qa">
+  <h3>Part 5는 몇 분 안에 풀어야 하나요?</h3>
+  <p>30문항에 8~9분을 권합니다. 빈칸 앞뒤만 보고 풀리는 문법 문제를 먼저 처리하고, 문맥을 봐야 하는 어휘 문제에 시간을 남기는 순서가 안전합니다.</p>
+  <h3>문법을 다 외운 뒤에 문제를 풀어야 하나요?</h3>
+  <p>아닙니다. 위의 10가지를 '빈칸 신호 → 정답 유형'으로 짝지어 익히면, 모르는 문법이 남아 있어도 정답률이 먼저 올라갑니다.</p>
+  <h3>어휘와 문법 중 무엇부터 잡아야 하나요?</h3>
+  <p>정답률이 낮다면 품사·수일치·시제부터입니다. 신호만 알아도 답이 보이는 문항이 많고, 그다음에 빈출 어휘로 어휘 문제를 메우면 됩니다.</p>
+  </div>
+
+  <h2 class="sec">함께 보면 좋은 자료</h2>
+  <ul class="unitlist">
+    <li><a href="part-5-connectors.html">
+      <b>Part 5 접속부사·연결어 공략</b>
+      <span>문장 사이의 관계를 묻는 문제</span>
+    </a></li>
+    <li><a href="part-5-word-forms.html">
+      <b>Part 5 어형 변화 공략</b>
+      <span>명사·형용사·부사 자리 잡기</span>
+    </a></li>
+    <li><a href="../units/frequency.html">
+      <b>빈출 어휘 200선</b>
+      <span>Part 5 어휘 문제 대비</span>
+    </a></li>
+  </ul>
 
   <nav class="pager" aria-label="이동">
     <span></span>

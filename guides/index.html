@@ -22,10 +22,14 @@
 <meta name="twitter:title" content="TOEIC 파트별 전략·공략 가이드 | toeic.monster">
 <meta name="twitter:description" content="Part 5 문법, Part 6 장문 공란, Part 7 복수 지문, Part 2 함정 유형, 어휘 30일 커리큘럼, LC 숫자 함정까지 파트별 공략법을 정리했습니다.">
 <meta name="twitter:image" content="https://toeic.monster/og-image.png">
-<!-- 본문 서체 — Pretendard Variable. 필요한 글자 조각만 내려받는 dynamic subset 이라 첫 로드 부담이 작습니다. -->
+<!-- 본문 서체 — Pretendard Variable. 필요한 글자 조각만 내려받는 dynamic subset 이라 첫 로드 부담이 작습니다.
+     외부 CDN stylesheet 를 그대로 두면 첫 페인트가 그만큼 늦어져서, preload 로 받아 두고 도착하면 스타일로 바꿉니다.
+     (자바스크립트를 끈 사용자는 아래 <noscript> 의 stylesheet 을 그대로 씁니다.)
+     실측(2026-09-18 · npm run perf): 홈 첫 방문 FCP·LCP 가 약 530ms → 약 460ms, load 약 1.5s → 약 1.0s. -->
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-<!-- 공용 스타일·스크립트 — 124개 정적 페이지가 한 파일을 함께 받아 씁니다(서비스워커가 캐시). -->
+<link rel="preload" as="style" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"></noscript>
+<!-- 공용 스타일·스크립트 — 모든 정적 페이지가 한 파일을 함께 받아 씁니다(서비스워커가 캐시). -->
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="icon" href="../icon.svg" type="image/svg+xml">
 <link rel="icon" href="../icon-192.png" type="image/png" sizes="192x192">
@@ -53,16 +57,49 @@
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
-  "@type": "CollectionPage",
-  "name": "TOEIC 파트별 전략·공략 가이드",
-  "description": "Part 5 문법, Part 6 장문 공란, Part 7 복수 지문, Part 2 함정 유형, 어휘 30일 커리큘럼, LC 숫자 함정까지 파트별 공략법을 정리했습니다.",
-  "url": "https://toeic.monster/guides/",
-  "inLanguage": "ko",
-  "isPartOf": {
-    "@type": "WebSite",
-    "name": "toeic.monster",
-    "url": "https://toeic.monster/"
-  }
+  "@graph": [
+    {
+      "@type": "CollectionPage",
+      "name": "TOEIC 파트별 전략·공략 가이드",
+      "description": "Part 5 문법, Part 6 장문 공란, Part 7 복수 지문, Part 2 함정 유형, 어휘 30일 커리큘럼, LC 숫자 함정까지 파트별 공략법을 정리했습니다.",
+      "url": "https://toeic.monster/guides/",
+      "inLanguage": "ko",
+      "isPartOf": {
+        "@type": "WebSite",
+        "name": "toeic.monster",
+        "url": "https://toeic.monster/"
+      }
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "가이드는 어떤 순서로 읽으면 좋나요?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "약한 파트부터 보세요. RC 기초가 약하면 Part 5 문법 → 어형 변화 → 접속사·전치사 순서, LC 점수가 정체돼 있으면 Part 2 함정 → 숫자·금액·시간 순서가 효율적입니다."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "가이드만 읽으면 점수가 오르나요?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "가이드는 무엇을 어떤 순서로 볼지 정하는 지도입니다. 읽은 뒤 홈의 퀴즈와 암기 카드로 같은 내용을 문제로 풀어 봐야 점수로 이어집니다."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Part 5 가이드와 문법 교재는 무엇이 다른가요?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "가이드는 시험장 판단 기준(빈칸 신호 → 정답 유형) 중심이고, 문법 교재는 개념을 단계별로 설명하는 교재입니다. 시간이 없으면 가이드, 기초부터 세우려면 교재를 보세요."
+          }
+        }
+      ]
+    }
+  ]
 }
 </script>
 </head>
@@ -141,6 +178,18 @@
     <li><span class="w-mean"><b>단어가 부족하다면</b> 30일 커리큘럼으로 계획을 세우고, 하루 분량을 줄이더라도 매일 이어 가세요.</span></li>
     <li><span class="w-mean"><b>900점 이상을 목표로 한다면</b> Speaking·Writing 유형 정리로 4기능 점수까지 함께 준비하세요.</span></li>
   </ol>
+
+  <h2 class="sec">자주 묻는 질문</h2>
+  <div class="qa">
+  <h3>가이드는 어떤 순서로 읽으면 좋나요?</h3>
+  <p>약한 파트부터 보세요. RC 기초가 약하면 Part 5 문법 → 어형 변화 → 접속사·전치사 순서, LC 점수가 정체돼 있으면 Part 2 함정 → 숫자·금액·시간 순서가 효율적입니다.</p>
+  <h3>가이드만 읽으면 점수가 오르나요?</h3>
+  <p>가이드는 무엇을 어떤 순서로 볼지 정하는 지도입니다. 읽은 뒤 홈의 퀴즈와 암기 카드로 같은 내용을 문제로 풀어 봐야 점수로 이어집니다.</p>
+  <h3>Part 5 가이드와 문법 교재는 무엇이 다른가요?</h3>
+  <p>가이드는 시험장 판단 기준(빈칸 신호 → 정답 유형) 중심이고, 문법 교재는 개념을 단계별로 설명하는 교재입니다. 시간이 없으면 가이드, 기초부터 세우려면 교재를 보세요.</p>
+  </div>
+
+
 </main>
 <footer class="ft wrap">
   <nav>

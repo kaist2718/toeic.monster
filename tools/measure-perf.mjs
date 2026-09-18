@@ -342,8 +342,7 @@ const kindsLine = (r) => {
   return `  종류별: ${top.join(" · ")}`;
 }
 
-const fmtMs = (v) => `${v}ms`;
-const line = (r) =>
+const fmtMs = (v) => `${v}ms`;  const line = (r) =>
   `${r.label.padEnd(8)} 요청 ${String(r.requests).padStart(3)}개 · 전송 ${KB(r.bytes).padStart(9)}` +
   ` · 캐시 ${String(r.cached).padStart(3)}개` +
   ` · TTFB ${fmtMs(r.perf.ttfb)} · FCP ${fmtMs(r.perf.fcp)} · LCP ${fmtMs(r.perf.lcp)}` +

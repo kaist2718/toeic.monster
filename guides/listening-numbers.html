@@ -22,10 +22,14 @@
 <meta name="twitter:title" content="TOEIC LC 숫자·금액·시간 함정 정리 | toeic.monster">
 <meta name="twitter:description" content="숫자, 금액, 날짜, 전화번호가 나오는 LC 문제에서 실수를 줄이는 방법을 정리했습니다.">
 <meta name="twitter:image" content="https://toeic.monster/og-image.png">
-<!-- 본문 서체 — Pretendard Variable. 필요한 글자 조각만 내려받는 dynamic subset 이라 첫 로드 부담이 작습니다. -->
+<!-- 본문 서체 — Pretendard Variable. 필요한 글자 조각만 내려받는 dynamic subset 이라 첫 로드 부담이 작습니다.
+     외부 CDN stylesheet 를 그대로 두면 첫 페인트가 그만큼 늦어져서, preload 로 받아 두고 도착하면 스타일로 바꿉니다.
+     (자바스크립트를 끈 사용자는 아래 <noscript> 의 stylesheet 을 그대로 씁니다.)
+     실측(2026-09-18 · npm run perf): 홈 첫 방문 FCP·LCP 가 약 530ms → 약 460ms, load 약 1.5s → 약 1.0s. -->
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-<!-- 공용 스타일·스크립트 — 124개 정적 페이지가 한 파일을 함께 받아 씁니다(서비스워커가 캐시). -->
+<link rel="preload" as="style" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"></noscript>
+<!-- 공용 스타일·스크립트 — 모든 정적 페이지가 한 파일을 함께 받아 씁니다(서비스워커가 캐시). -->
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="icon" href="../icon.svg" type="image/svg+xml">
 <link rel="icon" href="../icon-192.png" type="image/png" sizes="192x192">
@@ -69,6 +73,35 @@
       }
     },
     {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "숫자가 들릴 때 적어야 하나요?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "받아쓰기보다 자릿수를 기억하는 편이 낫습니다. 천 단위 묶음(1,250 = twelve fifty)과 소수점·통화 단위만 표시해도 판단이 서고, 필기는 오히려 다음 문장을 놓치게 합니다."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "금액 문제는 무엇을 봐야 하나요?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "할인·세금·총액처럼 계산이 들어가는지 먼저 확인하세요. 보기에는 여러 숫자가 나오므로, 질문이 묻는 값이 하나인지 합계인지가 핵심입니다."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "전화번호·주문번호는 어떻게 듣나요?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "0 을 oh 로 읽는 경우, 7 과 4 같은 유사 발음, 반복(11 = double one)이 함정입니다. 한 덩어리로 끊어 따라 말하며 듣는 연습이 효과적입니다."
+          }
+        }
+      ]
+    },
+    {
       "@type": "BreadcrumbList",
       "itemListElement": [
         {
@@ -110,6 +143,7 @@
 
   <h1>TOEIC LC 숫자·금액·시간 함정 정리</h1>
   <p class="lead">숫자, 금액, 날짜, 전화번호가 나오는 LC 문제에서 실수를 줄이는 방법을 정리했습니다.</p>
+  <p class="g-intro">숫자는 한 글자만 달라도 정답이 바뀌는데, 시험장에서는 속도 때문에 놓치기 쉽습니다. -teen 과 -ty, 13th 와 30th 처럼 헷갈리는 짝을 미리 구분해 두면 실수가 크게 줄어듭니다.</p>
   <a class="cta" href="../">🃏 단어·퀴즈로 바로 학습하기</a>
 
   <h2 class="sec">자주 틀리는 표현</h2>
@@ -151,6 +185,32 @@
     <li><span class="w-mean">We ordered two dozen boxes. — dozen = 12개입니다.</span></li>
     <li><span class="w-mean">The meeting is scheduled for the fourteenth. — fourteenth = 14일입니다.</span></li>
   </ol>
+
+  <h2 class="sec">자주 묻는 질문</h2>
+  <div class="qa">
+  <h3>숫자가 들릴 때 적어야 하나요?</h3>
+  <p>받아쓰기보다 자릿수를 기억하는 편이 낫습니다. 천 단위 묶음(1,250 = twelve fifty)과 소수점·통화 단위만 표시해도 판단이 서고, 필기는 오히려 다음 문장을 놓치게 합니다.</p>
+  <h3>금액 문제는 무엇을 봐야 하나요?</h3>
+  <p>할인·세금·총액처럼 계산이 들어가는지 먼저 확인하세요. 보기에는 여러 숫자가 나오므로, 질문이 묻는 값이 하나인지 합계인지가 핵심입니다.</p>
+  <h3>전화번호·주문번호는 어떻게 듣나요?</h3>
+  <p>0 을 oh 로 읽는 경우, 7 과 4 같은 유사 발음, 반복(11 = double one)이 함정입니다. 한 덩어리로 끊어 따라 말하며 듣는 연습이 효과적입니다.</p>
+  </div>
+
+  <h2 class="sec">함께 보면 좋은 자료</h2>
+  <ul class="unitlist">
+    <li><a href="part-2-traps.html">
+      <b>Part 2 오답 함정 유형</b>
+      <span>응답 선택의 기본기</span>
+    </a></li>
+    <li><a href="../conversation/">
+      <b>영어회화 교재 3단계</b>
+      <span>숫자 표현을 문장으로 익히기</span>
+    </a></li>
+    <li><a href="../units/">
+      <b>주제별 단어장 30개</b>
+      <span>일정·비용 어휘 보강</span>
+    </a></li>
+  </ul>
 
   <nav class="pager" aria-label="이동">
     <a href="vocabulary-30day.html">← 어휘 30일 완성 커리큘럼</a>

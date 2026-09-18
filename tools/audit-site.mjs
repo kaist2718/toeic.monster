@@ -206,7 +206,7 @@ for (const page of pages) {
 /* 3-2b. 정적 페이지 공용 자산(assets/)                                  */
 /* ------------------------------------------------------------------ */
 
-// 정적 페이지 124개는 같은 스타일을 씁니다. 페이지마다 인라인으로 되돌리면 1.2MB 가 다시
+// 정적 페이지는 모두 같은 스타일을 씁니다. 페이지마다 인라인으로 되돌리면 1.2MB 가 다시
 // 중복되고, 예문 듣기 버튼이 있는데 공용 스크립트를 빠뜨리면 버튼이 아무 반응 없이 남습니다.
 const SHARED_CSS = "assets/site.css";
 const SHARED_SPEAK = "assets/speak.js";
@@ -323,7 +323,7 @@ for (const page of pages.filter(isGeneratedPage)) {
 // 정적 페이지는 상단바 → 빵부스러기 → 본문 순서입니다. 그래서 키보드 사용자는 페이지마다
 // Tab 을 여러 번 눌러야 본문에 닿습니다. 앱(index.html)에는 처음부터 있었지만 정적 페이지에는
 // 없어서, 한 페이지에서 다음 페이지로 넘어갈 때마다 같은 수고를 되풀이해야 했습니다.
-// 124개 페이지를 손으로 고치지 않도록 생성기(build-pages.mjs)가 넣고, 감사가 지킵니다.
+// 페이지를 손으로 고치지 않도록 생성기(build-pages.mjs)가 넣고, 감사가 지킵니다.
 const isStaticPage = (p) => p === "404.html" || /^(?:units|guides|grammar|conversation)\//.test(p);
 let skipLinkPages = 0;
 for (const page of pages.filter(isStaticPage)) {
@@ -581,7 +581,11 @@ if (srcOf["index.html"]) {
     );
   }
 
-  const ns = homeSrc.slice(homeSrc.indexOf("<noscript>"), homeSrc.indexOf("</noscript>"));
+  // index.html 에는 <noscript> 가 둘 이상입니다 — 첫 페인트 전 폰트 폴백(head)과 학습 주제 목차(본문).
+  // 목차를 담은 쪽은 프리렌더가 심은 블록이라, 마커 사이를 잘라야 폰트 폴백에 걸리지 않습니다.
+  const nsAt = homeSrc.indexOf("<!-- prerender:start noscript -->");
+  const nsEndAt = homeSrc.indexOf("<!-- prerender:end noscript -->");
+  const ns = nsAt >= 0 && nsEndAt > nsAt ? homeSrc.slice(nsAt, nsEndAt) : "";
   if (!ns) {
     fail("index.html: <noscript> 폴백이 없습니다 — 자바스크립트를 끈 사용자에게 홈이 빈 화면으로 보입니다.");
   } else {
@@ -738,7 +742,46 @@ for (const page of pages) {
 }
 
 /* ------------------------------------------------------------------ */
-/* 5-1. sw.js 프리캐시 정합성 (오프라인 목록 ↔ 실제 파일)               */
+/* 5-1. 색인 페이지 본문 분량                                            */
+/* ------------------------------------------------------------------ */
+
+/* 검색에 노출되는 페이지가 "제목만 있는" 상태로 배포되지 않게, 화면에 보이는 글자 수를 셉니다.
+   (2026-09-18 점검에서 가이드 9편이 1,200~1,800자로 가장 얇았고 — 도입 문단·문답·내부 링크를
+   보강했습니다. 이 점검이 그 바닥을 다시 내려가지 않게 지킵니다.) */
+const THIN_OK = 1500; // 참고 기준 — 이보다 얇으면 목록에 올려 보고합니다(실패 아님)
+const THIN_FLOOR = 800; // 이보다 얇으면 실패 — 제목만 있는 페이지입니다
+
+const visibleText = (src) =>
+  String(src || "")
+    .replace(/<script[\s\S]*?<\/script>/g, "")
+    .replace(/<style[\s\S]*?<\/style>/g, "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const textSizes = indexPathable
+  .map((page) => ({ page, chars: visibleText(markOf[page]).length }))
+  .sort((a, b) => a.chars - b.chars);
+
+for (const { page, chars } of textSizes) {
+  if (chars < THIN_FLOOR) {
+    fail(`${page}: 본문이 너무 얇습니다 — ${chars}자 (기준 ${THIN_FLOOR}자 이상)`);
+  }
+}
+if (textSizes.length) {
+  const thin = textSizes.filter((t) => t.chars < THIN_OK).slice(0, 5);
+  if (thin.length) {
+    note(
+      `본문이 얇은 페이지 ${thin.length}개(기준 ${THIN_OK}자): ` +
+        thin.map((t) => `${t.page} ${t.chars}자`).join(" · "),
+    );
+  } else {
+    note(`모든 색인 페이지 본문 ${THIN_FLOOR}자 이상 (가장 얇은 곳 ${textSizes[0].page} ${textSizes[0].chars}자)`);
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* 5-2. sw.js 프리캐시 정합성 (오프라인 목록 ↔ 실제 파일)               */
 /* ------------------------------------------------------------------ */
 
 // 프리캐시 목록은 손으로 관리합니다. 그래서

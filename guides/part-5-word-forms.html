@@ -22,10 +22,14 @@
 <meta name="twitter:title" content="TOEIC 어형 변화(품사 변환) 공략 | toeic.monster">
 <meta name="twitter:description" content="한 어근이 명사·동사·형용사·부사로 바뀌는 규칙과 Part 5·6에서 빈칸 자리로 품사를 판단하는 방법을 정리했습니다.">
 <meta name="twitter:image" content="https://toeic.monster/og-image.png">
-<!-- 본문 서체 — Pretendard Variable. 필요한 글자 조각만 내려받는 dynamic subset 이라 첫 로드 부담이 작습니다. -->
+<!-- 본문 서체 — Pretendard Variable. 필요한 글자 조각만 내려받는 dynamic subset 이라 첫 로드 부담이 작습니다.
+     외부 CDN stylesheet 를 그대로 두면 첫 페인트가 그만큼 늦어져서, preload 로 받아 두고 도착하면 스타일로 바꿉니다.
+     (자바스크립트를 끈 사용자는 아래 <noscript> 의 stylesheet 을 그대로 씁니다.)
+     실측(2026-09-18 · npm run perf): 홈 첫 방문 FCP·LCP 가 약 530ms → 약 460ms, load 약 1.5s → 약 1.0s. -->
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-<!-- 공용 스타일·스크립트 — 124개 정적 페이지가 한 파일을 함께 받아 씁니다(서비스워커가 캐시). -->
+<link rel="preload" as="style" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"></noscript>
+<!-- 공용 스타일·스크립트 — 모든 정적 페이지가 한 파일을 함께 받아 씁니다(서비스워커가 캐시). -->
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="icon" href="../icon.svg" type="image/svg+xml">
 <link rel="icon" href="../icon-192.png" type="image/png" sizes="192x192">
@@ -69,6 +73,35 @@
       }
     },
     {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "어형 문제는 뜻을 몰라도 풀리나요?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "품사만 맞으면 정답인 경우가 많습니다. 보기에 같은 어근의 명사·형용사·부사가 나오면, 그 문항은 뜻이 아니라 자리를 묻는 문제입니다."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "접미사는 다 외워야 하나요?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "-tion/-ment/-ance 는 명사, -ive/-able/-ous 는 형용사, -ly 는 부사 정도만 익혀도 대부분 걸러집니다. 다만 friendly, likely 처럼 -ly 가 형용사인 예외는 따로 기억하세요."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "관사 뒤에는 무엇이 오나요?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "관사(a/the)와 형용사 뒤에는 명사가 옵니다. 이 두 자리만 눈에 익으면 Part 5 어형 문제를 빠르게 처리할 수 있습니다."
+          }
+        }
+      ]
+    },
+    {
       "@type": "BreadcrumbList",
       "itemListElement": [
         {
@@ -110,6 +143,7 @@
 
   <h1>TOEIC 어형 변화(품사 변환) 공략</h1>
   <p class="lead">한 어근이 명사·동사·형용사·부사로 바뀌는 규칙과 Part 5·6에서 빈칸 자리로 품사를 판단하는 방법을 정리했습니다.</p>
+  <p class="g-intro">Part 5·6 어휘 문제의 절반은 단어 뜻이 아니라 자리 싸움입니다. 접미사로 품사를 알아보고, 빈칸 앞뒤로 자리를 판단하는 두 가지만 익히면 오답이 크게 줄어듭니다.</p>
   <a class="cta" href="../">🃏 단어·퀴즈로 바로 학습하기</a>
 
   <h2 class="sec">품사별 자리</h2>
@@ -162,6 +196,32 @@
     <li><span class="w-mean">Applicants must submit the form by Friday. — 조동사 뒤에는 동사원형.</span></li>
     <li><span class="w-mean">The company's performance was impressive. — be동사 뒤에는 형용사.</span></li>
   </ol>
+
+  <h2 class="sec">자주 묻는 질문</h2>
+  <div class="qa">
+  <h3>어형 문제는 뜻을 몰라도 풀리나요?</h3>
+  <p>품사만 맞으면 정답인 경우가 많습니다. 보기에 같은 어근의 명사·형용사·부사가 나오면, 그 문항은 뜻이 아니라 자리를 묻는 문제입니다.</p>
+  <h3>접미사는 다 외워야 하나요?</h3>
+  <p>-tion/-ment/-ance 는 명사, -ive/-able/-ous 는 형용사, -ly 는 부사 정도만 익혀도 대부분 걸러집니다. 다만 friendly, likely 처럼 -ly 가 형용사인 예외는 따로 기억하세요.</p>
+  <h3>관사 뒤에는 무엇이 오나요?</h3>
+  <p>관사(a/the)와 형용사 뒤에는 명사가 옵니다. 이 두 자리만 눈에 익으면 Part 5 어형 문제를 빠르게 처리할 수 있습니다.</p>
+  </div>
+
+  <h2 class="sec">함께 보면 좋은 자료</h2>
+  <ul class="unitlist">
+    <li><a href="part-5-grammar.html">
+      <b>Part 5 빈출 문법 10가지</b>
+      <span>품사 구분부터 점검하기</span>
+    </a></li>
+    <li><a href="part-5-connectors.html">
+      <b>Part 5 접속부사·연결어 공략</b>
+      <span>자리 문제의 다른 갈래</span>
+    </a></li>
+    <li><a href="../units/frequency.html">
+      <b>빈출 어휘 200선</b>
+      <span>품사와 뜻을 함께 확인</span>
+    </a></li>
+  </ul>
 
   <nav class="pager" aria-label="이동">
     <a href="part-5-connectors.html">← 접속사·전치사·접속부사 구분법</a>

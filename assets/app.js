@@ -3205,7 +3205,9 @@
   wireMiniQuiz("numStart", numQuiz, true);
 
   // ---------- 빈도순 기출 어휘 ----------
-  function renderFrequency(filter) {
+  // limit — 홈 프리렌더가 "앞에서 20개만" 심을 때 씁니다(전체 목록은 units/frequency.html).
+  //        앱이 뜨면 인자 없이 다시 그려서 사용자는 200개를 그대로 봅니다.
+  function renderFrequency(filter, limit) {
     var grid = document.getElementById("freqGrid");
     if (!grid) return;
     var q = (filter || "").trim().toLowerCase();
@@ -3214,6 +3216,7 @@
       return (w[0] + " " + w[1]).toLowerCase().indexOf(q) !== -1;
     });
     if (!list.length) { grid.innerHTML = '<p class="practice-note">검색 결과가 없습니다.</p>'; return; }
+    if (limit) list = list.slice(0, limit);
     grid.innerHTML = list.map(function (w) {
       return '<div class="freq-item"><b class="freq-word" lang="en">' + esc(w[0]) + '</b><span class="freq-pos">' + esc(w[2]) + '</span><span class="freq-mean">' + esc(w[1]) + '</span>' + ttsBtn(w[0], "발음 듣기") + '</div>';
     }).join("");

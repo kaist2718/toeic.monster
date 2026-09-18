@@ -22,10 +22,14 @@
 <meta name="twitter:title" content="TOEIC 어휘 30일 완성 커리큘럼 | toeic.monster">
 <meta name="twitter:description" content="하루 1유닛 30개 단어를 기준으로 30일 동안 1,000단어를 끝내는 학습 계획입니다.">
 <meta name="twitter:image" content="https://toeic.monster/og-image.png">
-<!-- 본문 서체 — Pretendard Variable. 필요한 글자 조각만 내려받는 dynamic subset 이라 첫 로드 부담이 작습니다. -->
+<!-- 본문 서체 — Pretendard Variable. 필요한 글자 조각만 내려받는 dynamic subset 이라 첫 로드 부담이 작습니다.
+     외부 CDN stylesheet 를 그대로 두면 첫 페인트가 그만큼 늦어져서, preload 로 받아 두고 도착하면 스타일로 바꿉니다.
+     (자바스크립트를 끈 사용자는 아래 <noscript> 의 stylesheet 을 그대로 씁니다.)
+     실측(2026-09-18 · npm run perf): 홈 첫 방문 FCP·LCP 가 약 530ms → 약 460ms, load 약 1.5s → 약 1.0s. -->
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-<!-- 공용 스타일·스크립트 — 124개 정적 페이지가 한 파일을 함께 받아 씁니다(서비스워커가 캐시). -->
+<link rel="preload" as="style" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"></noscript>
+<!-- 공용 스타일·스크립트 — 모든 정적 페이지가 한 파일을 함께 받아 씁니다(서비스워커가 캐시). -->
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="icon" href="../icon.svg" type="image/svg+xml">
 <link rel="icon" href="../icon-192.png" type="image/png" sizes="192x192">
@@ -69,6 +73,35 @@
       }
     },
     {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "하루 30개가 부담스럽습니다.",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "처음 3일은 20개로 줄여도 됩니다. 대신 멈추지 않고 매일 이어 가는 것이 목표입니다 — 진도보다 \"끊기지 않는 습관\"이 결과를 만듭니다."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "모르는 단어가 너무 많습니다.",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "그날 30개 중 5개 이상 모르면 새 유닛으로 넘어가지 말고, 앞 유닛을 다시 훑으세요. 어휘는 새 단어를 더하는 것보다 본 단어를 잊지 않는 쪽이 효율이 높습니다."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "30일이 지나면 무엇을 하나요?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "1,000단어를 한 번 끝낸 뒤에는 시험 모드와 암기 카드로 복습 중심으로 돌리고, 빈출 어휘 200선으로 출제 빈도가 높은 단어를 다시 좁혀 가면 됩니다."
+          }
+        }
+      ]
+    },
+    {
       "@type": "BreadcrumbList",
       "itemListElement": [
         {
@@ -110,6 +143,7 @@
 
   <h1>TOEIC 어휘 30일 완성 커리큘럼</h1>
   <p class="lead">하루 1유닛 30개 단어를 기준으로 30일 동안 1,000단어를 끝내는 학습 계획입니다.</p>
+  <p class="g-intro">어휘 공부가 흔들리는 이유는 의지가 아니라 순서와 분량이 정해져 있지 않기 때문입니다. 이 가이드는 하루 분량을 30개로 고정하고, 복습 날짜까지 달력에 넣는 방식을 정리했습니다.</p>
   <a class="cta" href="../">🃏 단어·퀴즈로 바로 학습하기</a>
 
   <h2 class="sec">하루 루틴</h2>
@@ -156,6 +190,32 @@
     <li><span class="w-mean">The staff attended a training session. — attend 뒤에는 전치사 없이 목적어를 씁니다.</span></li>
     <li><span class="w-mean">Sales increased by 12 percent. — increase by + 증가폭.</span></li>
   </ol>
+
+  <h2 class="sec">자주 묻는 질문</h2>
+  <div class="qa">
+  <h3>하루 30개가 부담스럽습니다.</h3>
+  <p>처음 3일은 20개로 줄여도 됩니다. 대신 멈추지 않고 매일 이어 가는 것이 목표입니다 — 진도보다 &quot;끊기지 않는 습관&quot;이 결과를 만듭니다.</p>
+  <h3>모르는 단어가 너무 많습니다.</h3>
+  <p>그날 30개 중 5개 이상 모르면 새 유닛으로 넘어가지 말고, 앞 유닛을 다시 훑으세요. 어휘는 새 단어를 더하는 것보다 본 단어를 잊지 않는 쪽이 효율이 높습니다.</p>
+  <h3>30일이 지나면 무엇을 하나요?</h3>
+  <p>1,000단어를 한 번 끝낸 뒤에는 시험 모드와 암기 카드로 복습 중심으로 돌리고, 빈출 어휘 200선으로 출제 빈도가 높은 단어를 다시 좁혀 가면 됩니다.</p>
+  </div>
+
+  <h2 class="sec">함께 보면 좋은 자료</h2>
+  <ul class="unitlist">
+    <li><a href="../units/frequency.html">
+      <b>빈출 어휘 200선</b>
+      <span>먼저 외울 단어의 우선순위</span>
+    </a></li>
+    <li><a href="../units/">
+      <b>주제별 단어장 30개</b>
+      <span>커리큘럼에 쓸 유닛 목록</span>
+    </a></li>
+    <li><a href="part-5-grammar.html">
+      <b>Part 5 빈출 문법 10가지</b>
+      <span>어휘와 함께 잡으면 좋은 문법</span>
+    </a></li>
+  </ul>
 
   <nav class="pager" aria-label="이동">
     <a href="part-2-traps.html">← Part 2 오답 함정 유형 정리</a>
