@@ -436,14 +436,19 @@ if (results.size === 2) {
   // 재방문은 예전에 "배포본이 더 가볍다"를 요구했는데, 이제 앱 스크립트·데이터까지 원본부터
   // 파일로 나뉘어 있어(docs/app-split-plan.md 2·3단계) 그 차이가 0.1KB 반올림에 묻히는 잡음이 됐습니다.
   // 그래서 기준을 "늘지 않았다"로 맞춥니다 — 계획서의 완료 기준도 그 값입니다.
+  //
+  // 재방문 잔여분은 대부분 분석 비콘(/api/send)과 캐시 재검증(0바이트)이고, 실행할 때마다 몇 바이트씩
+  // 달라집니다(0.3KB ↔ 0.3KB 가 309B → 313B 로 흔들려 실패로 잡힌 적이 있습니다).
+  // 그래서 1KB 까지는 같은 것으로 봅니다 — 이 기준이 잡으려는 것은 "재방문에 무언가를 새로 받는 것"입니다.
+  const WARM_NOISE = 1024;
   const coldOk = b.cold.bytes <= a.cold.bytes * 1.05;
-  const warmOk = b.warm.bytes <= a.warm.bytes;
+  const warmOk = b.warm.bytes <= a.warm.bytes + WARM_NOISE;
   (coldOk ? note : fail)(
     `첫 방문이 무거워지지 않았습니다 (${KB(a.cold.bytes)} → ${KB(b.cold.bytes)})`,
   );
   (warmOk ? note : fail)(
     `재방문이 무거워지지 않았습니다 (${KB(a.warm.bytes)} → ${KB(b.warm.bytes)} · ` +
-      `${a.warm.bytes}B → ${b.warm.bytes}B)`,
+      `${a.warm.bytes}B → ${b.warm.bytes}B · 잡음 허용 ${WARM_NOISE}B)`,
   );
 }
 

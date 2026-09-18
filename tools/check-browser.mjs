@@ -629,6 +629,37 @@ try {
     `홈 스타일이 실제로 적용됩니다 (--primary ${homeStyle.tokens[0]} · --bg ${homeStyle.tokens[1]})`,
   );
 
+  /* 본문 서체 — 자체 서브셋 파일(tools/make-font-subset.py)이 실제로 그려지는지.
+     파일이 깨졌거나 주소가 틀리면 화면은 시스템 글꼴로 보이는데, 눈으로는 알아채기 어렵습니다.
+     그래서 ① 서체가 선언되어 로드됐고 ② 같은 글자를 재었을 때 대체 글꼴과 폭이 다른지를 봅니다. */
+  const fontState = await evaluate(`(async () => {
+    try { await document.fonts.ready; } catch (e) {}
+    const faces = [...document.fonts].filter((f) => /Pretendard Variable/.test(f.family));
+    const widthOf = (family) => {
+      const el = document.createElement("span");
+      el.style.cssText = "position:absolute;left:-9999px;top:0;white-space:nowrap;font-size:40px;font-family:" + family;
+      el.textContent = "TOEIC 한글 서체 Hangul 123";
+      document.body.appendChild(el);
+      const w = el.getBoundingClientRect().width;
+      el.remove();
+      return Math.round(w);
+    };
+    return {
+      declared: faces.length,
+      loaded: faces.filter((f) => f.status === "loaded").length,
+      width: widthOf('"Pretendard Variable"'),
+      fallback: widthOf('"__toeic_no_such_font__"'),
+    };
+  })()`);
+  check(
+    fontState.declared > 0 && fontState.loaded > 0,
+    `본문 서체: 자체 서브셋을 선언하고 로드합니다 (선언 ${fontState.declared} · 로드 ${fontState.loaded})`,
+  );
+  check(
+    fontState.width !== fontState.fallback,
+    `본문 서체: Pretendard 로 그려집니다 (폭 ${fontState.width}px · 대체 글꼴 ${fontState.fallback}px)`,
+  );
+
   /* ---------------------------------------------------------------- */
   /* 3-8. 정적 페이지(단어장 · 문법 · 가이드 · 404)                    */
   /* ---------------------------------------------------------------- */
@@ -771,6 +802,8 @@ try {
       bg: getComputedStyle(document.body).backgroundColor,
       wrapMax: wrap ? getComputedStyle(wrap).maxWidth : "-",
       sheets: [...document.styleSheets].map((s) => (s.href ? s.href.split("/").pop() : "inline")),
+      // 본문 서체(@font-face)가 실제로 로드된 글꼴 이름들 — 자체 서브셋이 붙었는지 봅니다.
+      fonts: [...document.fonts].filter((f) => f.status === "loaded").map((f) => f.family).join(","),
       speakButtons: document.querySelectorAll(".gex-speak").length,
       speakHidden: document.querySelectorAll(".gex-speak[hidden]").length,
       overflow: over > 0 ? { over, wide } : 0,
@@ -822,6 +855,11 @@ try {
       // 공용 스타일이 실제로 붙었는지 — 파일이 404 면 .wrap 의 max-width 가 사라집니다.
       check(wide.sheets.includes("site.css"), `${label}(${file}): 공용 스타일(site.css)을 불러옵니다`);
       check(wide.wrapMax === "880px", `${label}(${file}): 공용 스타일이 적용됩니다 (.wrap max-width ${wide.wrapMax})`);
+      // 정적 페이지도 같은 서체 파일을 씁니다 — 404 로 조용해지면 모든 정적 페이지가 시스템 글꼴이 됩니다.
+      check(
+        /Pretendard Variable/.test(wide.fonts),
+        `${label}(${file}): 본문 서체를 불러옵니다 (${wide.fonts || "없음"})`,
+      );
 
       // 본문 바로가기 — 정적 페이지는 상단바가 앞에 있어 키보드 사용자가 페이지마다 Tab 을
       // 세 번씩 눌러야 본문에 닿습니다. ① 문서에서 첫 번째 초점 대상이어야 하고,

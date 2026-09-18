@@ -146,6 +146,10 @@ const unitUrl = (id) => `${SITE}/units/${unitPath(id)}`;
 /* ------------------------------------------------------------------ */
 
 const CSS = `
+/* 본문 서체 — Pretendard Variable 서브셋(자체 호스팅). index.html 의 assets/app.css 와 같은 파일을 씁니다.
+   주소는 이 CSS 파일 기준 상대 경로라, 어느 깊이의 페이지에서 불러도 /assets/fonts/… 로 풀립니다.
+   만드는 도구·근거는 tools/make-font-subset.py 참고(주석은 minify 단계에서 지워집니다 — 원본에만 남습니다). */
+@font-face{font-family:"Pretendard Variable";src:url("fonts/pretendard-variable.woff2") format("woff2-variations"),url("fonts/pretendard-variable.woff2") format("woff2");font-weight:45 920;font-style:normal;font-display:swap}
 /* 색 토큰은 index.html 과 이름을 맞춰, 앱에서 고른 다크 테마가 정적 페이지에도 그대로 적용되게 합니다. */
 :root{--primary:#3b5bdb;--primary-dark:#2f4bb8;--primary-solid:#3b5bdb;--primary-solid-hover:#2f4bb8;--topbar-bg:#3b5bdb;--bg:#f6f7fb;--card:#fff;--text:#212529;--muted:#5f6673;--border:#e5e7eb;--accent:#f59f00;--kpron-text:#8a5a00;--soft:#eef2ff;--cyan:#0b7285;--kpron-bg:#fff8e6;--ex-text:#495057;--correct-bg:#d3f9d8;--green-text:#166534;--warn-bg:#fff3bf;--warn-text:#7a5c00;--wrong-bg:#ffe3e3;--red-text:#b02a2a}
 html.dark-pending{--primary:#8ba3ff;--primary-dark:#93a5ff;--primary-solid:#3d51c4;--primary-solid-hover:#33429f;--topbar-bg:#3d51c4;--bg:#10141b;--card:#1a1f2a;--text:#e6e9ef;--muted:#98a1b0;--border:#2c3442;--accent:#ffc93d;--kpron-text:#ffc93d;--soft:#232c44;--cyan:#6fd3e8;--kpron-bg:#3a3020;--ex-text:#c9d1dc;--correct-bg:#1e3526;--green-text:#51cf66;--warn-bg:#3a3318;--warn-text:#ffd43b;--wrong-bg:#3a2326;--red-text:#ff8787}
@@ -396,13 +400,11 @@ function page({ title, description, canonical, ld, body, footerNav, speak, chapt
 <meta name="twitter:title" content="${esc(title)}">
 <meta name="twitter:description" content="${esc(description)}">
 <meta name="twitter:image" content="${OG_IMAGE}">
-<!-- 본문 서체 — Pretendard Variable. 필요한 글자 조각만 내려받는 dynamic subset 이라 첫 로드 부담이 작습니다.
-     외부 CDN stylesheet 를 그대로 두면 첫 페인트가 그만큼 늦어져서, preload 로 받아 두고 도착하면 스타일로 바꿉니다.
-     (자바스크립트를 끈 사용자는 아래 <noscript> 의 stylesheet 을 그대로 씁니다.)
-     실측(2026-09-18 · npm run perf): 홈 첫 방문 FCP·LCP 가 약 530ms → 약 460ms, load 약 1.5s → 약 1.0s. -->
-<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-<link rel="preload" as="style" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" onload="this.onload=null;this.rel='stylesheet'">
-<noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"></noscript>
+<!-- 본문 서체 — Pretendard Variable 서브셋(자체 호스팅 · @font-face 는 site.css).
+     CDN dynamic subset 을 쓸 땐 페이지마다 조각을 20~39개 받았습니다. 지금은 사이트 글자만 담은
+     파일 하나(약 195KB)를 우리 도메인에서 받고, 그 파일은 서비스워커가 캐시합니다.
+     crossorigin 은 같은 출처여도 필요한 속성입니다 — 없으면 브라우저가 두 번 받습니다. -->
+<link rel="preload" as="font" type="font/woff2" href="${ASSET_REL}fonts/pretendard-variable.woff2" crossorigin>
 <!-- 공용 스타일·스크립트 — 모든 정적 페이지가 한 파일을 함께 받아 씁니다(서비스워커가 캐시). -->
 <link rel="stylesheet" href="${ASSET_REL}site.css">${speak ? `\n<script defer src="${ASSET_REL}speak.js"><\/script>` : ""}
 <link rel="icon" href="../icon.svg" type="image/svg+xml">
@@ -2245,9 +2247,7 @@ function build404Page() {
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-<link rel="preload" as="style" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" onload="this.onload=null;this.rel='stylesheet'">
-<noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"></noscript>
+<link rel="preload" as="font" type="font/woff2" href="${ASSET_ABS}fonts/pretendard-variable.woff2" crossorigin>
 <script>
   // 앱(index.html)에서 고른 테마를 그대로 적용합니다. 직접 고른 적이 없으면 OS 설정을 따릅니다.
   (function () {

@@ -46,14 +46,14 @@
     } catch (e) {}
   })();
 </script>
-<!-- 본문 서체 — Pretendard Variable. 필요한 글자 조각만 내려받는 dynamic subset 이라 첫 로드 부담이 작습니다.
-     다만 첫 방문 전송량의 절반 이상을 차지하고 외부 CDN 이라, stylesheet 로 두면 첫 페인트가 그만큼 늦어집니다.
-     그래서 preload 로 받아 두고 도착하면 스타일로 바꿉니다(도착 전에는 시스템 글꼴로 먼저 그립니다 — FOUT).
-     자바스크립트가 꺼져 있으면 아래 <noscript> 의 stylesheet 이 그대로 적용됩니다.
-     실측(2026-09-18 · npm run perf 3회): FCP·LCP 528/548/516ms → 488/444/456ms · load 약 1.5s → 약 1.0s · CLS 변화 없음. -->
-<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-<link rel="preload" as="style" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" onload="this.onload=null;this.rel='stylesheet'">
-<noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"></noscript>
+<!-- 본문 서체 — Pretendard Variable 서브셋(자체 호스팅). @font-face 는 assets/app.css 에 있습니다.
+     CDN 의 dynamic subset 은 홈 첫 방문에 39개 조각 · 574KB 를 받았습니다. 지금은 사이트에 실제로
+     나오는 글자만 담은 파일 하나(약 195KB)라 −379KB · 요청 −38개 입니다.
+     파일이 200KB 라 첫 페인트 전에 받아 두면 오히려 늦어질 수 있어, 먼저 시스템 글꼴로 그리고
+     도착하면 바꿉니다(font-display: swap). 아래 preload 는 그 교체를 조금 앞당기는 용도입니다.
+     `crossorigin` 은 같은 출처여도 필요한 속성입니다 — 없으면 브라우저가 두 번 받습니다.
+     실측(2026-09-18 · npm run perf): 첫 방문 폰트 574KB → 아래 도구 주석의 수치 참고. -->
+<link rel="preload" as="font" type="font/woff2" href="assets/fonts/pretendard-variable.woff2" crossorigin>
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="icon" href="icon-192.png" type="image/png" sizes="192x192">
 <!-- iOS 홈 화면은 SVG 아이콘을 쓰지 않으므로 PNG 를 따로 지정합니다(tools/make-icons.py 로 생성). -->

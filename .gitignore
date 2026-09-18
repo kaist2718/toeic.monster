@@ -24,3 +24,6 @@ _site/
 
 # Windows 실행 부산물
 promo/*.log
+
+# 폰트 서브셋 원본(6.7MB) — tools/make-font-subset.py 가 필요할 때 받아 두는 캐시
+.cache/

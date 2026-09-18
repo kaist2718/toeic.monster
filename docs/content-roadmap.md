@@ -50,7 +50,7 @@ chapter_pages = 72
 | --- | --- |
 | `npm run audit:content` | 어휘·숙어·확장 콘텐츠의 중복·형식, “정답이 보기에 없는 문항”, 교차 중복, 총량 표기 일치 |
 | `npm run audit:text` | 화면에 보이는 모든 문자열의 맞춤법·영문 철자·공백·전각 문자·TTS 낭독 기호 |
-| `npm run audit:site` | **내부 링크·앵커, 정적 자산, HTML 중복 id, 메타·JSON-LD, 사이트맵 일치, 문서 수치, 홈 고정 표시값** |
+| `npm run audit:site` | **내부 링크·앵커, 정적 자산, HTML 중복 id, 메타·JSON-LD, 사이트맵 일치, 문서 수치, 홈 고정 표시값, 본문 서체 서브셋(5-3)** |
 | `npm run audit:external` | 위 항목 + 외부 링크 HTTP 상태 (네트워크 필요) |
 | `npm run test` | TTS 음성 선택 로직 + 문법 문제 풀이 연동 회귀 테스트 |
 | `npm run check` | 감사 3종 + 테스트 + 빌드 (커밋 전 권장) |

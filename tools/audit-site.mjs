@@ -23,6 +23,7 @@ import fs from "node:fs";
 import path from "node:path";
 import vm from "node:vm";
 import { fileURLToPath } from "node:url";
+import { collectCharset, countHangul } from "./font-charset.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SITE = "https://toeic.monster";
@@ -845,6 +846,90 @@ if (has("sw.js")) {
         `섹션 허브 ${hubs.length}개 · 홈이 내려받는 파일 ${homeScripts.length}개 대조`,
     );
   }
+}
+
+/* ------------------------------------------------------------------ */
+/* 5-3. 본문 서체 서브셋 정합성 (콘텐츠에 나오는 글자 ↔ 폰트가 담은 글자) */
+/* ------------------------------------------------------------------ */
+
+// 서체는 2026-09-18 부터 자체 서브셋 파일 하나입니다(`tools/make-font-subset.py`).
+// 그런데 서브셋은 저장소에 커밋된 결과물이라, **콘텐츠에 새 글자가 생기면 조용히 어긋납니다**
+// — 화면에서 그 글자만 시스템 글꼴로 보이고, 눈으로는 알아채기 어렵습니다.
+// 그래서 "콘텐츠에 나오는 글자가 서브셋(또는 폰트에 아예 없는 글자 목록)에 다 있는가"를 검사합니다.
+const FONT_FILE = "assets/fonts/pretendard-variable.woff2";
+const FONT_META = "assets/fonts/charset.json";
+const FONT_CDN = /cdn\.jsdelivr\.net\/gh\/orioncactus\/pretendard/i;
+
+if (!has(FONT_FILE)) {
+  fail(`${FONT_FILE} 이 없습니다 — \`python tools/make-font-subset.py\` 를 실행하세요.`);
+} else if (!has(FONT_META)) {
+  fail(
+    `${FONT_META} 이 없습니다 — 서브셋과 함께 만드는 글자 목록입니다(감사가 이것과 대조합니다).\n` +
+      "     → `python tools/make-font-subset.py` 를 실행하세요.",
+  );
+} else {
+  const meta = JSON.parse(read(FONT_META));
+  /** ["20-7e", "a7"] → [[32,126],[167,167]] */
+  const toRanges = (list) =>
+    (Array.isArray(list) ? list : [])
+      .map((r) => String(r).split("-").map((h) => parseInt(h, 16)))
+      .sort((a, b) => a[0] - b[0]);
+  const inRanges = (cp, rs) => {
+    let lo = 0;
+    let hi = rs.length - 1;
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1;
+      const [a, b] = rs[mid];
+      if (cp < a) hi = mid - 1;
+      else if (cp > b) lo = mid + 1;
+      else return true;
+    }
+    return false;
+  };
+
+  const covered = toRanges(meta.covered);
+  const ignored = toRanges(meta.ignored); // 이모지 등 Pretendard 에 아예 없는 글자 — 시스템 글꼴로 그려집니다
+  const { codepoints } = collectCharset(ROOT);
+  const missing = codepoints.filter((cp) => !inRanges(cp, covered) && !inRanges(cp, ignored));
+  if (missing.length) {
+    const shown = missing
+      .slice(0, 12)
+      .map((c) => `${String.fromCodePoint(c)}(U+${c.toString(16).toUpperCase()})`)
+      .join(" ");
+    fail(
+      `본문 서체 서브셋에 없는 글자가 화면 콘텐츠에 있습니다 — ${shown}${missing.length > 12 ? ` 외 ${missing.length - 12}자` : ""}\n` +
+        "     → `python tools/make-font-subset.py` 를 다시 실행하고 결과를 커밋하세요." +
+        "(그러지 않으면 그 글자만 다른 글꼴로 보입니다.)",
+    );
+  }
+
+  const fontBytes = fs.statSync(path.join(ROOT, FONT_FILE)).size;
+  if (meta.bytes !== fontBytes) {
+    fail(
+      `${FONT_META} 의 bytes(${meta.bytes}) 와 실제 파일(${fontBytes}) 이 다릅니다 — 서브셋을 다시 만드세요.`,
+    );
+  }
+
+  // CDN 으로 되돌아가면 첫 방문이 다시 574KB 가 됩니다(그때는 조용히 무거워집니다).
+  const cdnUsers = pages.filter((p) => FONT_CDN.test(markOf[p] || ""));
+  if (cdnUsers.length) {
+    fail(
+      `${cdnUsers.join(", ")}: 본문 서체를 다시 CDN 에서 받습니다 — 자체 서브셋(${FONT_FILE})을 쓰세요.`,
+    );
+  }
+
+  // 스타일이 실제로 그 파일을 선언하는가 — 주소 오타는 런타임에야 드러납니다.
+  const declaresFont = /@font-face[^}]*fonts\/pretendard-variable\.woff2/i;
+  for (const css of [APP_CSS, SHARED_CSS]) {
+    if (has(css) && !declaresFont.test(read(css))) {
+      fail(`${css}: @font-face 가 ${FONT_FILE} 를 가리키지 않습니다(본문이 시스템 글꼴로 보입니다).`);
+    }
+  }
+
+  note(
+    `본문 서체 서브셋 ${meta.glyphs}자 · 폰트에 없어 제외한 글자 ${(meta.ignored || []).length}구간 · ` +
+      `콘텐츠 글자 ${codepoints.length}자(한글 ${countHangul(codepoints)}자) · ${(fontBytes / 1024).toFixed(1)}KB`,
+  );
 }
 
 /* ------------------------------------------------------------------ */

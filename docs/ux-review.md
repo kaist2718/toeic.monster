@@ -1202,6 +1202,8 @@ FCP/LCP/DCL/load · 캐시 적중 · 종류별 합계를 보여줍니다. 로컬
 
 → **가장 큰 지렛대는 이제 웹폰트(첫 방문의 57%)** 입니다. Pretendard 가변 서체의 하위집합(woff2) 20여 개를
 받느라 574KB 를 씁니다. 다음 후보로 남깁니다(굵기·서브셋 축소, 또는 첫 페인트 뒤 로드).
+→ **17차 점검에서 해결했습니다**: 사이트에 실제로 나오는 글자만 담은 서브셋을 만들어 자체 호스팅합니다
+(574KB → **195KB** · 첫 방문 총량 −387KB). §22-1 참고.
 
 ### 17-4. 배포 후 자동 점검 ✅
 
@@ -1519,4 +1521,54 @@ npm run perf           # 폰트 preload 전후 FCP·LCP·load·CLS (CLS 는 0.05
 npm run check:browser  # 섹션 목록 펼침·검색창 숨김·섹션 이동이 그대로인지
 node -e "const h=require('fs').readFileSync('units/frequency.html','utf8');console.log((h.match(/class=\"w-word\"/g)||[]).length)"  # 200
 node -e "const h=require('fs').readFileSync('units/confusion.html','utf8');console.log((h.match(/confuse-card/g)||[]).length)" # 20
+```
+
+---
+
+## 22. 17차 점검 (2026-09-18) — 본문 서체 자체 서브셋 · 접근성·성능 게이트
+
+**첫 방문 1,016.3KB → 628.6KB(−387.7KB · −38%)**, 요청 70 → 50개. 본문 서체가 첫 방문의 절반 이상
+(574KB)을 차지하던 것을, 사이트에 실제로 나오는 글자만 담은 파일 하나(195KB)로 바꾼 결과입니다.
+
+### 22-1. 웹폰트 574KB → 195KB (CDN 조각 → 자체 서브셋)
+
+| | 이전 (CDN dynamic subset) | 이후 (자체 서브셋) |
+| --- | --- | --- |
+| 첫 방문 폰트 전송량 | 574KB (**39개 파일**) | **195KB (1개 파일)** |
+| 출처 | `cdn.jsdelivr.net` (외부) | 우리 도메인 `assets/fonts/…` |
+| 첫 방문 총량 (`npm run perf`) | 1,016.3KB | **628.6KB** |
+| 요청 수 | 70개 | **50개** |
+| `load` | 약 1.0s | **약 0.66s** |
+| CLS | 0.05 | **0.00**(폰트 교체가 첫 페인트 전에 끝남) |
+
+- **왜 줄었나**: dynamic subset 은 페이지에 나온 글자가 **걸친 조각**마다 파일을 하나씩 받습니다.
+  사이트가 쓰는 글자는 1,305자(한글 999자)인데 그것들이 39개 조각에 흩어져 있어 574KB 를 썼습니다 —
+  받은 조각 안의 나머지 글자는 한 번도 쓰이지 않습니다.
+- **만드는 도구**: `python tools/make-font-subset.py` (Python 3 + fontTools · 개발자 PC 에서 한 번만).
+  글자 집합의 정의는 `tools/font-charset.mjs` **한 곳**이고, 데이터·앱 스크립트·생성된 정적 페이지를 훑습니다.
+  결과물(`assets/fonts/pretendard-variable.woff2` · `charset.json`)은 다른 생성물처럼 저장소에 커밋합니다.
+- 폰트에 아예 없는 글자(이모지 141자 등)는 `charset.json` 의 `ignored` 에 적고 **시스템 글꼴로** 그립니다.
+- 라이선스: Pretendard 는 SIL OFL 1.1 이라 폰트와 함께 라이선스를 배포해야 합니다 —
+  `assets/fonts/LICENSE.txt` 를 서브셋 옆에 넣어 배포본에도 함께 나갑니다.
+- `font-display: swap` 은 그대로 둡니다. 첫 페인트 전에 도착하지 못해도 시스템 글꼴로 먼저 그리고 바꿉니다.
+  (실측에서는 같은 출처 + `preload` 덕분에 교체가 첫 페인트 전에 끝나 CLS 가 0 이 됐습니다.)
+- **회귀 방지(3중)**
+  - `audit:site` **5-3** — ① 화면 콘텐츠에 서브셋에 없는 글자가 생기면 실패(재생성 안내) ② `charset.json` 의
+    `bytes` 와 실제 파일 크기가 다르면 실패 ③ `index.html`·`site.css` 가 서브셋을 가리키지 않으면 실패
+    ④ 다시 CDN 에서 받으면 실패 — 파일을 깜빡 고치면 조용히 무거워지는 것을 막습니다.
+  - `check-browser` — 서체가 **선언·로드**되고, 같은 글자의 폭이 대체 글꼴과 다른지(정말 Pretendard 로
+    그려지는지) 홈과 정적 페이지 16곳에서 확인합니다.
+  - `sw.js` 프리캐시에 폰트를 넣고 `v15 → v16` — 오프라인에서도 같은 글꼴로 보입니다.
+- `verify-generated` 는 `assets/` 를 **재귀적으로** 훑도록 고쳤습니다(이전에는 `assets/fonts/*` 가
+  검증 밖으로 빠졌습니다). 폰트 같은 이진 파일은 바이트로 비교합니다.
+
+### 22-2. 17차 재현 방법
+
+```bash
+python tools/make-font-subset.py        # 서브셋 재생성(필요할 때만) → woff2 + charset.json
+npm run audit                           # 5-3 폰트 서브셋 정합성(글자·크기·CDN 회귀)
+npm run perf                            # 첫 방문 폰트 195KB · 요청 50개 · CLS 0 인지
+npm run perf:compare                    # 첫 방문·재방문이 늘지 않았는지
+npm run check:browser                   # 본문 서체가 실제로 그려지는지(홈 + 정적 페이지)
+node tools/font-charset.mjs             # 사이트 글자 수(1,305자 · 한글 999자)
 ```
