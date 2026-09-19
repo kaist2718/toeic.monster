@@ -4,7 +4,7 @@ window.VOCAB_UNITS = window.VOCAB_UNITS || {};
 window.VOCAB_UNITS[21] = [
   ["sell", "/sel/", "셀", "팔다", "The store sells imported goods at low prices.", "그 가게는 수입품을 낮은 가격에 판다.", "더 스토어 셀즈 임-포-티드 구즈 앳 로우 프라이-시즈"],
   ["sales", "/seɪlz/", "세일즈", "매출, 판매", "The sales for this month increased by ten percent.", "이번 달 매출이 10% 증가했다.", "더 세일즈 포 디스 먼스 인-크리스트 바이 텐 퍼-센트"],
-  ["seller", "/ˈselər/", "셀-러", "판매자", "The seller offered free shipping.", "판매자가 무료 배송을 제안했다.", "더 셀-러 오-퍼드 프리 시-핑"],
+  ["seller", "/ˈselər/", "셀-러", "판매자", "The seller offered free shipping on all orders over fifty dollars.", "판매자는 50달러 이상 모든 주문에 무료 배송을 제안했다.", "더 셀-러 오-퍼드 프리 시-핑 온 올 오-더즈 오우-버 피프-티 달-러즈"],
   ["wholesale", "/ˈhoʊlseɪl/", "홀-세일", "도매의, 도매로", "They buy goods at wholesale prices.", "그들은 도매가로 물건을 산다.", "데이 바이 구즈 앳 홀-세일 프라이-시즈"],
   ["retail", "/ˈriːteɪl/", "리-테일", "소매", "Retail sales rose during the holiday season.", "휴가철 동안 소매 판매가 증가했다.", "리-테일 세일즈 로우즈 두-링 더 할-리-데이 시-즌"],
   ["retailer", "/ˈriːteɪlər/", "리-테일-러", "소매업자", "The retailer offers a full refund policy.", "그 소매업자는 전액 환불 정책을 제공한다.", "더 리-테일-러 오-퍼즈 어 풀 리-펀드 팔-러-시"],

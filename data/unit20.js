@@ -4,7 +4,7 @@ window.VOCAB_UNITS = window.VOCAB_UNITS || {};
 window.VOCAB_UNITS[20] = [
   ["savings", "/ˈseɪvɪŋz/", "세이-빙즈", "저축, 예금", "She keeps her savings in a bank account.", "그녀는 저축을 은행 계좌에 보관한다.", "시 킵스 허 세이-빙즈 인 어 뱅크 어-카운트"],
   ["teller", "/ˈtelər/", "텔-러", "은행 창구 직원", "The teller processed the deposit quickly.", "창구 직원이 입금을 신속히 처리했다.", "더 텔-러 프라-세스트 더 디-파-짓 퀵-리"],
-  ["transaction", "/trænˈzækʃn/", "트랜-젝-션", "거래", "The transaction was completed online.", "그 거래는 온라인으로 완료되었다.", "더 트랜-젝-션 워즈 컴-플리-티드 온-라인"],
+  ["transaction", "/trænˈzækʃn/", "트랜-젝-션", "거래", "The transaction was completed online in less than a minute.", "그 거래는 1분도 안 되어 온라인으로 완료되었다.", "더 트랜-젝-션 워즈 컴-플리-티드 온-라인 인 레스 던 어 미-닛"],
   ["wire transfer", "/ˈwaɪər trænsfɜːr/", "와이-어 트랜스-퍼", "송금", "The payment was made by wire transfer.", "지불은 송금으로 이루어졌다.", "더 페이-먼트 워즈 메이드 바이 와이-어 트랜스-퍼"],
   ["balance", "/ˈbæləns/", "밸-런스", "잔액, 균형", "Please check your account balance before paying.", "지불하기 전에 계좌 잔액을 확인하세요.", "플리즈 체크 유어 어-카운트 밸-런스 비-포 페이-잉"],
   ["statement", "/ˈsteɪtmənt/", "스테이트-먼트", "거래 내역서, 성명", "The bank sends a statement every month.", "은행은 매달 거래 내역서를 보낸다.", "더 뱅크 센즈 어 스테이트-먼트 에-브리 먼스"],
@@ -15,7 +15,7 @@ window.VOCAB_UNITS[20] = [
   ["shareholder", "/ˈʃerhoʊldər/", "셰어-홀-더", "주주", "The shareholders will vote on the merger.", "주주들이 합병에 대해 투표할 것이다.", "더 셰어-홀-더즈 윌 보우트 온 더 머-저"],
   ["dividend", "/ˈdɪvɪdend/", "디-비-덴드", "배당금", "The company pays a dividend every quarter.", "그 회사는 매 분기 배당금을 지급한다.", "더 컴-퍼-니 페이즈 어 디-비-덴드 에-브리 콰-터"],
   ["portfolio", "/pɔːrtˈfoʊlioʊ/", "포-트-폴리-오", "포트폴리오", "Her portfolio includes stocks and bonds.", "그녀의 포트폴리오에는 주식과 채권이 있다.", "허 포-트-폴리-오 인-클루즈 스탁스 앤드 본즈"],
-  ["investor", "/ɪnˈvestər/", "인-베스-터", "투자자", "Foreign investors showed great interest.", "외국 투자자들이 큰 관심을 보였다.", "포-린 인-베스-터즈 쇼우드 그레이트 인-트러-스트"],
+  ["investor", "/ɪnˈvestər/", "인-베스-터", "투자자", "Foreign investors showed great interest in the new plant.", "외국 투자자들이 새 공장에 큰 관심을 보였다.", "포-린 인-베스-터즈 쇼우드 그레이트 인-트러-스트 인 더 뉴 플랜트"],
   ["mutual fund", "/ˈmjuːtʃuəl fʌnd/", "뮤-추-얼 펀드", "펀드, 뮤추얼 펀드", "A mutual fund is a good choice for beginners.", "뮤추얼 펀드는 초보자에게 좋은 선택이다.", "어 뮤-추-얼 펀드 이즈 어 구드 초이스 포 비-긴-너즈"],
   ["securities", "/sɪˈkjʊrətiz/", "시-큐-러-티즈", "유가 증권", "The firm deals in stocks and other securities.", "그 회사는 주식과 기타 유가 증권을 취급한다.", "더 펌 딜즈 인 스탁스 앤드 어-더 시-큐-러-티즈"],
   ["capital", "/ˈkæpɪtl/", "캐-피-털", "자본, 수도", "The company needs more capital to expand.", "그 회사는 확장을 위해 자본이 더 필요하다.", "더 컴-퍼-니 니즈 모어 캐-피-털 투 익-스팬드"],

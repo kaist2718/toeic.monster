@@ -56,6 +56,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "과거완료 — had + p.p.",
+          note: "두 사건이 모두 과거라면, had + p.p. 가 쓰인 쪽이 먼저 일어난 일입니다.",
           body: "과거의 어떤 시점보다 더 앞선 일을 나타냅니다. 두 사건의 선후를 분명히 할 때 씁니다.",
           table: {
             head: ["형식", "쓰임", "예문"],
@@ -82,6 +83,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "완료진행형 — have been + -ing",
+          note: "for, since 와 함께 오면 진행형, already, just 와 함께 오면 완료형이 자연스럽습니다.",
           body: "have been + -ing는 동작이 계속되고 있음을 강조합니다. 결과보다 진행 과정이 중요할 때 씁니다.",
           table: {
             head: ["시제", "형태", "예문"],
@@ -94,6 +96,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "완료시제 한눈에 정리",
+          note: "빈칸 앞에 by the time, for three years 같은 표현이 보이면 답이 거의 정해집니다.",
           body: "기준 시점에 따라 형태가 달라집니다. 표로 정리해 두면 빈칸 앞의 시간 표현만 보고 답을 고를 수 있습니다.",
           table: {
             head: ["기준", "형태", "단서 표현", "예문"],
@@ -145,6 +148,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "시제별 수동태 형태",
+          note: "진행형 수동태는 be being p.p. 로, 완료 수동태는 have been p.p. 로 씁니다.",
           body: "수동태의 시제는 be동사가 담당하고, 본동사는 항상 과거분사로 고정됩니다. 시제를 바꾸려면 be동사만 바꾸면 됩니다.",
           table: {
             head: ["시제", "형태", "예문"],
@@ -171,6 +175,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "by 이외의 전치사",
+          note: "be interested in, be satisfied with 처럼 굳어진 짝은 통째로 익히는 편이 빠릅니다.",
           body: "감정이나 상태를 나타내는 동사는 by 대신 with, in, at, about, of를 씁니다. 통째로 익혀야 합니다.",
           table: {
             head: ["표현", "뜻"],
@@ -187,6 +192,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "부정문·의문문·조동사 수동태",
+          note: "조동사 수동태에서 be 는 항상 원형입니다. will be sent 처럼 씁니다.",
           body: "부정문은 be동사 뒤에 not, 의문문은 be동사를 주어 앞으로 보냅니다. 조동사가 있으면 조동사 + be + p.p. 형태입니다.",
           table: {
             head: ["형식", "구조", "예문"],
@@ -249,6 +255,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "주격과 목적격 판단하기",
+          note: "관계대명사 바로 뒤에 주어가 없으면 주격입니다. 이 기준 하나로 형태가 정해집니다.",
           body: "관계대명사 뒤에 동사가 바로 오면 주격, 주어가 오면 목적격입니다. 이 기준만 익히면 형태를 빠르게 고를 수 있습니다.",
           table: {
             head: ["뒤에 오는 것", "격", "예문"],
@@ -321,6 +328,7 @@ window.GRAMMAR_BOOKS.push({
       points: [
         {
           h: "to부정사를 취하는 동사",
+          note: "hope, plan 처럼 아직 일어나지 않은 일을 말하는 동사가 to부정사를 취합니다.",
           body: "want, decide, hope, plan, agree, promise, manage, refuse는 to부정사를 목적어로 취합니다. 미래 지향적이거나 아직 일어나지 않은 일에 주로 씁니다.",
           examples: [
             { en: "We decided to postpone the launch.", ko: "우리는 출시를 연기하기로 결정했습니다." },
@@ -340,6 +348,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "동명사를 취하는 동사",
+          note: "enjoy, avoid, finish 는 뒤에 동명사만 옵니다. to부정사를 쓰면 틀린 문장이 됩니다.",
           body: "enjoy, avoid, finish, mind, suggest, consider, recommend, postpone는 동명사를 목적어로 취합니다. 이미 일어난 일이나 일반적인 행위를 가리킬 때 씁니다.",
           examples: [
             { en: "Please avoid sending large attachments.", ko: "큰 첨부 파일을 보내는 것은 피해 주세요." },
@@ -373,6 +382,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "전치사 뒤의 동명사",
+          note: "look forward to, be used to 에서 to 는 전치사입니다. 뒤에 동명사가 옵니다.",
           body: "전치사 뒤에는 동명사가 옵니다. to가 전치사인 표현도 마찬가지이므로 뒤에 동명사를 씁니다.",
           table: {
             head: ["표현", "뜻", "예문"],
@@ -400,6 +410,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "to부정사의 세 가지 역할",
+          note: "빈칸 앞에 명사가 있고 뒤가 불완전하면, to부정사가 그 명사를 꾸미는 형용사 역할입니다.",
           body: "to부정사는 명사·형용사·부사처럼 쓰입니다. 문장에서 어떤 자리에 오는지에 따라 역할이 달라집니다.",
           table: {
             head: ["역할", "자리", "예문"],
@@ -451,6 +462,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "분사의 형용사 역할",
+          note: "분사가 명사 앞에 오면 한 단어로, 뒤에 오면 구로 길어집니다. 자리만 보면 형태가 보입니다.",
           body: "분사는 명사 앞뒤에서 명사를 꾸미거나, be동사 뒤에서 주어의 상태를 설명합니다.",
           table: {
             head: ["자리", "예문", "뜻"],
@@ -481,6 +493,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "분사구문의 의미",
+          note: "분사구문은 접속사를 지운 형태입니다. 해석할 때 원래 접속사를 되살려 보면 뜻이 분명해집니다.",
           body: "분사구문은 시간, 이유, 조건, 양보, 동시 상황을 나타냅니다. 문맥에 따라 뜻이 정해지므로 해석할 때 앞뒤 관계를 봅니다.",
           examples: [
             { en: "Walking into the office, she noticed the new sign.", ko: "사무실로 들어서다가 그녀는 새 표지판을 발견했습니다." },
@@ -490,6 +503,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "분사구문의 시제·수동·부정",
+          note: "부정 분사구문은 Not 이 맨 앞에 옵니다. Not knowing the schedule 처럼 씁니다.",
           body: "주절보다 앞선 일은 Having + p.p., 수동은 Being + p.p., 부정은 Not + -ing로 나타냅니다.",
           table: {
             head: ["형태", "쓰임", "예문"],
@@ -536,6 +550,7 @@ window.GRAMMAR_BOOKS.push({
       points: [
         {
           h: "가정법 과거 — 현재 사실의 반대",
+          note: "be동사 자리에는 주어와 관계없이 were 를 씁니다. 이 점이 시험에 자주 나옵니다.",
           body: "if절에 과거형, 주절에 would + 원형을 씁니다. be동사는 주어와 관계없이 were를 씁니다.",
           table: {
             head: ["형식", "예문"],
@@ -548,6 +563,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "가정법 과거완료 — 과거 사실의 반대",
+          note: "would have p.p. 는 과거에 하지 못한 일에 대한 아쉬움을 담습니다.",
           body: "if절에 had + p.p., 주절에 would have + p.p.를 씁니다. 이미 지나간 일에 대한 아쉬움을 나타냅니다.",
           table: {
             head: ["형식", "예문"],
@@ -565,6 +581,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "혼합 가정법",
+          note: "if절은 과거를, 주절은 현재를 가리키는 것이 혼합 가정법이라 두 시제가 섞이는 것이 정상입니다.",
           body: "과거의 원인이 현재에 영향을 줄 때는 if절에 had + p.p., 주절에 would + 원형을 씁니다.",
           table: {
             head: ["형식", "예문"],
@@ -578,6 +595,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "I wish 가정법",
+          note: "I wish 뒤에는 would 보다 과거형이나 had p.p. 를 씁니다. 현재의 아쉬움에는 과거형을 씁니다.",
           body: "이루어지지 않은 바람을 나타냅니다. 현재의 아쉬움에는 과거형, 과거의 아쉬움에는 had + p.p.를 씁니다.",
           table: {
             head: ["형식", "뜻", "예문"],
@@ -590,6 +608,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "if 를 생략한 도치",
+          note: "Were I you 처럼 문장이 were 로 시작하면 if 가 생략된 가정법입니다. 뜻은 If I were you 와 같습니다.",
           body: "if를 생략하면 were, had, should를 주어 앞으로 보냅니다. 격식 있는 문어체에서 자주 씁니다.",
           examples: [
             { en: "Were I in your position, I would accept the offer.", ko: "제가 당신 입장이라면 그 제안을 받아들일 것입니다." },
@@ -598,6 +617,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "가정의 다른 표현",
+          note: "but for 는 if it were not for 의 줄임 표현입니다. 뒤에는 명사구가 옵니다.",
           body: "without, otherwise, but for도 가정의 뜻을 담습니다. 주절에 would를 쓰는 점이 같습니다.",
           examples: [
             { en: "Without your help, we would not have finished on time.", ko: "당신의 도움이 없었다면 제때 끝내지 못했을 것입니다." },
@@ -632,6 +652,7 @@ window.GRAMMAR_BOOKS.push({
       points: [
         {
           h: "과거 추측 — 조동사 + have p.p.",
+          note: "확신의 강도는 must, may, might, could 순서로 약해집니다.",
           body: "과거의 일을 지금 추측할 때 씁니다. must는 강한 확신, may와 might는 가능성, cannot은 부정적 확신을 나타냅니다.",
           table: {
             head: ["형식", "확신 정도", "예문"],
@@ -646,6 +667,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "should have p.p. 와 ought to have p.p.",
+          note: "should have p.p. 는 후회와 비난 두 가지 뜻이 있어 문맥으로 갈립니다.",
           body: "should have p.p.는 하지 않은 일에 대한 후회나 비난을 나타냅니다. ought to have p.p.도 같은 뜻으로 씁니다.",
           examples: [
             { en: "You should have informed the client earlier.", ko: "고객에게 더 일찍 알렸어야 했습니다." },
@@ -664,6 +686,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "must have p.p. 와 cannot have p.p.",
+          note: "must have p.p. 의 반대는 must not have p.p. 가 아니라 cannot have p.p. 입니다.",
           body: "현재 상황을 근거로 과거를 강하게 추측할 때는 must have p.p., 반대로 일어났을 리 없다고 할 때는 cannot have p.p.를 씁니다.",
           table: {
             head: ["상황", "추측", "예문"],
@@ -689,6 +712,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "조동사 + have p.p. 한눈에 정리",
+          note: "조동사 뒤에는 항상 have 원형이 옵니다. has 나 had 가 오면 틀린 형태입니다.",
           body: "확신의 정도와 감정에 따라 형태를 고릅니다. 표로 정리해 두면 상황 설명 문장에서 답을 빠르게 고를 수 있습니다.",
           table: {
             head: ["형태", "쓰임", "예문"],
@@ -743,6 +767,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "준사역동사 get 과 help",
+          note: "have 와 make 는 동사원형을, get 은 to부정사를 씁니다. get 에만 to 가 붙습니다.",
           body: "get은 사람을 설득해 일을 하게 한다는 뜻으로 to부정사를 취합니다. help는 원형과 to부정사 둘 다 가능합니다.",
           examples: [
             { en: "She got the supplier to change the delivery date.", ko: "그녀는 공급업체가 배송 날짜를 바꾸도록 설득했습니다." },
@@ -752,6 +777,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "지각동사 see / hear / watch / feel",
+          note: "목적격 보어로 -ing 가 오면 동작의 일부를, 동사원형이 오면 동작 전체를 뜻합니다.",
           body: "지각동사 뒤에는 동사 원형(전체 동작) 또는 -ing(진행 중)를 씁니다. to부정사는 쓰지 않습니다.",
           table: {
             head: ["형태", "뜻", "예문"],
@@ -779,6 +805,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "목적격 보어 자리 총정리",
+          note: "사역동사 문장이 수동태가 되면 to 가 되살아납니다. be made to work 처럼 씁니다.",
           body: "동사 종류에 따라 목적격 보어로 오는 형태가 다릅니다. 표로 묶어 두면 빈칸 문제가 빠르게 풀립니다.",
           table: {
             head: ["동사 종류", "목적격 보어", "예문"],
@@ -818,6 +845,7 @@ window.GRAMMAR_BOOKS.push({
       points: [
         {
           h: "원급 비교 — as ~ as",
+          note: "as 와 as 사이에는 형용사나 부사의 원급이 옵니다. 비교급은 올 수 없습니다.",
           body: "두 대상이 같은 정도임을 나타냅니다. 부정문에서는 not as ~ as로 덜함을 나타냅니다.",
           table: {
             head: ["형식", "뜻", "예문"],
@@ -839,6 +867,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "최상급과 one of the 최상급",
+          note: "one of the 뒤에는 반드시 복수 명사가 옵니다. the busiest routes 처럼 씁니다.",
           body: "셋 이상 중 가장 좋은 것은 the + 최상급으로 나타냅니다. one of the + 최상급 + 복수 명사 구조도 자주 나옵니다.",
           table: {
             head: ["형식", "뜻", "예문"],
@@ -862,6 +891,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "배수 표현",
+          note: "셀 수 있는 명사에는 twice as many 를, 셀 수 없는 명사에는 twice as much 를 씁니다.",
           body: "몇 배인지는 twice, three times 뒤에 as ~ as를 붙여 나타냅니다. 비교급과 함께 쓰면 than을 씁니다.",
           table: {
             head: ["표현", "예문"],
@@ -875,6 +905,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "비교급 강조와 관용 표현",
+          note: "the more ~ the more 구문은 앞뒤 모두 비교급이 와야 합니다.",
           body: "much, far, even, a lot은 비교급을 강조하고, 원급·비교급에는 굳어진 관용 표현이 많습니다.",
           table: {
             head: ["표현", "뜻", "예문"],
@@ -914,6 +945,7 @@ window.GRAMMAR_BOOKS.push({
       points: [
         {
           h: "간접의문문의 어순",
+          note: "의문사 + 주어 + 동사 어순이라, 평서문처럼 동사를 주어 뒤에 둡니다.",
           body: "의문사 + 주어 + 동사 순서로 배열하고, 의문사가 없는 경우 if나 whether를 씁니다. 물음표는 문장 전체가 의문문일 때만 붙입니다.",
           table: {
             head: ["직접의문문", "간접의문문"],
@@ -927,6 +959,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "간접의문문 만드는 법",
+          note: "do, does, did 는 사라지고 시제는 동사에 남습니다. 이 점이 빈칸 문제의 단서입니다.",
           body: "be동사와 조동사는 주어 뒤로 보내고, 일반동사는 do/does/did를 없애고 시제에 맞는 형태로 바꿉니다.",
           table: {
             head: ["원래 형태", "간접의문문", "바뀌는 것"],
@@ -950,6 +983,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "whether와 if의 차이",
+          note: "whether 는 or not 과 함께 쓸 수 있고, if 는 그 자리에 오지 못합니다.",
           body: "주어 자리, 전치사 뒤, to부정사 앞에는 whether만 씁니다. if는 목적어 자리에서만 쓸 수 있습니다.",
           table: {
             head: ["자리", "쓸 수 있는 것", "예문"],
@@ -973,6 +1007,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "동격의 that",
+          note: "동격의 that 뒤에는 완전한 문장이 옵니다. 관계대명사와 달리 뒤에 빈자리가 없습니다.",
           body: "동격의 that은 앞 명사의 내용을 설명합니다. that 앞뒤로 같은 내용이 놓입니다.",
           examples: [
             { en: "The fact that sales rose surprised the board.", ko: "매출이 올랐다는 사실이 이사회를 놀라게 했습니다." },
@@ -1019,6 +1054,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "시제 변화",
+          note: "전달 동사가 과거이면 can 은 could, will 은 would 로 바뀝니다.",
           body: "전달 동사가 과거이면 인용문의 시제를 한 단계 뒤로 물립니다.",
           table: {
             head: ["직접화법", "간접화법"],
@@ -1034,6 +1070,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "대명사와 지시어 변화",
+          note: "말하는 사람이 바뀌면 I 는 he 나 she 로, we 는 they 로 바뀝니다.",
           body: "말하는 사람과 듣는 사람의 기준이 바뀌므로 대명사와 지시어를 상황에 맞게 바꿉니다.",
           table: {
             head: ["직접화법", "간접화법"],
@@ -1047,6 +1084,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "시간·장소 표현 변화",
+          note: "ago 는 before, next week 는 the following week 로 바꿔 전달합니다.",
           body: "now는 then, today는 that day, tomorrow는 the next day, here는 there로 바꿉니다.",
           table: {
             head: ["직접화법", "간접화법"],
@@ -1062,6 +1100,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "의문문과 명령문 전달",
+          note: "Yes, No 의문문은 if 를, 의문사 의문문은 의문사를 그대로 써서 이어 줍니다.",
           body: "의문문은 if 또는 의문사로 이어 주고, 명령문은 tell + 목적어 + to부정사로 바꿉니다.",
           examples: [
             { en: "He asked me if the report was ready.", ko: "그는 제게 보고서가 준비되었는지 물었습니다." },
@@ -1106,6 +1145,7 @@ window.GRAMMAR_BOOKS.push({
       points: [
         {
           h: "세 품사를 가르는 기준",
+          note: "빈칸 뒤에 주어와 동사가 보이면 접속사, 명사구가 보이면 전치사로 좁힙니다.",
           body: "빈칸 뒤를 먼저 봅니다. 주어 + 동사가 오면 접속사, 명사구가 오면 전치사, 문장 첫머리에서 의미만 연결하면 접속부사입니다.",
           table: {
             head: ["종류", "예", "뒤에 오는 것"],
@@ -1118,6 +1158,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "접속사 종류와 쓰임",
+          note: "등위접속사는 문장과 문장을, 종속접속사는 부사절을 이끕니다.",
           body: "등위접속사는 대등한 요소를, 종속접속사는 부사절을 이끕니다. 둘 다 콤마와 함께 쓰입니다.",
           table: {
             head: ["구분", "접속사", "의미"],
@@ -1142,6 +1183,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "의미별 연결어 묶음",
+          note: "대조, 결과, 추가, 조건, 정리 다섯 묶음만 익혀도 빈칸 문제 대부분이 풀립니다.",
           body: "대조·결과·추가·조건·정리를 기준으로 묶어 두면 빈칸 문제에서 빠르게 소거할 수 있습니다.",
           table: {
             head: ["의미", "표현"],
@@ -1156,6 +1198,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "전치사와 접속사 짝 맞추기",
+          note: "despite 와 although, because of 와 because 처럼 짝을 지어 익히면 헷갈리지 않습니다.",
           body: "같은 뜻이라도 뒤에 절이 오면 접속사, 명사구가 오면 전치사를 씁니다. 짝을 지어 익혀 두면 빠릅니다.",
           table: {
             head: ["전치사 (+ 명사구)", "접속사 (+ 절)", "뜻"],
@@ -1169,6 +1212,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "콤마와 세미콜론 정리",
+          note: "therefore 로 시작하는 문장은 앞 문장과 세미콜론이나 마침표로 끊어 씁니다.",
           body: "접속사는 콤마와 함께, 접속부사는 세미콜론과 함께 씁니다. 접속부사만으로 두 절을 직접 연결할 수 없습니다.",
           examples: [
             { en: "Although the deadline was short, the team delivered.", ko: "마감이 짧았지만 팀은 결과물을 냈습니다." },

@@ -25,7 +25,7 @@ window.VOCAB_UNITS[11] = [
   ["regulation", "/ˌreɡjuˈleɪʃn/", "레-규-레이-션", "규정, 규제", "All employees must follow the safety regulations.", "모든 직원은 안전 규정을 따라야 한다.", "올 임-플로이-이즈 머스트 팔-로우 더 세이프-티 레-규-레이-션즈"],
   ["rule", "/ruːl/", "룰", "규칙, 규율", "There is a strict rule against smoking in the office.", "사무실 내 흡연을 금지하는 엄격한 규칙이 있다.", "데어 이즈 어 스트릭트 룰 어-겐스트 스모우-킹 인 디 오-피스"],
   ["policy", "/ˈpɑːləsi/", "팔-러-시", "정책, 방침", "The company has a policy of returning calls within a day.", "그 회사는 하루 안에 전화를 돌려주는 방침이 있다.", "더 컴-퍼-니 해즈 어 팔-러-시 오브 리-터-닝 콜즈 위드-인 어 데이"],
-  ["clause", "/klɔːz/", "클로즈", "조항, 절", "Read the termination clause carefully.", "해지 조항을 주의 깊게 읽으세요.", "리드 더 터-머-네이-션 클로즈 케어-풀-리"],
+  ["clause", "/klɔːz/", "클로즈", "조항, 절", "Read the termination clause carefully before you sign the contract.", "계약서에 서명하기 전에 해지 조항을 주의 깊게 읽으세요.", "리드 더 터-머-네이-션 클로즈 케어-풀-리 비-포어 유 사인 더 칸-트랙트"],
   ["terms", "/tɜːrmz/", "텀즈", "조건, 조항", "The terms of the agreement must be clear.", "계약의 조건은 명확해야 한다.", "더 텀즈 오브 디 어-그리-먼트 머스트 비 클리어"],
   ["condition", "/kənˈdɪʃn/", "컨-디-션", "조건, 상태", "The products arrived in perfect condition.", "제품이 완벽한 상태로 도착했다.", "더 프라-덕츠 어-라이브드 인 퍼-펙트 컨-디-션"],
   ["amend", "/əˈmend/", "어-멘드", "수정하다, 개정하다", "The contract was amended to include new terms.", "계약서는 새로운 조건을 포함하도록 수정되었다.", "더 칸-트랙트 워즈 어-멘-디드 투 인-클루드 누 텀즈"],

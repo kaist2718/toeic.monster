@@ -2393,6 +2393,100 @@
         { q: "온라인 매출은 어떻게 변했는가?", a: "전 분기보다 12퍼센트 늘었다", opts: ["전 분기보다 12퍼센트 늘었다", "전 분기보다 12퍼센트 줄었다", "변화가 없었다", "두 배가 되었다"], why: "grew by twelve percent compared with the previous quarter." },
         { q: "성장의 주된 이유는?", a: "4월에 시작한 구독 요금제", opts: ["4월에 시작한 구독 요금제", "광고비 증가", "신규 매장 개설", "가격 인상"], why: "came mainly from the new subscription plan launched in April." },
         { q: "다음 분기의 중점 사항은?", a: "남부 지역 배송 시간 개선", opts: ["남부 지역 배송 시간 개선", "신제품 개발", "직원 채용", "해외 진출"], why: "we will focus on improving delivery times in the southern region." }
+      ] },
+    { title: "회의실 예약 변경", kind: "대화",
+      lines: [
+        "W: I reserved the main conference room for Thursday, but our client asked to meet on Friday instead.",
+        "M: Friday morning is already booked for the sales review. Would two o'clock work?",
+        "W: Yes, that is fine. Can you also set up the video link for the overseas team?",
+        "M: Sure. I will update the reservation and send the new invite this afternoon."
+      ],
+      qs: [
+        { q: "여성이 예약을 바꾸려는 이유는?", a: "고객이 금요일로 옮겨 달라고 해서", opts: ["고객이 금요일로 옮겨 달라고 해서", "회의실이 공사 중이라서", "직원이 휴가 중이라서", "장비가 고장 났기 때문에"], why: "our client asked to meet on Friday instead.", ex: "Our client asked to meet on Friday instead.", exKo: "고객이 대신 금요일에 만나자고 했습니다." },
+        { q: "금요일 오전에 이미 잡혀 있는 일정은?", a: "매출 검토 회의", opts: ["매출 검토 회의", "직원 교육", "면접", "월간 안전 점검"], why: "Friday morning is already booked for the sales review." },
+        { q: "남성이 하기로 한 일은?", a: "예약을 수정하고 새 초대장을 보낸다", opts: ["예약을 수정하고 새 초대장을 보낸다", "회의를 취소한다", "고객에게 직접 전화한다", "다른 회의실을 지금 정한다"], why: "I will update the reservation and send the new invite this afternoon." }
+      ] },
+    { title: "프린터 수리 요청", kind: "대화",
+      lines: [
+        "M: The printer on the fifth floor keeps jamming. Could someone take a look at it today?",
+        "W: I will send a technician this morning. Which model is it?",
+        "M: It is the MX 480. The display shows an error code as well.",
+        "W: Thank you. If the part needs to be ordered, it may take two days."
+      ],
+      qs: [
+        { q: "남성이 요청한 것은?", a: "프린터를 점검해 주는 것", opts: ["프린터를 점검해 주는 것", "새 프린터를 사는 것", "사무실을 옮기는 것", "소모품을 주문하는 것"], why: "Could someone take a look at it today?", ex: "The printer on the fifth floor keeps jamming.", exKo: "5층 프런터가 계속 걸립니다." },
+        { q: "여성이 보내겠다고 한 사람은?", a: "기술자", opts: ["기술자", "배송 기사", "청소 담당자", "보안 요원"], why: "I will send a technician this morning." },
+        { q: "부품을 주문해야 할 때 걸리는 시간은?", a: "이틀", opts: ["이틀", "하루", "일주일", "한 달"], why: "If the part needs to be ordered, it may take two days." }
+      ] },
+    { title: "고객 불만 응대", kind: "대화",
+      lines: [
+        "W: I am calling about an extra charge on my last bill. I was billed twice for the installation.",
+        "M: I apologize for the error. Let me pull up your account and check the payment history.",
+        "W: The amount is 45 dollars. I would like it refunded to my card.",
+        "M: Understood. The refund will appear within three business days."
+      ],
+      qs: [
+        { q: "여성이 전화한 목적은?", a: "중복 청구된 요금을 환불받으려고", opts: ["중복 청구된 요금을 환불받으려고", "설치 일정을 잡으려고", "계약을 해지하려고", "요금제를 바꾸려고"], why: "I was billed twice for the installation.", ex: "I was billed twice for the installation.", exKo: "설치비가 두 번 청구되었습니다." },
+        { q: "잘못 청구된 금액은?", a: "45달러", opts: ["45달러", "54달러", "450달러", "40달러"], why: "The amount is 45 dollars." },
+        { q: "환불은 언제 처리되는가?", a: "영업일 기준 삼일 이내", opts: ["영업일 기준 삼일 이내", "즉시", "일주일 이내", "다음 달 말"], why: "The refund will appear within three business days." }
+      ] },
+    { title: "행사 등록 확인", kind: "대화",
+      lines: [
+        "M: Hello, I registered for the trade show online, but I have not received a confirmation email.",
+        "W: Let me check your name. Could you spell it for me, please?",
+        "M: It is Daniel Cho. I used my work address when I signed up.",
+        "W: I found it. The email bounced, so I will resend it to your office address."
+      ],
+      qs: [
+        { q: "남성의 문제는?", a: "확인 메일을 받지 못했다", opts: ["확인 메일을 받지 못했다", "등록비를 잘못 냈다", "행사 날짜를 착각했다", "이름을 잘못 적었다"], why: "I have not received a confirmation email.", ex: "I have not received a confirmation email.", exKo: "확인 메일을 받지 못했습니다." },
+        { q: "여성이 남성에게 요청한 것은?", a: "이름의 철자를 말해 달라", opts: ["이름의 철자를 말해 달라", "등록 번호를 다시 확인해 달라", "전화번호를 알려 달라", "메일 주소를 바꿔 달라"], why: "Could you spell it for me, please?" },
+        { q: "여성이 하기로 한 일은?", a: "사무실 주소로 메일을 다시 보낸다", opts: ["사무실 주소로 메일을 다시 보낸다", "등록을 취소한다", "전화로 연락한다", "참가비를 환불한다"], why: "I will resend it to your office address." }
+      ] },
+    { title: "택배 픽업 일정", kind: "대화",
+      lines: [
+        "W: I need to pick up a package, but I will not be home before six. Is the office open late?",
+        "M: Our counter closes at seven on weekdays and at noon on Saturdays.",
+        "W: Then I will come by tomorrow around six thirty with my ID.",
+        "M: Please bring the tracking number as well so we can find it quickly."
+      ],
+      qs: [
+        { q: "여성이 걱정하는 것은?", a: "6시 전에 집에 없을 것 같아서", opts: ["6시 전에 집에 없을 것 같아서", "택배가 분실되어서", "주말에 문을 닫아서", "요금이 너무 비싸서"], why: "I will not be home before six.", ex: "I will not be home before six.", exKo: "6시 전에는 집에 없을 것 같습니다." },
+        { q: "평일 접수처는 몇 시에 닫는가?", a: "오후 7시", opts: ["오후 7시", "오후 6시", "오후 8시", "정오"], why: "Our counter closes at seven on weekdays." },
+        { q: "여성이 함께 가져와야 하는 것은?", a: "운송장 번호", opts: ["운송장 번호", "카드 영수증", "주문 확인서", "배송 주소록"], why: "Please bring the tracking number as well." }
+      ] },
+    /* ============ Part 4 담화 (보강) ============ */
+    { title: "박물관 특별전 안내", kind: "담화",
+      lines: [
+        "Welcome to the Grand Museum. Our special exhibition on old maps opens this Saturday in Hall B.",
+        "Members may enter one hour earlier, at nine o'clock, and join a free guided tour.",
+        "Tickets for the opening weekend must be reserved online because seating is limited."
+      ],
+      qs: [
+        { q: "특별전이 열리는 장소는?", a: "B홀", opts: ["B홀", "A홀", "중앙 로비", "야외 정원"], why: "opens this Saturday in Hall B.", ex: "Our special exhibition on old maps opens this Saturday in Hall B.", exKo: "옛 지도 특별전이 이번 토요일 B홀에서 열립니다." },
+        { q: "회원이 누릴 수 있는 혜택은?", a: "한 시간 먼저 입장하고 무료 해설 투어에 참여한다", opts: ["한 시간 먼저 입장하고 무료 해설 투어에 참여한다", "기념품을 받는다", "주차비를 면제받는다", "도록을 무료로 받는다"], why: "Members may enter one hour earlier and join a free guided tour." },
+        { q: "개막 주말의 티켓은 어떻게 준비하는가?", a: "온라인으로 예약한다", opts: ["온라인으로 예약한다", "현장에서 바로 산다", "전화로 예약한다", "회원만 입장할 수 있다"], why: "Tickets for the opening weekend must be reserved online." }
+      ] },
+    { title: "공항 셔틀 운행 변경", kind: "담화",
+      lines: [
+        "Attention, passengers. Due to road work near Terminal 2, the airport shuttle will use the east entrance until the end of the month.",
+        "Shuttles now leave every fifteen minutes instead of every ten.",
+        "Passengers with flights departing within two hours should take the express bus from Gate 5."
+      ],
+      qs: [
+        { q: "셔틀 경로가 바뀌는 이유는?", a: "2터미널 근처의 도로 공사", opts: ["2터미널 근처의 도로 공사", "폭설", "차량 고장", "직원 파업"], why: "Due to road work near Terminal 2.", ex: "The airport shuttle will use the east entrance until the end of the month.", exKo: "공항 셔틀은 이달 말까지 동쪽 출입구를 이용할 것입니다." },
+        { q: "공사 기간 중 배차 간격은?", a: "15분", opts: ["15분", "10분", "20분", "30분"], why: "Shuttles now leave every fifteen minutes instead of every ten." },
+        { q: "두 시간 이내에 출발하는 승객에게 권하는 교통편은?", a: "5번 게이트의 급행 버스", opts: ["5번 게이트의 급행 버스", "택시", "지하철", "도보 이동"], why: "should take the express bus from Gate 5." }
+      ] },
+    { title: "사내 교육 등록 안내", kind: "담화",
+      lines: [
+        "Good morning, everyone. Registration for the second-quarter safety training is now open on the company intranet.",
+        "All new employees must complete the session by the end of May, and managers are asked to confirm attendance for their teams.",
+        "The training takes about ninety minutes and is offered both in person and online."
+      ],
+      qs: [
+        { q: "안전 교육 등록은 어디서 하는가?", a: "사내 인트라넷", opts: ["사내 인트라넷", "인사팀 방문", "이메일 신청", "교육장 현장"], why: "Registration is now open on the company intranet.", ex: "Registration for the second-quarter safety training is now open on the company intranet.", exKo: "2분기 안전 교육 등록이 사내 인트라넷에서 시작되었습니다." },
+        { q: "신입 직원이 교육을 마쳐야 하는 시점은?", a: "5월 말까지", opts: ["5월 말까지", "4월 말까지", "6월 초까지", "분기 말까지"], why: "must complete the session by the end of May." },
+        { q: "교육에 걸리는 시간은?", a: "약 90분", opts: ["약 90분", "약 30분", "약 두 시간", "약 여섯 시간"], why: "The training takes about ninety minutes." }
       ] }
   ];
   var p34Idx = 0;

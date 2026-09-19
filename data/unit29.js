@@ -3,7 +3,7 @@ window.VOCAB_UNITS = window.VOCAB_UNITS || {};
 // 형식: [단어, IPA 발음기호, 한글발음, 뜻, 토익 예문, 예문 해석, 예문 한글 발음]
 window.VOCAB_UNITS[29] = [
   ["happy", "/ˈhæpi/", "해-피", "행복한, 기쁜", "The staff were happy with the new schedule.", "직원들은 새 일정에 만족했다.", "더 스태프 워 해-피 위드 더 누 스케-줄"],
-  ["happiness", "/ˈhæpinəs/", "해-피-니스", "행복", "The survey measured employee happiness.", "그 설문조사는 직원의 행복도를 측정했다.", "더 서-베이 메-저드 임-플로이-이 해-피-니스"],
+  ["happiness", "/ˈhæpinəs/", "해-피-니스", "행복", "The survey measured employee happiness after the new policy.", "그 설문조사는 새 제도 이후 직원의 행복도를 측정했다.", "더 서-베이 메-저드 임-플로이-이 해-피-니스 애프-터 더 뉴 파-러-시"],
   ["glad", "/ɡlæd/", "글래드", "기쁜, 반가운", "We are glad to announce the new partnership.", "우리는 새 파트너십을 발표하게 되어 기쁩니다.", "위 아 글래드 투 어-나운스 더 누 파-트-너-십"],
   ["pleased", "/pliːzd/", "플리즈드", "기뻐하는, 만족한", "The client was pleased with the final design.", "고객은 최종 디자인에 만족했다.", "더 클라-이언트 워즈 플리즈드 위드 더 파이-널 디-자인"],
   ["proud", "/praʊd/", "프라우드", "자랑스러운", "She is proud of her team's achievement.", "그녀는 팀의 성취를 자랑스러워한다.", "시 이즈 프라우드 오브 허 팀즈 어-치브-먼트"],

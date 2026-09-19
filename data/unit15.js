@@ -11,7 +11,7 @@ window.VOCAB_UNITS[15] = [
   ["decrease", "/dɪˈkriːs/", "디-크리스", "감소하다, 감소", "The number of visitors decreased by ten percent.", "방문자 수가 10% 감소했다.", "더 넘-버 오브 비-지-터즈 디-크리스트 바이 텐 퍼-센트"],
   ["increase", "/ɪnˈkriːs/", "인-크리스", "증가하다, 증가", "Sales increased significantly during the holiday season.", "휴가철 동안 매출이 크게 증가했다.", "세일즈 인-크리스트 시그-니-피-컨트-리 두-링 더 할-리-데이 시-즌"],
   ["rise", "/raɪz/", "라이즈", "오르다, 상승", "The price of oil continues to rise.", "유가가 계속 오르고 있다.", "더 프라이스 오브 오일 컨-티-뉴즈 투 라이즈"],
-  ["fall", "/fɔːl/", "폴", "떨어지다, 하락", "Stock prices fell sharply yesterday.", "주가가 어제 급락했다.", "스탁 프라이-시즈 펠 샤-플리 예스-터-데이"],
+  ["fall", "/fɔːl/", "폴", "떨어지다, 하락", "Stock prices fell sharply yesterday after the earnings report.", "실적 발표 이후 주가가 어제 급락했다.", "스탁 프라이-시즈 펠 샤-플리 예스-터-데이 애프-터 디 어-닝즈 리-포-트"],
   ["trend", "/trend/", "트렌드", "추세, 동향", "The trend toward online shopping is growing.", "온라인 쇼핑 쪽으로 가는 추세가 커지고 있다.", "더 트렌드 투-워드 온-라인 샤-핑 이즈 그로우-잉"],
   ["forecast", "/ˈfɔːrkæst/", "포-캐스트", "예측, 예보하다", "The weather forecast says it will rain tomorrow.", "일기예보에 따르면 내일 비가 올 것이다.", "더 웨-더 포-캐스트 세즈 잇 윌 레인 투-모-로우"],
   ["predict", "/prɪˈdɪkt/", "프리-딕트", "예측하다, 예상하다", "Experts predict strong growth in the service sector.", "전문가들은 서비스 분야의 강한 성장을 예측한다.", "엑스-퍼츠 프리-딕트 스트롱 그로우스 인 더 서-비스 섹-터"],

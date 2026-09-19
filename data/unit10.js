@@ -13,7 +13,7 @@ window.VOCAB_UNITS[10] = [
   ["notice", "/ˈnoʊtɪs/", "노우-티스", "공지, 통지", "The notice about the meeting was posted on the board.", "회의 공지가 게시판에 게시되었다.", "더 노우-티스 어-바웃 더 미-팅 워즈 포우-스-티드 온 더 보드"],
   ["announcement", "/əˈnaʊnsmənt/", "어-나운스-먼트", "발표, 공고", "The announcement about the merger surprised everyone.", "합병 발표는 모두를 놀라게 했다.", "디 어-나운스-먼트 어-바웃 더 머-저 서-프라이즈드 에-브리-원"],
   ["bulletin board", "/ˈbʊlətɪn bɔːrd/", "불-러-틴 보드", "게시판", "The schedule is posted on the bulletin board.", "일정표가 게시판에 게시되어 있다.", "더 스케-줄 이즈 포우-스-티드 온 더 불-러-틴 보드"],
-  ["form", "/fɔːrm/", "폼", "양식, 서식", "Please complete this application form.", "이 지원 양식을 작성해 주세요.", "플리즈 컴-플리트 디스 애-플리-케이-션 폼"],
+  ["form", "/fɔːrm/", "폼", "양식, 서식", "Please complete this application form before the interview.", "면접 전에 이 지원 양식을 작성해 주세요.", "플리즈 컴-플리트 디스 애-플리-케이-션 폼 비-포어 디 인-터-뷰"],
   ["fill out", "/fɪl aʊt/", "필 아웃", "(서식에) 기입하다, 작성하다", "Please fill out the form in black ink.", "양식을 검정 잉크로 작성해 주세요.", "플리즈 필 아웃 더 폼 인 블랙 잉크"],
   ["sign", "/saɪn/", "사인", "서명하다, 서명", "Both parties must sign the agreement.", "양측 모두 계약서에 서명해야 한다.", "보우스 파-티즈 머스트 사인 디 어-그리-먼트"],
   ["signature", "/ˈsɪɡnətʃər/", "시그-너-처", "서명", "Your signature is required on the first page.", "첫 페이지에 당신의 서명이 필요합니다.", "유어 시그-너-처 이즈 리-콰이어드 온 더 퍼스트 페이지"],
@@ -33,6 +33,6 @@ window.VOCAB_UNITS[10] = [
   ["fax", "/fæks/", "팩스", "팩스, 팩스를 보내다", "Please fax the contract to the head office.", "계약서를 본사로 팩스 보내 주세요.", "플리즈 팩스 더 칸-트랙트 투 더 헤드 오-피스"],
   ["scanner", "/ˈskænər/", "스캐-너", "스캐너", "Use the scanner to digitize the documents.", "스캐너로 문서를 디지털화하세요.", "유즈 더 스캐-너 투 디-지-타이즈 더 다-큐-먼츠"],
   ["copy", "/ˈkɑːpi/", "카-피", "사본, 복사하다", "Make three copies of the contract.", "계약서를 세 부 복사하세요.", "메이크 쓰리 카-피즈 오브 더 칸-트랙트"],
-  ["equipment", "/ɪˈkwɪpmənt/", "이-퀴프-먼트", "장비, 설비", "The laboratory has modern equipment.", "그 실험실은 현대적인 장비를 갖추고 있다.", "더 래-버-러-토-리 해즈 마-던 이-퀴프-먼트"],
+  ["equipment", "/ɪˈkwɪpmənt/", "이-퀴프-먼트", "장비, 설비", "The laboratory has modern equipment for testing new materials.", "그 실험실은 새 재료를 시험할 현대적인 장비를 갖추고 있다.", "더 래-버-러-토-리 해즈 마-던 이-퀴프-먼트 포 테스-팅 뉴 머-티-리-얼즈"],
   ["furniture", "/ˈfɜːrntʃər/", "퍼-니-처", "가구", "New office furniture was delivered yesterday.", "새 사무용 가구가 어제 배송되었다.", "누 오-피스 퍼-니-처 워즈 디-리-버드 예스-터-데이"]
 ];

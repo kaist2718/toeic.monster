@@ -4,7 +4,7 @@ window.VOCAB_UNITS = window.VOCAB_UNITS || {};
 window.VOCAB_UNITS[12] = [
   ["produce", "/prəˈduːs/", "프러-두스", "생산하다, 만들다", "The factory produces car parts for export.", "그 공장은 수출용 자동차 부품을 생산한다.", "더 팩-터-리 프러-두-시즈 카 파츠 포 엑스-포트"],
   ["production", "/prəˈdʌkʃn/", "프러-덕-션", "생산, 제조", "Production will stop for maintenance next week.", "다음 주에 유지 보수를 위해 생산이 중단될 것이다.", "프러-덕-션 윌 스탑 포 메인-터-넌스 넥스트 위크"],
-  ["manufacture", "/ˌmænjuˈfæktʃər/", "매-뉴-팩-처", "제조하다, 제조", "The company manufactures electronic devices.", "그 회사는 전자 기기를 제조한다.", "더 컴-퍼-니 매-뉴-팩-처즈 일-렉-트라-닉 디-바이-시즈"],
+  ["manufacture", "/ˌmænjuˈfæktʃər/", "매-뉴-팩-처", "제조하다, 제조", "The company manufactures electronic devices in three overseas plants.", "그 회사는 해외 세 공장에서 전자 기기를 제조한다.", "더 컴-퍼-니 매-뉴-팩-처즈 일-렉-트라-닉 디-바이-시즈 인 쓰리 오우-버-시즈 플랜츠"],
   ["manufacturer", "/ˌmænjuˈfæktʃərər/", "매-뉴-팩-처-러", "제조업체, 제조자", "The manufacturer is responsible for the defects.", "제조업체가 결함에 대한 책임이 있다.", "더 매-뉴-팩-처-러 이즈 리-스판-서-블 포 더 디-펙츠"],
   ["factory", "/ˈfæktəri/", "팩-터-리", "공장", "The factory employs over five hundred workers.", "그 공장은 500명이 넘는 노동자를 고용한다.", "더 팩-터-리 임-플로이즈 오우-버 파이브 헌-드레드 워-커즈"],
   ["plant", "/plænt/", "플랜트", "공장, 시설", "They built a new plant near the harbor.", "그들은 항구 근처에 새 공장을 지었다.", "데이 빌트 어 누 플랜트 니어 더 하-버"],
@@ -27,7 +27,7 @@ window.VOCAB_UNITS[12] = [
   ["stock", "/stɑːk/", "스탁", "재고, 주식", "The warehouse keeps a large stock of goods.", "그 창고에는 많은 양의 상품 재고가 있다.", "더 웨어-하우스 킵스 어 라지 스탁 오브 구즈"],
   ["warehouse", "/ˈwerhaʊs/", "웨어-하우스", "창고, 물류 센터", "The goods are stored in a large warehouse.", "상품들은 대형 창고에 보관된다.", "더 구즈 아 스토어드 인 어 라지 웨어-하우스"],
   ["storage", "/ˈstɔːrɪdʒ/", "스토-리지", "보관, 저장", "The basement is used for storage.", "지하실은 보관용으로 사용된다.", "더 베이스-먼트 이즈 유즈드 포 스토-리지"],
-  ["distribute", "/dɪˈstrɪbjuːt/", "디-스트리-뷰트", "배포하다, 유통하다", "The company distributes products nationwide.", "그 회사는 전국에 제품을 유통한다.", "더 컴-퍼-니 디-스트리-뷰츠 프라-덕츠 내-션-와이드"],
+  ["distribute", "/dɪˈstrɪbjuːt/", "디-스트리-뷰트", "배포하다, 유통하다", "The company distributes its products nationwide through local partners.", "그 회사는 지역 파트너를 통해 전국에 제품을 유통한다.", "더 컴-퍼-니 디-스트리-뷰츠 잇츠 프라-덕츠 내-션-와이드 쓰루 로-컬 파트-너즈"],
   ["distribution", "/ˌdɪstrɪˈbjuːʃn/", "디-스트리-뷰-션", "유통, 배급", "The distribution network covers the whole country.", "유통망이 전국을 망라한다.", "더 디-스트리-뷰-션 네트-워크 커-버즈 더 홀 컨-트리"],
   ["shipment", "/ˈʃɪpmənt/", "십-먼트", "선적, 배송 화물", "The shipment will arrive on Tuesday.", "선적 화물이 화요일에 도착할 것이다.", "더 십-먼트 윌 어-라이브 온 튜즈-데이"],
   ["freight", "/freɪt/", "프레이트", "화물, 운임", "The freight was delayed at the border.", "화물이 국경에서 지연되었다.", "더 프레이트 워즈 디-레이드 앳 더 보-더"],

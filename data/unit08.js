@@ -17,7 +17,7 @@ window.VOCAB_UNITS[8] = [
   ["coupon", "/ˈkuːpɑːn/", "쿠-판", "쿠폰", "Use this coupon to get twenty percent off.", "이 쿠폰을 사용하면 20% 할인받을 수 있다.", "유즈 디스 쿠-판 투 겟 트웬-티 퍼-센트 오프"],
   ["clearance", "/ˈklɪrəns/", "클리-런스", "정리 판매, 재고 정리", "Everything in the clearance section is half price.", "정리 판매 코너의 모든 물건이 반값이다.", "에-브리-씽 인 더 클리-런스 섹-션 이즈 하프 프라이스"],
   ["size", "/saɪz/", "사이즈", "크기, 사이즈", "Do you have this shirt in a larger size?", "이 셔츠 더 큰 사이즈가 있나요?", "두 유 해브 디스 셔트 인 어 라-저 사이즈"],
-  ["fit", "/fɪt/", "핏", "맞다, 어울리다", "These shoes fit me perfectly.", "이 신발은 내게 딱 맞는다.", "디즈 슈즈 핏 미 퍼-펙트-리"],
+  ["fit", "/fɪt/", "핏", "맞다, 어울리다", "These shoes fit me perfectly, so I bought two pairs.", "이 신발이 내게 딱 맞아서 두 켤레를 샀다.", "디즈 슈즈 핏 미 퍼-펙트-리 소우 아이 보트 투 페어즈"],
   ["try on", "/traɪ ɑːn/", "트라이 온", "입어 보다, 신어 보다", "You can try on the clothes before buying them.", "구매 전에 옷을 입어 볼 수 있습니다.", "유 캔 트라이 온 더 클로우-즈 비-포 바이-잉 뎀"],
   ["order", "/ˈɔːrdər/", "오-더", "주문, 주문하다", "We placed an order for fifty chairs.", "우리는 의자 50개를 주문했다.", "위 플레이스트 언 오-더 포 피프-티 체어즈"],
   ["delivery", "/dɪˈlɪvəri/", "디-리-버-리", "배달, 배송", "Delivery takes about five business days.", "배송에는 약 5영업일이 걸린다.", "디-리-버-리 테이크스 어-바웃 파이브 비즈-니스 데이즈"],

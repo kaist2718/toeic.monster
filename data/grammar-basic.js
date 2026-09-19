@@ -53,6 +53,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "be동사의 부정문과 의문문",
+          note: "축약형 isn't, aren't, wasn't, weren't 는 회화와 업무 메일에서 모두 자연스럽게 쓰입니다.",
           body: "부정문은 be동사 뒤에 not을 붙이고, 의문문은 be동사를 주어 앞으로 보냅니다. 회화에서는 not을 줄여 isn't, aren't로 자주 씁니다. 대답은 Yes 또는 No와 주어 + be동사로 짧게 합니다.",
           table: {
             head: ["형식", "구조", "예문"],
@@ -70,6 +71,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "be동사의 과거형 — was / were",
+          note: "was, were 뒤에 yesterday, last week 같은 과거 표현이 오는지 함께 확인하면 시제 문제가 빨리 풀립니다.",
           body: "과거의 상태를 말할 때는 am, is를 was로, are를 were로 바꿉니다. 과거의 습관이나 행동은 be동사로 표현할 수 없고 일반동사의 과거형을 씁니다. yesterday, last week 같은 과거 표현이 보이면 was/were인지부터 확인합니다.",
           table: {
             head: ["현재", "과거", "예문"],
@@ -100,6 +102,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "be동사 한눈에 정리",
+          note: "be동사가 이미 있으면 do, does, did 를 쓰지 않습니다. 둘을 같이 쓰는 것이 Part 5 단골 오답입니다.",
           body: "시제와 형식을 한 표에 모아 두면 Part 5에서 be동사가 필요한지, 어떤 형태여야 하는지 바로 판단할 수 있습니다.",
           table: {
             head: ["시제", "긍정", "부정", "의문문"],
@@ -151,6 +154,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "-s / -es 를 붙이는 철자 규칙",
+          note: "go, do, have 는 goes, does, has 로 불규칙하게 바뀝니다. 이 셋은 따로 외워 둡니다.",
           body: "동사 끝 철자에 따라 -s 대신 -es를 붙이거나 y를 바꿉니다. 이 규칙은 명사의 복수형과 거의 같으므로 함께 익히면 편합니다.",
           table: {
             head: ["동사 끝", "규칙", "예"],
@@ -180,6 +184,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "짧은 대답과 do / does 생략",
+          note: "짧은 대답에서는 고유 명사를 대명사로 바꿔 말합니다. The manager 는 she 로 받습니다.",
           body: "Do/Does 의문문에는 Yes 또는 No와 주어 + do / does로 답합니다. 이미 나온 동작을 되풀이하지 않아도 되어 회화에서 매우 자주 쓰입니다.",
           examples: [
             { en: "Do you handle international orders? Yes, we do.", ko: "해외 주문도 처리하나요? 네, 그렇습니다." },
@@ -199,6 +204,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "긴 주어에서 동사 찾기",
+          note: "of, in, with 같은 전치사구와 who, which 가 이끄는 절은 주어가 아닙니다. 지우고 나면 동사가 보입니다.",
           body: "Part 5·6에서는 주어 뒤에 전치사구나 관계절이 길게 붙어 동사를 찾기 어렵게 만듭니다. 수식어를 괄호로 묶어 지우고 핵심 주어와 동사만 남겨 보는 연습을 하세요.",
           examples: [
             { en: "The list of approved vendors is posted online.", ko: "승인된 업체 목록이 온라인에 게시되어 있습니다." },
@@ -281,6 +287,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "복수형 만드는 규칙",
+          note: "발음도 함께 익히세요. -es 는 한 음절로 소리 나서 복수형이 한 음절 늘어납니다.",
           body: "대부분 -s를 붙이지만, -s, -sh, -ch, -x는 -es를 붙이고 자음 + y는 y를 i로 바꿉니다. -f 나 -fe 로 끝나는 명사는 -ves 로 바꾸는 경우가 있습니다.",
           table: {
             head: ["단수", "복수", "규칙"],
@@ -296,6 +303,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "불규칙 복수형과 단복수 동형",
+          note: "news, mathematics 는 -s 로 끝나지만 단수로 취급해 동사도 단수형을 씁니다.",
           body: "자주 쓰이는 명사는 불규칙한 복수형을 가지므로 통째로 익혀야 합니다. 단수와 복수 형태가 같은 명사도 있어 문맥으로 수를 판단합니다.",
           table: {
             head: ["단수", "복수", "예문"],
@@ -310,6 +318,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "수량 표현 — much / many, a few / a little",
+          note: "a number of 는 복수 동사, the number of 는 단수 동사를 씁니다. 이 차이가 자주 출제됩니다.",
           body: "셀 수 없는 명사에는 much, a little, a great deal of를, 셀 수 있는 복수 명사에는 many, a few, a number of를 씁니다. some과 any는 둘 다에 쓸 수 있습니다.",
           table: {
             head: ["표현", "쓰는 명사", "예문"],
@@ -365,6 +374,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "격을 고르는 자리",
+          note: "전치사 뒤에는 목적격이 옵니다. between you and me 처럼 두 개가 오면 둘 다 목적격입니다.",
           body: "빈칸이 주어 자리인지 목적어 자리인지부터 확인합니다. 동사나 전치사 뒤는 목적격, 명사 바로 앞은 소유격입니다.",
           table: {
             head: ["자리", "쓰는 격", "예문"],
@@ -379,6 +389,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "소유격과 소유대명사 구분",
+          note: "its 와 it's 를 구분하세요. its 는 소유격, it's 는 it is 의 축약형입니다.",
           body: "소유격은 반드시 뒤에 명사가 오고, 소유대명사는 명사 없이 단독으로 씁니다. 같은 뜻이라도 뒤에 명사가 있으면 소유격, 없으면 소유대명사입니다.",
           examples: [
             { en: "Our office moved to the tenth floor.", ko: "우리 사무실은 10층으로 이사했습니다." },
@@ -414,6 +425,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "대명사와 선행사의 일치",
+          note: "everyone, each 는 형태가 여럿을 가리키지만 단수로 취급해 대명사도 단수로 받습니다.",
           body: "대명사는 가리키는 명사(선행사)와 수에서 일치해야 합니다. 단수 명사는 it, its, 복수 명사는 they, their, them을 씁니다.",
           table: {
             head: ["선행사", "대명사", "예문"],
@@ -452,6 +464,7 @@ window.GRAMMAR_BOOKS.push({
       points: [
         {
           h: "두 시제의 쓰임 비교",
+          note: "시간표에 적힌 미래 일정도 현재시제로 씁니다. The train leaves at six. 처럼요.",
           body: "현재시제는 늘 그런 일, 일정표처럼 정해진 일에 씁니다. 현재진행형(be + -ing)은 말하는 순간 진행 중이거나 일시적으로 벌어지는 일에 씁니다.",
           table: {
             head: ["구분", "형태", "쓰는 상황", "예문"],
@@ -465,6 +478,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "현재진행형 만드는 법 — -ing 철자",
+          note: "e 로 끝나면 e 를 빼고 -ing 를 붙입니다. make 는 making 이 됩니다.",
           body: "be동사 뒤에 동사의 -ing형을 붙입니다. 동사 끝 철자에 따라 -ing 를 붙이는 방식이 조금씩 다릅니다.",
           table: {
             head: ["동사 끝", "규칙", "예"],
@@ -479,6 +493,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "시제와 함께 쓰는 표현",
+          note: "시간 표현을 먼저 찾으면 해석 없이 답을 고를 수 있습니다. every day 가 보이면 현재시제입니다.",
           body: "every day, always, usually는 현재시제와, now, at the moment, currently는 현재진행형과 함께 씁니다. 시간 표현을 단서로 답을 빠르게 고를 수 있습니다.",
           table: {
             head: ["시제", "함께 자주 쓰는 표현"],
@@ -510,6 +525,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "뜻이 달라지는 동사",
+          note: "have 도 진행형이 되면 뜻이 달라집니다. She is having lunch 는 점심을 먹는 중이라는 뜻입니다.",
           body: "같은 동사라도 진행형이 되면 뜻이 달라지는 경우가 있습니다. 문맥에 맞는 뜻을 고르는 문제가 자주 나옵니다.",
           table: {
             head: ["동사", "현재시제 뜻", "진행형 뜻"],
@@ -552,6 +568,7 @@ window.GRAMMAR_BOOKS.push({
       points: [
         {
           h: "규칙 동사의 과거형 — -ed 철자 규칙",
+          note: "자음 + y 로 끝나면 y 를 i 로 바꾸고 -ed 를 붙입니다. study 는 studied 가 됩니다.",
           body: "대부분의 동사는 원형 뒤에 -ed를 붙여 과거형을 만듭니다. 동사 끝 철자에 따라 붙이는 방식이 달라지므로, 자주 쓰는 규칙을 먼저 익혀 둡니다. 과거분사도 규칙 동사는 같은 -ed 형태입니다.",
           table: {
             head: ["동사 끝", "규칙", "예"],
@@ -580,6 +597,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "불규칙 동사의 네 가지 유형",
+          note: "유형을 알아 두면 처음 보는 동사도 어느 묶음에 속하는지 짐작할 수 있습니다.",
           body: "불규칙 동사는 원형·과거형·과거분사가 어떻게 달라지는지에 따라 네 유형으로 나눌 수 있습니다. 유형을 알고 묶어서 외우면 개별로 외우는 것보다 오래 기억합니다.",
           table: {
             head: ["유형", "형태", "예 (원형 / 과거 / 과거분사)"],
@@ -662,6 +680,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "과거진행형 — was / were + -ing",
+          note: "진행형에는 진행 중이던 시간 표현(at noon, all morning)이 함께 오는 경우가 많습니다.",
           body: "과거의 한 시점에 진행 중이던 일을 말합니다. was는 단수 주어에, were는 복수 주어와 you에 씁니다.",
           table: {
             head: ["주어", "형태", "예문"],
@@ -679,6 +698,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "과거시제와 과거진행형을 함께 쓰기",
+          note: "while 뒤에는 진행형, when 뒤에는 과거시제가 오는 짝을 기억해 두면 빈칸이 빨리 풀립니다.",
           body: "과거진행형과 과거시제를 함께 쓰면, 진행 중이던 일(배경)과 끼어든 일(사건)을 구분할 수 있습니다. 배경에는 while, 끼어든 일에는 when을 주로 씁니다.",
           table: {
             head: ["접속사", "역할", "예문"],
@@ -747,6 +767,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "의무와 필요 — must / have to / should",
+          note: "have to 는 시제와 인칭에 따라 has to, had to 로 바뀝니다. must 는 형태가 변하지 않습니다.",
           body: "must는 말하는 사람의 강한 의무, have to는 규칙이나 상황 때문에 생기는 의무를 나타냅니다. should는 의무보다 약한 권고입니다.",
           table: {
             head: ["표현", "뜻", "예문"],
@@ -774,6 +795,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "조동사의 부정문과 의문문",
+          note: "조동사 의문문에는 do 를 쓰지 않습니다. Does she can 은 틀린 문장입니다.",
           body: "부정문은 조동사 뒤에 not을 붙이고, 의문문은 조동사를 주어 앞으로 보냅니다. do를 따로 쓰지 않습니다.",
           table: {
             head: ["형식", "구조", "예문"],
@@ -791,6 +813,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "정중한 요청과 제안",
+          note: "Would you mind 뒤에는 동명사를 씁니다. Would you mind sending it? 처럼요.",
           body: "Could you, Would you는 부탁할 때, Shall we, Why don't we는 제안할 때 씁니다. 정중함의 정도가 달라 상황에 맞게 고릅니다.",
           table: {
             head: ["표현", "쓰임", "예문"],
@@ -833,6 +856,7 @@ window.GRAMMAR_BOOKS.push({
       points: [
         {
           h: "형용사와 부사의 자리",
+          note: "부사는 문장 어디에나 놓일 수 있지만 빈도 부사는 be동사 뒤, 일반동사 앞에 옵니다.",
           body: "형용사는 명사 앞이나 be동사 뒤에서 명사를 설명하고, 부사는 동사 뒤나 형용사 앞에서 동작의 방식을 설명합니다. 빈칸 앞뒤에 명사가 있으면 형용사, 동사가 있으면 부사입니다.",
           table: {
             head: ["자리", "품사", "예문"],
@@ -885,6 +909,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "비교 표현의 틀",
+          note: "than 뒤에는 목적격도 올 수 있지만, 격식 있는 문서에서는 주격이 안전합니다.",
           body: "비교급 뒤에는 than을, 최상급 뒤에는 in 또는 of를 씁니다. as + 원급 + as는 두 대상이 같은 정도임을 나타내고, not as ~ as는 덜함을 나타냅니다.",
           table: {
             head: ["형식", "뜻", "예문"],
@@ -916,6 +941,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "-ed 와 -ing 형용사",
+          note: "주어가 사람이면 -ed, 사물이면 -ing 가 기본입니다. 다만 a boring person 처럼 사람을 꾸밀 수도 있습니다.",
           body: "사람이 느끼는 감정은 -ed, 감정을 일으키는 대상은 -ing 형용사로 나타냅니다. 주어가 사람인지 사물인지로 빠르게 구분합니다.",
           table: {
             head: ["-ed (사람)", "-ing (사물)", "뜻"],
@@ -990,6 +1016,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "장소 전치사 in / on / at",
+          note: "교통수단은 on a bus, in a car 로 나뉩니다. 타는 자세가 달라서 전치사도 달라집니다.",
           body: "넓은 공간이나 도시·국가는 in, 표면이나 층은 on, 특정 지점은 at을 씁니다. 같은 장소라도 관점에 따라 달라집니다.",
           table: {
             head: ["전치사", "쓰는 대상", "예문"],
@@ -1008,6 +1035,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "방향과 수단의 전치사",
+          note: "by 는 교통·전달 수단에, with 는 도구에 씁니다. by email 과 with a pen 이 그 예입니다.",
           body: "이동의 방향과 수단, 도구를 나타내는 전치사도 자주 출제됩니다. 동사와 함께 굳어진 표현을 통째로 익히면 빠릅니다.",
           table: {
             head: ["전치사", "뜻", "예문"],
@@ -1092,6 +1120,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "Yes / No 의문문 만드는 법",
+          note: "의문문으로 바꿔 놓은 뒤에는 동사를 원형으로 돌려놓는 것을 잊지 마세요.",
           body: "be동사와 조동사는 주어 앞으로 보내고, 일반동사는 do, does, did를 주어 앞에 둡니다. 동사는 원형으로 돌아옵니다.",
           table: {
             head: ["동사 종류", "만드는 법", "예문"],
@@ -1116,6 +1145,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "부가의문문 — isn't it? don't you?",
+          note: "Let's 로 시작하면 shall we, 명령문 뒤에는 will you 를 붙입니다.",
           body: "앞 문장이 긍정이면 부정으로, 부정이면 긍정으로 짧게 되묻습니다. be동사·조동사는 그대로 반복하고, 일반동사는 do, does, did를 씁니다.",
           table: {
             head: ["앞 문장", "부가의문문", "예문"],
@@ -1178,6 +1208,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "There 구문의 시제와 부정·의문",
+          note: "There is 뒤에는 단수 명사와 셀 수 없는 명사가, 복수 명사 뒤에는 There are 가 옵니다.",
           body: "There 구문도 시제에 따라 be동사가 바뀌고, 부정문과 의문문은 be동사를 기준으로 만듭니다.",
           table: {
             head: ["시제·형식", "형태", "예문"],
@@ -1192,6 +1223,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "some 과 any",
+          note: "기대나 권유가 담긴 의문문에는 some 을 씁니다. 권유하는 자리에서는 some 이 더 자연스럽습니다.",
           body: "긍정문에는 some, 부정문과 의문문에는 any를 씁니다. 권유나 요청을 나타내는 의문문에는 some을 씁니다.",
           table: {
             head: ["문장", "쓰는 말", "예문"],
@@ -1209,6 +1241,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "부정 표현의 정도 — no / none / hardly",
+          note: "hardly, rarely 는 그 자체로 부정의 뜻이라 뒤에 not 을 쓰지 않습니다. 이중 부정이 되기 때문입니다.",
           body: "no는 명사 앞에서 아예 없음을, not ~ any는 하나도 없음을 나타냅니다. none은 명사 없이 단독으로 쓰고, hardly, rarely는 부정의 뜻을 가진 부사입니다.",
           table: {
             head: ["표현", "뜻", "예문"],
@@ -1226,6 +1259,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "부정문 만드는 법 정리",
+          note: "일반동사 부정문에서 동사는 항상 원형입니다. doesn't goes 는 틀린 형태입니다.",
           body: "동사 종류에 따라 부정문을 만드는 위치가 다릅니다. be동사·조동사는 뒤에 not, 일반동사는 do / does / did 뒤에 not 을 붙입니다.",
           table: {
             head: ["동사 종류", "부정문", "예문"],
@@ -1288,6 +1322,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "동사 성격에 따라 형식 판단하기",
+          note: "같은 동사도 뜻에 따라 형식이 달라집니다. give 는 4형식, provide 는 3형식으로 씁니다.",
           body: "목적어를 갖지 않는 자동사는 1형식, 목적어 하나를 갖는 타동사는 3형식입니다. 사람과 사물을 함께 갖는 수여동사는 4형식이고, 5형식 동사는 목적격 보어를 필요로 합니다.",
           table: {
             head: ["동사 성격", "형식", "예문"],
@@ -1302,6 +1337,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "등위접속사 and / but / or / so",
+          note: "접속사 앞뒤에는 같은 형태가 와야 합니다. 동사와 동사, 명사와 명사를 연결합니다.",
           body: "단어와 단어, 문장과 문장을 같은 자격으로 이어 줍니다. 세 개 이상을 나열할 때는 마지막 앞에 and나 or를 씁니다.",
           table: {
             head: ["접속사", "의미", "예문"],
@@ -1315,6 +1351,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "종속접속사 because / when / if / although",
+          note: "종속접속사가 이끄는 절이 문장 앞에 오면 뒤에 콤마를 씁니다. 뒤에 오면 콤마가 필요 없습니다.",
           body: "종속접속사 뒤에는 주어와 동사가 있는 절이 옵니다. 부사절이 문장 앞에 오면 뒤에 콤마를 찍습니다.",
           table: {
             head: ["접속사", "의미", "예문"],
@@ -1328,6 +1365,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "접속사와 전치사 구분",
+          note: "because 는 절과, because of 는 명사구와 짝을 이룹니다. 빈칸 뒤만 보면 바로 갈립니다.",
           body: "뒤에 절이 오면 접속사, 명사구가 오면 전치사입니다. because와 because of, although와 despite의 차이가 대표적입니다.",
           table: {
             head: ["접속사 (+ 절)", "전치사 (+ 명사구)", "뜻"],
@@ -1340,6 +1378,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "병렬 구조",
+          note: "and, but, or 뒤에는 앞과 같은 품사가 와야 합니다. 명사와 동사가 섞이면 오답입니다.",
           body: "and, or, but 으로 연결되는 요소는 품사와 형태를 같게 맞춥니다. 나열 구조가 어긋나면 어색한 문장이 됩니다.",
           examples: [
             { en: "The job requires patience, accuracy, and flexibility.", ko: "그 일에는 인내심, 정확성, 유연성이 필요합니다." },

@@ -34,6 +34,6 @@ window.VOCAB_UNITS[9] = [
   ["passport", "/ˈpæspɔːrt/", "패스-포트", "여권", "You need a valid passport to travel abroad.", "해외여행에는 유효한 여권이 필요하다.", "유 니드 어 밸-리드 패스-포트 투 트래-블 어-브로드"],
   ["visa", "/ˈviːzə/", "비-저", "비자", "He applied for a work visa last month.", "그는 지난달에 취업 비자를 신청했다.", "히 어-플라이드 포 어 워크 비-저 래스트 먼스"],
   ["accommodation", "/əˌkɑːməˈdeɪʃn/", "어-카-머-데이-션", "숙박 시설, 숙소", "The company provides accommodation for visiting staff.", "회사는 방문 직원들에게 숙소를 제공한다.", "더 컴-퍼-니 프러-바이즈 어-카-머-데이-션 포 비-지-팅 스태프"],
-  ["destination", "/ˌdestɪˈneɪʃn/", "데-스티-네이-션", "목적지", "Tokyo is our final destination.", "도쿄가 우리의 최종 목적지이다.", "토우-키-오 이즈 아워 파이-널 데-스티-네이-션"],
+  ["destination", "/ˌdestɪˈneɪʃn/", "데-스티-네이-션", "목적지", "Tokyo is our final destination on this business trip.", "도쿄가 이번 출장의 최종 목적지이다.", "토우-키-오 이즈 아워 파이-널 데-스티-네이-션 온 디스 비즈-니스 트립"],
   ["tour", "/tʊr/", "투어", "견학, 관광", "We took a guided tour of the factory.", "우리는 공장 견학 투어에 참여했다.", "위 툭 어 가이-디드 투어 오브 더 팩-터-리"]
 ];

@@ -18,7 +18,7 @@ grammar_chapters = 36
 grammar_quizzes = 288
 conversation_books = 3
 conversation_chapters = 36
-conversation_quizzes = 108
+conversation_quizzes = 288
 -->
 
 ---
