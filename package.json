@@ -16,7 +16,7 @@
     "audit:density": "node tools/audit-density.mjs",
     "audit:density:strict": "node tools/audit-density.mjs --strict",
     "audit:external": "node tools/audit-site.mjs --external",
-    "test": "node tools/test-home-ux.mjs && node tools/test-tts-voice.mjs && node tools/test-grammar-quiz.mjs",
+    "test": "node tools/test-home-ux.mjs && node tools/test-tts-voice.mjs && node tools/test-grammar-quiz.mjs && node tools/test-conversation-quiz.mjs",
     "check:browser": "node tools/check-browser.mjs",
     "measure": "node tools/measure-home.mjs",
     "perf": "node tools/measure-perf.mjs",

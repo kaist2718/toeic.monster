@@ -1976,7 +1976,6 @@
   // ---------- 문법 문제 풀이 (문법 교재 연습 문제 연동) ----------
   // 교재 데이터는 지연 로드(loadBooks)라, 처음에는 빈 배열이고 데이터가 온 뒤 applyGrammarBooks 가 채웁니다.
   var GRAMMAR_BOOKS = window.GRAMMAR_BOOKS || [];
-  var CONVERSATION_BOOKS = window.CONVERSATION_BOOKS || [];
   // 틀린 문항은 단계·과·해설까지 함께 저장해 두었다가 그대로 다시 풀 수 있게 합니다.
   var grammarWrong = storeObject("toeic1000_grammarwrong");
   function saveGrammarWrong() {
@@ -2028,15 +2027,27 @@
 
   /**
    * 교재 페이지가 넘겨주는 딥링크를 읽습니다.
-   *   `../index.html?level=basic&ch=5#grammar-quiz` → { level: "basic", chapter: 5 }
-   *   `../index.html?level=advanced#grammar-quiz` → { level: "advanced", chapter: 0 }
+   *   `../index.html?level=basic&ch=5#grammar-quiz` → { book: "grammar", level: "basic", chapter: 5 }
+   *   `../index.html?level=advanced#grammar-quiz` → { book: "grammar", level: "advanced", chapter: 0 }
+   *   `../index.html?book=conversation&level=basic&ch=5#conversation-quiz` → { book: "conversation", level: "basic", chapter: 5 }
+   * book 이 없으면 문법 교재 링크입니다(예전 주소가 그대로 동작해야 합니다).
    * 계산만 하는 순수 함수라 회귀 테스트(tools/test-home-ux.mjs)가 직접 검증합니다.
    */
   function parseDeepLink(search) {
-    var m = /[?&]level=(basic|intermediate|advanced)\b/.exec(search || "");
+    var s = search || "";
+    var m = /[?&]level=([a-z-]+)\b/.exec(s);
     if (!m) return null;
-    var ch = /[?&]ch=(\d{1,2})\b/.exec(search || "");
-    return { level: m[1], chapter: ch ? parseInt(ch[1], 10) : 0 };
+    var book = /[?&]book=conversation\b/.test(s) ? "conversation" : "grammar";
+    // 회화 교재의 단계 id 는 `conversation-basic` 이라, 주소에서는 짧은 이름(basic)과 전체 id 를 모두 받아 줍니다.
+    var level = m[1].replace(/^conversation-/, "");
+    if (["basic", "intermediate", "advanced"].indexOf(level) === -1) return null;
+    var ch = /[?&]ch=(\d{1,2})\b/.exec(s);
+    return { book: book, level: level, chapter: ch ? parseInt(ch[1], 10) : 0 };
+  }
+
+  /** 교재 단계(basic~advanced) → 앱 단계 선택 값(회화 교재는 conversation- 접두사가 붙습니다). */
+  function quizSelectValue(book, level) {
+    return (book === "conversation" ? "conversation-" : "") + level;
   }
 
   /**
@@ -2172,6 +2183,175 @@
   // 화면을 처음 그릴 때도 힌트 상태를 맞춥니다(딥링크로 들어온 경우).
   renderGrammarChapterHint();
   // 단계 목록은 문법 교재(defer 데이터)를 읽은 뒤 만들 수 있으므로 startApp 에서 그립니다.
+
+  // ---------- 회화 문제 풀이 (회화 교재 연습 문제 연동) ----------
+  // 문법 문제 풀이와 같은 구조입니다 — 단계·문항 수·과 필터·오답노트가 모두 같은 방식으로 동작합니다.
+  var CONVERSATION_BOOKS = window.CONVERSATION_BOOKS || [];
+  var conversationWrong = storeObject("toeic1000_conversationwrong");
+  function saveConversationWrong() {
+    try { localStorage.setItem("toeic1000_conversationwrong", JSON.stringify(conversationWrong)); } catch (e) {}
+  }
+  function conversationLevelValue() {
+    var sel = document.getElementById("conversationLevelSel");
+    return (sel && sel.value) || "all";
+  }
+  /** 한 번에 풀 문항 수(0 이면 전체). */
+  function conversationCountValue() {
+    var sel = document.getElementById("conversationCountSel");
+    var n = sel ? parseInt(sel.value, 10) : 8;
+    return (isNaN(n) || n <= 0) ? 0 : n;
+  }
+  /** 선택한 단계의 연습 문제 수(문항을 만들지 않고 개수만 셉니다). */
+  function conversationCount(level) {
+    var n = 0;
+    CONVERSATION_BOOKS.forEach(function (b) {
+      if (level && level !== "all" && b.id !== level) return;
+      (b.chapters || []).forEach(function (c) { n += (c.practice || []).length; });
+    });
+    return n;
+  }
+  /** 교재의 과별 연습 문제를 퀴즈 형식으로 바꿔 줍니다. */
+  function conversationQuestions(level) {
+    var out = [];
+    CONVERSATION_BOOKS.forEach(function (b) {
+      if (level && level !== "all" && b.id !== level) return;
+      (b.chapters || []).forEach(function (c) {
+        if (conversationChapterOnly && c.no !== conversationChapterOnly) return;
+        (c.practice || []).forEach(function (q, qi) {
+          out.push({
+            id: b.id + "-c" + c.no + "-q" + (qi + 1),
+            tag: b.level + " " + c.no + "과",
+            prompt: q.q,
+            options: shuffleArr((q.opts || []).slice()),
+            answer: q.a,
+            why: q.why
+          });
+        });
+      });
+    });
+    return out;
+  }
+  var conversationWrongOnly = false;
+  // 교재 낱개 과 페이지에서 `?book=conversation&level=basic&ch=5` 로 들어오면 그 과만 풀립니다(0 = 전체 과).
+  var conversationChapterOnly = 0;
+
+  /** 지금 과 필터가 걸려 있으면 눈에 보이게 알려 줍니다(안 보이면 왜 문제가 적은지 알 수 없음). */
+  function renderConversationChapterHint() {
+    var hint = document.getElementById("conversationChapterHint");
+    var clear = document.getElementById("conversationChapterClear");
+    if (!hint) return;
+    var book = null;
+    if (conversationChapterOnly) {
+      CONVERSATION_BOOKS.forEach(function (b) {
+        if (b.id === conversationLevelValue()) book = b;
+      });
+    }
+    var on = !!(conversationChapterOnly && book);
+    hint.hidden = !on;
+    if (on) hint.textContent = "📖 " + book.title + " " + conversationChapterOnly + "과만 풀고 있어요";
+    if (clear) clear.hidden = !on;
+  }
+  function clearConversationChapter() {
+    conversationChapterOnly = 0;
+    renderConversationChapterHint();
+    conversationQuiz.render();
+  }
+
+  function conversationWrongQuestions() {
+    return Object.keys(conversationWrong).map(function (k) { return conversationWrong[k]; });
+  }
+  var conversationQuiz = makeMiniQuiz({
+    boxId: "conversationBox",
+    title: "회화",
+    count: function () { return conversationCountValue(); },
+    // 단계 선택 값은 `conversation-basic` 이지만 기록·대시보드 키는 `conversation_basic` 으로 맞춥니다.
+    statKey: function () { return "conversation_" + conversationLevelValue().replace(/^conversation-/, ""); },
+    build: function () { return conversationWrongOnly ? conversationWrongQuestions() : conversationQuestions(conversationLevelValue()); },
+    emptyHint: "단계를 고르고 시작 버튼을 누르면 회화 교재 연습 문제가 나옵니다.",
+    onAnswer: function (q, ok) {
+      if (!q || !q.id) return;
+      if (ok) delete conversationWrong[q.id];
+      else conversationWrong[q.id] = { id: q.id, tag: q.tag, prompt: q.prompt, options: q.options, answer: q.answer, why: q.why };
+      saveConversationWrong();
+      renderConversationWrongNote();
+    }
+  });
+  function startConversationQuiz(wrongOnly) {
+    // 교재 데이터가 아직 안 왔으면(회화 섹션을 건너뛰고 바로 온 경우) 받은 뒤에 시작합니다.
+    if (bookState.conversation !== "ready" && bookState.conversation !== "failed") {
+      loadBooks("conversation", function () { startConversationQuiz(wrongOnly); });
+      return;
+    }
+    conversationWrongOnly = !!wrongOnly;
+    if (conversationWrongOnly && !conversationWrongQuestions().length) {
+      showToast("오답으로 저장된 회화 문제가 아직 없어요.");
+      return;
+    }
+    conversationQuiz.start();
+    var sec = document.querySelector('.home-section[aria-label="회화 문제 풀이"]');
+    if (sec) scrollToEl(sec, "start");
+  }
+  function renderConversationLevelSelect() {
+    var sel = document.getElementById("conversationLevelSel");
+    if (!sel) return;
+    var html = '<option value="all">전체 단계 (' + conversationCount("all") + '문항)</option>';
+    var ico = { "초급": "🟢", "중급": "🟡", "고급": "🔴" };
+    CONVERSATION_BOOKS.forEach(function (b) {
+      html += '<option value="' + esc(b.id) + '">' + (ico[b.level] || "🟡") + " " + esc(b.level) + " " + esc(b.title) +
+        " (" + conversationCount(b.id) + '문항)</option>';
+    });
+    sel.innerHTML = html;
+  }
+  function renderConversationWrongNote() {
+    var box = document.getElementById("conversationWrongBox");
+    if (!box) return;
+    var keys = Object.keys(conversationWrong);
+    var cnt = document.getElementById("conversationWrongCount");
+    var clearBtn = document.getElementById("conversationClearWrong");
+    if (cnt) cnt.textContent = keys.length ? "저장된 오답 " + keys.length + "문항" : "";
+    if (clearBtn) clearBtn.hidden = !keys.length;
+    if (!keys.length) {
+      box.innerHTML = '<p class="practice-note">틀린 회화 문제는 여기에 모여 브라우저에만 저장됩니다. 맞히면 목록에서 자동으로 빠집니다.</p>';
+      return;
+    }
+    box.innerHTML = '<div class="bank-card"><span class="bank-label">회화 오답노트 · ' + keys.length + '문항</span>' +
+      keys.map(function (k, i) {
+        var w = conversationWrong[k];
+        // 정답이 영어 문장이면 그대로 들어 볼 수 있게 낭독 버튼을 붙입니다(한글 정답에는 붙이지 않습니다).
+        var say = /[A-Za-z]/.test(String(w.answer || "")) ? ttsBtn(w.answer, "정답 표현 듣기") : "";
+        return '<div style="margin-top:10px"><p class="bank-q">' + (i + 1) + ". " + esc(w.prompt) + '</p>' +
+          '<p class="practice-note">정답: <b>' + esc(w.answer) + '</b> · ' + esc(w.tag) + say + '</p>' +
+          '<p class="practice-note">💡 ' + esc(w.why) + '</p></div>';
+      }).join("") + '</div>';
+  }
+  var conversationStartBtn = document.getElementById("conversationStart");
+  if (conversationStartBtn) conversationStartBtn.addEventListener("click", function () { startConversationQuiz(false); });
+  var conversationWrongBtn = document.getElementById("conversationWrongOnly");
+  if (conversationWrongBtn) conversationWrongBtn.addEventListener("click", function () { startConversationQuiz(true); });
+  var conversationClearBtn = document.getElementById("conversationClearWrong");
+  if (conversationClearBtn) conversationClearBtn.addEventListener("click", function () {
+    if (!Object.keys(conversationWrong).length) return;
+    conversationWrong = {};
+    try { localStorage.removeItem("toeic1000_conversationwrong"); } catch (e) {}
+    renderConversationWrongNote();
+    showToast("회화 오답노트를 비웠습니다.");
+  });
+  var conversationLevelSelEl = document.getElementById("conversationLevelSel");
+  if (conversationLevelSelEl) conversationLevelSelEl.addEventListener("change", function () {
+    conversationWrongOnly = false;
+    // 단계를 직접 바꾸면 "이 과만" 상태도 함께 풀립니다(다른 단계에 없는 과 번호라서).
+    conversationChapterOnly = 0;
+    renderConversationChapterHint();
+    conversationQuiz.render();
+  });
+  var conversationCountSelEl = document.getElementById("conversationCountSel");
+  if (conversationCountSelEl) conversationCountSelEl.addEventListener("change", function () {
+    conversationWrongOnly = false;
+    conversationQuiz.render();
+  });
+  var conversationChapterClearBtn = document.getElementById("conversationChapterClear");
+  if (conversationChapterClearBtn) conversationChapterClearBtn.addEventListener("click", clearConversationChapter);
+  renderConversationChapterHint();
 
   // ---------- 1) 빈출 콜로케이션 ----------
 
@@ -3709,8 +3889,9 @@
     exam_en2ko: "어휘", exam_ko2en: "어휘", exam_blank: "문법·어휘",
     listen_word: "리스닝", listen_sent: "리스닝", listen_dict: "리스닝", lc12: "리스닝", part34: "리스닝", num: "리스닝", dictation: "리스닝", mp: "발음",
     part_5: "문법", part_6: "문맥", part_7: "독해", part6: "문맥", reading: "독해", double_reading: "독해", part1: "묘사",
-    // 문법 교재 문제 풀이는 단계별 키로 쌓이지만 대시보드에는 '문법' 한 영역으로 묶습니다.
+    // 교재 문제 풀이는 단계별 키로 쌓이지만 대시보드에는 '문법'·'회화' 두 영역으로 묶습니다.
     grammar_all: "문법", grammar_basic: "문법", grammar_intermediate: "문법", grammar_advanced: "문법",
+    conversation_all: "회화", conversation_basic: "회화", conversation_intermediate: "회화", conversation_advanced: "회화",
     trans: "연결어", prep: "전치사",
     blank: "문법·어휘", wf: "어형", confuse_dict: "철자", mix_confuse: "혼동어휘", mix_part: "어근", diag: "진단", mock_LC: "모의", mock_RC: "모의", battle: "대결"
   };
@@ -3735,6 +3916,7 @@
     "연결어": { target: "연결어·접속부사 훈련", start: "transStart" },
     "전치사": { target: "전치사 콜로케이션 훈련", start: "prepStart" },
     "문법": { target: "문법 문제 풀이", start: "grammarStart" },
+    "회화": { target: "회화 문제 풀이", start: "conversationStart" },
     "문법·어휘": { target: "Part 미니 문제은행", start: null },
     "리스닝": { target: "Part 1·2 LC 유형 훈련", start: "lc12Start" },
     "독해": { target: "Part 7 복수 지문", start: null },
@@ -5237,6 +5419,8 @@
   function applyConversationBooks() {
     CONVERSATION_BOOKS = window.CONVERSATION_BOOKS || [];
     renderConversationBooks();
+    renderConversationLevelSelect();
+    renderConversationWrongNote();
   }
   function bookDone(kind) {
     if (kind === "grammar") applyGrammarBooks();
@@ -5274,7 +5458,7 @@
         if (entry.isIntersecting) loadBooks(entry.target.getAttribute("data-books"));
       });
     }, { rootMargin: "700px 0px" });
-    var triggers = { grammar: ["grammarBookGrid", "grammarBox"], conversation: ["conversationBookGrid"] };
+    var triggers = { grammar: ["grammarBookGrid", "grammarBox"], conversation: ["conversationBookGrid", "conversationBox"] };
     Object.keys(triggers).forEach(function (kind) {
       triggers[kind].forEach(function (id) {
         var el = document.getElementById(id);
@@ -5341,8 +5525,9 @@
       // 교재 페이지에서 넘어온 흐름(?level=·&ch=)이면 교재 데이터가 먼저 필요합니다
       // (지연 로드라 아직 안 왔을 수 있습니다). 받은 뒤에 단계·과를 해석하고 풀이로 들어갑니다.
       var cfg = parseDeepLink(location.search);
-      if (cfg && bookState.grammar === "idle") {
-        loadBooks("grammar", function () {
+      var needKind = cfg ? (cfg.book === "conversation" ? "conversation" : "grammar") : null;
+      if (needKind && bookState[needKind] === "idle") {
+        loadBooks(needKind, function () {
           var started = applyLevelQuery();
           if (!started) {
             goToHash(location.hash);
@@ -5433,6 +5618,10 @@
     "grammar-quiz-basic": { section: "문법 문제 풀이", level: "basic" },
     "grammar-quiz-intermediate": { section: "문법 문제 풀이", level: "intermediate" },
     "grammar-quiz-advanced": { section: "문법 문제 풀이", level: "advanced" },
+    "conversation-quiz": { section: "회화 문제 풀이" },
+    "conversation-quiz-basic": { section: "회화 문제 풀이", level: "basic", book: "conversation" },
+    "conversation-quiz-intermediate": { section: "회화 문제 풀이", level: "intermediate", book: "conversation" },
+    "conversation-quiz-advanced": { section: "회화 문제 풀이", level: "advanced", book: "conversation" },
     "dashboard": { section: "주간 학습 리포트" }
   };
   function goToHash(hash) {
@@ -5443,19 +5632,38 @@
     var sec = document.querySelector('.home-section[aria-label="' + (cfg ? cfg.section : key) + '"]');
     if (!sec) return false;
     if (activeView !== "homeView") showHome();
+    var conv = !!(cfg && cfg.book === "conversation");
     if (cfg && cfg.level) {
-      var sel = document.getElementById("grammarLevelSel");
-      if (sel) { sel.value = cfg.level; grammarWrongOnly = false; grammarQuiz.render(); }
+      var sel = document.getElementById(conv ? "conversationLevelSel" : "grammarLevelSel");
+      if (sel) {
+        sel.value = quizSelectValue(cfg.book, cfg.level);
+        if (conv) { conversationWrongOnly = false; conversationQuiz.render(); }
+        else { grammarWrongOnly = false; grammarQuiz.render(); }
+      }
     }
     scrollToEl(sec, "start");
-    // 문제 풀이 링크(#grammar-quiz-*)는 교재를 읽다 넘어온 흐름이므로 바로 시작합니다.
-    if (cfg && cfg.level) setTimeout(function () { startGrammarQuiz(false); }, 420);
+    // 문제 풀이 링크(#grammar-quiz-* · #conversation-quiz-*)는 교재를 읽다 넘어온 흐름이므로 바로 시작합니다.
+    if (cfg && cfg.level) setTimeout(function () { (conv ? startConversationQuiz : startGrammarQuiz)(false); }, 420);
     return true;
   }
   // 교재 페이지는 ?level=basic&ch=5#grammar-quiz 형태로 들어옵니다(단계·과 지정 + 바로 풀이).
   function applyLevelQuery() {
     var cfg = parseDeepLink(location.search);
     if (!cfg) return false;
+    if (cfg.book === "conversation") {
+      var csel = document.getElementById("conversationLevelSel");
+      if (!csel) return false;
+      csel.value = quizSelectValue(cfg.book, cfg.level);
+      conversationWrongOnly = false;
+      conversationChapterOnly = resolveChapter(CONVERSATION_BOOKS, quizSelectValue(cfg.book, cfg.level), cfg.chapter);
+      renderConversationChapterHint();
+      conversationQuiz.render();
+      if (/#conversation-quiz/.test(location.hash || "")) {
+        setTimeout(function () { startConversationQuiz(false); }, 420);
+        return true;
+      }
+      return false;
+    }
     var sel = document.getElementById("grammarLevelSel");
     if (!sel) return false;
     sel.value = cfg.level;

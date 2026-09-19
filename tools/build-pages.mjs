@@ -2090,6 +2090,7 @@ function buildConversationBook(book, books) {
   </div>
 
   <a class="cta" href="../">🔊 발음 들으며 단어 학습하기</a>
+  <a class="cta" href="../index.html?book=conversation&level=${book.id}#conversation-quiz">✏️ 앱에서 이 교재 문제 풀기</a>
   <p class="lead">🔊 를 누르면 예문 발음을 들을 수 있습니다(앱에서 고른 목소리·속도를 그대로 사용).</p>
 
   <h2 class="sec" id="toc">목차</h2>
@@ -2152,6 +2153,11 @@ function buildChapterPage(kind, book, chapter, books) {
   if (!next && nextBook) {
     crossBook.push(`  <a class="cta" href="${chapterFile(nextBook.id, 1)}">${esc(nextBook.title)} 첫 과 보기 →</a>`);
   }
+  // 앱의 문제 풀이 섹션으로 바로 들어가는 링크 — 문법·회화 교재 모두 과 단위로 들어갑니다.
+  const quizUrl = isGrammar
+    ? `../index.html?level=${book.id}&ch=${chapter.no}#grammar-quiz`
+    : `../index.html?book=conversation&level=${book.id}&ch=${chapter.no}#conversation-quiz`;
+  const quizCta = `  <a class="cta" href="${quizUrl}">✏️ 앱에서 이 과 문제 풀기</a>\n`;
   const label = chapterLabel(chapter);
   const title = `${label} — ${book.title} | toeic.monster`;
   // meta description 은 40~170자를 권장합니다(audit:site 가 검사).
@@ -2236,7 +2242,7 @@ ${buildSection(
     }),
   )}
 
-${isGrammar ? `  <a class="cta" href="../index.html?level=${book.id}&ch=${chapter.no}#grammar-quiz">✏️ 앱에서 이 과 문제 풀기</a>\n` : ""}${crossBook.join("\n")}${crossBook.length ? "\n" : ""}
+${quizCta}${crossBook.join("\n")}${crossBook.length ? "\n" : ""}
 ${relatedHtml}  <h2 class="sec">🗂 ${esc(book.title)}의 다른 과</h2>
   <p class="lead">과를 옮기면 책 페이지의 해당 위치로도 바로 갈 수 있습니다.</p>
   <ul class="toc">

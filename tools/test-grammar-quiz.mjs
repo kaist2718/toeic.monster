@@ -51,7 +51,8 @@ if (start === -1) {
   console.log("❌ index.html 에서 문법 문제 풀이 블록을 찾지 못했습니다.");
   process.exit(1);
 }
-const end = html.indexOf("// ---------- 1) 빈출", start);
+// 회화 문제 풀이는 바로 뒤 블록이라, 문법 테스트는 그 앞까지합니다(서로 섞이지 않게).
+const end = html.indexOf("// ---------- 회화 문제 풀이", start);
 if (end === -1) {
   console.log("❌ 문법 문제 풀이 블록의 끝 지점을 찾지 못했습니다.");
   process.exit(1);

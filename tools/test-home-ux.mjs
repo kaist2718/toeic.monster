@@ -721,6 +721,20 @@ console.log("\n[7] 교재 → 앱 딥링크 (?level=·&ch=)");
     assert(parseDeepLink("#grammar-quiz") === null, "쿼리 없는 주소는 그냥 홈입니다");
     assert(parseDeepLink("?level=초급") === null, "단계 이름이 다르면(초급) 무시합니다");
 
+    // 회화 교재도 같은 형태의 링크를 씁니다(book=conversation 으로 구분).
+    const conv = parseDeepLink("?book=conversation&level=basic&ch=3#conversation-quiz");
+    assert(
+      conv && conv.book === "conversation" && conv.level === "basic" && conv.chapter === 3,
+      "회화 교재 링크는 book=conversation 으로 구분합니다",
+      JSON.stringify(conv),
+    );
+    const legacy = parseDeepLink("?level=advanced");
+    assert(
+      legacy && legacy.book === "grammar",
+      "book 이 없는 예전 링크는 문법 교재로 봅니다",
+      JSON.stringify(legacy),
+    );
+
     const books = [{ id: "basic", chapters: [{ no: 1 }, { no: 5 }, { no: 12 }] }];
     assert(resolveChapter(books, "basic", 5) === 5, "교재에 있는 과 번호는 그대로 씁니다");
     assert(resolveChapter(books, "basic", 99) === 0, "없는 과 번호(ch=99)는 전체 과로 돌립니다");

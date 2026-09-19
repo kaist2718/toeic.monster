@@ -236,7 +236,7 @@ try {
 
   // 첫 화면이 실제로 그려질 때까지 기다립니다(고정 대기 시간에 기대지 않도록).
   for (let i = 0; i < 60; i++) {
-    if ((await evaluate(`document.querySelectorAll("#homeView .home-section").length`)) >= 53) break;
+    if ((await evaluate(`document.querySelectorAll("#homeView .home-section").length`)) >= 54) break;
     await wait(500);
   }
   await wait(1000);
@@ -282,7 +282,7 @@ try {
     };
   })()`);
 
-  check(desktop.homeSections === 53, `홈 섹션 53개가 그려졌습니다 (${desktop.homeSections}개)`);
+  check(desktop.homeSections === 54, `홈 섹션 54개가 그려졌습니다 (${desktop.homeSections}개)`);
   check(desktop.renderedAtHome === 0, `첫 화면에 숨은 단어 카드를 그리지 않습니다 (${desktop.renderedAtHome}장)`);
   check(desktop.conversationCards === 4, `회화 교재 카드가 그려졌습니다 (${desktop.conversationCards}장 · 교재 3권 + 허브)`);
   check(desktop.searchbar === "none", "홈에서는 검색창·난이도 필터가 숨겨져 있습니다");
@@ -1172,7 +1172,7 @@ try {
   /* 3-10b. 깊은 구간 이동 — 섹션 이동 버튼 · 「/」 검색 단축키          */
   /* ---------------------------------------------------------------- */
 
-  // 홈은 53섹션짜리 긴 페이지입니다. 섹션 칩은 맨 위에 있어, 깊이 내려가면
+  // 홈은 54섹션짜리 긴 페이지입니다. 섹션 칩은 맨 위에 있어, 깊이 내려가면
   // 다른 섹션으로 가려고 위로 되돌아가야 했습니다(맨 위로 버튼만 있었음).
   await openPage("index.html");
   const deepHidden = await evaluate(
@@ -1241,7 +1241,7 @@ try {
     `섹션 이동: 「이전 섹션」이 위 섹션으로 돌아갑니다 (y ${afterNext.y} → ${afterPrev})`,
   );
 
-  // 「/」 — 53섹션을 훑어보지 않고 바로 찾기 위한 단축키.
+  // 「/」 — 54섹션을 훑어보지 않고 바로 찾기 위한 단축키.
   await evaluate(`window.scrollTo(0, 0)`);
   await wait(400);
   const slashFocus = await evaluate(`(() => {
@@ -1271,7 +1271,7 @@ try {
   /* 3-10c. 전체 목차 오버레이 · 화면 전환 기록                        */
   /* ---------------------------------------------------------------- */
 
-  // 53섹션이 4묶음으로 접혀 있고 목차는 화면 맨 위에 있어, 깊이 내려가면 목차로 가려면
+  // 54섹션이 4묶음으로 접혀 있고 목차는 화면 맨 위에 있어, 깊이 내려가면 목차로 가려면
   // 「맨 위로」를 거쳐야 했습니다. 섹션 메뉴를 복제한 목차를 어디서든 열 수 있어야 합니다.
   await openPage("index.html");
   await evaluate(`window.scrollTo(0, 2200)`);
@@ -1441,6 +1441,39 @@ try {
   check(
     deep.hasCh5 && !deep.hasOther,
     `앱 딥링크: 그 과의 문제만 나옵니다 (5과=${deep.hasCh5} · 다른 과=${deep.hasOther} · 내용 "${deep.snippet}")`,
+  );
+
+  // 회화 교재도 같은 흐름입니다 — book=conversation 으로 구분합니다.
+  await evaluate(`location.href = "/index.html?book=conversation&level=basic&ch=3#conversation-quiz"`);
+  for (let i = 0; i < 40; i++) {
+    if (await evaluate(`!!document.getElementById("conversationBox")`)) break;
+    await wait(250);
+  }
+  for (let i = 0; i < 24; i++) {
+    if (await evaluate(`document.getElementById("conversationBox").textContent.indexOf("과") !== -1`)) break;
+    await wait(250);
+  }
+  const convDeep = await evaluate(`(() => {
+    const sel = document.getElementById("conversationLevelSel");
+    const hint = document.getElementById("conversationChapterHint");
+    const text = document.getElementById("conversationBox").textContent;
+    return {
+      level: sel ? sel.value : "",
+      hintShown: hint ? !hint.hidden : false,
+      hint: hint ? hint.textContent : "",
+      hasCh3: text.indexOf("초급 3과") !== -1,
+      hasOther: text.indexOf("초급 2과") !== -1 || text.indexOf("초급 4과") !== -1 || text.indexOf("중급 3과") !== -1,
+      snippet: text.split("\\n").join(" ").slice(0, 70),
+    };
+  })()`);
+  check(convDeep.level === "conversation-basic", `회화 딥링크: 단계 선택에 반영됩니다 (${convDeep.level})`);
+  check(
+    convDeep.hintShown && convDeep.hint.indexOf("3과만") !== -1,
+    `회화 딥링크: “이 과만” 상태가 화면에 보입니다 (${convDeep.hint})`,
+  );
+  check(
+    convDeep.hasCh3 && !convDeep.hasOther,
+    `회화 딥링크: 그 과의 문제만 나옵니다 (3과=${convDeep.hasCh3} · 다른 과=${convDeep.hasOther} · 내용 "${convDeep.snippet}")`,
   );
 
   await evaluate(`localStorage.clear()`);
