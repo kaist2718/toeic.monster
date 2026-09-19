@@ -39,7 +39,7 @@ chapter_pages = 72
 | 확장 콘텐츠 | Part 1·2·3·4·5·6·7 문제, 이중·삼중 지문, 동의어 치환, 연결어·전치사 드릴, 빈도순 어휘, 30일 스프린트, 받아쓰기 |
 | 4기능 | TOEIC Speaking 5개 유형 · Writing 3개 유형 (공식 구성 기준) |
 | 정적 산출물 | `units/*.html` · `guides/*.html` · `grammar/*.html` · `sitemap.xml` (빌드 스크립트 자동 생성) |
-| 감사 게이트 | 콘텐츠 · 문구 · **사이트 구조** 3종 + TTS 회귀 테스트 |
+| 감사 게이트 | 콘텐츠 · 문구 · **사이트 구조** · **접근성·예산** 4종 + **밀도 점검**(보고용) + TTS 회귀 테스트 |
 | 배포 도구 | `promo/` (블로그·숏폼 발행 스크립트), 수익화 계획은 `docs/monetization-plan.md` (미구현) |
 
 ---
@@ -52,9 +52,10 @@ chapter_pages = 72
 | `npm run audit:text` | 화면에 보이는 모든 문자열의 맞춤법·영문 철자·공백·전각 문자·TTS 낭독 기호 |
 | `npm run audit:site` | **내부 링크·앵커, 정적 자산, HTML 중복 id, 메타·JSON-LD, 사이트맵 일치, 문서 수치, 홈 고정 표시값, 본문 서체 서브셋(5-3)** |
 | `npm run audit:a11y` | **접근성·성능 예산** — lang·제목 단계, 입력 요소 이름, ARIA 참조, 초점 표시, 색 대비(WCAG), 파일 크기 상한·head 동기 스크립트 |
+| `npm run audit:density` | **밀도(보고용)** — 교재 과별 도입·개념·예문·표·note·실수·연습, 어휘 예문 길이, 허브·과 페이지·가이드 본문 분량, LC 커버리지. 기준 미달을 **알림만** 하고 `--strict` 를 주면 실패 처리 (`docs/content-density-audit.md`) |
 | `npm run audit:external` | 위 항목 + 외부 링크 HTTP 상태 (네트워크 필요) |
 | `npm run test` | TTS 음성 선택 로직 + 문법 문제 풀이 연동 회귀 테스트 |
-| `npm run check` | 감사 3종 + 테스트 + 빌드 (커밋 전 권장) |
+| `npm run check` | 감사 4종 + 밀도 점검 + 테스트 + 빌드 (커밋 전 권장) |
 | `npm run check:ci` | `check` + 생성물 커밋 누락 감지(`verify`) |
 
 ### 2-1. 이번에 메운 사각지대
@@ -119,6 +120,7 @@ Speaking·Writing 구성은 ETS 공식 안내를 기준으로 하며, `data/extr
 | SEO 페이지 | 가이드 8 → **9** (`guides/speaking-writing-guide.html` 신규) |
 | 문법 교재 | `data/grammar-{basic,intermediate,advanced}.js` 신설 → `grammar/` **3권 + 허브·한 장 요약** (36과 · 연습 288문항) |
 | 문법 학습 연동 | 교재 예문 발음(정적 페이지 TTS), 앱 내 **문법 문제 풀이**(단계별 기록 → 대시보드 '문법' 영역) + **문법 오답노트**(localStorage), 홈 배치를 '오늘의 문법 팁' 뒤로 이동 |
+| 콘텐츠 밀도 점검 | 사이트 전체를 같은 잣대로 재어 **보강 후보 26건**을 정리 — `tools/audit-density.mjs` + `docs/content-density-audit.md`. 가장 큰 격차는 **회화 교재 36과**(도입 0/12 · 과당 연습 3문항 · 낭독 버튼 과당 2개), 그다음이 Part 3 커버리지(62%)와 허브·가이드 분량 |
 | 문법 교재 심화 보강 | 36과 전체를 책 수준으로 확장 — 과마다 `intro`(왜 배우는지) · 개념 6~7개 · 형태표(3~6행) · 예문 · note · 흔한 실수 5개 · 연습 8문항. 연습 문항 108 → **288**. 얇았던 과는 6과 「과거시제와 과거진행형」처럼 표를 3행 → **45행**(불규칙 동사 45선)으로 늘리고 -ed 철자·발음 규칙까지 넣었습니다. 점검 문자열 17,006 → **19,363개** |
 | 회화 교재 | `data/conversation-{basic,intermediate,advanced}.js` 신설 → `conversation/` **3권 + 허브** (36과 · 연습 108문항). 상황(기능)을 축으로 하고 CEFR A1~C1 을 병기. 조사·설계는 `docs/conversation-research.md` |
 | 회화 진입 경로 | 홈 `📕 회화 교재 3단계` 섹션(`말하기·쓰기` 묶음) + 섹션 이동 칩 + `<noscript>` 정적 링크 |
@@ -189,7 +191,11 @@ Speaking·Writing 구성은 ETS 공식 안내를 기준으로 하며, `data/extr
 | ~~접근성·성능 자동 검사~~ | 대비·포커스·번들 예산 자동 측정 | ✅ 완료 — `tools/audit-a11y.mjs` (17차 점검, 대비 6곳 수정) |
 | TOEIC LC·RC 시험 사실 고정 | S&W 는 `swFormat` 으로 고정했으나 LC·RC 구성은 아직 문서·화면 서술 | 시험 개편 시 갱신 트리거 규칙 필요 |
 | ~~Part 2 보강~~ | 함정 유형을 실제 문항 수(25)에 맞추기 | ✅ 완료 — `data/extra.js` 의 `traps` 12 → 25 (17차 점검) |
-| Part 3·4 보강 | 대화(13세트·39문항)·담화(10세트·30문항)에 맞춰 늘리기 | 현재 대화 62% · 담화 70% — `audit:content` 가 50% 아래로 떨어지면 실패로 알립니다 |
+| Part 3·4 보강 | 대화(13세트·39문항)·담화(10세트·30문항)에 맞춰 늘리기 | 현재 대화 62% · 담화 70% — `audit:content` 가 50% 아래로 떨어지면 실패로 알립니다 (**P1**, `docs/content-density-audit.md`) |
+| 회화 교재 심화 | 문법 교재와 같은 기준으로 36과를 보강 — 도입·개념 5~7 · 예문(en/ko, 낭독) · 실수 5 · 연습 8, 그리고 표 안에만 있는 영어 문장을 `examples` 로 옮겨 듣기 대상으로 만들기 | 현재 도입 0/12 · 과당 연습 3문항 · 낭독 버튼 과당 2개 — **가장 큰 사용자 체감 격차**(**P0**) |
+| 회화 교재 앱 연동 | 홈에서 회화 연습 문제를 풀고 기록·오답노트까지 붙이기 | `docs/conversation-research.md` 5절 후보 1순위. 연습 문항이 3개뿐이라 P0 보강이 선행 조건 |
+| 허브·가이드 분량 | 허브 3곳(2,500자 미만)과 가이드 6편(2,500자 미만) 보강 — 문법 허브의 「한눈에 보기」·「활용법」 블록을 다른 허브에도 | 허브는 목록만 있으면 이탈 지점이 되고, 가이드는 검색 유입 자산입니다 (**P2**) |
+| 어휘 예문·문법 note | 5단어 이하 예문 62개 재작성, 문법 초급·중급의 과당 note 4개 채우기 | 밀도 점검에서 남은 마지막 소항목(**P3**) |
 
 ---
 
@@ -201,6 +207,7 @@ Speaking·Writing 구성은 ETS 공식 안내를 기준으로 하며, `data/extr
 | 게이트 커버리지 | 감사가 잡는 리스크 항목 ÷ 알려진 리스크 항목 | 100% (P0) |
 | 색인 상태 | 서치콘솔 색인 URL ÷ 사이트맵 URL | 오류 0건 |
 | 학습 지표 | 재방문·완주율·오답 영역 정답률 (대시보드) | 추세 개선 |
+| 콘텐츠 밀도 | 교재 과당 개념·예문·표·연습, 페이지 본문 분량 (`npm run audit:density`) | 6권 전부 기준 이상(지금은 회화 3권 미달) |
 | 확장 트리거 | S&W 커버리지 · 키워드 노출 수 | 2단계 착수 판단 기준 |
 
 ---
@@ -208,15 +215,18 @@ Speaking·Writing 구성은 ETS 공식 안내를 기준으로 하며, `data/extr
 ## 8. 실행 명령
 
 ```bash
-npm run audit          # 콘텐츠 + 문구 + 사이트 구조 감사
+npm run audit          # 콘텐츠 + 문구 + 사이트 구조 + 접근성 감사 + 밀도 점검(보고용)
 npm run audit:external # 외부 링크 HTTP 상태까지 확인 (네트워크 필요)
-npm run check          # 커밋 전 기본 점검 (감사 3종 + 테스트 + 빌드)
+npm run check          # 커밋 전 기본 점검 (감사 4종 + 밀도 점검 + 테스트 + 빌드)
 npm run check:ci       # 생성물 커밋 누락까지 감지
 ```
 
 > 콘텐츠(`data/*.js`, `index.html` 배열)를 수정한 뒤에는 `npm run build` 로
 > `units/`·`guides/`·`sitemap.xml` 을 재생성하고 함께 커밋해야 합니다.
 > `npm run check:ci` 가 이 누락을 잡아냅니다.
+
+> 분량이 부족한 곳을 찾을 때는 `npm run audit:density` 를 보세요. 결과표와 우선순위는
+> `docs/content-density-audit.md` 에 정리되어 있습니다(2026-09-19 기준 보강 후보 26건).
 
 ---
 
@@ -226,10 +236,10 @@ npm run check:ci       # 생성물 커밋 누락까지 감지
 
 | 워크플로 작업 | 실행 시점 | 동작 |
 | --- | --- | --- |
-| `check (Node 18.x · 20.x)` | push(main) · pull_request · 수동 | `npm run check:ci` — 감사 3종 + TTS 테스트 + 빌드 + 생성물 커밋 누락 감지. **실패하면 머지 불가** |
+| `check (Node 22.x · 24.x)` | push(main) · pull_request · 수동 | `npm run check:ci` — 감사 4종 + 밀도 점검 + TTS 테스트 + 빌드 + 생성물 커밋 누락 감지. **실패하면 머지 불가** |
 | `external-links` | 주 1회 예약 · 수동 | `npm run audit:external` — 공식 ETS 안내 등 외부 링크 HTTP 상태. 상대 사이트 사정으로 끊길 수 있어 `continue-on-error` 로 알림만 하고 CI를 막지 않습니다 |
 
-- Node 18·20 두 버전에서 도는 이유: `package.json` 의 `engines(>=18)` 을 실제로 지키는지 확인하기 위해서입니다.
+- Node 22·24 두 버전에서 도는 이유: `package.json` 의 `engines(>=22)` 을 실제로 지키는지 확인하기 위해서입니다(20 이하는 EOL, 브라우저 계측 도구가 전역 WebSocket 을 씁니다).
 - `check` 가 실패하면 로그의 `npm run verify` 출력에서 **어느 생성 파일이 달라졌는지** 바로 볼 수 있습니다.
   그대로 `git add` 후 다시 커밋하면 됩니다.
 - 같은 브랜치에 연속 푸시하면 앞선 실행은 자동 취소됩니다(`concurrency`).
