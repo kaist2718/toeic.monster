@@ -40,7 +40,7 @@ chapter_pages = 72
 | 4기능 | TOEIC Speaking 5개 유형 · Writing 3개 유형 (공식 구성 기준) |
 | 정적 산출물 | `units/*.html` · `guides/*.html` · `grammar/*.html` · `sitemap.xml` (빌드 스크립트 자동 생성) |
 | 감사 게이트 | 콘텐츠 · 문구 · **사이트 구조** · **접근성·예산** 4종 + **밀도 점검**(보고용) + TTS 회귀 테스트 |
-| 배포 도구 | `promo/` (블로그·숏폼 발행 스크립트), 수익화 계획은 `docs/monetization-plan.md` (미구현) |
+| 배포 도구 | `promo/` (블로그·숏폼 발행 스크립트), 수익화는 `docs/revenue-roadmap.md`(전략·재무) + `docs/monetization-plan.md`(실행안) — 둘 다 미구현 |
 
 ---
 
@@ -190,7 +190,7 @@ Speaking·Writing 구성은 ETS 공식 안내를 기준으로 하며, `data/extr
 | 과제 | 내용 | 막는 요인 |
 | --- | --- | --- |
 | LC 정적 오디오 | 브라우저 TTS 의존 → 억양·속도 다양성 부족. `edge-tts` 로 mp3 사전 생성 가능 | 외부 도구(Python) 실행 환경, 저장소 용량 |
-| 수익화 실행 | 교재·인강 제휴와 PDF 부가자료 판매 (`docs/monetization-plan.md`) | 사업자등록·판매 채널 등 사업 결정 필요, 현재 코드 0건 |
+| 수익화 실행 | 교재·인강 제휴와 PDF 부가자료 판매 (`docs/monetization-plan.md` 실행안 · `docs/revenue-roadmap.md` 전략·재무) | 사업자등록·판매 채널·목표 수익 등 사업 결정 필요, 현재 코드 0건. 90일 계획은 로드맵 §13 |
 | ~~접근성·성능 자동 검사~~ | 대비·포커스·번들 예산 자동 측정 | ✅ 완료 — `tools/audit-a11y.mjs` (17차 점검, 대비 6곳 수정) |
 | TOEIC LC·RC 시험 사실 고정 | S&W 는 `swFormat` 으로 고정했으나 LC·RC 구성은 아직 문서·화면 서술 | 시험 개편 시 갱신 트리거 규칙 필요 |
 | ~~Part 2 보강~~ | 함정 유형을 실제 문항 수(25)에 맞추기 | ✅ 완료 — `data/extra.js` 의 `traps` 12 → 25 (17차 점검) |
