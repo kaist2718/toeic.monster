@@ -2223,7 +2223,7 @@ ${chapterLinkList(book, chapter.no)}
 const NOT_FOUND_LINKS = [
   ["/units/", "단어장", "주제별 30개 유닛 · 단어 1,000개"],
   ["/units/idioms.html", "빈출 구동사·숙어", "126개 숙어와 예문"],
-  ["/grammar/", "문법 교재", "기초·중급·고급 36과 + 연습 108문항"],
+  ["/grammar/", "문법 교재", "기초·중급·고급 36과 + 연습 288문항"],
   ["/grammar/cheatsheet.html", "문법 한 장 요약", "시험 직전에 훑는 핵심 정리"],
   ["/guides/", "전략·유형 가이드", "파트별 공략 9편"],
   ["/conversation/", "영어회화 교재", "초급·중급·고급 3단계 + 연습 108문항"],

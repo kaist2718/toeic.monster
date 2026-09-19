@@ -276,7 +276,7 @@ const STATIC_LINKS = [
   ["units/frequency.html", "빈도순 기출 어휘 200선"],
   ["units/confusion.html", "헷갈리는 단어 20쌍"],
   ["units/idioms.html", "빈출 구동사·숙어 126개"],
-  ["grammar/", "문법 교재 3단계 (36과 · 연습 108문항)"],
+  ["grammar/", "문법 교재 3단계 (36과 · 연습 288문항)"],
   ["grammar/cheatsheet.html", "문법 한 장 요약"],
   ["conversation/", "영어회화 교재 3단계 (36과 · 연습 108문항)"],
   ["guides/", "전략·유형 가이드 9편"],

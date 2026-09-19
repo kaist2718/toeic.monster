@@ -15,7 +15,7 @@ paraphrase = 200
 frequency = 200
 grammar_books = 3
 grammar_chapters = 36
-grammar_quizzes = 108
+grammar_quizzes = 288
 conversation_books = 3
 conversation_chapters = 36
 conversation_quizzes = 108
@@ -34,7 +34,7 @@ chapter_pages = 72
 | --- | --- |
 | 어휘 | 30개 주제 유닛 · 1,000단어 (발음기호·한글 발음·예문·예문 발음·해석) |
 | 숙어 | 126개 구동사·숙어 |
-| 문법 | 기초·중급·고급 교재 3권 (36과 · 연습 108문항) |
+| 문법 | 기초·중급·고급 교재 3권 (36과 · 연습 288문항) |
 | 학습 모드 | 암기 카드 · 퀴즈 · 실전 시험 · SRS 복습 · 오답노트 · 대시보드 · 배지 · 주간 리포트 |
 | 확장 콘텐츠 | Part 1·2·3·4·5·6·7 문제, 이중·삼중 지문, 동의어 치환, 연결어·전치사 드릴, 빈도순 어휘, 30일 스프린트, 받아쓰기 |
 | 4기능 | TOEIC Speaking 5개 유형 · Writing 3개 유형 (공식 구성 기준) |
@@ -117,8 +117,9 @@ Speaking·Writing 구성은 ETS 공식 안내를 기준으로 하며, `data/extr
 | 백로그 | 동의어 치환 89 → **200**, 빈도순 기출 어휘 160 → **200** |
 | Part 7 단일 지문 | 리딩 미니 지문 6 → **10**, 문제은행 Part 7 6 → **10** |
 | SEO 페이지 | 가이드 8 → **9** (`guides/speaking-writing-guide.html` 신규) |
-| 문법 교재 | `data/grammar-{basic,intermediate,advanced}.js` 신설 → `grammar/` **3권 + 허브·한 장 요약** (36과 · 연습 108문항) |
+| 문법 교재 | `data/grammar-{basic,intermediate,advanced}.js` 신설 → `grammar/` **3권 + 허브·한 장 요약** (36과 · 연습 288문항) |
 | 문법 학습 연동 | 교재 예문 발음(정적 페이지 TTS), 앱 내 **문법 문제 풀이**(단계별 기록 → 대시보드 '문법' 영역) + **문법 오답노트**(localStorage), 홈 배치를 '오늘의 문법 팁' 뒤로 이동 |
+| 문법 교재 심화 보강 | 36과 전체를 책 수준으로 확장 — 과마다 `intro`(왜 배우는지) · 개념 6~7개 · 형태표(3~6행) · 예문 · note · 흔한 실수 5개 · 연습 8문항. 연습 문항 108 → **288**. 얇았던 과는 6과 「과거시제와 과거진행형」처럼 표를 3행 → **45행**(불규칙 동사 45선)으로 늘리고 -ed 철자·발음 규칙까지 넣었습니다. 점검 문자열 17,006 → **19,363개** |
 | 회화 교재 | `data/conversation-{basic,intermediate,advanced}.js` 신설 → `conversation/` **3권 + 허브** (36과 · 연습 108문항). 상황(기능)을 축으로 하고 CEFR A1~C1 을 병기. 조사·설계는 `docs/conversation-research.md` |
 | 회화 진입 경로 | 홈 `📕 회화 교재 3단계` 섹션(`말하기·쓰기` 묶음) + 섹션 이동 칩 + `<noscript>` 정적 링크 |
 | UI/UX 점검 | `docs/ux-review.md` 신설 — 홈 섹션·칩 계측, 다크 모드 누락, 터치 영역 등 14건 점검(P1 3 · P2 7 · P3 4). 정적 페이지 다크 모드 · 홈 목차 주제별 접기 · 해시 진입 · `prefers-reduced-motion` · 전역 초점 표시 · 표 가로 스크롤 · 문항 수 선택 · `맨 위로` 버튼까지 수정 완료 |
