@@ -9,6 +9,7 @@
     "default_theme": "blue",
     "default_style": "classic",
     "default_voice": "en-US-JennyNeural",
+    "default_voice2": "en-GB-RyanNeural",
     "default_tts": true,
     "default_privacy": "unlisted",
     "confirm_real_upload": true,

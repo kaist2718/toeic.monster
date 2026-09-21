@@ -7,16 +7,20 @@ toeic.monster 홍보 자동 배포 — YouTube Shorts / Instagram Reels / TikTok
   python publish.py --video assets/shorts/unit01.mp4 --unit 1
   python publish.py --video assets/shorts/my.mp4 --title "제목" --desc "설명"
   python publish.py --video assets/shorts/my.mp4 --platforms yt,ig --youtube-privacy unlisted
+  python publish.py --video assets/shorts/idioms_x.mp4 --idioms   # 숙어 영상용 제목·설명
   python publish.py --dry-run                       # 업로드 없이 계획만 출력
   python publish.py --list-posted                    # 사용한 단어·게시한 영상 기록 보기
   python publish.py --reset-posted 1                 # UNIT 1 중복 방지 기록 초기화
 
-자동 제목/설명: --unit N 을 주면 data/unitNN.js 의 단어를 랜덤으로 골라
-"단어 | TOEIC 필수 어휘 UNIT N 주제 | toeic.monster" 형식으로 생성합니다.
+자동 제목/설명 (우선순위):
+  ① 영상 옆 메타(*.json, make_shorts.py 가 기록) — 영상에 실제로 들어간 항목이라 내용과 일치합니다.
+     단어 영상: "money | TOEIC 필수 어휘 UNIT 5 | toeic.monster"
+     숙어 영상: "come across 외 숙어 1개 | TOEIC 빈출 숙어 | toeic.monster"
+  ② 메타가 없으면 --unit N(data/unitNN.js) 또는 --idioms(data/idioms.js)에서 남은 항목 중 하나를 골라 생성합니다.
 
 중복 방지: 사용한 단어와 게시한 영상(내용 해시)을 promo/posted.json 에 기록해 다음
 게시에서 같은 단어·같은 숏폼을 자동으로 건너뜁니다. 다시 게시하려면 --allow-repeat,
-기록을 비우려면 --reset-posted(all 또는 UNIT 번호)를 사용하세요.
+기록을 비우려면 --reset-posted(all, UNIT 번호, idioms)를 사용하세요.
 
 플랫폼:
   - YouTube Shorts : 공식 YouTube Data API v3 (OAuth, 무료, 하루 6개 제한)
@@ -71,6 +75,8 @@ HISTORY_FIELDS = [
 ]
 
 UNIT_FILE_RE = re.compile(r"window\.VOCAB_UNITS\s*\[\s*(\d+)\s*\]\s*=\s*(\[[\s\S]*?\]);")
+# 숙어는 한 덩어리입니다: window.VOCAB_IDIOMS = [ [표현, 뜻, 예문, 해석], ... ];
+IDIOM_FILE_RE = re.compile(r"window\.VOCAB_IDIOMS\s*=\s*(\[[\s\S]*?\]);")
 UNITS_BLOCK_RE = re.compile(r"var UNITS\s*=\s*\[([\s\S]*?)\];")
 UNIT_ENTRY_RE = re.compile(r"\{\s*id:\s*(\d+)[^}]*?title:\s*\"([^\"]*)\"[^}]*?level:\s*\"([^\"]*)\"[^}]*?icon:\s*\"([^\"]*)\"\s*\}")
 
@@ -211,6 +217,24 @@ def load_unit_words(unit_no: int):
     return None
 
 
+def load_idioms():
+    """data/idioms.js 의 숙어 배열 로드 — [표현, 뜻, 예문, 해석] 4필드 (없으면 None)."""
+    file = ROOT / "data" / "idioms.js"
+    if not file.exists():
+        return None
+    text = file.read_text(encoding="utf-8")
+    m = IDIOM_FILE_RE.search(text)
+    if not m:
+        return None
+    raw = m.group(1)
+    for loader in (json.loads, ast.literal_eval):
+        try:
+            return loader(raw)
+        except Exception:
+            continue
+    return None
+
+
 def load_unit_info() -> dict:
     """index.html 의 UNITS 메타데이터(id -> {title, level, icon}) 파싱."""
     index = ROOT / "index.html"
@@ -230,6 +254,8 @@ def load_unit_info() -> dict:
 # 중복 게시 방지 — 사용한 단어·게시한 영상 기록 (posted.json)
 # --------------------------------------------------------------------------- #
 POSTED_VERSION = 1
+# 숙어 숏폼은 유닛 번호가 없어 posted.json 의 words 키로 이 이름을 씁니다.
+IDIOM_BUCKET = "idioms"
 
 
 def normalize_word(value: str) -> str:
@@ -264,12 +290,20 @@ def save_posted(data: dict) -> None:
     POSTED_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
-def posted_words_for_unit(unit_no: int) -> set[str]:
-    """해당 UNIT에서 이미 사용한 단어 키 집합."""
+def posted_label(key: str) -> str:
+    """posted.json 의 words 키를 사람이 읽는 이름으로 (숫자면 UNIT n)."""
+    key = str(key)
+    if key.isdigit():
+        return f"UNIT {key}"
+    return "숙어" if key == IDIOM_BUCKET else key
+
+
+def posted_words_for_unit(unit_no: int | str) -> set[str]:
+    """해당 유닛(또는 숙어 같은 키)에서 이미 사용한 단어 키 집합."""
     return {normalize_word(w) for w in load_posted()["words"].get(str(unit_no), [])}
 
 
-def mark_words_posted(unit_no: int | None, words: list[str]) -> int:
+def mark_words_posted(unit_no: int | str | None, words: list[str]) -> int:
     """단어를 사용 기록에 추가하고 새로 추가된 개수를 돌려줍니다."""
     if unit_no is None or not words:
         return 0
@@ -358,29 +392,32 @@ def show_posted_menu() -> None:
         if not items:
             continue
         preview = ", ".join(items[:8]) + (" …" if len(items) > 8 else "")
-        log(f"  UNIT {unit}: {len(items)}개 — {preview}")
+        log(f"  {posted_label(unit)}: {len(items)}개 — {preview}")
     for record in sorted(videos.values(), key=lambda r: r.get("last_posted_at", ""), reverse=True)[:10]:
         platforms = ", ".join(sorted((record.get("platforms") or {}).keys())) or "-"
         log(f"  영상: {record.get('path', '')} · {platforms} · {record.get('last_posted_at', '')}")
 
 
 def reset_posted(target: str = "all") -> None:
-    """중복 방지 기록을 초기화합니다(target=all 또는 UNIT 번호)."""
+    """중복 방지 기록을 초기화합니다(target=all · UNIT 번호 · idioms)."""
     data = load_posted()
     target = str(target or "all").strip().lower()
     if target in ("all", "전체", "*"):
         save_posted({"words": {}, "videos": {}})
         ok("중복 방지 기록을 모두 초기화했습니다.")
         return
-    if target.isdigit():
-        if not data["words"].get(target):
-            warn(f"UNIT {target} 의 단어 기록이 없습니다.")
+    if target in data["words"]:
+        if not data["words"][target]:
+            warn(f"{posted_label(target)} 의 기록이 없습니다.")
             return
         data["words"][target] = []
         save_posted(data)
-        ok(f"UNIT {target} 단어 기록을 초기화했습니다.")
+        ok(f"{posted_label(target)} 기록을 초기화했습니다.")
         return
-    warn("초기화 대상은 all 또는 UNIT 번호입니다.")
+    if target.isdigit():
+        warn(f"UNIT {target} 의 단어 기록이 없습니다.")
+        return
+    warn("초기화 대상은 all, UNIT 번호, idioms 입니다.")
 
 
 def resolve_video(args) -> Path | None:
@@ -401,13 +438,115 @@ def resolve_video(args) -> Path | None:
     )
 
 
+def load_video_meta(video: Path) -> dict | None:
+    """make_shorts.py 가 영상 옆에 남긴 메타(*.json)를 읽습니다. 없으면 None."""
+    side = video.with_suffix(".json")
+    if not side.exists():
+        return None
+    try:
+        data = json.loads(side.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def sidecar_for(args) -> dict | None:
+    """영상 메타를 찾습니다 — --video 가 있으면 그 영상, 없으면 최근 영상(resolve_video 와 같은 순서)."""
+    raw = getattr(args, "video", None)
+    if raw:
+        p = Path(raw)
+        return load_video_meta(p if p.is_absolute() else PROMO / p)
+    if SHORTS_DIR.exists():
+        vids = sorted(SHORTS_DIR.glob("*.mp4"), key=lambda f: f.stat().st_mtime, reverse=True)
+        if vids:
+            return load_video_meta(vids[0])
+    return None
+
+
+def find_unit_row(unit_no: int | None, term: str) -> list | None:
+    """단어 데이터에서 같은 항목을 찾습니다(영상 메타에는 IPA가 없어 원본으로 보강)."""
+    if not unit_no:
+        return None
+    key = normalize_word(term)
+    for row in (load_unit_words(unit_no) or []):
+        if normalize_word(row[0]) == key:
+            return row
+    return None
+
+
+def vocab_title(row: list | None, item: dict, unit_no: int | None, unit_info: dict) -> str:
+    """단어 영상 제목 — 기존 형식을 유지합니다."""
+    term = (row[0] if row else item.get("term", "")) or ""
+    head = f"UNIT {unit_no} {unit_info.get('title', '')}".strip() if unit_no else ""
+    return f"{term} | TOEIC 필수 어휘 {head}".strip() + " | toeic.monster"
+
+
+def vocab_desc(row: list | None, item: dict, site_url: str) -> str:
+    """단어 영상 설명 — 원본 단어 행이 있으면 IPA까지 그대로 씁니다."""
+    tail = f"발음·예문으로 외우는 TOEIC 보카 1,000 → {site_url}"
+    if row:
+        return (f"TOEIC 필수 어휘 「{row[0]}」 [{row[1]}] {row[3]}\n"
+                f"예문: {row[4]}\n해석: {row[5]}\n\n{tail}")
+    return (f"TOEIC 필수 어휘 「{item.get('term', '')}」 {item.get('meaning', '')}\n"
+            f"예문: {item.get('example', '')}\n해석: {item.get('translation', '')}\n\n{tail}")
+
+
+def idioms_title(items: list) -> str:
+    """숙어 영상 제목 — 첫 표현 + 나머지 개수."""
+    terms = [str(it.get("term", "")).strip() for it in items if str(it.get("term", "")).strip()]
+    if not terms:
+        return "TOEIC 빈출 숙어 | toeic.monster"
+    if len(terms) == 1:
+        return f"{terms[0]} | TOEIC 빈출 숙어 | toeic.monster"
+    return f"{terms[0]} 외 숙어 {len(terms) - 1}개 | TOEIC 빈출 숙어 | toeic.monster"
+
+
+def idioms_desc(items: list, site_url: str) -> str:
+    """숙어 영상 설명 — 영상에 들어간 표현을 뜻·예문과 함께 모두 적습니다.
+
+    숏폼 설명은 검색 노출과 다시 보기 모두에 쓰이므로, 제목에 못 넣은 나머지 표현을 여기서 살립니다.
+    """
+    terms = [it for it in items if str(it.get("term", "")).strip()]
+    lines = [f"TOEIC 빈출 숙어 {len(terms)}개" if len(terms) > 1 else "TOEIC 빈출 숙어", ""]
+    for i, it in enumerate(terms, 1):
+        lines.append(f"{i}. {it.get('term', '')} — {it.get('meaning', '')}")
+        if it.get("example"):
+            lines.append(f"   {it['example']}")
+        if it.get("translation"):
+            lines.append(f"   {it['translation']}")
+    lines.append("")
+    lines.append(f"구동사·숙어 126선과 발음까지 → {site_url.rstrip('/')}/units/idioms.html")
+    return "\n".join(lines)
+
+
 def build_meta(cfg: dict, args) -> dict:
-    """제목/설명/해시태그 생성. --unit 이 있으면 단어 데이터에서 자동 생성."""
+    """제목/설명/해시태그 생성.
+
+    우선순위: ① 영상 옆 메타(*.json · make_shorts.py 기록) → ② `--unit` 자동 생성
+    → ③ `--idioms` 자동 생성 → ④ 설정 기본값.
+    ①을 먼저 보는 이유: 생성기가 기록한 항목이 실제로 영상에 들어 있어서, 남은 목록에서
+    무작위로 고르는 예전 방식과 달리 제목·설명이 영상 내용과 어긋나지 않습니다.
+    """
     title = args.title
     desc = args.desc
     unit_info = {}
     chosen_word: str | None = None
-    if args.unit:
+    site_url = cfg.get("site_url", "https://toeic.monster/")
+
+    saved = sidecar_for(args)
+    items = saved.get("items") if isinstance(saved, dict) else None
+    if items:
+        if str(saved.get("kind")) == "idioms":
+            title = title or idioms_title(items)
+            desc = desc or idioms_desc(items, site_url)
+        else:
+            unit_no = saved.get("unit") if isinstance(saved.get("unit"), int) else None
+            unit_info = load_unit_info().get(unit_no, {}) if unit_no else {}
+            first = items[0] if isinstance(items[0], dict) else {}
+            row = find_unit_row(unit_no, str(first.get("term", "")))
+            title = title or vocab_title(row, first, unit_no, unit_info)
+            desc = desc or vocab_desc(row, first, site_url)
+    elif args.unit:
         unit_info = load_unit_info().get(args.unit, {})
         words = load_unit_words(args.unit)
         if words:
@@ -436,6 +575,22 @@ def build_meta(cfg: dict, args) -> dict:
                 )
         elif not title:
             warn(f"UNIT {args.unit} 데이터를 읽지 못해 기본 제목을 사용합니다.")
+    elif getattr(args, "idioms", False):
+        # 영상 메타가 없는 오래된 영상이나 직접 만든 영상을 위한 폴백입니다.
+        rows = load_idioms() or []
+        pool = rows
+        if rows and not getattr(args, "allow_repeat", False):
+            used = posted_words_for_unit(IDIOM_BUCKET)
+            remaining = [r for r in rows if normalize_word(r[0]) not in used]
+            if remaining:
+                pool = remaining
+        if pool:
+            r = random.choice(pool)
+            one = {"term": r[0], "meaning": r[1], "example": r[2], "translation": r[3]}
+            title = title or idioms_title([one])
+            desc = desc or idioms_desc([one], site_url)
+        elif not title:
+            warn("숙어 데이터를 읽지 못해 기본 제목을 사용합니다.")
 
     title = (title or cfg.get("default_title", "TOEIC 필수 어휘 | toeic.monster")).strip()[:100]
     desc = (desc or cfg.get("default_description", "")).strip()
@@ -586,6 +741,7 @@ def run_scheduled_item(item: dict, cfg: dict, *, dry_run: bool = False) -> bool:
     args.desc = item.get("desc") or None
     args.allow_repeat = False
     args.manual_fallback = False  # 예약·백그라운드 실행은 브라우저를 열지 않습니다.
+    args.video = str(video)       # 영상 옆 메타(*.json)를 이 영상 것으로 찾게 합니다
     meta = build_meta(cfg, args)
     platforms = resolve_platforms(cfg, item.get("platforms", "auto"))
     if not platforms:
@@ -1292,13 +1448,21 @@ def ask_int(prompt: str, default: int, minimum: int, maximum: int) -> int:
         warn(f"{minimum}~{maximum} 범위로 입력해 주세요.")
 
 
-def ask_voice(prompt: str, default: str) -> str:
-    """목소리를 번호로 고르거나 edge-tts 목소리 이름을 직접 입력합니다."""
-    log(f"\n{prompt} (엔터: {voice_label(default)})")
+def ask_voice(prompt: str, default: str, allow_none: bool = False) -> str:
+    """목소리를 번호로 고르거나 edge-tts 목소리 이름을 직접 입력합니다.
+
+    allow_none=True 이면 '0. 없음' 항목이 생기고, 고르면 빈 문자열을 돌려줍니다(한 목소리만 사용).
+    """
+    shown = voice_label(default) if default else ("없음" if allow_none else DEFAULT_VOICE)
+    log(f"\n{prompt} (엔터: {shown})")
+    if allow_none:
+        log("  0. 없음 — 한 목소리만 사용")
     for i, (name, label) in enumerate(SHORTS_VOICES, 1):
         log(f"  {i}. {name} — {label}")
     log("  번호를 고르거나 목소리 이름을 직접 입력하세요.")
-    raw = ask_menu("목소리 번호/이름", default).strip()
+    raw = ask_menu("목소리 번호/이름", default or ("0" if allow_none else "")).strip()
+    if allow_none and (raw == "0" or raw.lower() in ("none", "off", "-", "없음")):
+        return ""
     if raw.isdigit():
         idx = int(raw)
         if 1 <= idx <= len(SHORTS_VOICES):
@@ -1333,6 +1497,18 @@ def choose_platforms_menu(cfg: dict, default: str = "") -> str:
         warn(f"알 수 없는 플랫폼을 제외합니다: {', '.join(invalid)}")
     chosen = [p for p in chosen if p in labels]
     return ",".join(chosen) or "yt"
+
+
+def newest_video_since(started: float) -> Path | None:
+    """방금 돌린 생성기가 만든 영상 — 시작 시각 이후에 만들어진 mp4 중 가장 최근.
+
+    숙어 영상은 파일명이 첫 표현을 따라 미리 알 수 없어서, 생성을 마친 뒤 이렇게 찾습니다.
+    (단순 '폴더에서 가장 최근 파일'은 다른 영상이 새로 생겼을 때 잘못 집을 수 있습니다.)
+    """
+    if not SHORTS_DIR.exists():
+        return None
+    fresh = [f for f in SHORTS_DIR.glob("*.mp4") if f.stat().st_mtime >= started - 1]
+    return max(fresh, key=lambda f: f.stat().st_mtime) if fresh else None
 
 
 def list_videos_menu() -> list[Path]:
@@ -1436,12 +1612,23 @@ def probe_video_info(video: Path) -> dict:
     return info
 
 
+def describe_saved_meta(saved: dict) -> str:
+    """영상 메타를 메뉴 안내용 한 줄로 만듭니다(예: 숙어 · 항목 5개)."""
+    where = "숙어" if str(saved.get("kind")) == "idioms" else f"UNIT {saved.get('unit')}"
+    return f"{where} · 항목 {len(saved.get('items') or [])}개"
+
+
 def verify_video_menu(cfg: dict) -> None:
     """메뉴 15: 배포 전 영상을 재생·점검하고 게시 메타를 확인한 뒤 게시를 진행합니다."""
     video = choose_video_menu()
     if video is None:
         return
-    unit = choose_unit()
+    saved = load_video_meta(video)
+    if saved:
+        unit = saved.get("unit") if isinstance(saved.get("unit"), int) else None
+        log(f"영상 메타 사용: {describe_saved_meta(saved)} (제목·설명 자동)")
+    else:
+        unit = choose_unit()
     v_args = argparse.Namespace(video=str(video), unit=unit, title=None, desc=None,
                                 platforms="auto", dry_run=True, youtube_privacy=None,
                                 allow_repeat=False)
@@ -1839,9 +2026,12 @@ SHORTS_VOICES: list[tuple[str, str]] = [
     ("en-US-EricNeural", "남성 · 미국"),
     ("en-US-SteffanNeural", "남성 · 미국"),
     ("en-GB-RyanNeural", "남성 · 영국"),
+    ("en-GB-ThomasNeural", "남성 · 영국"),
     ("en-AU-WilliamNeural", "남성 · 호주"),
 ]
 DEFAULT_VOICE = "en-US-JennyNeural"
+# 두 번째 목소리(영국 남성) — 쇼츠 기본값은 두 목소리라 설정을 비우면 한 목소리만 씁니다.
+DEFAULT_VOICE2 = "en-GB-RyanNeural"
 
 
 def voice_label(name: str) -> str:
@@ -1892,7 +2082,10 @@ def configure_menu(cfg: dict) -> dict:
     if promo["default_style"] not in styles:
         promo["default_style"] = "classic"
     promo["default_tts"] = ask_yes_no("기본으로 TTS 추가", bool(promo.get("default_tts", False)))
-    promo["default_voice"] = ask_voice("기본 TTS 목소리", str(promo.get("default_voice", DEFAULT_VOICE) or DEFAULT_VOICE))
+    promo["default_voice"] = ask_voice("기본 TTS 목소리 (여성)", str(promo.get("default_voice", DEFAULT_VOICE) or DEFAULT_VOICE))
+    promo["default_voice2"] = ask_voice(
+        "두 번째 TTS 목소리 (영국 남성)",
+        str(promo.get("default_voice2", DEFAULT_VOICE2) or DEFAULT_VOICE2), allow_none=True)
     promo["confirm_real_upload"] = ask_yes_no("실제 게시 전 확인 질문 사용", bool(promo.get("confirm_real_upload", True)))
     yt = cfg.setdefault("youtube", {})
     yt["enabled"] = ask_yes_no("YouTube 사용", bool(yt.get("enabled", True)))
@@ -1959,6 +2152,8 @@ def interactive_menu() -> None:
         default_privacy = "unlisted"
     default_tts = bool(promo_cfg.get("default_tts", False))
     default_voice = str(promo_cfg.get("default_voice", DEFAULT_VOICE) or DEFAULT_VOICE)
+    # 빈 문자열이면 '두 번째 목소리 없음'을 뜻하므로 or DEFAULT_VOICE2 를 쓰지 않습니다.
+    default_voice2 = str(promo_cfg.get("default_voice2", DEFAULT_VOICE2) or "")
     confirm_real_upload = bool(promo_cfg.get("confirm_real_upload", True))
     menu_default = "2"
     while True:
@@ -1984,6 +2179,8 @@ def interactive_menu() -> None:
         log(" 17. 중복 게시 방지 기록 초기화")
         log(" 18. YouTube 설정·로그인 (상태 확인 후 다음 단계만 진행)")
         log(" 19. 수동 게시 도우미 (업로드 페이지 열기 + 캡션 복사)")
+        log(" 20. 숙어 쇼츠 생성")
+        log(" 21. 숙어 쇼츠 생성 후 게시")
         log("  0. 종료")
         action = ask_menu("메뉴", menu_default)
         if action == "0":
@@ -2025,6 +2222,7 @@ def interactive_menu() -> None:
                 default_privacy = "unlisted"
             default_tts = bool(promo_cfg.get("default_tts", False))
             default_voice = str(promo_cfg.get("default_voice", DEFAULT_VOICE) or DEFAULT_VOICE)
+            default_voice2 = str(promo_cfg.get("default_voice2", DEFAULT_VOICE2) or "")
             confirm_real_upload = bool(promo_cfg.get("confirm_real_upload", True))
             continue
         if action == "10":
@@ -2096,7 +2294,7 @@ def interactive_menu() -> None:
             show_posted_menu()
             continue
         if action == "17":
-            target = ask_menu("초기화 대상 (all 또는 UNIT 번호)", "all")
+            target = ask_menu("초기화 대상 (all · UNIT 번호 · idioms)", "all")
             if ask_yes_no("중복 방지 기록을 초기화할까요?", False):
                 reset_posted(target)
             continue
@@ -2107,8 +2305,13 @@ def interactive_menu() -> None:
             video = choose_video_menu()
             if video is None:
                 continue
-            unit_raw = ask_menu("자동 제목에 사용할 UNIT 번호(취소하려면 0)", str(default_unit))
-            unit = None if unit_raw == "0" else (int(unit_raw) if unit_raw.isdigit() else default_unit)
+            saved = load_video_meta(video)
+            if saved:
+                log(f"영상 메타 사용: {describe_saved_meta(saved)} (제목·설명 자동)")
+                unit = None
+            else:
+                unit_raw = ask_menu("자동 제목에 사용할 UNIT 번호(취소하려면 0)", str(default_unit))
+                unit = None if unit_raw == "0" else (int(unit_raw) if unit_raw.isdigit() else default_unit)
             platforms = choose_platforms_menu(cfg)
             m_args = argparse.Namespace(video=str(video), unit=unit, title=None, desc=None,
                                         platforms=platforms, dry_run=True, youtube_privacy=None,
@@ -2119,7 +2322,7 @@ def interactive_menu() -> None:
             if meta.get("word"):
                 mark_words_posted(unit, [meta["word"]])
             continue
-        if action not in ("1", "2", "3", "5"):
+        if action not in ("1", "2", "3", "5", "20", "21"):
             warn("메뉴 번호를 확인해 주세요.")
             continue
 
@@ -2143,10 +2346,11 @@ def interactive_menu() -> None:
             log("예약 시각에 이 명령을 실행해야 게시됩니다: python publish.py --run-due")
             continue
 
-        unit = choose_unit(default_unit)
+        idioms = action in ("20", "21")
+        unit = None if idioms else choose_unit(default_unit)
         video = None
-        if action in ("1", "3"):
-            words = str(ask_int("영상에 넣을 단어 수(1~10)", default_words, 1, 10))
+        if action in ("1", "3", "20", "21"):
+            words = str(ask_int("영상에 넣을 항목 수(1~10)", default_words, 1, 10))
             themes, styles = make_short_choices()
             theme = ask_menu(f"배경 테마({'/'.join(themes)})", default_theme).lower()
             while theme not in themes:
@@ -2156,38 +2360,61 @@ def interactive_menu() -> None:
             while style not in styles:
                 warn(f"지원하는 스타일: {', '.join(styles)}")
                 style = ask_menu("카드 스타일", default_style).lower()
-            command = [sys.executable, str(PROMO / "make_shorts.py"), "--unit", str(unit),
+            command = [sys.executable, str(PROMO / "make_shorts.py"),
                        "--words", words, "--bg", theme, "--style", style]
+            if idioms:
+                command.append("--idioms")
+            else:
+                command.extend(["--unit", str(unit)])
             if ask_yes_no("영어 TTS를 추가할까요?", default_tts):
                 command.append("--tts")
-                command.extend(["--voice", ask_voice("TTS 목소리", default_voice)])
+                command.extend(["--voice", ask_voice("첫 번째 TTS 목소리 (여성)", default_voice)])
+                voice2 = ask_voice("두 번째 TTS 목소리 (영국 남성)", default_voice2, allow_none=True)
+                if voice2:
+                    command.extend(["--voice2", voice2])
+                else:
+                    command.append("--single-voice")
             else:
                 command.append("--no-tts")
             if ask_yes_no("배경음악을 추가할까요?(파일 경로 필요)", False):
                 music_path = ask_menu("배경음악 파일(mp3/wav) 경로")
                 if music_path:
                     command.extend(["--music", music_path])
-            if ask_yes_no("이미 사용한 단어도 다시 쓸까요?", False):
+            if ask_yes_no("이미 사용한 항목도 다시 쓸까요?", False):
                 command.append("--allow-repeat")
+            started = time.time()
             if not run_menu_command(command):
                 fail("쇼츠 생성에 실패해 게시를 중단합니다.")
                 continue
-            video = PROMO / "assets" / "shorts" / f"unit{unit:02d}_shorts.mp4"
-            if action == "1":
+            if idioms:
+                # 숙어 영상은 파일명이 첫 표현을 따르므로 시작 시각 이후 생성물을 찾습니다.
+                video = newest_video_since(started)
+                if video is None:
+                    fail("생성된 숙어 영상을 찾지 못했습니다.")
+                    continue
+            else:
+                video = PROMO / "assets" / "shorts" / f"unit{unit:02d}_shorts.mp4"
+            if action in ("1", "20"):
                 ok(f"쇼츠 생성 완료: {video}")
                 continue
         else:
             video = choose_video_menu()
             if video is None:
                 continue
-            unit_raw = ask_menu("자동 제목에 사용할 UNIT 번호(취소하려면 0)", str(unit))
-            if unit_raw == "0":
+            saved = load_video_meta(video)
+            if saved:
+                # 영상에 기록된 메타로 제목·설명을 만들므로 UNIT 번호를 묻지 않습니다(숙어 영상도 같음).
+                log(f"영상 메타 사용: {describe_saved_meta(saved)} (제목·설명 자동)")
                 unit = None
             else:
-                try:
-                    unit = int(unit_raw)
-                except ValueError:
-                    warn("잘못된 UNIT이라 기본값을 사용합니다.")
+                unit_raw = ask_menu("자동 제목에 사용할 UNIT 번호(취소하려면 0)", str(unit))
+                if unit_raw == "0":
+                    unit = None
+                else:
+                    try:
+                        unit = int(unit_raw)
+                    except ValueError:
+                        warn("잘못된 UNIT이라 기본값을 사용합니다.")
 
         platforms = choose_platforms_menu(cfg)
         privacy = ask_menu("YouTube 공개 범위(public/unlisted/private)", default_privacy)
@@ -2196,7 +2423,9 @@ def interactive_menu() -> None:
         dry_run = ask_yes_no("먼저 미리보기(dry-run)로 확인할까요?", True)
         command = [sys.executable, str(PROMO / "publish.py"), "--non-interactive", "--video", str(video),
                    "--platforms", platforms, "--youtube-privacy", privacy]
-        if unit:
+        if idioms:
+            command.append("--idioms")   # 영상 메타가 없을 때를 위한 폴백
+        elif unit:
             command.extend(["--unit", str(unit)])
         if ask_yes_no("이미 게시한 영상도 다시 게시할까요?", False):
             command.append("--allow-repeat")
@@ -2227,6 +2456,8 @@ def main() -> None:
     )
     ap.add_argument("--video", help="업로드할 영상 (기본: assets/shorts/ 의 가장 최근 mp4)")
     ap.add_argument("--unit", type=int, help="자동 제목 생성용 유닛 번호 (1~30)")
+    ap.add_argument("--idioms", action="store_true",
+                    help="숙어 영상용 제목·설명 자동 생성 (data/idioms.js 기준)")
     ap.add_argument("--title", help="제목 직접 지정 (기본: 자동 생성)")
     ap.add_argument("--desc", help="설명 직접 지정")
     ap.add_argument("--platforms", default="auto", help="yt,ig,tt (기본: config 에서 enabled 인 플랫폼)")
@@ -2248,8 +2479,8 @@ def main() -> None:
     ap.add_argument("--history", action="store_true", help="최근 게시 이력 CSV 출력")
     ap.add_argument("--list-posted", action="store_true",
                     help="사용한 단어·게시한 영상 기록 출력 (중복 방지)")
-    ap.add_argument("--reset-posted", nargs="?", const="all", metavar="UNIT|all",
-                    help="중복 방지 기록 초기화 (기본 all, UNIT 번호 지정 가능)")
+    ap.add_argument("--reset-posted", nargs="?", const="all", metavar="UNIT|idioms|all",
+                    help="중복 방지 기록 초기화 (기본 all, UNIT 번호 또는 idioms 지정 가능)")
     ap.add_argument("--init-config", action="store_true", help="config.example.json에서 config.json 생성")
     ap.add_argument("--check", action="store_true", help="설정·의존성·폴더 상태 점검")
     ap.add_argument("--edit-config", action="store_true", help="터미널에서 설정 편집")
@@ -2478,7 +2709,14 @@ def publish_single(cfg: dict, args, video: Path) -> None:
             fail(f"{names[short]}: 건너뜀 (설정/오류 — 위 메시지 확인)")
     if args.dry_run:
         log("\n실제 업로드하려면 --dry-run 을 빼고 실행하세요.")
-        log(f"예: python publish.py --video {video.relative_to(PROMO)} --unit {args.unit or 1}")
+        if getattr(args, "idioms", False):
+            flag = " --idioms"
+        elif args.unit:
+            flag = f" --unit {args.unit}"
+        else:
+            # 영상 옆 메타(*.json)가 제목·설명을 만들므로 다시 돌릴 때 UNIT 이 필요 없습니다.
+            flag = ""
+        log(f"예: python publish.py --video {video.relative_to(PROMO)}{flag}")
 
 
 _yt_privacy_override: str | None = None

@@ -41,8 +41,8 @@ promo_center.bat
 
 메뉴 기능:
 
-1. **쇼츠 생성** — UNIT·단어 수·테마·스타일·TTS·배경음악 선택
-2. **기존 쇼츠 게시** — 최근 수정된 mp4 목록에서 선택
+1. **쇼츠 생성** — UNIT·항목 수·테마·스타일·TTS·배경음악 선택
+2. **기존 쇼츠 게시** — 최근 수정된 mp4 목록에서 선택 (영상 옆 메타가 있으면 UNIT을 묻지 않고 제목·설명을 자동 생성)
 3. **쇼츠 생성 후 게시** — 생성부터 dry-run/실제 게시까지 한 흐름으로 진행
 4. **설정 상태 확인** — config, 플랫폼, Python 패키지, ffmpeg, OAuth 파일 점검
 5. **예약 게시 등록** — 영상·플랫폼·공개 범위·예약 시각 저장
@@ -57,9 +57,11 @@ promo_center.bat
 14. **게시 성과 수집·보고서** — YouTube/Instagram 조회수·좋아요 수집 및 보고서
 15. **배포 전 검증** — 영상을 재생해 직접 확인하고, 9:16·60초·게시 메타(제목/설명/해시태그)를 점검한 뒤 게시
 16. **중복 게시 방지 기록 보기** — 사용한 단어·게시한 영상 기록 확인
-17. **중복 게시 방지 기록 초기화** — 전체 또는 UNIT별로 기록 삭제
+17. **중복 게시 방지 기록 초기화** — 전체 또는 UNIT·숙어별로 기록 삭제
 18. **YouTube 설정 도우미** — OAuth 안내·검증·로그인을 한 흐름으로
 19. **수동 게시 도우미** — 업로드 페이지를 열고 캡션을 클립보드에 복사
+20. **숙어 쇼츠 생성** — 숙어 126선(`data/idioms.js`)으로 생성 (항목 수·테마·스타일·TTS 동일)
+21. **숙어 쇼츠 생성 후 게시** — 숙어 생성을 포함해 3번과 같은 흐름으로 게시까지 진행
 
 메뉴 입력에서 Enter를 누르면 설정된 기본값을 사용합니다. 기본 게시 방식은 dry-run이며, 실제 업로드는 별도의 확인 질문을 거칩니다.
 
@@ -78,8 +80,12 @@ python publish.py --edit-config
 # 쇼츠 폴더 열기(Windows/macOS/Linux)
 python publish.py --open-shorts
 
-# 업로드 계획만 확인
+# 업로드 계획만 확인 (제목·설명은 영상 옆 메타로 자동)
 python publish.py --video assets/shorts/unit01_shorts.mp4 --unit 1 --dry-run
+
+# 숙어 영상 게시 — 제목·설명을 data/idioms.js 기준으로 생성
+python publish.py --video assets/shorts/idioms_come-across_shorts.mp4 --idioms --dry-run
+python publish.py --video assets/shorts/idioms_come-across_shorts.mp4 --idioms --platforms yt --youtube-privacy unlisted
 
 # 실제 업로드
 python publish.py --video assets/shorts/unit01_shorts.mp4 --unit 1 --platforms yt --youtube-privacy unlisted
@@ -129,7 +135,8 @@ python publish.py --remove-task
 
 - `default_unit`, `default_words`, `default_theme`, `default_style`: 생성 메뉴 기본값
 - `default_tts`: TTS 기본 선택 여부
-- `default_voice`: TTS 목소리(edge-tts 이름). 예: 여성 `en-US-JennyNeural`, 남성 `en-US-GuyNeural`. 생성 시 번호로 바꿀 수 있음
+- `default_voice`: 첫 번째 TTS 목소리(edge-tts 이름). 예: 여성 `en-US-JennyNeural`, 남성 `en-US-GuyNeural`. 생성 시 번호로 바꿀 수 있음
+- `default_voice2`: 두 번째 TTS 목소리(기본 영국 남성 `en-GB-RyanNeural`). **빈 문자열이면 한 목소리만** 사용
 - `default_privacy`: YouTube 기본 공개 범위. 처음에는 `unlisted` 권장
 - `confirm_real_upload`: 실제 게시 전 확인 질문 사용 여부. 안전을 위해 `true` 권장
 - `youtube.api_key`: 성과 수집(`--stats`) 전용 Google Cloud **API 키**. 공개 데이터 조회라 OAuth 없이 사용 가능
@@ -235,23 +242,40 @@ python make_shorts.py --unit 2 --index 0 --slide-sec 4 --dry-run
 
 # 배경음악 추가 (볼륨 0.2, TTS와 함께 쓰면 음성 위에 깔림)
 python make_shorts.py --unit 1 --music assets/music/calm.mp3 --music-volume 0.2
+
+# 목소리: 기본은 여성 + 영국 남성 두 목소리
+python make_shorts.py --unit 1 --single-voice            # 여성 하나만
+python make_shorts.py --unit 1 --voice2 en-GB-ThomasNeural  # 두 번째를 다른 영국 남성으로
+
+# 숙어 126선(data/idioms.js) — 유닛 대신 --idioms
+python make_shorts.py --idioms --words 5
+python make_shorts.py --idioms --index 0 --bg mint --style modern
 ```
 
 `9:16 / 1080×1920 / 30fps` 영상을 만들며, 한글·IPA 폰트를 자동 탐색합니다. 생성 전 `--dry-run`으로 계획을 확인할 수 있습니다.
 
+생성이 끝나면 영상 옆에 같은 이름의 메타 파일(`unit01_shorts.json`)을 남깁니다. **게시 제목·설명은 이 파일을 읽어 만들어집니다** — 영상에 실제로 들어간 항목이라 제목이 내용과 어긋나지 않습니다. 메타가 없는 영상(예전 산출물)은 기존처럼 `--unit` / `--idioms` 로 남은 목록에서 하나를 골라 씁니다(`promo/assets/` 는 git 에 올라가지 않습니다).
+
+- **숙어 카드**: `--idioms` 를 주면 `data/idioms.js`(126선)에서 고릅니다. 숙어는 IPA·예문 발음이 없어 슬라이드에 **표현·뜻·예문·해석**만 들어가고, 상단 칩은 `TOEIC 빈출 숙어` + **목록 순번**입니다. 파일명은 첫 표현을 따 `idioms_take-advantage-of_shorts.mp4` 처럼 나와 배치끼리 덮어쓰지 않습니다(`--out` 으로 지정 가능).
 - **영어 음성 기본**: 단어·예문을 읽어 주는 TTS(edge-tts, 무료·인터넷 필요)가 기본 켜짐입니다. `--no-tts`로 끄면 앰비언트 사운드로 대체됩니다.
-- **목소리 선택**: 기본 목소리는 `default_voice`(기본 여성 `en-US-JennyNeural`)입니다. 설정 편집(메뉴 `9`)이나 쇼츠 생성 시 번호로 바꿀 수 있고, 직접 edge-tts 목소리 이름을 입력해도 됩니다. 남성은 `en-US-GuyNeural`·`en-GB-RyanNeural`, 여성은 `en-US-AriaNeural`·`en-GB-SoniaNeural` 등을 쓸 수 있습니다.
+- **두 목소리 기본**: 여성 `en-US-JennyNeural`이 먼저, 영국 남성 `en-GB-RyanNeural`이 이어서 **같은 단어·예문을 차례로** 읽습니다(사이에 0.4초 무음). 같은 문장을 두 번 읽으므로 음성이 약 2배가 되고, 그만큼 해당 슬라이드가 자동으로 길어집니다 — 5개 단어 기준 30초였으면 45~55초쯤 됩니다. 길게 느껴지면 `--words`를 줄이거나 `--single-voice`로 한 목소리만 쓰세요.
+- **목소리 선택**: `default_voice`(첫 번째, 기본 여성 `en-US-JennyNeural`)와 `default_voice2`(두 번째, 기본 영국 남성 `en-GB-RyanNeural`)를 설정 편집(메뉴 `9`)이나 쇼츠 생성 시 번호로 바꿀 수 있고, 직접 edge-tts 목소리 이름을 입력해도 됩니다. 두 번째는 `0. 없음`을 고르면 한 목소리만 씁니다. 여성은 `en-US-AriaNeural`·`en-GB-SoniaNeural`, 남성은 `en-US-GuyNeural`·`en-GB-RyanNeural`·`en-GB-ThomasNeural` 등을 쓸 수 있습니다.
 - **무음 방지**: TTS·음악이 실패하거나 없어도 부드러운 앰비언트 사운드가 들어갑니다. `--no-ambient`로 끌 수 있습니다.
 - **네모(□) 방지**: fontTools cmap으로 글리프 존재를 확인해, 한글 폰트에 없는 IPA 기호 등은 자동으로 IPA 커버 폰트(Arial 등)로 대체합니다.
 
 | 옵션 | 설명 |
 |---|---|
+| `--idioms` | 유닛 단어 대신 숙어 126선으로 만들기 (`--unit` 생략 가능) |
 | `--bg` | 배경 테마: blue / purple / green / orange / pink / navy / midnight / sunset / mint / wine |
 | `--style` | 카드 스타일: `classic`(기본) / `modern`(글래스 카드) / `minimal`(심플) |
 | `--music` | 배경음악 mp3/wav 경로 (선택) |
 | `--music-volume` | 배경음악 볼륨 0~1 (기본 0.15) |
 | `--tts` / `--no-tts` | 영어 TTS 켜기(기본) / 끄기 |
-| `--voice` | TTS 목소리 (기본 `en-US-JennyNeural`). 여성: Jenny/Aria/Sonia, 남성: Guy/Davis/Ryan 등 |
+| `--words` | 영상에 넣을 항목 수 — 단어/숙어 (기본 5) |
+| `--out` | 출력 mp4 경로 (기본: `assets/shorts/unitNN_shorts.mp4` · 숙어는 `idioms_<표현>_shorts.mp4`) |
+| `--voice` | 첫 번째 TTS 목소리 (기본 `en-US-JennyNeural` — 여성). 여성: Jenny/Aria/Sonia, 남성: Guy/Davis/Ryan 등 |
+| `--voice2` | 두 번째 TTS 목소리 (기본 `en-GB-RyanNeural` — 영국 남성). `none`이면 한 목소리만 |
+| `--single-voice` | 한 목소리만 쓰기 (기본은 여성 + 영국 남성 두 목소리) |
 | `--no-ambient` | 기본 앰비언트 사운드 끄기 (무음 영상) |
 
 ## 7-1. 게시 성과 추적
@@ -270,7 +294,8 @@ python publish.py --stats-report   # 성과를 HTML 보고서로 생성해 브�
 
 게시 이력(`publish_history.csv`)과는 별개로, 사용한 단어와 게시한 영상(내용 해시)을 `promo/posted.json`에 기록해 **다음 번에 같은 숏폼·단어가 반복되지 않게** 합니다.
 
-- **단어 중복 방지**: `make_shorts.py`가 이미 쓴 단어를 빼고 선택하고, `publish.py --unit N`의 자동 제목도 남은 단어에서 고릅니다. UNIT의 단어를 모두 쓰면 경고 후 전체 단어에서 다시 선택합니다.
+- **단어 중복 방지**: `make_shorts.py`가 이미 쓴 단어를 빼고 선택하고, 영상 메타가 없는 예전 영상은 `publish.py --unit N`의 자동 제목도 남은 단어에서 고릅니다. UNIT의 단어를 모두 쓰면 경고 후 전체 단어에서 다시 선택합니다.
+- **숙어도 별도 기록**: 숙어는 유닛 번호가 없어 `posted.json` 의 `words["idioms"]` 에 쌓입니다(단어 기록과 섞이지 않습니다).
 - **영상 중복 방지**: 같은 내용의 mp4(해시 동일)를 **플랫폼별로** 이미 올렸으면 건너뜁니다. 예를 들어 유튜브에만 올린 영상은 Instagram에는 여전히 올릴 수 있습니다.
 - **일괄·예약 게시**도 같은 규칙을 따르며, `dry-run`은 차단하지도 기록하지도 않습니다.
 
@@ -278,6 +303,7 @@ python publish.py --stats-report   # 성과를 HTML 보고서로 생성해 브�
 python publish.py --list-posted        # 사용 단어·게시 영상 기록 보기
 python publish.py --reset-posted all   # 전체 초기화
 python publish.py --reset-posted 3     # UNIT 3 단어 기록만 초기화
+python publish.py --reset-posted idioms  # 숙어 기록만 초기화
 python publish.py --allow-repeat ...   # 기록을 무시하고 다시 게시
 ```
 

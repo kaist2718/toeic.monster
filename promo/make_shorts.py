@@ -2,8 +2,9 @@
 # -*- coding: utf-8 -*-
 """toeic.monster 홍보용 쇼츠 영상 자동 생성기.
 
-data/unitNN.js 의 단어 카드를 9:16 세로 쇼츠 영상(1080x1920)으로 렌더링합니다.
-슬라이드당 1개 단어 — 단어·IPA·한글 발음·뜻·예문·해석 + toeic.monster 푸터.
+data/unitNN.js 의 단어 카드와 data/idioms.js 의 숙어 카드를 9:16 세로 쇼츠 영상(1080x1920)으로
+렌더링합니다. 슬라이드당 1개 항목 — 단어는 단어·IPA·한글 발음·뜻·예문·해석, 숙어는 표현·뜻·예문·해석.
+공통으로 toeic.monster 푸터가 들어갑니다.
 Ken Burns 줌 효과와 슬라이드 간 크로스페이드, 선택적으로 영어 TTS 음성 포함.
 
 사용법:
@@ -12,6 +13,13 @@ Ken Burns 줌 효과와 슬라이드 간 크로스페이드, 선택적으로 영
   python make_shorts.py --unit 5 --seed 42 --bg purple
   python make_shorts.py --unit 2 --words 3 --dry-run # 계획만 출력
   python make_shorts.py --unit 1 --allow-repeat      # 이미 쓴 단어도 다시 사용
+  python make_shorts.py --unit 1 --single-voice      # 여성 목소리 하나만
+  python make_shorts.py --unit 1 --voice2 none       # 두 번째 목소리 끄기
+  python make_shorts.py --idioms --words 5           # 숙어 126선에서 5개 (→ assets/shorts/idioms_*_shorts.mp4)
+  python make_shorts.py --idioms --index 0 --bg mint # 숙어 목록의 특정 순번만
+
+음성 기본값은 **두 목소리**입니다 — 여성(en-US-JennyNeural)이 먼저, 영국 남성(en-GB-RyanNeural)이
+이어서 같은 단어·예문을 읽습니다. 음성 길이가 약 2배가 되므로 슬라이드가 자동으로 늘어납니다.
 
 중복 방지: 이미 쓴 단어는 다음 생성에서 자동으로 제외되고 promo/posted.json 에 기록됩니다.
 
@@ -22,6 +30,7 @@ TTS 사용 시: pip install edge-tts  (인터넷 필요, 무료/키 불필요)
 from __future__ import annotations
 
 import argparse
+import json
 import random
 import re
 import subprocess
@@ -43,13 +52,16 @@ except ImportError:
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from publish import (  # noqa: E402
+    IDIOM_BUCKET,
     POSTED_FILE,
     fail,
+    load_idioms,
     load_unit_info,
     load_unit_words,
     log,
     mark_words_posted,
     normalize_word,
+    now_iso,
     ok,
     posted_words_for_unit,
     warn,
@@ -134,6 +146,15 @@ LAYOUT = {
     "minimal": dict(chip=False, deco=False, card=False, word_y=560, ipa_y=780, ipa_pill=False,
                      pron_dy=34, line_y=1120, mean_y=1170, label_y=1330, en_y=1395, en_dy=70,
                      tr_max_y=1560, tr_dy=54, unit_y=130),
+}
+# 숙어 카드는 IPA·한글 발음 줄이 없어 표현·뜻·예문·해석만 담고, 그만큼 위아래 여백을 다시 잡습니다.
+IDIOM_LAYOUT = {
+    "classic": dict(phrase_y=600, line_y=980, mean_y=1040, label_y=1210, en_y=1280, en_dy=72,
+                     tr_max_y=1530, tr_dy=56),
+    "modern":  dict(phrase_y=420, line_y=790, mean_y=850, label_y=1030, en_y=1100, en_dy=68,
+                     tr_max_y=1450, tr_dy=54),
+    "minimal": dict(phrase_y=600, line_y=980, mean_y=1040, label_y=1210, en_y=1280, en_dy=72,
+                     tr_max_y=1530, tr_dy=56),
 }
 
 
@@ -479,6 +500,131 @@ def render_slide(idx: int, total: int, unit_no: int, unit_info: dict, wd: list,
     return img
 
 
+def slug(text: str, limit: int = 28) -> str:
+    """표현을 파일명에 쓸 수 있게 바꿉니다(영문·숫자만 남기고 하이픈으로 이음)."""
+    s = re.sub(r"[^a-z0-9]+", "-", str(text).lower()).strip("-")
+    return s[:limit].strip("-") or "idioms"
+
+
+def wrap_words(text: str, font, max_width: int, draw) -> list[str]:
+    """단어 경계에서 줄을 나눕니다.
+
+    공용 wrap_text 는 글자 단위로 잘라 표현이 단어 중간에서 끊깁니다(예: "take advanta/ge of").
+    숙어는 덩어리로 읽혀야 뜻이 남으므로 표현 줄에만 이 함수를 씁니다.
+    """
+    lines: list[str] = []
+    cur = ""
+    for word in str(text).split():
+        test = f"{cur} {word}".strip()
+        if cur and text_width(draw, test, font) > max_width:
+            lines.append(cur)
+            cur = word
+        else:
+            cur = test
+    if cur:
+        lines.append(cur)
+    return lines
+
+
+def render_idiom_slide(idx: int, total: int, rank: int, wd: list,
+                       theme: str, font_path: str | None, style: str = "classic") -> Image.Image:
+    """숙어 카드 슬라이드 — 표현·뜻·예문·해석만 담습니다.
+
+    단어 카드(render_slide)와 그리는 내용이 달라 함수를 나누었고, 일부러 서로를 건드리지 않게
+    두었습니다(매일 도는 단어 영상이 숙어 쪽 손질로 깨지지 않게).
+    """
+    global ACCENT_THEME
+    ACCENT_THEME = ACCENT[theme]
+    ly = IDIOM_LAYOUT.get(style, IDIOM_LAYOUT["classic"])
+    deco = LAYOUT.get(style, LAYOUT["classic"])
+    top, bottom = THEMES[theme]
+    img = vertical_gradient((W, H), top, bottom)
+    draw = ImageDraw.Draw(img, "RGBA")
+    if deco["deco"]:
+        draw_deco(draw)
+
+    phrase, meaning, en_ex, kr_tr = wd[0], wd[3], wd[4], wd[5]
+
+    # ── 상단: 숙어 칩(목록 순번 뱃지) 또는 제목 텍스트 ──
+    title_font = load_font(font_path, 40, bold=True)
+    title = "TOEIC 빈출 숙어"
+    if deco["chip"]:
+        chip = (255, 255, 255, 36)
+        tw = text_width(draw, title, title_font)
+        badge_w = 80
+        chip_w = int(22 + badge_w + 24 + tw + 40)
+        cx0 = W // 2 - chip_w // 2
+        draw.rounded_rectangle([cx0, 96, cx0 + chip_w, 174], radius=39, fill=chip)
+        draw.rounded_rectangle([cx0 + 22, 100, cx0 + 22 + badge_w, 170], radius=35,
+                               fill=ACCENT_THEME + (255,))
+        num = str(rank)
+        num_font = load_font(font_path, 42, bold=True)
+        nw = text_width(draw, num, num_font)
+        draw_text_rich(draw, num, num_font, (255, 255, 255), y=108,
+                       x=cx0 + 22 + (badge_w - nw) / 2)
+        draw_text_rich(draw, title, title_font, (255, 255, 255), y=113,
+                       x=cx0 + 22 + badge_w + 24)
+    elif deco["unit_y"]:
+        draw_text_rich(draw, title, title_font, (255, 255, 255, 190), y=deco["unit_y"])
+
+    # ── modern: 글래스 카드 + 좌측 액센트 버 ──
+    if deco["card"]:
+        draw.rounded_rectangle([60, 180, W - 60, 1700], radius=56, fill=(255, 255, 255, 22))
+        draw.rounded_rectangle([60, 180, 96, 1700], radius=18, fill=ACCENT_THEME + (70,))
+
+    # ── 표현 (2줄까지, 넘치면 글자를 줄임) ──
+    phrase_font = load_font(font_path, 128, bold=True)
+    lines = wrap_words(phrase, phrase_font, W - 240, draw)
+    while len(lines) > 2 and phrase_font.size > 52:
+        phrase_font = load_font(font_path, phrase_font.size - 10, bold=True)
+        lines = wrap_words(phrase, phrase_font, W - 240, draw)
+    y = ly["phrase_y"]
+    for line in lines[:2]:
+        draw_text_rich(draw, line, phrase_font, (255, 255, 255), y=y)
+        y += int(phrase_font.size * 1.24)
+
+    # ── 뜻 ──
+    mean_font = load_font(font_path, 84, bold=True)
+    mw = text_width(draw, meaning, mean_font)
+    while mw > W - 160 and mean_font.size > 40:
+        mean_font = load_font(font_path, mean_font.size - 8, bold=True)
+        mw = text_width(draw, meaning, mean_font)
+    draw_text_rich(draw, meaning, mean_font, ACCENT_THEME, y=ly["mean_y"])
+
+    # ── 구분선 ──
+    draw.line([200, ly["line_y"], W - 200, ly["line_y"]], fill=(255, 255, 255, 70), width=3)
+
+    # ── 예문 ──
+    label_font = load_font(font_path, 34, bold=True)
+    draw_text_rich(draw, "TOEIC 예문", label_font, (255, 255, 255, 190), y=ly["label_y"], x=120)
+    en_font = load_font(font_path, 50, bold=False)
+    en_lines = wrap_text(en_ex, en_font, W - 240, draw)
+    while len(en_lines) > 5 and en_font.size > 30:
+        en_font = load_font(font_path, en_font.size - 4, bold=False)
+        en_lines = wrap_text(en_ex, en_font, W - 240, draw)
+    y = ly["en_y"]
+    for line in en_lines[:5]:
+        draw_text_rich(draw, line, en_font, (255, 255, 255), y=y, x=120)
+        y += ly["en_dy"]
+
+    # ── 해석 ──
+    tr_font = load_font(font_path, 40, bold=False)
+    tr_lines = wrap_text(kr_tr, tr_font, W - 240, draw)
+    while len(tr_lines) > 3 and tr_font.size > 26:
+        tr_font = load_font(font_path, tr_font.size - 4, bold=False)
+        tr_lines = wrap_text(kr_tr, tr_font, W - 240, draw)
+    y = min(y + 30, ly["tr_max_y"])
+    for line in tr_lines[:3]:
+        draw_text_rich(draw, line, tr_font, (200, 210, 235), y=y, x=120)
+        y += ly["tr_dy"]
+
+    # ── 쏘터 ──
+    foot_font = load_font(font_path, 44, bold=True)
+    draw_text_rich(draw, "toeic.monster", foot_font, (255, 255, 255), y=1745)
+    draw_dots(draw, total, idx)
+    return img
+
+
 def crop_zoom(img: Image.Image, scale: float) -> Image.Image:
     """중심 기준 scale 배율만큼 확대 크롭 (Ken Burns)."""
     cw, ch = int(W / scale), int(H / scale)
@@ -487,11 +633,26 @@ def crop_zoom(img: Image.Image, scale: float) -> Image.Image:
 
 
 # ---------------------------------------------------------------- tts -----
-async def tts_slide(word: str, en_ex: str, voice: str, out: Path) -> Path:
+VOICE_GAP = 0.4  # 두 목소리 사이 무음(초) — 같은 문장이 두 번 읽히므로 구분을 준다
+
+
+async def tts_speak(text: str, voice: str, out: Path) -> Path:
     import edge_tts
-    text = f"{word}. {en_ex}"
     await edge_tts.Communicate(text, voice).save(str(out))
     return out
+
+
+def resolve_voices(voice: str, voice2: str, single: bool) -> list[str]:
+    """실제로 쓸 목소리 목록을 돌려줍니다.
+
+    기본은 첫 목소리 + 두 번째 목소리(영국 남성)입니다.
+    --single-voice 이거나 두 번째가 none/off 이거나 같은 목소리면 하나만 씁니다.
+    """
+    voices = [voice]
+    second = (voice2 or "").strip()
+    if not single and second and second.lower() not in ("none", "off", "-") and second != voice:
+        voices.append(second)
+    return voices
 
 
 def probe_duration(path: Path) -> float:
@@ -516,17 +677,39 @@ def probe_duration(path: Path) -> float:
     return 0.0
 
 
-def build_audio(word: str, en_ex: str, voice: str, slide_dur: float, tmp: Path, i: int) -> tuple[Path, float]:
-    """TTS 음성 생성 후 슬라이드 길이에 맞춘 wav 로 변환. (wav, 실제 슬라이드 길이) 반환."""
-    tts_mp3 = tmp / f"tts_{i}.mp3"
-    slide_wav = tmp / f"audio_{i}.wav"
+def build_audio(word: str, en_ex: str, voices: list[str], slide_dur: float, tmp: Path, i: int) -> tuple[Path, float]:
+    """목소리별 TTS 를 만들어 차례로 이어 붙이고 슬라이드 길이에 맞춘 wav 로 변환합니다.
+
+    두 목소리를 쓰면 같은 문장을 두 번 읽어 음성이 약 2배가 되고, 그만큼 슬라이드도 늘어납니다.
+    (wav, 실제 슬라이드 길이) 반환.
+    """
     import asyncio
-    asyncio.run(tts_slide(word, en_ex, voice, tts_mp3))
-    audio_len = probe_duration(tts_mp3)   # 원본 TTS 길이 (자르기 전)
-    dur = max(slide_dur, audio_len + 0.8) # 음성이 길면 슬라이드 연장
-    cmd = [_FFMPEG, "-y", "-i", str(tts_mp3),
-           "-af", f"apad=whole_dur={dur}",
-           "-ar", "44100", "-ac", "2", "-t", str(dur), str(slide_wav)]
+    text = f"{word}. {en_ex}"
+    tts_files: list[Path] = []
+    for vi, v in enumerate(voices):
+        part = tmp / f"tts_{i}_{vi}.mp3"
+        asyncio.run(tts_speak(text, v, part))
+        tts_files.append(part)
+
+    # 목소리 사이 무음까지 더해 실제 음성 길이를 어림한다.
+    audio_len = sum(probe_duration(p) for p in tts_files) + VOICE_GAP * (len(tts_files) - 1)
+    dur = max(slide_dur, audio_len + 0.8)  # 음성이 길면 슬라이드 연장
+
+    slide_wav = tmp / f"audio_{i}.wav"
+    cmd = [_FFMPEG, "-y", "-hide_banner", "-loglevel", "error"]
+    for p in tts_files:
+        cmd += ["-i", str(p)]
+    if len(tts_files) == 1:
+        fc = f"[0:a]apad=whole_dur={dur}[a]"
+    else:
+        # 마지막 목소리를 뺀 나머지 뒤에 짧은 무음을 붙여 이어 붙인다.
+        head = "".join(f"[{vi}:a]apad=pad_dur={VOICE_GAP}[p{vi}];"
+                        for vi in range(len(tts_files) - 1))
+        chain = "".join(f"[p{vi}]" for vi in range(len(tts_files) - 1)) + f"[{len(tts_files) - 1}:a]"
+        fc = (f"{head}{chain}concat=n={len(tts_files)}:v=0:a=1[cat];"
+              f"[cat]apad=whole_dur={dur}[a]")
+    cmd += ["-filter_complex", fc, "-map", "[a]", "-ar", "44100", "-ac", "2",
+            "-t", str(dur), str(slide_wav)]
     subprocess.run(cmd, capture_output=True)
     return slide_wav, dur
 
@@ -564,6 +747,29 @@ def mix_final(silent: Path, tts_wav: Path | None, music: Path | None,
                        "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-shortest", str(out)])
 
 
+def write_sidecar(out: Path, *, kind: str, unit_no: int | None, items: list[list],
+                  voices: list[str]) -> None:
+    """영상 옆에 항목 메타(`<이름>.json`)를 남깁니다.
+
+    publish.py 가 이 파일을 읽어 제목·설명을 만듭니다. 이게 없으면 게시 단계가 남은 목록에서
+    무작위로 하나를 골라, 영상에 없는 단어·숙어가 제목에 들어갑니다.
+    저장에 실패해도 영상은 이미 만들어진 뒤라 게시를 막지 않고 알림만 남깁니다.
+    """
+    data = {
+        "kind": kind,
+        "unit": unit_no,
+        "items": [{"term": w[0], "meaning": w[3], "example": w[4], "translation": w[5]}
+                  for w in items],
+        "voices": voices,
+        "created_at": now_iso(),
+    }
+    try:
+        out.with_suffix(".json").write_text(
+            json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    except OSError as exc:
+        warn(f"영상 메타를 저장하지 못했습니다({exc}) — 게시 제목은 기본값으로 만들어집니다.")
+
+
 def build_ambient(dur: float, tmp: Path) -> Path | None:
     """부드러운 화음(ffmpeg lavfi)으로 영상이 무음이 되지 않도록 하는 배경 사운드를 만듭니다."""
     out = tmp / "ambient.wav"
@@ -585,8 +791,10 @@ def build_ambient(dur: float, tmp: Path) -> Path | None:
 # ---------------------------------------------------------------- main ----
 def main() -> None:
     ap = argparse.ArgumentParser(description="toeic.monster 단어 카드 쇼츠 영상 생성기 (1080x1920, 9:16)")
-    ap.add_argument("--unit", type=int, required=True, help="유닛 번호 (1~30)")
-    ap.add_argument("--words", type=int, default=5, help="영상에 넣을 단어 수 (기본 5)")
+    ap.add_argument("--unit", type=int, help="유닛 번호 (1~30). --idioms 를 쓰면 생략합니다")
+    ap.add_argument("--idioms", action="store_true",
+                    help="유닛 단어 대신 숙어 126선(data/idioms.js)에서 만듭니다")
+    ap.add_argument("--words", type=int, default=5, help="영상에 넣을 항목 수 — 단어/숙어 (기본 5)")
     ap.add_argument("--slide-sec", type=float, default=6.0, help="슬라이드당 길이 초 (기본 6)")
     ap.add_argument("--out", help="출력 mp4 경로 (기본: assets/shorts/unitNN_shorts.mp4)")
     ap.add_argument("--bg", default="blue", choices=sorted(THEMES), help="배경 테마")
@@ -599,7 +807,12 @@ def main() -> None:
     ap.add_argument("--tts", dest="tts", action="store_true", default=True,
                     help="영어 TTS 음성(기본 켜짐 — edge-tts, 인터넷 필요)")
     ap.add_argument("--no-tts", dest="tts", action="store_false", help="영어 TTS 끄기")
-    ap.add_argument("--voice", default="en-US-JennyNeural", help="TTS 목소리 (기본 en-US-JennyNeural)")
+    ap.add_argument("--voice", default="en-US-JennyNeural",
+                    help="첫 번째 TTS 목소리 — 여성 (기본 en-US-JennyNeural)")
+    ap.add_argument("--voice2", default="en-GB-RyanNeural",
+                    help="두 번째 TTS 목소리 — 영국 남성 (기본 en-GB-RyanNeural). none 이면 하나만 사용")
+    ap.add_argument("--single-voice", action="store_true",
+                    help="한 목소리만 쓰기 (기본은 여성 + 영국 남성 두 목소리)")
     ap.add_argument("--music", help="배경음악 오디오 파일(mp3/wav) 경로 (선택)")
     ap.add_argument("--music-volume", type=float, default=0.15, help="배경음악 볼륨 0~1 (기본 0.15)")
     ap.add_argument("--no-ambient", action="store_true",
@@ -610,31 +823,55 @@ def main() -> None:
     if not _PIL_OK:
         sys.exit("Pillow 미설치 — pip install -r requirements.txt")
 
-    unit_no = args.unit
-    words = load_unit_words(unit_no)
-    info = load_unit_info()
-    unit_info = info.get(unit_no, {})
-    if not words:
-        sys.exit(f"UNIT {unit_no} 데이터를 읽을 수 없습니다 (data/unit{unit_no:02d}.js 확인).")
+    voices = resolve_voices(args.voice, args.voice2, args.single_voice)
+
+    if not args.idioms and args.unit is None:
+        sys.exit("--unit 을 지정하거나, 숙어 영상을 만들려면 --idioms 를 쓰세요.")
+
+    if args.idioms:
+        rows = load_idioms() or []
+        if not rows:
+            sys.exit("숙어 데이터를 읽을 수 없습니다 (data/idioms.js 확인).")
+        # 숙어 4필드를 단어 카드와 같은 모양으로 늘려 TTS·중복 기록이 같은 자리를 쓰게 합니다.
+        items = [[str(r[0]) if len(r) > 0 else "",
+                  "", "",
+                  str(r[1]) if len(r) > 1 else "",
+                  str(r[2]) if len(r) > 2 else "",
+                  str(r[3]) if len(r) > 3 else "",
+                  "",
+                  i + 1]                      # 목록 순번(칩 뱃지용)
+                 for i, r in enumerate(rows)]
+        bucket: int | str = IDIOM_BUCKET  # posted.json 의 words 키
+        unit_no, unit_info = 0, {}
+        source_label = "숙어"
+    else:
+        unit_no = args.unit
+        words = load_unit_words(unit_no)
+        if not words:
+            sys.exit(f"UNIT {unit_no} 데이터를 읽을 수 없습니다 (data/unit{unit_no:02d}.js 확인).")
+        items = words
+        bucket = unit_no
+        unit_info = load_unit_info().get(unit_no, {})
+        source_label = f"UNIT {unit_no}"
 
     rng = random.Random(args.seed)
     if args.index is not None:
-        if args.index < 0 or args.index >= len(words):
-            sys.exit(f"인덱스 {args.index} 는 범위 밖 (0~{len(words)-1}).")
-        picked = [words[args.index]]
+        if args.index < 0 or args.index >= len(items):
+            sys.exit(f"인덱스 {args.index} 는 범위 밖 (0~{len(items)-1}).")
+        picked = [items[args.index]]
     else:
-        pool = words
+        pool = items
         if not args.allow_repeat:
-            used = posted_words_for_unit(unit_no)
-            remaining = [w for w in words if normalize_word(w[0]) not in used]
+            used = posted_words_for_unit(bucket)
+            remaining = [w for w in items if normalize_word(w[0]) not in used]
             if remaining:
-                if len(remaining) < len(words):
-                    log(f"중복 방지: 이미 사용한 단어 {len(words) - len(remaining)}개를 제외하고 "
+                if len(remaining) < len(items):
+                    log(f"중복 방지: 이미 사용한 항목 {len(items) - len(remaining)}개를 제외하고 "
                         f"{len(remaining)}개 중에서 선택")
                 pool = remaining
             elif used:
-                warn(f"UNIT {unit_no} 단어를 모두 사용했습니다 — --reset-posted 로 초기화하거나 "
-                     f"--allow-repeat 로 다시 사용할 수 있습니다. 전체 단어에서 선택합니다.")
+                warn(f"{source_label} 을 모두 사용했습니다 — --reset-posted 로 초기화하거나 "
+                     f"--allow-repeat 로 다시 사용할 수 있습니다. 전체에서 선택합니다.")
         n = min(args.words, len(pool))
         picked = rng.sample(pool, n)
 
@@ -647,19 +884,33 @@ def main() -> None:
             sys.exit("--music-volume 은 0 초과 1 이하로 지정해 주세요.")
 
     total_dur = len(picked) * args.slide_sec
-    out = Path(args.out) if args.out else OUT_DIR / f"unit{unit_no:02d}_shorts.mp4"
+    if args.out:
+        out = Path(args.out)
+    elif args.idioms:
+        # 숙어는 유닛 번호가 없어 첫 표현을 파일명에 넣습니다(같은 파일 덮어쓰기 방지).
+        out = OUT_DIR / f"idioms_{slug(picked[0][0])}_shorts.mp4"
+    else:
+        out = OUT_DIR / f"unit{unit_no:02d}_shorts.mp4"
     out = out if out.is_absolute() else PROMO / out
     out.parent.mkdir(parents=True, exist_ok=True)
 
     log("=" * 62)
-    log("🎬 단어 카드 쇼츠 생성" + ("  (dry-run)" if args.dry_run else ""))
+    log(("🎬 숙어 카드" if args.idioms else "🎬 단어 카드") + " 쇼츠 생성"
+        + ("  (dry-run)" if args.dry_run else ""))
     log("=" * 62)
-    log(f"유닛  : UNIT {unit_no} {unit_info.get('icon', '')} {unit_info.get('title', '')}")
-    log(f"단어  : {len(picked)}개 ({', '.join(w[0] for w in picked[:6])}{' …' if len(picked) > 6 else ''})")
+    if args.idioms:
+        ranks = ", ".join(str(w[7]) for w in picked[:6]) + (" …" if len(picked) > 6 else "")
+        log(f"소스  : 숙어 {len(items)}개 중 선택 (목록 순번 {ranks})")
+    else:
+        log(f"유닛  : UNIT {unit_no} {unit_info.get('icon', '')} {unit_info.get('title', '')}")
+    log(f"{'숙어' if args.idioms else '단어'}  : {len(picked)}개 ({', '.join(w[0] for w in picked[:6])}{' …' if len(picked) > 6 else ''})")
     log(f"길이  : 약 {total_dur:.0f}초 ({len(picked)}장 × {args.slide_sec:g}초), {FPS}fps")
     log(f"출력  : {out} ({W}x{H}, 9:16 세로)")
     log(f"스타일: {args.style}")
-    log(f"음성  : {'edge-tts (' + args.voice + ')' if args.tts else '없음 (--no-tts 로 끔)'}")
+    log(f"음성  : {'edge-tts (' + ' + '.join(voices) + ')' if args.tts else '없음 (--no-tts 로 끔)'}")
+    if args.tts and len(voices) > 1:
+        log(f"        {len(voices)}개 목소리가 같은 문장을 이어 읽습니다 — 음성이 약 2배라 슬라이드가 길어집니다")
+        log("        짧게 만들려면 --words 를 줄이거나 --single-voice 로 한 목소리만 쓰세요")
     if music:
         log(f"배경음악: {music} (볼륨 {args.music_volume:g})")
     elif not args.tts and not args.no_ambient:
@@ -672,8 +923,12 @@ def main() -> None:
     try:
         # ── 슬라이드 렌더링 + 프레임 출력 ──
         try:
-            slides = [render_slide(i, len(picked), unit_no, unit_info, w, args.bg, args.font, args.style)
-                      for i, w in enumerate(picked)]
+            if args.idioms:
+                slides = [render_idiom_slide(i, len(picked), w[7], w, args.bg, args.font, args.style)
+                          for i, w in enumerate(picked)]
+            else:
+                slides = [render_slide(i, len(picked), unit_no, unit_info, w, args.bg, args.font, args.style)
+                          for i, w in enumerate(picked)]
         except RuntimeError as exc:
             fail(str(exc))
             sys.exit(2)
@@ -686,7 +941,7 @@ def main() -> None:
             dur = args.slide_sec
             if args.tts and not tts_failed:
                 try:
-                    wav, dur = build_audio(picked[si][0], picked[si][4], args.voice, dur, tmp, si)
+                    wav, dur = build_audio(picked[si][0], picked[si][4], voices, dur, tmp, si)
                     if dur > args.slide_sec:
                         log(f"   · {picked[si][0]}: 음성 {dur - 0.8:.1f}초 → 슬라이드 연장")
                 except Exception as exc:
@@ -740,12 +995,20 @@ def main() -> None:
 
         size_mb = out.stat().st_size / (1024 * 1024)
         ok(f"생성 완료: {out} ({size_mb:.1f}MB, {W}x{H})")
+        write_sidecar(out, kind="idioms" if args.idioms else "unit",
+                      unit_no=None if args.idioms else unit_no,
+                      items=picked, voices=voices if args.tts else [])
         if not args.allow_repeat:
-            added = mark_words_posted(unit_no, [w[0] for w in picked])
+            added = mark_words_posted(bucket, [w[0] for w in picked])
             if added:
-                log(f"🔁 중복 방지 기록: UNIT {unit_no} 단어 {added}개 저장 ({POSTED_FILE.name})")
-        log(f"\n바로 배포: python publish.py --video {out.relative_to(PROMO)} --unit {unit_no}"
-            + (" --tts 없이 --dry-run 으로 먼저 확인!" if args.tts else " (--dry-run 으로 미리 확인 추천)"))
+                log(f"🔁 중복 방지 기록: {source_label} 항목 {added}개 저장 ({POSTED_FILE.name})")
+        rel = out.relative_to(PROMO)
+        if args.idioms:
+            log(f"\n바로 배포: python publish.py --video {rel} --idioms --dry-run"
+                "  (제목·설명은 영상 옆 메타로 자동 생성됩니다)")
+        else:
+            log(f"\n바로 배포: python publish.py --video {rel} --unit {unit_no}"
+                + (" --dry-run 으로 먼저 확인!" if args.tts else " (--dry-run 으로 미리 확인 추천)"))
     finally:
         import shutil
         shutil.rmtree(tmp, ignore_errors=True)
