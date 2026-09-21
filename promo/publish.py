@@ -8,19 +8,25 @@ toeic.monster 홍보 자동 배포 — YouTube Shorts / Instagram Reels / TikTok
   python publish.py --video assets/shorts/my.mp4 --title "제목" --desc "설명"
   python publish.py --video assets/shorts/my.mp4 --platforms yt,ig --youtube-privacy unlisted
   python publish.py --video assets/shorts/idioms_x.mp4 --idioms   # 숙어 영상용 제목·설명
+  python publish.py --video assets/shorts/quiz_x.mp4 --paraphrase # 동의어 치환 퀴즈 영상용 제목·설명
   python publish.py --dry-run                       # 업로드 없이 계획만 출력
   python publish.py --list-posted                    # 사용한 단어·게시한 영상 기록 보기
+  python publish.py --list-remaining                 # 종류별 남은 콘텐츠 수량 보기
   python publish.py --reset-posted 1                 # UNIT 1 중복 방지 기록 초기화
 
 자동 제목/설명 (우선순위):
   ① 영상 옆 메타(*.json, make_shorts.py 가 기록) — 영상에 실제로 들어간 항목이라 내용과 일치합니다.
      단어 영상: "money | TOEIC 필수 어휘 UNIT 5 | toeic.monster"
      숙어 영상: "come across 외 숙어 1개 | TOEIC 빈출 숙어 | toeic.monster"
-  ② 메타가 없으면 --unit N(data/unitNN.js) 또는 --idioms(data/idioms.js)에서 남은 항목 중 하나를 골라 생성합니다.
+  ② 메타가 없으면 --unit N(data/unitNN.js) · --idioms(data/idioms.js) ·
+     --frequency(data/extra.js frequency) · --paraphrase(data/extra.js paraphrase)에서
+     남은 항목 중 하나를 골라 생성합니다.
 
 중복 방지: 사용한 단어와 게시한 영상(내용 해시)을 promo/posted.json 에 기록해 다음
 게시에서 같은 단어·같은 숏폼을 자동으로 건너뜁니다. 다시 게시하려면 --allow-repeat,
-기록을 비우려면 --reset-posted(all, UNIT 번호, idioms)를 사용하세요.
+기록을 비우려면 --reset-posted(all, UNIT 번호, idioms, frequency, paraphrase)를 사용하세요.
+
+남은 콘텐츠: 생성·게시가 끝날 때마다 종류별 사용·남은 수량을 표시합니다(--list-posted 는 기록만).
 
 플랫폼:
   - YouTube Shorts : 공식 YouTube Data API v3 (OAuth, 무료, 하루 6개 제한)
@@ -235,6 +241,116 @@ def load_idioms():
     return None
 
 
+def extract_array_block(text: str, key: str) -> str | None:
+    """`key: [` 부터 짝이 맞는 `]` 까지 잘라냅니다(문자열 안의 대괄호는 무시)."""
+    m = re.search(r"(?m)^\s*" + re.escape(key) + r":\s*\[", text)
+    if not m:
+        return None
+    start = m.end() - 1
+    depth = 0
+    in_str = False
+    esc = False
+    for i in range(start, len(text)):
+        ch = text[i]
+        if in_str:
+            if esc:
+                esc = False
+            elif ch == "\\":
+                esc = True
+            elif ch == '"':
+                in_str = False
+        elif ch == '"':
+            in_str = True
+        elif ch == "[":
+            depth += 1
+        elif ch == "]":
+            depth -= 1
+            if depth == 0:
+                return text[start:i + 1]
+    return None
+
+
+FREQ_ROW_RE = re.compile(r'\[((?:"(?:[^"\\]|\\.)*"\s*,\s*)*"(?:[^"\\]|\\.)*")\]')
+FREQ_STR_RE = re.compile(r'"((?:[^"\\]|\\.)*)"')
+
+
+def load_frequency():
+    """data/extra.js 의 빈도순 기출 어휘를 단어장 순서 튜플로 로드합니다.
+
+    extra.js 행은 [단어, 뜻, 품사, IPA, 한글발음, 예문, 해석, 예문한글발음] 8필드이고,
+    여기서는 단어장(unitNN.js)과 같은 [단어, IPA, 한글발음, 뜻, 예문, 해석, 예문한글발음] 순서로 맞춰 줍니다.
+    아직 보강되지 않은 3필드 행은 IPA·예문을 빈 값으로 둡니다.
+    """
+    file = ROOT / "data" / "extra.js"
+    if not file.exists():
+        return None
+    text = file.read_text(encoding="utf-8")
+    block = extract_array_block(text, "frequency")
+    if not block:
+        return None
+    out = []
+    for m in FREQ_ROW_RE.finditer(block):
+        f = FREQ_STR_RE.findall(m.group(1))
+        if len(f) >= 8:
+            word, meaning, _pos, ipa, kor, ex, tr, ex_kor = f[:8]
+        elif len(f) == 3:
+            word, meaning, _pos = f
+            ipa = kor = ex = tr = ex_kor = ""
+        else:
+            continue
+        out.append([word, ipa, kor, meaning, ex, tr, ex_kor])
+    return out
+
+
+PARA_OBJ_RE = re.compile(r"\{[^{}]*\}")
+PARA_STR_RE = re.compile(r'"((?:[^"\\]|\\.)*)"')
+
+
+def load_paraphrase():
+    """data/extra.js 의 동의어 치환(paraphrase) 목록 로드 — 퀴즈 숏폼용 (없으면 None)."""
+    file = ROOT / "data" / "extra.js"
+    if not file.exists():
+        return None
+    text = file.read_text(encoding="utf-8")
+    block = extract_array_block(text, "paraphrase")
+    if not block:
+        return None
+    out = []
+    for m in PARA_OBJ_RE.finditer(block):
+        item = m.group(0)
+
+        def grab(key: str) -> str:
+            mm = re.search(key + r'\s*:\s*"((?:[^"\\]|\\.)*)"', item)
+            return mm.group(1) if mm else ""
+
+        opts_m = re.search(r'opts\s*:\s*\[((?:"(?:[^"\\]|\\.)*"\s*,?\s*)*)\]', item)
+        opts = PARA_STR_RE.findall(opts_m.group(1)) if opts_m else []
+        out.append({"tag": grab("tag"), "prompt": grab("prompt"),
+                    "a": grab("a"), "opts": opts, "why": grab("why")})
+    return out
+
+
+# 동의어 치환 문제의 표적 표현은 prompt 안에서 『』 로 감싸 두었습니다.
+PARA_TARGET_RE = re.compile(r"『([^』]+)』")
+
+
+def parse_target(prompt: str) -> str:
+    """prompt 한 줄에서 표적 표현(『』)만 꺼냅니다 — 중복 방지 키로 씁니다."""
+    m = PARA_TARGET_RE.search(str(prompt))
+    return m.group(1).strip() if m else ""
+
+
+def quiz_item_from(row: dict) -> dict:
+    """동의어 치환 행 → 영상 메타와 같은 모양(term·meaning·example·options)."""
+    prompt = str(row.get("prompt", ""))
+    en, _, _ko = prompt.partition("—")
+    return {"term": parse_target(prompt),
+            "meaning": str(row.get("a", "")),
+            "example": PARA_TARGET_RE.sub(lambda m: m.group(1), en).strip(),
+            "translation": str(row.get("why", "")),
+            "options": [str(o) for o in (row.get("opts") or [])]}
+
+
 def load_unit_info() -> dict:
     """index.html 의 UNITS 메타데이터(id -> {title, level, icon}) 파싱."""
     index = ROOT / "index.html"
@@ -256,6 +372,10 @@ def load_unit_info() -> dict:
 POSTED_VERSION = 1
 # 숙어 숏폼은 유닛 번호가 없어 posted.json 의 words 키로 이 이름을 씁니다.
 IDIOM_BUCKET = "idioms"
+# 빈도순 기출 어휘 숏폼도 유닛 번호가 없어 별도 키를 씁니다.
+FREQUENCY_BUCKET = "frequency"
+# 동의어 치환 퀴즈 숏폼의 키입니다.
+PARAPHRASE_BUCKET = "paraphrase"
 
 
 def normalize_word(value: str) -> str:
@@ -295,7 +415,13 @@ def posted_label(key: str) -> str:
     key = str(key)
     if key.isdigit():
         return f"UNIT {key}"
-    return "숙어" if key == IDIOM_BUCKET else key
+    if key == IDIOM_BUCKET:
+        return "숙어"
+    if key == FREQUENCY_BUCKET:
+        return "빈도 어휘"
+    if key == PARAPHRASE_BUCKET:
+        return "동의어 치환"
+    return key
 
 
 def posted_words_for_unit(unit_no: int | str) -> set[str]:
@@ -399,7 +525,7 @@ def show_posted_menu() -> None:
 
 
 def reset_posted(target: str = "all") -> None:
-    """중복 방지 기록을 초기화합니다(target=all · UNIT 번호 · idioms)."""
+    """중복 방지 기록을 초기화합니다(target=all · UNIT 번호 · idioms · frequency · paraphrase)."""
     data = load_posted()
     target = str(target or "all").strip().lower()
     if target in ("all", "전체", "*"):
@@ -417,7 +543,50 @@ def reset_posted(target: str = "all") -> None:
     if target.isdigit():
         warn(f"UNIT {target} 의 단어 기록이 없습니다.")
         return
-    warn("초기화 대상은 all, UNIT 번호, idioms 입니다.")
+    warn("초기화 대상은 all, UNIT 번호, idioms, frequency, paraphrase 입니다.")
+
+
+def content_inventory() -> list[dict]:
+    """종류별 전체·사용·남은 수량 — posted.json 의 사용 기록과 데이터 파일을 대조합니다."""
+    posted = load_posted()["words"]
+    rows = []
+
+    unit_total = unit_used = 0
+    for i in range(1, 31):
+        words = load_unit_words(i) or []
+        unit_total += len(words)
+        unit_used += min(len(posted.get(str(i), [])), len(words))
+    rows.append({"key": "unit", "label": "단어", "total": unit_total, "used": unit_used})
+
+    idioms = load_idioms() or []
+    rows.append({"key": IDIOM_BUCKET, "label": "숙어", "total": len(idioms),
+                 "used": len(posted.get(IDIOM_BUCKET, []))})
+
+    freq = load_frequency() or []
+    rows.append({"key": FREQUENCY_BUCKET, "label": "빈도 어휘", "total": len(freq),
+                 "used": len(posted.get(FREQUENCY_BUCKET, []))})
+
+    paras = load_paraphrase() or []
+    rows.append({"key": PARAPHRASE_BUCKET, "label": "동의어 치환", "total": len(paras),
+                 "used": len(posted.get(PARAPHRASE_BUCKET, []))})
+
+    for r in rows:
+        r["remaining"] = max(0, r["total"] - r["used"])
+    return rows
+
+
+def print_remaining(highlight: str | None = None) -> None:
+    """생성·게시 뒤에 남은 콘텐츠를 한눈에 보여 줍니다(중복 방지 기록 기준)."""
+    rows = content_inventory()
+    log("\n📊 남은 콘텐츠 (중복 방지 기록 기준)")
+    for r in rows:
+        mark = "   ← 이번" if highlight == r["key"] else ""
+        log(f"   · {r['label']:<7} {r['used']:>4} / {r['total']:<4} 사용 · 남음 {r['remaining']}{mark}")
+    total = sum(r["total"] for r in rows)
+    remaining = sum(r["remaining"] for r in rows)
+    log(f"   · {'합계':<7} {total - remaining:>4} / {total:<4} 사용 · 남음 {remaining}")
+    if remaining == 0:
+        warn("모든 콘텐츠를 사용했습니다 — 새 콘텐츠를 만들거나 --reset-posted 로 초기화하세요.")
 
 
 def resolve_video(args) -> Path | None:
@@ -519,11 +688,69 @@ def idioms_desc(items: list, site_url: str) -> str:
     return "\n".join(lines)
 
 
+def freq_title(items: list) -> str:
+    """빈도 어휘 영상 제목 — 첫 표제어 + 나머지 개수."""
+    terms = [str(it.get("term", "")).strip() for it in items if str(it.get("term", "")).strip()]
+    if not terms:
+        return "TOEIC 빈출 어휘 | toeic.monster"
+    if len(terms) == 1:
+        return f"{terms[0]} | TOEIC 빈출 어휘 | toeic.monster"
+    return f"{terms[0]} 외 빈출 어휘 {len(terms) - 1}개 | TOEIC 빈출 어휘 | toeic.monster"
+
+
+def freq_desc(items: list, site_url: str) -> str:
+    """빈도 어휘 영상 설명 — 표제어를 발음·뜻·예문과 함께 모두 적습니다."""
+    rows = [it for it in items if str(it.get("term", "")).strip()]
+    lines = [f"TOEIC 빈출 어휘 {len(rows)}개" if len(rows) > 1 else "TOEIC 빈출 어휘", ""]
+    for i, it in enumerate(rows, 1):
+        ipa = f" [{it['ipa']}]" if it.get("ipa") else ""
+        lines.append(f"{i}. {it.get('term', '')}{ipa} — {it.get('meaning', '')}")
+        if it.get("example"):
+            lines.append(f"   {it['example']}")
+        if it.get("translation"):
+            lines.append(f"   {it['translation']}")
+    lines.append("")
+    lines.append(f"빈출 어휘 200선과 발음까지 → {site_url.rstrip('/')}/units/frequency.html")
+    return "\n".join(lines)
+
+
+def quiz_title(items: list) -> str:
+    """동의어 치환 퀴즈 제목 — 첫 문제의 「표적어 ≈ 정답」과 나머지 문제 수."""
+    first = next((it for it in items if str(it.get("term", "")).strip()), None)
+    if not first:
+        return "TOEIC 동의어 치환 퀴즈 | toeic.monster"
+    head = f"{first.get('term', '')} ≈ {first.get('meaning', '')}".strip(" ≈")
+    if len(items) == 1:
+        return f"{head} | TOEIC 동의어 치환 퀴즈 | toeic.monster"
+    return f"{head} 외 동의어 치환 {len(items) - 1}문제 | toeic.monster"
+
+
+def quiz_desc(items: list, site_url: str) -> str:
+    """퀴즈 설명 — 영상에 들어간 문제를 보기·정답·해설까지 그대로 적습니다.
+
+    숏폼은 정답을 영상 안에서만 보여 주므로, 설명란에도 같은 내용을 남겨 다시 보기를 돕습니다.
+    """
+    rows = [it for it in items if str(it.get("term", "")).strip()]
+    lines = [f"TOEIC 동의어 치환 퀴즈 {len(rows)}문제" if len(rows) > 1 else "TOEIC 동의어 치환 퀴즈", ""]
+    letters = "ABCD"
+    for i, it in enumerate(rows, 1):
+        lines.append(f"Q{i}. {it.get('example', '')}")
+        opts = [str(o) for o in (it.get("options") or [])]
+        if opts:
+            lines.append("   " + " / ".join(f"{letters[j]}. {o}" for j, o in enumerate(opts[:4])))
+        lines.append(f"   정답: {it.get('meaning', '')}")
+        if it.get("translation"):
+            lines.append(f"   해설: {it['translation']}")
+        lines.append("")
+    lines.append(f"같은 유형 200문제 — 홈의 「동의어 치환 훈련」에서 → {site_url.rstrip('/')}/")
+    return "\n".join(lines)
+
+
 def build_meta(cfg: dict, args) -> dict:
     """제목/설명/해시태그 생성.
 
     우선순위: ① 영상 옆 메타(*.json · make_shorts.py 기록) → ② `--unit` 자동 생성
-    → ③ `--idioms` 자동 생성 → ④ 설정 기본값.
+    → ③ `--idioms` 자동 생성 → ③' `--frequency` 자동 생성 → ④ 설정 기본값.
     ①을 먼저 보는 이유: 생성기가 기록한 항목이 실제로 영상에 들어 있어서, 남은 목록에서
     무작위로 고르는 예전 방식과 달리 제목·설명이 영상 내용과 어긋나지 않습니다.
     """
@@ -536,9 +763,16 @@ def build_meta(cfg: dict, args) -> dict:
     saved = sidecar_for(args)
     items = saved.get("items") if isinstance(saved, dict) else None
     if items:
-        if str(saved.get("kind")) == "idioms":
+        kind = str(saved.get("kind"))
+        if kind == "idioms":
             title = title or idioms_title(items)
             desc = desc or idioms_desc(items, site_url)
+        elif kind == "frequency":
+            title = title or freq_title(items)
+            desc = desc or freq_desc(items, site_url)
+        elif kind == "paraphrase":
+            title = title or quiz_title(items)
+            desc = desc or quiz_desc(items, site_url)
         else:
             unit_no = saved.get("unit") if isinstance(saved.get("unit"), int) else None
             unit_info = load_unit_info().get(unit_no, {}) if unit_no else {}
@@ -591,6 +825,38 @@ def build_meta(cfg: dict, args) -> dict:
             desc = desc or idioms_desc([one], site_url)
         elif not title:
             warn("숙어 데이터를 읽지 못해 기본 제목을 사용합니다.")
+    elif getattr(args, "frequency", False):
+        # 영상 메타가 없는 영상을 위한 폴백 — 빈도순 기출 어휘에서 남은 항목 중 하나를 고릅니다.
+        rows = load_frequency() or []
+        pool = rows
+        if rows and not getattr(args, "allow_repeat", False):
+            used = posted_words_for_unit(FREQUENCY_BUCKET)
+            remaining = [r for r in rows if normalize_word(r[0]) not in used]
+            if remaining:
+                pool = remaining
+        if pool:
+            r = random.choice(pool)
+            one = {"term": r[0], "ipa": r[1], "meaning": r[3], "example": r[4], "translation": r[5]}
+            title = title or freq_title([one])
+            desc = desc or freq_desc([one], site_url)
+        elif not title:
+            warn("빈도 어휘 데이터를 읽지 못해 기본 제목을 사용합니다.")
+    elif getattr(args, "paraphrase", False):
+        # 영상 메타가 없는 퀴즈 영상을 위한 폴백 — 동의어 치환에서 남은 항목 중 하나를 고릅니다.
+        rows = load_paraphrase() or []
+        pool = [r for r in rows if str(r.get("prompt", "")).strip()]
+        if pool and not getattr(args, "allow_repeat", False):
+            used = posted_words_for_unit(PARAPHRASE_BUCKET)
+            remaining = [r for r in pool if normalize_word(parse_target(r["prompt"])) not in used]
+            if remaining:
+                pool = remaining
+        if pool:
+            r = random.choice(pool)
+            one = quiz_item_from(r)
+            title = title or quiz_title([one])
+            desc = desc or quiz_desc([one], site_url)
+        elif not title:
+            warn("동의어 치환 데이터를 읽지 못해 기본 제목을 사용합니다.")
 
     title = (title or cfg.get("default_title", "TOEIC 필수 어휘 | toeic.monster")).strip()[:100]
     desc = (desc or cfg.get("default_description", "")).strip()
@@ -1614,7 +1880,11 @@ def probe_video_info(video: Path) -> dict:
 
 def describe_saved_meta(saved: dict) -> str:
     """영상 메타를 메뉴 안내용 한 줄로 만듭니다(예: 숙어 · 항목 5개)."""
-    where = "숙어" if str(saved.get("kind")) == "idioms" else f"UNIT {saved.get('unit')}"
+    kind = str(saved.get("kind"))
+    where = ("숙어" if kind == "idioms"
+             else "빈도 어휘" if kind == "frequency"
+             else "동의어 치환" if kind == "paraphrase"
+             else f"UNIT {saved.get('unit')}")
     return f"{where} · 항목 {len(saved.get('items') or [])}개"
 
 
@@ -2181,6 +2451,11 @@ def interactive_menu() -> None:
         log(" 19. 수동 게시 도우미 (업로드 페이지 열기 + 캡션 복사)")
         log(" 20. 숙어 쇼츠 생성")
         log(" 21. 숙어 쇼츠 생성 후 게시")
+        log(" 22. 빈도 어휘 쇼츠 생성")
+        log(" 23. 빈도 어휘 쇼츠 생성 후 게시")
+        log(" 24. 동의어 치환 퀴즈 쇼츠 생성")
+        log(" 25. 동의어 치환 퀴즈 쇼츠 생성 후 게시")
+        log(" 26. 남은 콘텐츠 수량 보기")
         log("  0. 종료")
         action = ask_menu("메뉴", menu_default)
         if action == "0":
@@ -2293,8 +2568,11 @@ def interactive_menu() -> None:
         if action == "16":
             show_posted_menu()
             continue
+        if action == "26":
+            print_remaining()
+            continue
         if action == "17":
-            target = ask_menu("초기화 대상 (all · UNIT 번호 · idioms)", "all")
+            target = ask_menu("초기화 대상 (all · UNIT 번호 · idioms · frequency · paraphrase)", "all")
             if ask_yes_no("중복 방지 기록을 초기화할까요?", False):
                 reset_posted(target)
             continue
@@ -2346,10 +2624,14 @@ def interactive_menu() -> None:
             log("예약 시각에 이 명령을 실행해야 게시됩니다: python publish.py --run-due")
             continue
 
-        idioms = action in ("20", "21")
-        unit = None if idioms else choose_unit(default_unit)
+        # 20·21 숙어, 22·23 빈도 어휘, 24·25 동의어 치환 퀴즈, 나머지(1·3) 단어 —
+        # 같은 흐름을 종류만 바꿔 돕니다.
+        kind = ("idioms" if action in ("20", "21")
+                else "frequency" if action in ("22", "23")
+                else "paraphrase" if action in ("24", "25") else "unit")
+        unit = choose_unit(default_unit) if kind == "unit" else None
         video = None
-        if action in ("1", "3", "20", "21"):
+        if action in ("1", "3", "20", "21", "22", "23", "24", "25"):
             words = str(ask_int("영상에 넣을 항목 수(1~10)", default_words, 1, 10))
             themes, styles = make_short_choices()
             theme = ask_menu(f"배경 테마({'/'.join(themes)})", default_theme).lower()
@@ -2362,8 +2644,12 @@ def interactive_menu() -> None:
                 style = ask_menu("카드 스타일", default_style).lower()
             command = [sys.executable, str(PROMO / "make_shorts.py"),
                        "--words", words, "--bg", theme, "--style", style]
-            if idioms:
+            if kind == "idioms":
                 command.append("--idioms")
+            elif kind == "frequency":
+                command.append("--frequency")
+            elif kind == "paraphrase":
+                command.append("--paraphrase")
             else:
                 command.extend(["--unit", str(unit)])
             if ask_yes_no("영어 TTS를 추가할까요?", default_tts):
@@ -2386,15 +2672,15 @@ def interactive_menu() -> None:
             if not run_menu_command(command):
                 fail("쇼츠 생성에 실패해 게시를 중단합니다.")
                 continue
-            if idioms:
-                # 숙어 영상은 파일명이 첫 표현을 따르므로 시작 시각 이후 생성물을 찾습니다.
+            if kind == "unit":
+                video = PROMO / "assets" / "shorts" / f"unit{unit:02d}_shorts.mp4"
+            else:
+                # 숙어·빈도·퀴즈 영상은 파일명이 첫 항목을 따르므로 시작 시각 이후 생성물을 찾습니다.
                 video = newest_video_since(started)
                 if video is None:
-                    fail("생성된 숙어 영상을 찾지 못했습니다.")
+                    fail("생성된 영상을 찾지 못했습니다.")
                     continue
-            else:
-                video = PROMO / "assets" / "shorts" / f"unit{unit:02d}_shorts.mp4"
-            if action in ("1", "20"):
+            if action in ("1", "20", "22", "24"):
                 ok(f"쇼츠 생성 완료: {video}")
                 continue
         else:
@@ -2423,8 +2709,12 @@ def interactive_menu() -> None:
         dry_run = ask_yes_no("먼저 미리보기(dry-run)로 확인할까요?", True)
         command = [sys.executable, str(PROMO / "publish.py"), "--non-interactive", "--video", str(video),
                    "--platforms", platforms, "--youtube-privacy", privacy]
-        if idioms:
+        if kind == "idioms":
             command.append("--idioms")   # 영상 메타가 없을 때를 위한 폴백
+        elif kind == "frequency":
+            command.append("--frequency")
+        elif kind == "paraphrase":
+            command.append("--paraphrase")
         elif unit:
             command.extend(["--unit", str(unit)])
         if ask_yes_no("이미 게시한 영상도 다시 게시할까요?", False):
@@ -2456,8 +2746,12 @@ def main() -> None:
     )
     ap.add_argument("--video", help="업로드할 영상 (기본: assets/shorts/ 의 가장 최근 mp4)")
     ap.add_argument("--unit", type=int, help="자동 제목 생성용 유닛 번호 (1~30)")
+    ap.add_argument("--frequency", action="store_true",
+                    help="빈도순 기출 어휘 200선(data/extra.js frequency) 영상 제목·설명")
     ap.add_argument("--idioms", action="store_true",
                     help="숙어 영상용 제목·설명 자동 생성 (data/idioms.js 기준)")
+    ap.add_argument("--paraphrase", action="store_true",
+                    help="동의어 치환 퀴즈 영상용 제목·설명 자동 생성 (data/extra.js paraphrase 기준)")
     ap.add_argument("--title", help="제목 직접 지정 (기본: 자동 생성)")
     ap.add_argument("--desc", help="설명 직접 지정")
     ap.add_argument("--platforms", default="auto", help="yt,ig,tt (기본: config 에서 enabled 인 플랫폼)")
@@ -2479,8 +2773,10 @@ def main() -> None:
     ap.add_argument("--history", action="store_true", help="최근 게시 이력 CSV 출력")
     ap.add_argument("--list-posted", action="store_true",
                     help="사용한 단어·게시한 영상 기록 출력 (중복 방지)")
+    ap.add_argument("--list-remaining", action="store_true",
+                    help="종류별 남은 콘텐츠 수량만 출력 (단어·숙어·빈도·동의어 치환)")
     ap.add_argument("--reset-posted", nargs="?", const="all", metavar="UNIT|idioms|all",
-                    help="중복 방지 기록 초기화 (기본 all, UNIT 번호 또는 idioms 지정 가능)")
+                    help="중복 방지 기록 초기화 (기본 all, UNIT 번호·idioms·frequency·paraphrase 지정 가능)")
     ap.add_argument("--init-config", action="store_true", help="config.example.json에서 config.json 생성")
     ap.add_argument("--check", action="store_true", help="설정·의존성·폴더 상태 점검")
     ap.add_argument("--edit-config", action="store_true", help="터미널에서 설정 편집")
@@ -2542,6 +2838,10 @@ def main() -> None:
         return
     if args.list_posted:
         show_posted_menu()
+        return
+    if args.list_remaining:
+        # 생성·게시 없이 남은 수량만 보는 용도 — 종류별 전체·사용·남음을 표로 보여 줍니다.
+        print_remaining()
         return
     if args.reset_posted:
         reset_posted(args.reset_posted)
@@ -2711,12 +3011,22 @@ def publish_single(cfg: dict, args, video: Path) -> None:
         log("\n실제 업로드하려면 --dry-run 을 빼고 실행하세요.")
         if getattr(args, "idioms", False):
             flag = " --idioms"
+        elif getattr(args, "frequency", False):
+            flag = " --frequency"
+        elif getattr(args, "paraphrase", False):
+            flag = " --paraphrase"
         elif args.unit:
             flag = f" --unit {args.unit}"
         else:
             # 영상 옆 메타(*.json)가 제목·설명을 만들므로 다시 돌릴 때 UNIT 이 필요 없습니다.
             flag = ""
         log(f"예: python publish.py --video {video.relative_to(PROMO)}{flag}")
+
+    highlight = (IDIOM_BUCKET if getattr(args, "idioms", False)
+                 else FREQUENCY_BUCKET if getattr(args, "frequency", False)
+                 else PARAPHRASE_BUCKET if getattr(args, "paraphrase", False)
+                 else "unit" if getattr(args, "unit", None) else None)
+    print_remaining(highlight)
 
 
 _yt_privacy_override: str | None = None

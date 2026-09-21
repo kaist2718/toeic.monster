@@ -179,6 +179,8 @@ ol.words li{background:var(--card);border:1px solid var(--border);border-radius:
 .w-row{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;margin-bottom:5px}
 .w-word{font-size:19px;font-weight:800;color:var(--primary-dark);letter-spacing:-.3px;word-break:break-word}
 .w-ipa{font-size:13px;color:var(--muted)}
+/* 품사 칩 — 빈도순 어휘 카드에서만 씁니다(유닛 카드는 품사 대신 발음기호를 씁니다). */
+.w-pos{font-size:12px;font-weight:700;color:var(--muted);background:var(--soft);border-radius:6px;padding:1px 7px;margin-left:6px}
 .w-kr{font-size:13.5px;font-weight:700;color:var(--kpron-text);background:var(--kpron-bg);border-radius:6px;padding:1px 7px}
 .w-mean{font-size:15px;font-weight:700;margin-bottom:6px}
 .w-ex{font-size:13.5px;font-style:italic;color:var(--ex-text)}
@@ -462,9 +464,10 @@ ${chapterBar ? CHAPTER_BAR + "\n" : ""}</body>
  * 페이지가 같은 2.3KB 를 각각 받지 않도록, 페이지는 defer 로 그 파일을 불러옵니다.
  */
 /** 📘 버튼을 예문 옆에 붙입니다(듣기 대상 문장은 data-say 에 담습니다). */
-function speakBtn(text) {
+/** kind: 읽어 주는 대상의 이름 — 대부분 예문이지만 빈도순 어휘 카드는 단어를 읽습니다. */
+function speakBtn(text, kind = "예문") {
   // 같은 문장이 여러 번 나오므로, 낭독기에서 어떤 문장인지 구분되도록 문장을 라벨에 넣습니다.
-  return ` <button type="button" class="gex-speak" data-say="${esc(text)}" aria-label="예문 듣기: ${esc(text)}" title="예문 듣기">🔊</button>`;
+  return ` <button type="button" class="gex-speak" data-say="${esc(text)}" aria-label="${kind} 듣기: ${esc(text)}" title="${kind} 듣기">🔊</button>`;
 }
 
 /**
@@ -507,6 +510,29 @@ function wordItem(w) {
         <p class="w-expron">${esc(exPron || "")}</p>
         <p class="w-exko">${esc(exKo)}</p>
       </li>`;
+}
+
+/**
+ * 빈도순 어휘 한 줄 카드.
+ * 예문 보강 전에는 [단어, 뜻, 품사] 3필드뿐이라 예전처럼 짧게 그리고, 보강된 뒤에는
+ * 유닛 카드와 같은 밀도(발음기호 · 한글 발음 · 예문 · 해석)로 그립니다.
+ */
+function freqItem(w, rank) {
+  const [word, mean, pos, ipa, kpron, ex, exKo, exPron] = w;
+  const enriched = typeof ipa === "string" && ipa !== "" && typeof ex === "string" && ex !== "";
+  if (!enriched) {
+    return `    <li>
+      <div class="w-row"><span class="w-kr">${rank}위</span><span class="w-word" lang="en">${esc(word)}</span><span class="w-ipa">${esc(pos)}</span></div>
+      <p class="w-mean">${esc(mean)}${speakBtn(word, "단어")}</p>
+    </li>`;
+  }
+  return `    <li>
+      <div class="w-row"><span class="w-kr">${rank}위</span><span class="w-word" lang="en">${esc(word)}</span><span class="w-ipa" lang="en">${esc(ipa)}</span>${kpron ? `<span class="w-kr">${esc(kpron)}</span>` : ""}</div>
+      <p class="w-mean">${esc(mean)}<span class="w-pos">${esc(pos)}</span>${speakBtn(word, "단어")}</p>
+      <p class="w-ex" lang="en">${esc(ex)}</p>
+${exPron ? `      <p class="w-expron">${esc(exPron)}</p>
+` : ""}      <p class="w-exko">${esc(exKo)}</p>
+    </li>`;
 }
 
 /**
@@ -841,7 +867,7 @@ function buildFrequencyPage(freq, units) {
   const title = `TOEIC 빈출 어휘 ${n}선 — 빈도순 필수 단어 목록 | toeic.monster`;
   const description =
     `토익에 반복 출제되는 어휘 ${n}개를 빈도순으로 정리했습니다. ` +
-    "단어·품사·뜻을 한 줄씩 확인하며 앞에서부터 외우고, 발음 버튼으로 소리까지 들어 보세요.";
+    "단어·발음기호·품사·뜻과 예문·해석을 한 줄씩 확인하며 앞에서부터 외워 보세요.";
 
   // 화면과 구조화 데이터가 같은 문답을 쓰도록 한 곳에서 만듭니다(둘이 어긋나면 검색엔진이 신뢰하지 않습니다).
   const FAQ = [
@@ -932,10 +958,7 @@ function buildFrequencyPage(freq, units) {
     const items = freq
       .slice(start, end)
       .map(
-        (w, i) => `    <li>
-      <div class="w-row"><span class="w-kr">${start + i + 1}위</span><span class="w-word" lang="en">${esc(w[0])}</span><span class="w-ipa">${esc(w[2])}</span></div>
-      <p class="w-mean">${esc(w[1])}${speakBtn(w[0])}</p>
-    </li>`,
+        (w, i) => freqItem(w, start + i + 1),
       )
       .join("\n");
     groups.push(
@@ -951,7 +974,7 @@ function buildFrequencyPage(freq, units) {
   </nav>
 
   <h1>TOEIC 빈출 어휘 ${n}선 — 빈도순 필수 단어 목록</h1>
-  <p class="lead">토익에 반복 출제되는 어휘 ${n}개를 빈도 감각 순서로 정리했습니다. 단어·품사·뜻을 한 줄씩 확인하며 앞에서부터 외우고, 🔊 버튼으로 소리까지 들어 보세요.</p>
+  <p class="lead">토익에 반복 출제되는 어휘 ${n}개를 빈도 감각 순서로 정리했습니다. 단어마다 발음기호·한글 발음·품사·뜻에 TOEIC 문맥 예문과 해석까지 함께 실었습니다. 앞에서부터 외우고, 🔊 버튼으로 소리까지 들어 보세요.</p>
   <a class="cta" href="../">🃏 암기 카드·퀴즈로 바로 학습하기</a>
 
   <h2 class="sec">왜 빈도순으로 외워야 하나요?</h2>
@@ -972,7 +995,7 @@ ${bullets([
 ])}
 
   <h2 class="sec">빈도순 기출 어휘 ${n}선</h2>
-  <p class="lead">아래로 갈수록 "알아두면 좋은" 단어에 가까워집니다. 상위 50개는 반드시, 나머지는 눈에 익히는 정도로 시작하세요.</p>
+  <p class="lead">아래로 갈수록 "알아두면 좋은" 단어에 가까워집니다. 상위 50개는 반드시, 나머지는 눈에 익히는 정도로 시작하세요. 각 카드의 예문은 그 단어가 실제 시험에서 쓰이는 자리(품사·문맥)를 그대로 보여 줍니다.</p>
   <nav class="freq-jump" aria-label="구간 이동">구간: ${groups
     .map((_, i) => `<a href="#rank-${i * 50 + 1}">${i * 50 + 1}~${Math.min(i * 50 + 50, n)}위</a>`)
     .join(" ")}</nav>

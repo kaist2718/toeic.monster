@@ -201,6 +201,29 @@ checkAnswerInOptions("extra.prepositions", extra.prepositions);
 (extra.situations || []).forEach((s, i) => {
   if (!Array.isArray(s.lines) || s.lines.length < 4) fail(`extra.situations[${i}] (${s.title}): 대화가 4줄 미만입니다.`);
 });
+// 4-3-0. 빈도순 기출 어휘 — 보강은 all-or-nothing 입니다.
+//   미보강(3필드) 또는 보강(8필드) 중 하나여야 하고, 일부만 보강된 상태는 실패로 봅니다.
+//   앞 3필드는 사이트·앱이 쓰고, 뒤 5필드는 쇼츠·예문용 보강입니다 (docs/frequency-shorts-plan.md §2).
+const freq = extra.frequency || [];
+const freqLens = [...new Set(freq.map((w) => (Array.isArray(w) ? w.length : 0)))].sort((a, b) => a - b);
+if (freqLens.length > 1 || (freqLens.length === 1 && freqLens[0] !== 3 && freqLens[0] !== 8)) {
+  fail(`data/extra.js frequency: 행 길이가 섞였거나 형식이 다릅니다 — ${freqLens.join(", ")}`);
+}
+if (freqLens[0] === 8) {
+  freq.forEach((w, i) => {
+    if (w.slice(3).some((x) => !x || !String(x).trim())) {
+      fail(`extra.frequency[${i}] (${w[0]}): 보강 필드에 빈 값이 있습니다.`);
+    }
+    const ex = String(w[5]);
+    const stem = String(w[0]).toLowerCase().slice(0, 4);
+    if (stem.length >= 3 && !ex.toLowerCase().includes(stem)) {
+      fail(`extra.frequency[${i}] (${w[0]}): 예문에 표제어가 없습니다 — ${ex}`);
+    }
+    if (ex.split(/\s+/).filter(Boolean).length < 6) {
+      fail(`extra.frequency[${i}] (${w[0]}): 예문이 6단어 미만입니다 — ${ex}`);
+    }
+  });
+}
 (extra.guides || []).forEach((g) => {
   if (!g.slug || !g.title || !Array.isArray(g.sections)) fail(`extra.guides: 형식이 불완전한 가이드 — ${g.slug || g.title}`);
 });

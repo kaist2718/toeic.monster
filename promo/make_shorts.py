@@ -52,10 +52,14 @@ except ImportError:
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from publish import (  # noqa: E402
+    FREQUENCY_BUCKET,
     IDIOM_BUCKET,
+    PARAPHRASE_BUCKET,
     POSTED_FILE,
     fail,
+    load_frequency,
     load_idioms,
+    load_paraphrase,
     load_unit_info,
     load_unit_words,
     log,
@@ -64,8 +68,13 @@ from publish import (  # noqa: E402
     now_iso,
     ok,
     posted_words_for_unit,
+    print_remaining,
     warn,
 )
+
+# 생성 종류(kind) → 남은 콘텐츠 표시에서 강조할 키
+HIGHLIGHT_KEY = {"unit": "unit", "idioms": IDIOM_BUCKET,
+                 "frequency": FREQUENCY_BUCKET, "paraphrase": PARAPHRASE_BUCKET}
 
 PROMO = Path(__file__).resolve().parent
 ROOT = PROMO.parent
@@ -625,6 +634,294 @@ def render_idiom_slide(idx: int, total: int, rank: int, wd: list,
     return img
 
 
+def render_freq_slide(idx: int, total: int, rank: int, wd: list,
+                      theme: str, font_path: str | None, style: str = "classic") -> Image.Image:
+    """빈도순 기출 어휘 카드 — 단어 카드와 같은 내용(단어·IPA·한글발음·뜻·예문·해석),
+    상단 칩만 "TOEIC 빈출 어휘" + 목록 순번입니다.
+
+    단어 카드(render_slide)와 내용은 같지만 칩 제목이 달라 함수를 나눴습니다.
+    (매일 도는 단어 영상이 빈도 작업으로 깨지지 않게 하려는 기존 밤침을 따릅니다.)
+    """
+    global ACCENT_THEME
+    ACCENT_THEME = ACCENT[theme]
+    ly = LAYOUT.get(style, LAYOUT["classic"])
+    top, bottom = THEMES[theme]
+    img = vertical_gradient((W, H), top, bottom)
+    draw = ImageDraw.Draw(img, "RGBA")
+    if ly["deco"]:
+        draw_deco(draw)
+
+    word, ipa, kor_pron, meaning, en_ex, kr_tr = wd[0], wd[1], wd[2], wd[3], wd[4], wd[5]
+
+    # ── 상단: 빈도 어휘 칩(목록 순번 뱃지) 또는 제목 텍스트 ──
+    title_font = load_font(font_path, 40, bold=True)
+    title = "TOEIC 빈출 어휘"
+    if ly["chip"]:
+        chip = (255, 255, 255, 36)
+        tw = text_width(draw, title, title_font)
+        badge_w = 80
+        chip_w = int(22 + badge_w + 24 + tw + 40)
+        cx0 = W // 2 - chip_w // 2
+        draw.rounded_rectangle([cx0, 96, cx0 + chip_w, 174], radius=39, fill=chip)
+        draw.rounded_rectangle([cx0 + 22, 100, cx0 + 22 + badge_w, 170], radius=35,
+                               fill=ACCENT_THEME + (255,))
+        num = str(rank)
+        num_font = load_font(font_path, 42, bold=True)
+        nw = text_width(draw, num, num_font)
+        draw_text_rich(draw, num, num_font, (255, 255, 255), y=108,
+                       x=cx0 + 22 + (badge_w - nw) / 2)
+        draw_text_rich(draw, title, title_font, (255, 255, 255), y=113,
+                       x=cx0 + 22 + badge_w + 24)
+    elif ly["unit_y"]:
+        draw_text_rich(draw, title, title_font, (255, 255, 255, 190), y=ly["unit_y"])
+
+    # ── modern: 글래스 카드 + 좌측 액센트 바 ──
+    if ly["card"]:
+        draw.rounded_rectangle([60, 180, W - 60, 1700], radius=56, fill=(255, 255, 255, 22))
+        draw.rounded_rectangle([60, 180, 96, 1700], radius=18, fill=ACCENT_THEME + (70,))
+
+    # ── 단어 ──
+    word_font = load_font(font_path, 148, bold=True)
+    word_w = text_width(draw, word, word_font)
+    while word_w > W - 140 and word_font.size > 60:
+        word_font = load_font(font_path, word_font.size - 12, bold=True)
+        word_w = text_width(draw, word, word_font)
+    draw_text_rich(draw, word, word_font, (255, 255, 255), y=ly["word_y"])
+
+    # ── IPA + 한글 발음 ──
+    ipa_font = load_font(font_path, 54, bold=False)
+    y = ly["ipa_y"]
+    if ipa:
+        if ly["ipa_pill"]:
+            y = draw_pill(draw, W // 2, y, ipa, ipa_font, (235, 240, 255), (0, 0, 0, 70))
+        else:
+            draw_text_rich(draw, ipa, ipa_font, (215, 225, 250), y=y)
+            y += 80
+    pron_font = load_font(font_path, 46, bold=False)
+    if kor_pron:
+        draw_text_rich(draw, f"발음: {kor_pron}", pron_font, (215, 225, 250), y=y + ly["pron_dy"])
+
+    # ── 구분선 ──
+    draw.line([200, ly["line_y"], W - 200, ly["line_y"]], fill=(255, 255, 255, 70), width=3)
+
+    # ── 뜻 ──
+    mean_font = load_font(font_path, 88, bold=True)
+    mw = text_width(draw, meaning, mean_font)
+    while mw > W - 160 and mean_font.size > 44:
+        mean_font = load_font(font_path, mean_font.size - 8, bold=True)
+        mw = text_width(draw, meaning, mean_font)
+    draw_text_rich(draw, meaning, mean_font, ACCENT_THEME, y=ly["mean_y"])
+
+    # ── 예문 ──
+    label_font = load_font(font_path, 34, bold=True)
+    draw_text_rich(draw, "TOEIC 예문", label_font, (255, 255, 255, 190), y=ly["label_y"], x=120)
+    en_font = load_font(font_path, 50, bold=False)
+    en_lines = wrap_text(en_ex, en_font, W - 240, draw)
+    while len(en_lines) > 5 and en_font.size > 30:
+        en_font = load_font(font_path, en_font.size - 4, bold=False)
+        en_lines = wrap_text(en_ex, en_font, W - 240, draw)
+    y = ly["en_y"]
+    for line in en_lines[:5]:
+        draw_text_rich(draw, line, en_font, (255, 255, 255), y=y, x=120)
+        y += ly["en_dy"]
+
+    # ── 해석 ──
+    tr_font = load_font(font_path, 40, bold=False)
+    tr_lines = wrap_text(kr_tr, tr_font, W - 240, draw)
+    while len(tr_lines) > 3 and tr_font.size > 26:
+        tr_font = load_font(font_path, tr_font.size - 4, bold=False)
+        tr_lines = wrap_text(kr_tr, tr_font, W - 240, draw)
+    y = min(y + 30, ly["tr_max_y"])
+    for line in tr_lines[:3]:
+        draw_text_rich(draw, line, tr_font, (200, 210, 235), y=y, x=120)
+        y += ly["tr_dy"]
+
+    # ── 푸터 ──
+    foot_font = load_font(font_path, 44, bold=True)
+    draw_text_rich(draw, "toeic.monster", foot_font, (255, 255, 255), y=1745)
+    draw_dots(draw, total, idx)
+    return img
+
+
+# --------------------------------------------------- 동의어 치환 퀴즈 ----
+# extra.js 의 paraphrase 항목은 prompt 한 줄에 「영어 문장 — 한국어 발문」이 함께 들어 있고,
+# 표적 표현은 『』 로 감싸 두었습니다. 아래 도우미가 그 한 줄을 슬라이드가 쓸 조각으로 나눕니다.
+TARGET_RE = re.compile(r"『([^』]+)』")
+
+
+def parse_paraphrase(item: dict) -> dict:
+    """동의어 치환 항목 → {문장, 표적 표현, 발문, 보기, 정답, 해설}."""
+    prompt = str(item.get("prompt", ""))
+    en, _, ko = prompt.partition("—")
+    en, ko = en.strip(), ko.strip()
+    m = TARGET_RE.search(en)
+    target = m.group(1).strip() if m else ""
+    sentence = TARGET_RE.sub(lambda mm: mm.group(1), en).strip()   # 『』 표시만 벗깁니다
+    if not ko:
+        ko = f"{target}와 의미가 가장 가까운 것은?" if target else "의미가 가장 가까운 것은?"
+    return {"sentence": sentence, "target": target, "question": ko,
+            "opts": [str(o) for o in (item.get("opts") or [])],
+            "a": str(item.get("a", "")), "why": str(item.get("why", "")),
+            "tag": str(item.get("tag", ""))}
+
+
+def wrap_phrases(text: str, keep: str, font, max_width: int, draw) -> list[str]:
+    """단어 경계로 줄을 바꾸고, keep 구문은 한 줄에 통으로 남깁니다.
+
+    보기·강조 구문처럼 단어 중간이 끊기면 읽기 어렵거나 강조가 어긋나는 곳에 씁니다.
+    (카드 본문은 글자 단위로 끊는 wrap_text 를 그대로 씁니다.)
+    """
+    marked = text.replace(keep, keep.replace(" ", "\x00")) if keep else text
+    lines: list[str] = []
+    cur = ""
+    for word in marked.split(" "):
+        test = f"{cur} {word}".strip()
+        if cur and text_width(draw, test.replace("\x00", " "), font) > max_width:
+            lines.append(cur.replace("\x00", " "))
+            cur = word
+        else:
+            cur = test
+    if cur:
+        lines.append(cur.replace("\x00", " "))
+    return lines
+
+
+def draw_quiz_chip(draw, font_path: str | None, title: str, badge: str) -> None:
+    """퀴즈 슬라이드 상단 칩(뱃지 + 제목) — 카드 칩과 같은 모양을 씁니다."""
+    title_font = load_font(font_path, 40, bold=True)
+    tw = text_width(draw, title, title_font)
+    badge_w = 84
+    chip_w = int(22 + badge_w + 24 + tw + 40)
+    cx0 = W // 2 - chip_w // 2
+    draw.rounded_rectangle([cx0, 96, cx0 + chip_w, 174], radius=39, fill=(255, 255, 255, 36))
+    draw.rounded_rectangle([cx0 + 22, 100, cx0 + 22 + badge_w, 170], radius=35,
+                           fill=ACCENT_THEME + (255,))
+    badge_font = load_font(font_path, 38, bold=True)
+    bw = text_width(draw, badge, badge_font)
+    draw_text_rich(draw, badge, badge_font, (255, 255, 255), y=110,
+                   x=cx0 + 22 + (badge_w - bw) / 2)
+    draw_text_rich(draw, title, title_font, (255, 255, 255), y=113,
+                   x=cx0 + 22 + badge_w + 24)
+
+
+def draw_quiz_lines(draw, lines: list[str], target: str, font, y: float,
+                    line_dy: float, base, hl) -> float:
+    """줄 목록을 가운데 정렬로 그립니다. target 이 있으면 그 부분만 강조 색 + 밑줄로 표시합니다."""
+    for line in lines:
+        lw = text_width(draw, line, font)
+        i = line.find(target) if target else -1
+        if i >= 0:
+            x = (W - lw) / 2
+            for part, color in ((line[:i], base), (line[i:i + len(target)], hl),
+                                (line[i + len(target):], base)):
+                if not part:
+                    continue
+                draw_text_rich(draw, part, font, color, y=y, x=x)
+                x += text_width(draw, part, font)
+            tx = (W - lw) / 2 + text_width(draw, line[:i], font)
+            ty = y + font.size + 10
+            draw.line([tx, ty, tx + text_width(draw, target, font), ty],
+                      fill=ACCENT_THEME + (230,), width=6)
+        else:
+            draw_text_rich(draw, line, font, base, y=y)
+        y += line_dy
+    return y
+
+
+def render_quiz_question(idx: int, total: int, rank: int, q: dict,
+                         theme: str, font_path: str | None, style: str = "classic") -> Image.Image:
+    """동의어 치환 문제 슬라이드 — 문장 속 표적 표현을 강조하고 보기 4개를 붙입니다."""
+    global ACCENT_THEME
+    ACCENT_THEME = ACCENT[theme]
+    ly = LAYOUT.get(style, LAYOUT["classic"])
+    top, bottom = THEMES[theme]
+    img = vertical_gradient((W, H), top, bottom)
+    draw = ImageDraw.Draw(img, "RGBA")
+    if ly["deco"]:
+        draw_deco(draw)
+    draw_quiz_chip(draw, font_path, "TOEIC 동의어 치환", str(rank))
+
+    # ── 발문(한국어) ──
+    q_font = load_font(font_path, 46, bold=True)
+    y = 270.0
+    for line in wrap_phrases(q["question"], "", q_font, W - 160, draw)[:2]:
+        draw_text_rich(draw, line, q_font, (206, 216, 240), y=y)
+        y += 64
+
+    # ── 영어 문장 (표적 표현 강조) ──
+    en_font = load_font(font_path, 56, bold=False)
+    lines = wrap_phrases(q["sentence"], q["target"], en_font, W - 200, draw)
+    while len(lines) > 5 and en_font.size > 34:
+        en_font = load_font(font_path, en_font.size - 4, bold=False)
+        lines = wrap_phrases(q["sentence"], q["target"], en_font, W - 200, draw)
+    y = draw_quiz_lines(draw, lines[:5], q["target"], en_font, y + 40, 82,
+                        (255, 255, 255), ACCENT_THEME)
+
+    # ── 보기 A~D ──
+    y = max(y + 60, 940.0)
+    letters = "ABCD"
+    for oi, opt in enumerate(q["opts"][:4]):
+        label = f"{letters[oi]}. {opt}"
+        opt_font = load_font(font_path, 48, bold=True)
+        while text_width(draw, label, opt_font) > W - 300 and opt_font.size > 30:
+            opt_font = load_font(font_path, opt_font.size - 4, bold=True)
+        draw.rounded_rectangle([110, y, W - 110, y + 124], radius=30, fill=(255, 255, 255, 28))
+        draw_text_rich(draw, label, opt_font, (255, 255, 255), y=y + 32, x=160)
+        y += 146
+
+    # ── 푸터 ──
+    foot_font = load_font(font_path, 44, bold=True)
+    draw_text_rich(draw, "toeic.monster", foot_font, (255, 255, 255), y=1745)
+    draw_dots(draw, total, idx)
+    return img
+
+
+def render_quiz_answer(idx: int, total: int, rank: int, q: dict,
+                       theme: str, font_path: str | None, style: str = "classic") -> Image.Image:
+    """정답·해설 슬라이드 — 정답 표현과 왜 그런지를 보여 줍니다."""
+    global ACCENT_THEME
+    ACCENT_THEME = ACCENT[theme]
+    ly = LAYOUT.get(style, LAYOUT["classic"])
+    top, bottom = THEMES[theme]
+    img = vertical_gradient((W, H), top, bottom)
+    draw = ImageDraw.Draw(img, "RGBA")
+    if ly["deco"]:
+        draw_deco(draw)
+    letters = "ABCD"
+    letter = letters[q["opts"].index(q["a"])] if q["a"] in q["opts"][:4] else ""
+    draw_quiz_chip(draw, font_path, "정답" + (f" · {letter}" if letter else ""), str(rank))
+
+    # ── 표제어 ≈ 정답 ──
+    pair = f"{q['target']} ≈ {q['a']}" if q["target"] and q["a"] else (q["a"] or q["target"])
+    pair_font = load_font(font_path, 76, bold=True)
+    while text_width(draw, pair, pair_font) > W - 140 and pair_font.size > 40:
+        pair_font = load_font(font_path, pair_font.size - 6, bold=True)
+    draw_text_rich(draw, pair, pair_font, ACCENT_THEME, y=300)
+
+    # ── 해설 ──
+    y = 470.0
+    why_font = load_font(font_path, 46, bold=False)
+    for line in wrap_phrases(q["why"], q["target"], why_font, W - 180, draw)[:4]:
+        draw_text_rich(draw, line, why_font, (235, 240, 250), y=y)
+        y += 68
+
+    # ── 원문 문장 (표적 표현 강조) ──
+    en_font = load_font(font_path, 44, bold=False)
+    lines = wrap_phrases(q["sentence"], q["target"], en_font, W - 200, draw)
+    while len(lines) > 4 and en_font.size > 30:
+        en_font = load_font(font_path, en_font.size - 4, bold=False)
+        lines = wrap_phrases(q["sentence"], q["target"], en_font, W - 200, draw)
+    y = max(y + 50, 900.0)
+    draw.line([200, y - 34, W - 200, y - 34], fill=(255, 255, 255, 70), width=3)
+    draw_quiz_lines(draw, lines[:4], q["target"], en_font, y, 66, (222, 230, 245), ACCENT_THEME)
+
+    # ── 푸터 ──
+    foot_font = load_font(font_path, 44, bold=True)
+    draw_text_rich(draw, "toeic.monster", foot_font, (255, 255, 255), y=1745)
+    draw_dots(draw, total, idx)
+    return img
+
+
 def crop_zoom(img: Image.Image, scale: float) -> Image.Image:
     """중심 기준 scale 배율만큼 확대 크롭 (Ken Burns)."""
     cw, ch = int(W / scale), int(H / scale)
@@ -748,7 +1045,7 @@ def mix_final(silent: Path, tts_wav: Path | None, music: Path | None,
 
 
 def write_sidecar(out: Path, *, kind: str, unit_no: int | None, items: list[list],
-                  voices: list[str]) -> None:
+                  voices: list[str], quiz: list[dict] | None = None) -> None:
     """영상 옆에 항목 메타(`<이름>.json`)를 남깁니다.
 
     publish.py 가 이 파일을 읽어 제목·설명을 만듭니다. 이게 없으면 게시 단계가 남은 목록에서
@@ -758,11 +1055,15 @@ def write_sidecar(out: Path, *, kind: str, unit_no: int | None, items: list[list
     data = {
         "kind": kind,
         "unit": unit_no,
-        "items": [{"term": w[0], "meaning": w[3], "example": w[4], "translation": w[5]}
+        "items": [{"term": w[0], "ipa": w[1], "meaning": w[3], "example": w[4], "translation": w[5]}
                   for w in items],
         "voices": voices,
         "created_at": now_iso(),
     }
+    if quiz:
+        # 퀴즈는 보기·발문까지 남겨야 게시 단계가 영상에 맞는 제목·설명을 만들 수 있습니다.
+        for row, extra in zip(data["items"], quiz):
+            row.update(extra)
     try:
         out.with_suffix(".json").write_text(
             json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -794,6 +1095,10 @@ def main() -> None:
     ap.add_argument("--unit", type=int, help="유닛 번호 (1~30). --idioms 를 쓰면 생략합니다")
     ap.add_argument("--idioms", action="store_true",
                     help="유닛 단어 대신 숙어 126선(data/idioms.js)에서 만듭니다")
+    ap.add_argument("--frequency", action="store_true",
+                    help="유닛 단어 대신 빈도순 기출 어휘 200선(data/extra.js frequency)에서 만듭니다")
+    ap.add_argument("--paraphrase", action="store_true",
+                    help="동의어 치환 퀴즈 숏폼(data/extra.js paraphrase)을 만듭니다 — 한 문제당 문제·정답 2장")
     ap.add_argument("--words", type=int, default=5, help="영상에 넣을 항목 수 — 단어/숙어 (기본 5)")
     ap.add_argument("--slide-sec", type=float, default=6.0, help="슬라이드당 길이 초 (기본 6)")
     ap.add_argument("--out", help="출력 mp4 경로 (기본: assets/shorts/unitNN_shorts.mp4)")
@@ -825,8 +1130,9 @@ def main() -> None:
 
     voices = resolve_voices(args.voice, args.voice2, args.single_voice)
 
-    if not args.idioms and args.unit is None:
-        sys.exit("--unit 을 지정하거나, 숙어 영상을 만들려면 --idioms 를 쓰세요.")
+    if not args.idioms and not args.frequency and not args.paraphrase and args.unit is None:
+        sys.exit("--unit 을 지정하거나, 숙어는 --idioms, 빈도 어휘는 --frequency, "
+                 "동의어 치환 퀴즈는 --paraphrase 를 쓰세요.")
 
     if args.idioms:
         rows = load_idioms() or []
@@ -844,6 +1150,38 @@ def main() -> None:
         bucket: int | str = IDIOM_BUCKET  # posted.json 의 words 키
         unit_no, unit_info = 0, {}
         source_label = "숙어"
+        kind = "idioms"
+    elif args.frequency:
+        rows = load_frequency() or []
+        if not rows:
+            sys.exit("빈도 어휘 데이터를 읽을 수 없습니다 (data/extra.js frequency 확인).")
+        # [단어, IPA, 한글발음, 뜻, 예문, 해석, 예문한글발음] + 목록 순번(칩 뱃지용)
+        items = [[str(r[0]), str(r[1]), str(r[2]), str(r[3]), str(r[4]), str(r[5]), str(r[6]), i + 1]
+                 for i, r in enumerate(rows)]
+        bucket: int | str = FREQUENCY_BUCKET  # posted.json 의 words 키
+        unit_no, unit_info = 0, {}
+        source_label = "빈도 어휘"
+        kind = "frequency"
+    elif args.paraphrase:
+        rows = load_paraphrase() or []
+        if not rows:
+            sys.exit("동의어 치환 데이터를 읽을 수 없습니다 (data/extra.js paraphrase 확인).")
+        # 단어 카드와 같은 8칸 모양으로 늘려 TTS·중복 기록이 같은 자리를 쓰게 하고,
+        # 퀴즈에만 필요한 조각(보기·발문)은 9번째 칸에 답습니다.
+        items = []
+        for r in rows:
+            q = parse_paraphrase(r)
+            if not q["sentence"] or not q["a"] or len(q["opts"]) < 2:
+                continue
+            items.append([q["target"], "", "", q["a"], q["sentence"], q["why"], "",
+                          len(items) + 1, q])
+        if not items:
+            sys.exit("쓸 수 있는 동의어 치환 항목이 없습니다 (prompt·opts·정답 확인).")
+        bucket: int | str = PARAPHRASE_BUCKET  # posted.json 의 words 키
+        unit_no, unit_info = 0, {}
+        source_label = "동의어 치환"
+        kind = "paraphrase"
+        log(f"퀴즈 항목 {len(items)}개 (전체 {len(rows)}개 중 사용 가능)")
     else:
         unit_no = args.unit
         words = load_unit_words(unit_no)
@@ -853,6 +1191,7 @@ def main() -> None:
         bucket = unit_no
         unit_info = load_unit_info().get(unit_no, {})
         source_label = f"UNIT {unit_no}"
+        kind = "unit"
 
     rng = random.Random(args.seed)
     if args.index is not None:
@@ -883,28 +1222,39 @@ def main() -> None:
         if not 0.0 < args.music_volume <= 1.0:
             sys.exit("--music-volume 은 0 초과 1 이하로 지정해 주세요.")
 
-    total_dur = len(picked) * args.slide_sec
+    # 퀴즈는 한 문제가 「문제 → 정답」 두 장이라 슬라이드 수가 항목 수의 두 배입니다.
+    slide_count = len(picked) * (2 if args.paraphrase else 1)
+    total_dur = slide_count * args.slide_sec
     if args.out:
         out = Path(args.out)
     elif args.idioms:
         # 숙어는 유닛 번호가 없어 첫 표현을 파일명에 넣습니다(같은 파일 덮어쓰기 방지).
         out = OUT_DIR / f"idioms_{slug(picked[0][0])}_shorts.mp4"
+    elif args.frequency:
+        # 빈도 어휘도 유닛 번호가 없어 첫 표제어를 파일명에 넣습니다.
+        out = OUT_DIR / f"frequency_{slug(picked[0][0])}_shorts.mp4"
+    elif args.paraphrase:
+        # 퀴즈도 유닛 번호가 없어 첫 표적 표현을 파일명에 넣습니다.
+        out = OUT_DIR / f"quiz_{slug(picked[0][0])}_shorts.mp4"
     else:
         out = OUT_DIR / f"unit{unit_no:02d}_shorts.mp4"
     out = out if out.is_absolute() else PROMO / out
     out.parent.mkdir(parents=True, exist_ok=True)
 
     log("=" * 62)
-    log(("🎬 숙어 카드" if args.idioms else "🎬 단어 카드") + " 쇼츠 생성"
-        + ("  (dry-run)" if args.dry_run else ""))
+    card_label = {"idioms": "숙어 카드", "frequency": "빈도 어휘 카드",
+                  "paraphrase": "동의어 치환 퀴즈"}.get(kind, "단어 카드")
+    log(f"🎬 {card_label} 쇼츠 생성" + ("  (dry-run)" if args.dry_run else ""))
     log("=" * 62)
-    if args.idioms:
-        ranks = ", ".join(str(w[7]) for w in picked[:6]) + (" …" if len(picked) > 6 else "")
-        log(f"소스  : 숙어 {len(items)}개 중 선택 (목록 순번 {ranks})")
-    else:
+    if kind == "unit":
         log(f"유닛  : UNIT {unit_no} {unit_info.get('icon', '')} {unit_info.get('title', '')}")
-    log(f"{'숙어' if args.idioms else '단어'}  : {len(picked)}개 ({', '.join(w[0] for w in picked[:6])}{' …' if len(picked) > 6 else ''})")
-    log(f"길이  : 약 {total_dur:.0f}초 ({len(picked)}장 × {args.slide_sec:g}초), {FPS}fps")
+    else:
+        ranks = ", ".join(str(w[7]) for w in picked[:6]) + (" …" if len(picked) > 6 else "")
+        log(f"소스  : {source_label} {len(items)}개 중 선택 (목록 순번 {ranks})")
+    log(f"{source_label if kind != 'unit' else '단어'}  : {len(picked)}개 ({', '.join(w[0] for w in picked[:6])}{' …' if len(picked) > 6 else ''})")
+    if kind == "paraphrase":
+        log(f"구성  : 문제 {len(picked)}개 · 슬라이드 {slide_count}장 (문제 → 정답 순서)")
+    log(f"길이  : 약 {total_dur:.0f}초 ({slide_count}장 × {args.slide_sec:g}초), {FPS}fps")
     log(f"출력  : {out} ({W}x{H}, 9:16 세로)")
     log(f"스타일: {args.style}")
     log(f"음성  : {'edge-tts (' + ' + '.join(voices) + ')' if args.tts else '없음 (--no-tts 로 끔)'}")
@@ -917,18 +1267,32 @@ def main() -> None:
         log("배경음악: 기본 앰비언트 사운드 (--no-ambient 로 끄기)")
     if args.dry_run:
         log("\n실제 생성하려면 --dry-run 을 빼고 실행하세요.")
+        print_remaining(HIGHLIGHT_KEY.get(kind))
         return
 
     tmp = Path(tempfile.mkdtemp(prefix="toeic_shorts_"))
     try:
         # ── 슬라이드 렌더링 + 프레임 출력 ──
+        # (그림, (낭독할 낱말, 낭독할 문장)) 쌍으로 만들어 두면 아래 루프가 종류를 몰라도 됩니다.
+        # 퀴즈는 한 문제가 문제·정답 두 장이라 picked 와 길이가 다릅니다.
+        plan: list[tuple[Image.Image, tuple[str, str]]] = []
         try:
-            if args.idioms:
-                slides = [render_idiom_slide(i, len(picked), w[7], w, args.bg, args.font, args.style)
-                          for i, w in enumerate(picked)]
+            if args.paraphrase:
+                for i, w in enumerate(picked):
+                    q = w[8]
+                    plan.append((render_quiz_question(i * 2, slide_count, w[7], q, args.bg, args.font, args.style),
+                                 (q["target"], q["sentence"])))
+                    plan.append((render_quiz_answer(i * 2 + 1, slide_count, w[7], q, args.bg, args.font, args.style),
+                                 (q["a"], "")))
+            elif args.idioms:
+                plan = [(render_idiom_slide(i, len(picked), w[7], w, args.bg, args.font, args.style),
+                         (w[0], w[4])) for i, w in enumerate(picked)]
+            elif args.frequency:
+                plan = [(render_freq_slide(i, len(picked), w[7], w, args.bg, args.font, args.style),
+                         (w[0], w[4])) for i, w in enumerate(picked)]
             else:
-                slides = [render_slide(i, len(picked), unit_no, unit_info, w, args.bg, args.font, args.style)
-                          for i, w in enumerate(picked)]
+                plan = [(render_slide(i, len(picked), unit_no, unit_info, w, args.bg, args.font, args.style),
+                         (w[0], w[4])) for i, w in enumerate(picked)]
         except RuntimeError as exc:
             fail(str(exc))
             sys.exit(2)
@@ -937,13 +1301,13 @@ def main() -> None:
         frame_files: list[Path] = []
         prev_last = None
         tts_failed = False
-        for si, slide in enumerate(slides):
+        for si, (slide, say) in enumerate(plan):
             dur = args.slide_sec
             if args.tts and not tts_failed:
                 try:
-                    wav, dur = build_audio(picked[si][0], picked[si][4], voices, dur, tmp, si)
+                    wav, dur = build_audio(say[0], say[1], voices, dur, tmp, si)
                     if dur > args.slide_sec:
-                        log(f"   · {picked[si][0]}: 음성 {dur - 0.8:.1f}초 → 슬라이드 연장")
+                        log(f"   · {say[0]}: 음성 {dur - 0.8:.1f}초 → 슬라이드 연장")
                 except Exception as exc:
                     tts_failed = True
                     warn(f"TTS 음성 생성 실패({exc}) — 앰비언트 사운드로 대체합니다.")
@@ -972,7 +1336,7 @@ def main() -> None:
         # ── TTS·배경음악·앰비언트 병합 ──
         tts_wav = None
         if args.tts and not tts_failed:
-            audio_files = [tmp / f"audio_{i}.wav" for i in range(len(picked))]
+            audio_files = [tmp / f"audio_{i}.wav" for i in range(len(plan))]
             concat_list = tmp / "audio_list.txt"
             concat_list.write_text(
                 "".join(f"file '{af.as_posix()}'\n" for af in audio_files), encoding="utf-8")
@@ -995,16 +1359,25 @@ def main() -> None:
 
         size_mb = out.stat().st_size / (1024 * 1024)
         ok(f"생성 완료: {out} ({size_mb:.1f}MB, {W}x{H})")
-        write_sidecar(out, kind="idioms" if args.idioms else "unit",
-                      unit_no=None if args.idioms else unit_no,
-                      items=picked, voices=voices if args.tts else [])
+        write_sidecar(out, kind=kind,
+                      unit_no=None if kind != "unit" else unit_no,
+                      items=picked, voices=voices if args.tts else [],
+                      quiz=[{"question": w[8]["question"], "options": w[8]["opts"],
+                             "tag": w[8]["tag"]} for w in picked] if args.paraphrase else None)
         if not args.allow_repeat:
             added = mark_words_posted(bucket, [w[0] for w in picked])
             if added:
                 log(f"🔁 중복 방지 기록: {source_label} 항목 {added}개 저장 ({POSTED_FILE.name})")
+        print_remaining(HIGHLIGHT_KEY.get(kind))
         rel = out.relative_to(PROMO)
         if args.idioms:
             log(f"\n바로 배포: python publish.py --video {rel} --idioms --dry-run"
+                "  (제목·설명은 영상 옆 메타로 자동 생성됩니다)")
+        elif args.frequency:
+            log(f"\n바로 배포: python publish.py --video {rel} --frequency --dry-run"
+                "  (제목·설명은 영상 옆 메타로 자동 생성됩니다)")
+        elif args.paraphrase:
+            log(f"\n바로 배포: python publish.py --video {rel} --paraphrase --dry-run"
                 "  (제목·설명은 영상 옆 메타로 자동 생성됩니다)")
         else:
             log(f"\n바로 배포: python publish.py --video {rel} --unit {unit_no}"

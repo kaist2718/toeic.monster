@@ -166,7 +166,15 @@ idioms.forEach((it, i) => {
   push(`extra.part1[${i}].scene`, p.scene, false);
   pushAll(`extra.part1[${i}].opt`, p.opts, true); // 보기 문장은 영어
 });
-(extra.frequency || []).forEach((w, i) => push(`extra.frequency[${i}]`, w[0], true));
+(extra.frequency || []).forEach((w, i) => {
+  push(`extra.frequency[${i}]`, w[0], true);
+  // 보강된 8필드 행은 예문·해석·한글발음까지 검사합니다(단어장과 같은 기준).
+  if (Array.isArray(w) && w.length >= 8) {
+    push(`extra.frequency[${i}].ex`, w[5], true);
+    push(`extra.frequency[${i}].exKo`, w[6], false);
+    push(`extra.frequency[${i}].kpron`, w[4], false);
+  }
+});
 (extra.numbers || []).forEach((n, i) => push(`extra.numbers[${i}].audio`, n.audio, true));
 (extra.speakTemplates || []).forEach((t, i) => {
   push(`extra.speakTemplates[${i}].type`, t.type, false);
