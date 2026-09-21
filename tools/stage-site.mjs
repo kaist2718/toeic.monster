@@ -5,7 +5,7 @@
  * 왜 필요한가:
  *   이 저장소는 사이트 파일과 운영 도구가 한 루트에 섞여 있습니다. main 브랜치를
  *   그대로 배포하면 tools/·promo/·docs/·package.json 까지 인터넷에 공개됩니다
- *   (docs/monetization-plan.md 같은 내부 문서 포함). 그래서 배포 전에
+ *   (docs/monetization-strategy.md 같은 내부 문서 포함). 그래서 배포 전에
  *   **공개 목록에 있는 파일만** _site 로 복사하고, 빠진 것이 없는지 검증합니다.
  *
  * 무엇을 하는가:
