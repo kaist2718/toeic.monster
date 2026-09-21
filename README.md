@@ -71,4 +71,4 @@ docs/               기획·점검 기록 (사이트 배포 대상 아님)
 작업 기록과 배경은 `docs/` 에 있습니다. 점검 내역은 `docs/ux-review.md` 가 가장 자주 갱신됩니다.
 앞으로 할 일은 `docs/content-roadmap.md`(콘텐츠) · `docs/app-split-plan.md`(원본 경량화) ·
 `docs/prerender-split-plan.md`(남은 프리렌더 마크업) 에 단계별로 적혀 있습니다.
-수익화는 `docs/monetization-strategy.md`(진단·2트랙·재무·90일 계획 통합) 에 있습니다(미구현).
+수익화 계획은 별도 **비공개 저장소**(`toeic-monetization-strategy`)에서 관리합니다(미구현).

@@ -27,3 +27,8 @@ promo/*.log
 
 # 폰트 서브셋 원본(6.7MB) — tools/make-font-subset.py 가 필요할 때 받아 두는 캐시
 .cache/
+
+# 수익화 전략서 — 별도 비공개 저장소(toeic-monetization-strategy)에서 관리
+# 공개 저장소에 실수로 다시 올라가지 않도록 제외합니다.
+docs/monetization-strategy.md
+
