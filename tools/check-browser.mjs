@@ -236,7 +236,7 @@ try {
 
   // 첫 화면이 실제로 그려질 때까지 기다립니다(고정 대기 시간에 기대지 않도록).
   for (let i = 0; i < 60; i++) {
-    if ((await evaluate(`document.querySelectorAll("#homeView .home-section").length`)) >= 54) break;
+    if ((await evaluate(`document.querySelectorAll("#homeView .home-section").length`)) >= 55) break;
     await wait(500);
   }
   await wait(1000);
@@ -282,7 +282,7 @@ try {
     };
   })()`);
 
-  check(desktop.homeSections === 54, `홈 섹션 54개가 그려졌습니다 (${desktop.homeSections}개)`);
+  check(desktop.homeSections === 55, `홈 섹션 55개가 그려졌습니다 (${desktop.homeSections}개)`);
   check(desktop.renderedAtHome === 0, `첫 화면에 숨은 단어 카드를 그리지 않습니다 (${desktop.renderedAtHome}장)`);
   check(desktop.conversationCards === 4, `회화 교재 카드가 그려졌습니다 (${desktop.conversationCards}장 · 교재 3권 + 허브)`);
   check(desktop.searchbar === "none", "홈에서는 검색창·난이도 필터가 숨겨져 있습니다");
@@ -1348,6 +1348,115 @@ try {
   check(deepView.quiz && deepView.btn, "화면 기록: #view=quiz 주소로 퀴즈 화면이 바로 열립니다");
 
   /* ---------------------------------------------------------------- */
+  /* 3-10c. 참여 콘텐츠 — 챌린지 · 목표 · 라이브러리 · 단어 딥다이브     */
+  /* ---------------------------------------------------------------- */
+
+  await openPage("index.html");
+  await wait(1400); // 확장 데이터(extra.js)가 도착해 라이브러리까지 그려질 때까지
+
+  // 오늘의 챌린지 — 누르면 문제가 나오고, 답을 고르면 채점 결과와 다음 버튼이 붙습니다.
+  await evaluate(`document.getElementById("challengeStart").click()`);
+  await wait(400);
+  const chQ = await evaluate(`(() => {
+    const box = document.getElementById("challengeBox");
+    return { opts: box.querySelectorAll(".bank-opt").length, label: (box.querySelector(".bank-label") || {}).textContent || "" };
+  })()`);
+  check(chQ.opts >= 2, `오늘의 챌린지: 시작하면 문제가 나옵니다 (보기 ${chQ.opts}개 · ${chQ.label})`);
+
+  await evaluate(`document.querySelectorAll("#challengeBox .bank-opt")[0].click()`);
+  await wait(300);
+  const chFb = await evaluate(`(() => {
+    const fb = document.getElementById("challengeFb");
+    return { text: fb.textContent, btns: fb.querySelectorAll("button").length };
+  })()`);
+  check(/정답|오답/.test(chFb.text), `오늘의 챌린지: 답을 고르면 채점됩니다 (${chFb.text.slice(0, 18)}…)`);
+  check(chFb.btns >= 1, "오늘의 챌린지: 다음 문제로 이어지는 버튼이 붙습니다");
+
+  // 일일 목표 — 고른 값이 상단바 표시에 그대로 반영됩니다.
+  const goalOK = await evaluate(`(() => {
+    const sel = document.getElementById("goalSel");
+    sel.value = "10";
+    sel.dispatchEvent(new Event("change"));
+    return { bar: document.getElementById("dailyText").textContent, goal: document.getElementById("challengeGoal").textContent };
+  })()`);
+  check(/\/ 10\b/.test(goalOK.bar), `일일 목표: 고른 값이 상단바에 반영됩니다 (${goalOK.bar})`);
+
+  // 읽기·듣기 라이브러리 — 난이도 탭 3개 · 지문 · 문항이 그려집니다.
+  const lib = await evaluate(`(() => {
+    const box = document.getElementById("libraryBox");
+    return { tabs: box.querySelectorAll(".lib-tab").length, passage: !!box.querySelector(".library-passage"), opts: box.querySelectorAll(".lib-opt").length };
+  })()`);
+  check(lib.tabs === 3 && lib.passage, `읽기 라이브러리: 난이도 탭 ${lib.tabs}개와 지문이 그려집니다`);
+  check(lib.opts >= 2, `읽기 라이브러리: 문항 보기가 나옵니다 (${lib.opts}개)`);
+
+  // 지문 속 단어(tap-to-lookup) → 딥다이브 팝업.
+  const pop = await evaluate(`(() => {
+    const w = document.querySelector("#libraryBox .lk-word");
+    if (!w) return { found: false };
+    w.click();
+    const el = document.getElementById("wordPop");
+    return { found: true, open: el && !el.hidden, word: (el.querySelector(".word-pop-word") || {}).textContent || "" };
+  })()`);
+  check(pop.found && pop.open, `단어 딥다이브: 지문 속 단어를 누르면 팝업이 열립니다 (${pop.word})`);
+  await evaluate(`document.getElementById("wordPopClose").click()`);
+
+  // 「단어 찾기」 입력으로 혼동 어휘가 있는 단어를 열면 관련 단어로 계속 이동할 수 있습니다.
+  const popJump = await evaluate(`(() => {
+    const inp = document.getElementById("lookupInput");
+    inp.value = "accept";
+    inp.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    const el = document.getElementById("wordPop");
+    const chip = el.querySelector("[data-rel-word]");
+    const before = (el.querySelector(".word-pop-word") || {}).textContent || "";
+    if (!chip) return { chip: false, before: before };
+    chip.click();
+    const after = (el.querySelector(".word-pop-word") || {}).textContent || "";
+    return { chip: true, before: before, after: after };
+  })()`);
+  check(popJump.chip && popJump.after && popJump.after !== popJump.before, `단어 딥다이브: 관련 단어로 계속 이동합니다 (${popJump.before} → ${popJump.after})`);
+
+  const popClosed = await evaluate(`(() => {
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    return document.getElementById("wordPop").hidden;
+  })()`);
+  check(popClosed, "단어 딥다이브: Esc 로 닫힙니다");
+
+  // 문장별 낭독 · 다음 화 예고 · 읽음 진행 · 보호권 상태 — 연재 지문을 오래 읽게 하는 장치들입니다.
+  const libExtra = await evaluate(`(() => {
+    const box = document.getElementById("libraryBox");
+    const chip = document.getElementById("freezeChip");
+    return {
+      sents: box.querySelectorAll(".lib-sent").length,
+      sentBtns: box.querySelectorAll(".lib-sent .tts-btn").length,
+      next: ((box.querySelector(".library-next") || {}).textContent || "").trim(),
+      read: ((document.getElementById("libReadState") || {}).textContent || "").trim(),
+      freeze: chip ? chip.textContent : "",
+      freezeHidden: chip ? chip.hidden : true,
+    };
+  })()`);
+  check(
+    libExtra.sents >= 3 && libExtra.sentBtns === libExtra.sents,
+    `읽기 라이브러리: 문장 ${libExtra.sents}개에 문장별 듣기 버튼이 붙습니다 (${libExtra.sentBtns}개)`,
+  );
+  check(/^다음 화/.test(libExtra.next), `읽기 라이브러리: 다음 화 예고가 보입니다 (${libExtra.next.slice(0, 22)})`);
+  check(/연재 \d+ \/ \d+화/.test(libExtra.read), `읽기 라이브러리: 읽음 진행이 표시됩니다 (${libExtra.read})`);
+  check(!libExtra.freezeHidden && /보호권/.test(libExtra.freeze), `스트릭 보호권: 상태가 화면에 보입니다 (${libExtra.freeze})`);
+
+  // Part 7 은행 지문 — 앱이 그린 다른 지문에도 단어 조회가 붙습니다(한 곳에만 있으면 기능이 반쪽입니다).
+  const bankLk = await evaluate(`(() => {
+    const els = [].slice.call(document.querySelectorAll(".reading-passage")).filter((e) => e.querySelector(".lk-word"));
+    if (!els.length) return { n: 0, opened: false, word: "" };
+    const last = els[els.length - 1];
+    const w = last.querySelector(".lk-word");
+    w.click();
+    const el = document.getElementById("wordPop");
+    const out = { n: els.length, opened: !el.hidden, word: (el.querySelector(".word-pop-word") || {}).textContent || "" };
+    document.getElementById("wordPopClose").click();
+    return out;
+  })()`);
+  check(bankLk.opened && bankLk.n >= 1, `단어 조회: 지문 ${bankLk.n}곳(Part 7·템플릿 포함)에서도 열립니다 (${bankLk.word})`);
+
+  /* ---------------------------------------------------------------- */
   /* 3-11. 낱개 과 페이지 · 홈 묶음 펼침 상태 기억                    */
   /* ---------------------------------------------------------------- */
 
@@ -1475,6 +1584,25 @@ try {
     convDeep.hasCh3 && !convDeep.hasOther,
     `회화 딥링크: 그 과의 문제만 나옵니다 (3과=${convDeep.hasCh3} · 다른 과=${convDeep.hasOther} · 내용 "${convDeep.snippet}")`,
   );
+
+  /* ---------------------------------------------------------------- */
+  /* 3-12. 30분 코스 모의고사 — 미니(LC 10 + RC 10) + 90초/문항          */
+  /* ---------------------------------------------------------------- */
+
+  // 타이머가 도는 동안 다른 점검을 방해하지 않도록 맨 끝에서 확인합니다.
+  await evaluate(`document.getElementById("btnMock").click()`);
+  await wait(300);
+  const mock30 = await evaluate(`(() => {
+    document.getElementById("mockMode").value = "mini";
+    document.getElementById("mockLength").value = "90";
+    document.getElementById("mockStart").click();
+    return {
+      timer: ((document.getElementById("mockTimer") || {}).textContent || "").trim(),
+      section: ((document.getElementById("mockSection") || {}).textContent || "").trim(),
+    };
+  })()`);
+  check(/30:00/.test(mock30.timer), `30분 코스: 남은 시간이 정확히 30분에서 시작합니다 (${mock30.timer})`);
+  check(/문제 1 \/ 20/.test(mock30.section), `30분 코스: LC·RC 10문항씩 20문항입니다 (${mock30.section})`);
 
   await evaluate(`localStorage.clear()`);
 } finally {

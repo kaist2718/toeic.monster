@@ -44,7 +44,7 @@ const note = (msg) => notes.push(msg);
 /* 0. 대상 페이지                                                      */
 /* ------------------------------------------------------------------ */
 
-const pages = ["index.html", "404.html", "privacy.html", "terms.html"];
+const pages = ["index.html", "404.html", "privacy.html", "terms.html", "about.html"];
 for (const dir of ["units", "guides", "grammar", "conversation"]) {
   const full = path.join(ROOT, dir);
   if (!fs.existsSync(full)) continue;
@@ -360,7 +360,9 @@ if (contrastWarns.length) {
 // "이 선을 넘으면 왜 늘었는지 확인한다"는 상한입니다. 지금 값에서 20% 남짓 여유를 둡니다.
 const BUDGETS = [
   ["index.html", 300 * 1024, "프리렌더·마크업 — 늘면 docs/prerender-split-plan.md 의 기준을 다시 봅니다"],
-  ["assets/app.js", 330 * 1024, "앱 스크립트 — 늘면 docs/app-split-plan.md 3단계(코드 분리)를 다시 봅니다"],
+  // 오늘의 챌린지·결과 공유·단어 딥다이브·읽기 라이브러리·스트릭 보호권을 더하며 329KB 가까이 찼습니다.
+  // 다음에 또 늘면 docs/app-split-plan.md 3단계(코드 분리)를 먼저 봅니다.
+  ["assets/app.js", 360 * 1024, "앱 스크립트 — 늘면 docs/app-split-plan.md 3단계(코드 분리)를 다시 봅니다"],
   ["assets/app.css", 100 * 1024, "앱 스타일"],
   ["assets/site.css", 20 * 1024, "정적 페이지 공용 스타일"],
   ["assets/fonts/pretendard-variable.woff2", 250 * 1024, "본문 서체 서브셋 — 글자가 늘었으면 tools/make-font-subset.py 재실행"],

@@ -1573,5 +1573,192 @@ window.TOEIC_EXTRA = {
     { tag: "전치사", prompt: "Let us focus ＿＿＿＿ resolving the urgent issues first.", a: "on", opts: ["on", "in", "at", "to"], why: "focus on ~ = ~에 집중하다" },
     { tag: "전치사", prompt: "The shipment was delayed ＿＿＿＿ a customs inspection.", a: "due to", opts: ["due to", "despite", "instead of", "according to"], why: "due to + 명사 = ~ 때문에" },
     { tag: "전치사", prompt: "＿＿＿＿ the heavy rain, the outdoor event was canceled.", a: "Because of", opts: ["Because of", "Although", "In addition to", "Unlike"], why: "뒤에 명사구가 오는 이유 표현은 Because of입니다." }
+  ],
+
+  /* ============ 23. 읽기·듣기 라이브러리 (연재 지문 · 3단계) ============
+     같은 상황을 기초·중급·고급 세 난이도로 나눠 담았습니다(News in Levels 방식).
+     화가 이어지는 연재라 "다음 화"가 궁금해 다시 찾게 만드는 구조입니다.
+     문제는 채점 후 해설(why)까지 보여 줍니다. */
+  library: [
+    { no: 1, title: "첫 출근", theme: "사무실 · 온보딩",
+      levels: {
+        basic: {
+          text: "Mina starts her new job today. She arrives at the office at nine o'clock. Her manager greets her at the front desk. He shows her the meeting room and the copy room. Mina meets three coworkers. They are friendly and helpful.",
+          ko: "미나는 오늘 새 직장에서 첫 출근을 한다. 그녀는 9시에 사무실에 도착한다. 매니저가 안내 데스크에서 그녀를 맞이한다. 그는 회의실과 복사실을 보여 준다. 미나는 세 명의 동료를 만난다. 그들은 친절하고 도움이 된다.",
+          qs: [
+            { q: "미나가 사무실에 도착한 시각은?", a: "9시", opts: ["8시", "9시", "10시", "정오"], why: "She arrives at the office at nine o'clock." },
+            { q: "매니저가 미나에게 보여 준 곳은?", a: "회의실과 복사실", opts: ["회의실과 복사실", "창고와 주차장", "카페와 로비", "훈련실과 정원"], why: "He shows her the meeting room and the copy room." },
+            { q: "미나를 맞이한 사람은?", a: "매니저", opts: ["매니저", "동료", "고객", "경비원"], why: "Her manager greets her at the front desk." }
+          ]
+        },
+        intermediate: {
+          text: "Mina began her new position at the downtown branch this morning. She arrived a few minutes early and was greeted by her manager at the front desk, who then introduced her to the team. He explained that the Monday meeting starts at nine thirty, so newcomers should be at their desks by nine fifteen. After a short tour, she was given a key card and a temporary password for the internal system.",
+          ko: "미나는 오늘 아침 시내 지점에서 새 직무를 시작했다. 그녀는 몇 분 일찍 도착해 안내 데스크에서 매니저의 인사를 받았고, 매니저는 이어서 그녀를 팀에 소개했다. 그는 월요일 회의가 9시 30분에 시작하므로 신입은 9시 15분까지 자리에 있어야 한다고 설명했다. 짧은 안내를 마친 뒤 그녀는 출입 카드와 내부 시스템용 임시 비밀번호를 받았다.",
+          qs: [
+            { q: "신입 사원은 월요일 회의 전까지 언제까지 자리에 있어야 하는가?", a: "9시 15분", opts: ["9시", "9시 15분", "9시 30분", "9시 45분"], why: "newcomers should be at their desks by nine fifteen" },
+            { q: "미나가 받은 두 가지는?", a: "출입 카드와 임시 비밀번호", opts: ["출입 카드와 임시 비밀번호", "명함과 사무용품", "유니폼과 노트북", "회의 자료와 명단"], why: "she was given a key card and a temporary password" },
+            { q: "미나가 새 직무를 시작한 곳은?", a: "시내 지점", opts: ["본사", "시내 지점", "공항 지점", "물류센터"], why: "her new position at the downtown branch" }
+          ]
+        },
+        advanced: {
+          text: "Mina's first day at the downtown branch began with a brief orientation rather than the usual stack of paperwork. Her manager, who had joined the company only two years earlier, walked her through the team's weekly rhythm: a short stand-up every morning, a full meeting on Mondays at nine thirty, and a written progress note due each Friday. She was struck by how much of the office ran on shared documents, and by how quickly she was expected to contribute. By noon she had already been asked to review a draft proposal.",
+          ko: "미나의 시내 지점 첫날은 평소의 서류 더미 대신 짧은 오리엔테이션으로 시작됐다. 불과 2년 전에 입사한 그녀의 매니저는 팀의 주간 리듬을 차근차근 설명했다. 매일 아침 짧은 스탠드업, 월요일 9시 30분의 정식 회의, 그리고 매주 금요일 제출하는 서면 진행 보고가 그것이다. 그녀는 사무실 업무가 얼마나 많은 부분을 공유 문서로 처리하는지, 그리고 자신이 얼마나 빠르게 기여하기를 기대받는지에 놀랐다. 정오 무렵 그녀는 이미 제안서 초안을 검토해 달라는 요청을 받았다.",
+          qs: [
+            { q: "매주 금요일에 제출해야 하는 것은?", a: "서면 진행 보고", opts: ["서면 진행 보고", "주간 회의록", "출장 보고서", "예산 계획서"], why: "a written progress note due each Friday" },
+            { q: "글의 분위기로 가장 알맞은 것은?", a: "기대가 크지만 빠르게 적응해야 하는 분위기", opts: ["느긋하고 여유로운 분위기", "기대가 크지만 빠르게 적응해야 하는 분위기", "규칙이 거의 없는 분위기", "경쟁이 지나쳐 불편한 분위기"], why: "how quickly she was expected to contribute" },
+            { q: "미나가 정오 무렵 받은 요청은?", a: "제안서 초안 검토", opts: ["제안서 초안 검토", "회의 진행", "고객 응대", "예산 작성"], why: "she had already been asked to review a draft proposal" }
+          ]
+        }
+      } },
+    { no: 2, title: "회의 일정 조율", theme: "일정 · 이메일",
+      levels: {
+        basic: {
+          text: "Daniel sends an email to his team. The meeting is on Wednesday at two o'clock. He asks everyone to reply by Tuesday. Two people cannot come at that time. Daniel moves the meeting to three o'clock. Now everyone can accept the new time.",
+          ko: "대니얼은 팀에 이메일을 보낸다. 회의는 수요일 2시다. 그는 모두에게 화요일까지 답장해 달라고 부탁한다. 두 사람은 그 시간에 올 수 없다. 대니얼은 회의를 3시로 옮긴다. 이제 모두가 새 시간을 받아들일 수 있다.",
+          qs: [
+            { q: "대니얼이 답장을 요청한 기한은?", a: "화요일", opts: ["월요일", "화요일", "수요일", "목요일"], why: "He asks everyone to reply by Tuesday." },
+            { q: "회의는 결국 몇 시로 정해졌나?", a: "3시", opts: ["1시", "2시", "3시", "4시"], why: "Daniel moves the meeting to three o'clock." },
+            { q: "회의가 처음 잡혀 있던 시각은?", a: "2시", opts: ["1시", "2시", "3시", "4시"], why: "The meeting is on Wednesday at two o'clock." }
+          ]
+        },
+        intermediate: {
+          text: "Daniel emailed his department about Wednesday's budget meeting, originally scheduled for two o'clock. Because two team members had client appointments that afternoon, he asked everyone to confirm their availability by Tuesday noon. When the replies came in, he rescheduled the meeting for three o'clock and reserved the smaller conference room, which comfortably seats eight.",
+          ko: "대니얼은 당초 2시로 예정됐던 수요일 예산 회의에 대해 부서에 이메일을 보냈다. 두 팀원이 그날 오후 고객 약속이 있었기 때문에, 그는 모두에게 화요일 정오까지 참석 가능 여부를 확인해 달라고 요청했다. 회신이 모이자 그는 회의를 3시로 변경하고 8명이 편하게 앉을 수 있는 작은 회의실을 예약했다.",
+          qs: [
+            { q: "회의 시간을 옮긴 이유는?", a: "두 팀원의 고객 약속", opts: ["회의실 문제", "두 팀원의 고객 약속", "예산 자료 지연", "매니저의 출장"], why: "Because two team members had client appointments that afternoon" },
+            { q: "새로 예약한 회의실 규모는?", a: "8명 수용", opts: ["4명 수용", "6명 수용", "8명 수용", "12명 수용"], why: "which comfortably seats eight" },
+            { q: "참석 여부를 알려 달라고 한 시한은?", a: "화요일 정오", opts: ["월요일 오전", "화요일 정오", "수요일 오전", "금요일"], why: "he asked everyone to confirm their availability by Tuesday noon" }
+          ]
+        },
+        advanced: {
+          text: "Daniel's note about the budget review set off a short but telling exchange. The original two o'clock slot had worked for most of the department, but two account managers were due at a client site that afternoon and would not be back before five. Rather than split the discussion, Daniel asked for confirmations by Tuesday noon and, once the replies were in, moved the session to three so that everyone could attend in person. He also downgraded the room booking, noting that the smaller space would keep the conversation focused.",
+          ko: "예산 검토에 관한 대니얼의 메모는 짧지만 시사하는 바가 큰 논의를 불러일으켰다. 당초 2시 시간대는 부서 대부분에게 맞았지만, 두 계정 담당자가 그날 오후 고객사를 방문하기로 되어 있어 5시 전에는 돌아올 수 없었다. 대니얼은 논의를 나누는 대신 화요일 정오까지 참석 여부를 확인해 달라고 요청했고, 회신이 모이자 모두가 대면으로 참석할 수 있도록 일정을 3시로 옮겼다. 그는 또한 더 작은 공간이 논의를 집중시키는 데 도움이 된다는 점을 들어 회의실 예약을 하향 조정했다.",
+          qs: [
+            { q: "두 계정 담당자가 5시 전에 돌아올 수 없었던 이유는?", a: "고객사를 방문 중이라서", opts: ["휴가 중이라서", "고객사를 방문 중이라서", "교육을 받고 있어서", "재택근무라서"], why: "two account managers were due at a client site that afternoon" },
+            { q: "대니얼이 회의실 예약을 바꾼 이유로 언급한 것은?", a: "집중도", opts: ["비용", "집중도", "조명", "좌석 수"], why: "the smaller space would keep the conversation focused" },
+            { q: "대니얼이 논의를 나누지 않은 이유는?", a: "모두 함께 참석하게 하려고", opts: ["비용을 줄이려고", "모두 함께 참석하게 하려고", "회의실이 없어서", "시간이 촉박해서"], why: "Rather than split the discussion … moved the session to three so that everyone could attend in person" }
+          ]
+        }
+      } },
+    { no: 3, title: "배송 지연 문의", theme: "고객 응대 · 물류",
+      levels: {
+        basic: {
+          text: "A customer calls the store. Her package is late. The clerk checks the order number. The package is at the station. It will arrive tomorrow. The clerk says sorry and gives a small discount.",
+          ko: "한 고객이 매장에 전화한다. 그녀의 소포가 늦어지고 있다. 직원이 주문 번호를 확인한다. 소포는 역에 있다. 내일 도착할 것이다. 직원은 사과하고 작은 할인을 제공한다.",
+          qs: [
+            { q: "소포는 지금 어디에 있나?", a: "역", opts: ["매장", "창고", "역", "고객 집"], why: "The package is at the station." },
+            { q: "직원이 제공한 것은?", a: "작은 할인", opts: ["환불", "작은 할인", "무료 배송", "쿠폰 두 장"], why: "The clerk says sorry and gives a small discount." },
+            { q: "고객이 전화한 이유는?", a: "소포가 늦어서", opts: ["소포가 늦어서", "가격이 달라서", "재고가 없어서", "환불을 원해서"], why: "Her package is late." }
+          ]
+        },
+        intermediate: {
+          text: "A customer called to report that her order had not arrived by the promised date. After checking the tracking number, the clerk found that the parcel had reached the regional station but had missed the morning delivery truck. He apologized for the delay and arranged delivery for the following morning. As a goodwill gesture, he also applied a ten percent discount to her next purchase.",
+          ko: "한 고객이 주문이 약속한 날짜까지 도착하지 않았다고 전화했다. 운송장 번호를 확인한 뒤 직원은 소포가 지역 물류센터에는 도착했지만 오전 배송 차량을 놓쳤다는 것을 알았다. 그는 지연에 대해 사과하고 다음 날 오전 배송으로 잡아 주었다. 또한 선의의 표시로 다음 구매에 10퍼센트 할인을 적용했다.",
+          qs: [
+            { q: "직원이 확인한 문제는?", a: "오전 배송 차량을 놓침", opts: ["주소 오류", "오전 배송 차량을 놓침", "결제 실패", "재고 부족"], why: "the parcel had reached the regional station but had missed the morning delivery truck" },
+            { q: "직원이 선의로 제공한 것은?", a: "다음 구매 10퍼센트 할인", opts: ["무료 반품", "다음 구매 10퍼센트 할인", "배송비 환불", "적립금 두 배"], why: "he also applied a ten percent discount to her next purchase" },
+            { q: "다시 잡아 준 배송 시점은?", a: "다음 날 오전", opts: ["당일 오후", "다음 날 오전", "이틀 뒤", "주말"], why: "arranged delivery for the following morning" }
+          ]
+        },
+        advanced: {
+          text: "When a customer reported that her order was several days overdue, the clerk did not simply repeat the tracking status. Reading the log, he noticed the parcel had cleared the regional hub but had missed two consecutive delivery runs, a pattern that usually pointed to a mislabeled address. He confirmed the details with the customer, arranged a morning delivery, and, without being asked, applied a ten percent credit to her account. The customer later wrote that the follow-up mattered more than the refund itself.",
+          ko: "한 고객이 주문이 며칠이나 늦어졌다고 알렸을 때, 직원은 운송 상태를 그저 반복하지 않았다. 기록을 살펴보던 그는 소포가 지역 물류센터를 통과했지만 두 번 연속 배송 편을 놓쳤다는 점을 알아냈다. 이는 대개 주소가 잘못 기재됐을 때 나타나는 양상이었다. 그는 고객과 세부 사항을 확인하고 오전 배송을 잡았으며, 요청받지도 않은 채 계정에 10퍼센트 크레딧을 적용했다. 그 고객은 나중에 환불보다 그 후속 조치가 더 중요했다고 적었다.",
+          qs: [
+            { q: "직원이 추측한 문제의 원인은?", a: "주소 오기재", opts: ["주소 오기재", "파손", "재고 부족", "결제 오류"], why: "a pattern that usually pointed to a mislabeled address" },
+            { q: "고객이 더 중요하게 여긴 것은?", a: "후속 조치", opts: ["환불 금액", "후속 조치", "할인율", "배송 속도"], why: "the follow-up mattered more than the refund itself" },
+            { q: "직원이 운송 상태를 그대로 알리지 않고 한 일은?", a: "배송 기록을 살펴 원인을 찾은 것", opts: ["상태만 반복해 알려 준 것", "배송 기록을 살펴 원인을 찾은 것", "환불을 먼저 제안한 것", "다른 업체로 넘긴 것"], why: "Reading the log, he noticed the parcel had cleared the regional hub but had missed two consecutive delivery runs" }
+          ]
+        }
+      } },
+    { no: 4, title: "분기 실적 발표 준비", theme: "보고 · 발표",
+      levels: {
+        basic: {
+          text: "The team prepares for the sales report. They collect numbers from each store. Sales are up this quarter. The manager makes ten slides. The report is on Friday. Everyone works together.",
+          ko: "팀은 매출 보고서를 준비한다. 그들은 각 매장에서 수치를 모은다. 이번 분기 매출은 올랐다. 매니저는 슬라이드 10장을 만든다. 보고는 금요일이다. 모두 함께 일한다.",
+          qs: [
+            { q: "이번 분기 매출은?", a: "올랐다", opts: ["올랐다", "내렸다", "그대로다", "알 수 없다"], why: "Sales are up this quarter." },
+            { q: "보고 날짜는?", a: "금요일", opts: ["수요일", "목요일", "금요일", "월요일"], why: "The report is on Friday." },
+            { q: "매니저가 만든 슬라이드 수는?", a: "10장", opts: ["5장", "10장", "12장", "18장"], why: "The manager makes ten slides." }
+          ]
+        },
+        intermediate: {
+          text: "The sales team spent the week assembling figures for the quarterly review. Each branch submitted its totals by Wednesday, and the manager combined them into a twelve-slide deck. Revenue rose eight percent over the previous quarter, driven mainly by online sales. The presentation is scheduled for Friday morning, and the team will rehearse on Thursday.",
+          ko: "영업팀은 분기 검토를 위한 수치를 모으느라 한 주를 보냈다. 각 지점은 수요일까지 합계를 제출했고, 매니저는 이를 12장짜리 슬라이드로 정리했다. 매출은 주로 온라인 판매에 힘입어 전 분기 대비 8퍼센트 증가했다. 발표는 금요일 오전으로 예정되어 있으며 팀은 목요일에 리허설을 한다.",
+          qs: [
+            { q: "매출 증가를 이끈 것은?", a: "온라인 판매", opts: ["오프라인 매장", "온라인 판매", "신제품 출시", "해외 지점"], why: "driven mainly by online sales" },
+            { q: "리허설은 언제 하는가?", a: "목요일", opts: ["수요일", "목요일", "금요일", "월요일"], why: "the team will rehearse on Thursday" },
+            { q: "지점들이 합계를 제출한 요일은?", a: "수요일", opts: ["월요일", "수요일", "금요일", "일요일"], why: "Each branch submitted its totals by Wednesday" }
+          ]
+        },
+        advanced: {
+          text: "Preparing the quarterly review turned out to be less about the numbers than about the story they told. Each branch filed its totals by Wednesday, but the figures alone were misleading: two regions had grown sharply while a third had quietly shrunk, and the net gain of eight percent hid both trends. The manager rebuilt the deck around that contrast, cutting the slide count from eighteen to twelve. The board, she argued, did not need every figure. It needed to know where the next quarter's growth would come from.",
+          ko: "분기 검토 준비는 수치 자체보다 그 수치가 들려주는 이야기에 관한 일이었다. 각 지점은 수요일까지 합계를 제출했지만 숫자만으로는 오해를 낳을 수 있었다. 두 지역은 크게 성장한 반면 세 번째 지역은 조용히 줄어들었고, 8퍼센트의 순증가는 두 흐름을 모두 가리고 있었다. 매니저는 그 대비를 중심으로 슬라이드를 다시 구성해 장수를 18장에서 12장으로 줄였다. 그녀는 이사회가 모든 수치를 필요로 하는 것이 아니라 다음 분기의 성장이 어디서 나올지를 알아야 한다고 주장했다.",
+          qs: [
+            { q: "8퍼센트 순증가가 가린 것은?", a: "지역별 상반된 흐름", opts: ["비용 증가", "지역별 상반된 흐름", "환율 변동", "직원 이탈"], why: "the net gain of eight percent hid both trends" },
+            { q: "매니저가 주장한 이사회의 요구는?", a: "다음 분기 성장 동력", opts: ["모든 세부 수치", "다음 분기 성장 동력", "비용 절감안", "조직 개편"], why: "It needed to know where the next quarter's growth would come from." },
+            { q: "매니저가 슬라이드 장수를 줄인 이유는?", a: "지역별 대비에 집중하게 하려고", opts: ["자료가 부족해서", "지역별 대비에 집중하게 하려고", "시간이 없어서", "수치를 감추려고"], why: "The manager rebuilt the deck around that contrast, cutting the slide count from eighteen to twelve." }
+          ]
+        }
+      } },
+    { no: 5, title: "출장 일정 변경", theme: "출장 · 항공",
+      levels: {
+        basic: {
+          text: "Mina has a business trip next week. She flies to Busan on Monday. The flight leaves at seven in the morning. Her manager changes the meeting to Tuesday. Mina books a new flight. She has more time to prepare.",
+          ko: "미나는 다음 주에 출장이 있다. 그녀는 월요일에 부산으로 간다. 비행기는 아침 7시에 출발한다. 매니저가 회의를 화요일로 바꾼다. 미나는 새 항공편을 예약한다. 준비할 시간이 더 생긴다.",
+          qs: [
+            { q: "미나가 가는 도시는?", a: "부산", opts: ["서울", "부산", "대구", "제주"], why: "She flies to Busan on Monday." },
+            { q: "원래 비행기 출발 시각은?", a: "아침 7시", opts: ["아침 6시", "아침 7시", "오전 10시", "오후 1시"], why: "The flight leaves at seven in the morning." },
+            { q: "회의가 옮겨진 요일은?", a: "화요일", opts: ["월요일", "화요일", "수요일", "목요일"], why: "Her manager changes the meeting to Tuesday." }
+          ]
+        },
+        intermediate: {
+          text: "Mina's trip to the Busan office had been planned for Monday, but the client asked to postpone the review by a day. She rebooked a Tuesday morning flight and moved her hotel reservation accordingly. Because the new schedule left her an extra evening, she used it to rehearse the presentation with a colleague.",
+          ko: "부산 지점 방문은 월요일로 잡혀 있었지만, 고객이 검토 일정을 하루 미뤄 달라고 요청했다. 미나는 화요일 오전 항공편으로 다시 예약하고 호텔 예약도 그에 맞춰 옮겼다. 새 일정 덕분에 저녁 시간이 하루 더 생기자 그 시간에 동료와 발표를 연습했다.",
+          qs: [
+            { q: "고객이 요청한 것은?", a: "검토 일정을 하루 미루기", opts: ["검토 일정을 하루 미루기", "장소 변경", "참석자 축소", "일주일 연기"], why: "the client asked to postpone the review by a day" },
+            { q: "일정 변경과 함께 옮긴 예약은?", a: "호텔", opts: ["호텔", "렌터카", "회의실", "통역"], why: "moved her hotel reservation accordingly" },
+            { q: "남은 저녁 시간에 한 일은?", a: "동료와 발표 연습", opts: ["자료 정리", "동료와 발표 연습", "고객 면담", "휴식"], why: "she used it to rehearse the presentation with a colleague" }
+          ]
+        },
+        advanced: {
+          text: "What looked like a routine scheduling conflict turned into a useful test of the team's planning. The Busan review had been fixed for Monday weeks in advance, and the client's request to push it back by a day rippled through flights, hotel bookings, and two internal meetings. Mina rebooked the first Tuesday departure, moved the hotel night by night, and folded the extra evening into a rehearsal. The postponement cost the team an afternoon of preparation, she noted, but it also gave them a second chance to sharpen an argument that had felt thin.",
+          ko: "평범한 일정 충돌로 보였던 일은 팀의 계획 능력을 시험하는 계기가 됐다. 부산 검토 일정은 몇 주 전부터 월요일로 고정돼 있었고, 고객의 하루 연기 요청은 항공편과 호텔 예약, 내부 회의 두 건까지 줄줄이 영향을 주었다. 미나는 화요일 첫 편으로 다시 예약하고 호텔 숙박을 하루씩 옮겼으며, 남는 저녁 시간을 리허설에 넣었다. 그녀는 이번 연기로 팀이 오후 한나절의 준비 시간을 잃었지만, 미흡했던 논리를 다듬을 두 번째 기회를 얻었다고 정리했다.",
+          qs: [
+            { q: "고객의 연기 요청으로 함께 바뀐 것은?", a: "항공편과 호텔, 내부 회의", opts: ["항공편만", "항공편과 호텔, 내부 회의", "예산과 인원", "바뀐 것이 없다"], why: "rippled through flights, hotel bookings, and two internal meetings" },
+            { q: "미나가 남는 저녁에 넣은 일은?", a: "발표 리허설", opts: ["자료 번역", "발표 리허설", "고객 접대", "장비 점검"], why: "folded the extra evening into a rehearsal" },
+            { q: "글쓴이가 이번 연기에서 얻은 것으로 본 것은?", a: "논리를 다듬을 기회", opts: ["비용 절감", "논리를 다듬을 기회", "인력 충원", "일정 단축"], why: "it also gave them a second chance to sharpen an argument that had felt thin" }
+          ]
+        }
+      } },
+    { no: 6, title: "새 프로젝트 착수", theme: "팀 · 협업",
+      levels: {
+        basic: {
+          text: "The team starts a new project. Grace leads the meeting. They list the tasks on the board. Daniel takes the budget. Mina writes the plan. They meet again on Friday. Everyone knows their job.",
+          ko: "팀이 새 프로젝트를 시작한다. 그레이스가 회의를 이끈다. 그들은 칠판에 할 일을 적는다. 대니얼은 예산을 맡는다. 미나는 계획서를 쓴다. 그들은 금요일에 다시 만난다. 모두 자기 일을 알고 있다.",
+          qs: [
+            { q: "회의를 이끈 사람은?", a: "그레이스", opts: ["미나", "대니얼", "그레이스", "매니저"], why: "Grace leads the meeting." },
+            { q: "대니얼이 맡은 일은?", a: "예산", opts: ["예산", "계획서", "일정", "고객 응대"], why: "Daniel takes the budget." },
+            { q: "다시 만나기로 한 요일은?", a: "금요일", opts: ["월요일", "수요일", "금요일", "다음 주"], why: "They meet again on Friday." }
+          ]
+        },
+        intermediate: {
+          text: "Grace opened the kickoff meeting by asking each member to claim one workstream. Daniel took the budget, Mina agreed to draft the plan, and a third colleague volunteered to gather customer feedback. They posted the list on the shared board so that progress could be checked at a glance, and set Friday as the first review point.",
+          ko: "그레이스는 착수 회의를 열어 각자 맡을 업무를 직접 고르게 했다. 대니얼은 예산을, 미나는 계획서 초안을 맡았고 또 한 명은 고객 의견 수집을 자원했다. 그들은 진행 상황을 한눈에 확인할 수 있도록 목록을 공유 게시판에 올리고, 금요일을 첫 점검 시점으로 정했다.",
+          qs: [
+            { q: "그레이스가 회의에서 택한 방식은?", a: "각자 업무를 직접 고르게 하기", opts: ["팀장이 지정하기", "각자 업무를 직접 고르게 하기", "투표로 정하기", "순번대로 맡기기"], why: "asking each member to claim one workstream" },
+            { q: "공유 게시판에 목록을 올린 이유는?", a: "진행 상황을 한눈에 보려고", opts: ["기록 보관", "진행 상황을 한눈에 보려고", "보고용", "규정 준수"], why: "so that progress could be checked at a glance" },
+            { q: "첫 점검 시점으로 정한 날은?", a: "금요일", opts: ["목요일", "금요일", "다음 주 월요일", "월말"], why: "set Friday as the first review point" }
+          ]
+        },
+        advanced: {
+          text: "The kickoff was deliberately short on instructions. Rather than assigning workstreams herself, Grace asked each member to claim one and to name the first deliverable it would produce. The effect was subtle but real: nobody could later claim they had not chosen the task, and the shared board turned the plan into something the team could argue with. Friday's review was set less as a deadline than as a checkpoint for questioning assumptions while they were still cheap to change.",
+          ko: "착수 회의는 지시를 의도적으로 줄였다. 그레이스는 업무를 직접 배분하는 대신, 각자 하나씩 골라 그것이 만들어 낼 첫 결과물까지 밝히게 했다. 효과는 미묘하지만 분명했다. 나중에 자기가 그 일을 고르지 않았다고 말할 수 없게 됐고, 공유 게시판은 계획을 팀이 함께 따져 볼 수 있는 대상으로 바꿔 놓았다. 금요일 점검은 마감이라기보다, 가정을 바꾸는 비용이 아직 낮을 때 의문을 제기하는 지점으로 정했다.",
+          qs: [
+            { q: "그레이스가 업무 배분 대신 한 일은?", a: "각자 고르고 첫 결과물까지 밝히게 한 것", opts: ["업무를 직접 지정한 것", "각자 고르고 첫 결과물까지 밝히게 한 것", "외부에 위탁한 것", "일정만 통보한 것"], why: "Grace asked each member to claim one and to name the first deliverable it would produce" },
+            { q: "공유 게시판의 효과로 본 것은?", a: "계획을 함께 따져 볼 대상이 된 것", opts: ["보고 절차가 줄어든 것", "계획을 함께 따져 볼 대상이 된 것", "평가 기준이 생긴 것", "책임을 피하게 된 것"], why: "turned the plan into something the team could argue with" },
+            { q: "금요일 점검의 성격은?", a: "가정을 점검하는 지점", opts: ["최종 마감", "가정을 점검하는 지점", "보고 의무", "평가 시험"], why: "set less as a deadline than as a checkpoint for questioning assumptions" }
+          ]
+        }
+      } }
   ]
 };

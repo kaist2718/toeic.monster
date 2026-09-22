@@ -55,7 +55,26 @@
   var reviewFilter = false;
 
   // 일일 목표 · 연속 학습
+  // 목표는 사용자가 고를 수 있습니다(10·20·30·50). 고른 값은 브라우저에 남아 다음 방문에도 쓰입니다.
   var DAILY_GOAL = 30;
+  var GOAL_OPTIONS = [10, 20, 30, 50];
+  try {
+    var savedGoal = parseInt(localStorage.getItem("toeic1000_goal") || "", 10);
+    if (GOAL_OPTIONS.indexOf(savedGoal) !== -1) DAILY_GOAL = savedGoal;
+  } catch (e) { /* 저장 값이 없으면 기본 30개 */ }
+  function setDailyGoal(n) {
+    if (GOAL_OPTIONS.indexOf(n) === -1 || n === DAILY_GOAL) return;
+    DAILY_GOAL = n;
+    try { localStorage.setItem("toeic1000_goal", String(n)); } catch (e) {}
+    updateDailyUI();
+    updateStreakUI();
+    renderTodayChallenge();
+    renderMotivation();
+    renderQuests();
+    renderBadges();
+    showToast("🎯 일일 목표를 " + n + "개로 바꿨어요.");
+    track("goal_set", { goal: n });
+  }
   // 저장된 값이 비었거나 손상되어도 화면에 "undefined / NaN"이 뜨지 않도록 값을 검증해 채웁니다.
   function readInt(v) {
     var n = parseInt(v, 10);
@@ -80,6 +99,41 @@
   } catch (e) { streakInfo = { last: "", count: 0 }; }
   var examBest = 0;
   try { examBest = parseInt(localStorage.getItem("toeic1000_exambest") || "0", 10) || 0; } catch (e) { examBest = 0; }
+
+  // ---------- 분석 이벤트 (Umami Cloud) ----------
+  // 쿠키를 쓰지 않는 익명 통계입니다. 어떤 기능이 실제로 쓰이는지 세어 다음 개선의 근거로 삼습니다.
+  // (분석이 막힌 환경에서도 학습은 그대로 돌아가야 하므로 조용히 넘어갑니다.)
+  function track(name, data) {
+    try {
+      if (window.umami && typeof window.umami.track === "function") window.umami.track(name, data || undefined);
+    } catch (e) { /* 분석 실패는 학습을 막지 않습니다 */ }
+  }
+
+  // ---------- 스트릭 보호권 ----------
+  // 주 1회, 하루를 건너뛰어도 연속 기록이 끊기지 않습니다(연속 학습의 손실 회피를 지켜 주는 장치).
+  // 별도 서버가 없으므로 "이번 주에 썼는지"만 브라우저에 기록합니다.
+  var freezeInfo = { week: "", used: false };
+  try {
+    var savedFreeze = JSON.parse(localStorage.getItem("toeic1000_freeze") || "null");
+    if (savedFreeze && typeof savedFreeze === "object") {
+      freezeInfo = { week: String(savedFreeze.week || ""), used: !!savedFreeze.used };
+    }
+  } catch (e) { freezeInfo = { week: "", used: false }; }
+  var freezeUsedNow = false;
+  function saveFreeze() {
+    try { localStorage.setItem("toeic1000_freeze", JSON.stringify(freezeInfo)); } catch (e) {}
+  }
+  /** 주 단위 키(일요일 시작 7일 묶음) — 보호권을 이번 주에 썼는지 이 값으로 비교합니다. */
+  function weekKeyOf(key) {
+    var p = key.split("-").map(Number);
+    var d = new Date(p[0], p[1] - 1, p[2]);
+    var yearStart = new Date(d.getFullYear(), 0, 1);
+    var dayIdx = Math.floor((d - yearStart) / 86400000) + yearStart.getDay();
+    return d.getFullYear() + "-w" + Math.floor(dayIdx / 7);
+  }
+  function freezeAvailable() {
+    return !freezeInfo.used || freezeInfo.week !== weekKeyOf(todayKey());
+  }
 
   // 유형별 퀴즈 통계: { 유형: { c: 정답수, w: 오답수 } }
   var quizStats = storeObject("toeic1000_quizstats");
@@ -124,13 +178,27 @@
       if (streakInfo.last === yesterdayKey(t)) {
         streakInfo.count++;
       } else if (streakInfo.last !== t) {
-        streakInfo.count = 1;
+        // 하루를 건너뛰었습니다. 이번 주 보호권이 남아 있으면 연속 기록을 지켜 줍니다.
+        if (streakInfo.last && streakInfo.count > 0 && freezeAvailable()) {
+          freezeInfo.week = weekKeyOf(t);
+          freezeInfo.used = true;
+          saveFreeze();
+          freezeUsedNow = true;
+          streakInfo.count++;
+        } else {
+          streakInfo.count = 1;
+        }
       }
       streakInfo.last = t;
       saveStreak();
     }
     updateDailyUI();
     updateStreakUI();
+    if (freezeUsedNow) {
+      freezeUsedNow = false;
+      showToast("🧊 스트릭 보호권을 썼어요! 연속 " + streakInfo.count + "일이 이어집니다.");
+      track("streak_freeze", { streak: streakInfo.count });
+    }
   }
   function updateDailyUI() {
     var el = document.getElementById("dailyText");
@@ -143,6 +211,18 @@
   function updateStreakUI() {
     var el = document.getElementById("streakText");
     if (el) el.textContent = "🔥 " + streakInfo.count + "일 연속";
+    // 보호권 상태 — 쓸 수 있다는 사실이 보여야 "하루 못 해도 괜찮다"는 안심이 생깁니다.
+    // (서버가 없으므로 이번 주에 썼는지만 브라우저에 기록합니다.)
+    var fi = document.getElementById("freezeChip");
+    if (fi) {
+      var avail = freezeAvailable();
+      fi.textContent = avail ? "🧊 보호권 남음" : "🧊 보호권 사용함";
+      fi.title = avail
+        ? "이번 주에 하루를 건너뛰어도 연속 기록이 이어집니다(주 1회)."
+        : "이번 주 보호권을 이미 썼습니다. 다음 주에 다시 채워집니다.";
+      fi.className = "freeze-chip" + (avail ? "" : " spent");
+      fi.hidden = false;
+    }
   }
 
   var all = [];
@@ -971,6 +1051,9 @@
     if (viewChanged && !fromHistory) syncViewHistory(viewId);
     // 화면을 옮길 때는 맨 위로. 모션 감소 설정이면 애니메이션 없이 즉시 이동합니다.
     window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
+    // 새로 그려진 지문에도 단어 조회를 붙입니다(이미 붙은 곳은 건너뜀).
+    // (이 블록만 떼어 검사하는 테스트가 있어 typeof 로 존재를 확인하고 부릅니다.)
+    if (typeof linkifyPassages === "function") linkifyPassages();
   }
 
   function enterFlash() {
@@ -1144,6 +1227,7 @@
   }
 
   function startQuiz(wrongOnly) {
+    track("quiz_start", { wrongOnly: !!wrongOnly });
     quizWrongMode = !!wrongOnly;
     quizIdx = 0;
     quizCorrect = 0;
@@ -1700,7 +1784,11 @@
     return {
       learnedN: learnedN, total: total, pct: total ? Math.round(learnedN / total * 100) : 0,
       maxUnitPct: maxUnitPct, quizQ: quizQ, quizPct: quizQ ? Math.round(qc / quizQ * 100) : 0,
-      streak: streakInfo.count, best: examBest, favN: Object.keys(favSet).length, mockDone: mockDone
+      streak: streakInfo.count, best: examBest, favN: Object.keys(favSet).length, mockDone: mockDone,
+      // 습관·참여 배지가 쓰는 값 — 목표 달성일 수(주간 로그), 챌린지 완료일, 정독한 지문 수.
+      weekDays: Object.keys(weeklyLog).length,
+      challengeDays: challengeStore ? Object.keys(challengeStore).length : 0,
+      libraryN: libraryRead ? Object.keys(libraryRead).length : 0
     };
   }
   var earnedBadges = storeObject("toeic1000_badges");
@@ -3495,6 +3583,9 @@
     if (EXTRA.traps && EXTRA.traps.length) LC_TRAINING = LC_TRAINING.concat(EXTRA.traps);
     PART6_SETS = EXTRA.part6 || [];
     DICT_LIST = EXTRA.dictation || [];
+    // 읽기·듣기 라이브러리(연재 지문)도 이때 함께 받아 둡니다.
+    if (EXTRA.library && EXTRA.library.length) LIBRARY = EXTRA.library;
+    renderLibrary();
   }
 
   // ---------- Part 6 장문 공란 ----------
@@ -4058,6 +4149,8 @@
     function () { renderMiniQuiz(); renderFrequency(""); },
     function () { renderSprint(); renderDictation(); },
     function () { renderTplExtra(); renderSwExtra(); },
+    // 읽기·듣기 라이브러리와 오늘의 챌린지는 데이터·기록을 함께 보므로 한 묶음으로 그립니다.
+    function () { renderLibrary(); renderTodayChallenge(); },
     function () { renderGrammarBooks(); renderConversationBooks(); renderGrammarWrongNote(); },
     function () { renderGuides(); renderPace(); renderBattle(); },
     // extra.js 데이터로 문항을 만드는 미니 퀴즈들 — 데이터가 온 뒤에 첫 렌더를 합니다(wireMiniQuiz 참고).
@@ -4094,6 +4187,8 @@
         try { step(); } catch (e) {}
       } while (i < EXTENDED_STEPS.length && Date.now() - started < 8);
       if (i < EXTENDED_STEPS.length) next(pump);
+      // 확장 콘텐츠까지 다 그린 뒤 지문에 단어 조회를 붙입니다.
+      else if (typeof linkifyPassages === "function") linkifyPassages();
     }
     next(pump);
   }
@@ -4127,6 +4222,8 @@
     renderBadges();
     renderReport();
     renderDialogue(false);
+    // 오늘의 챌린지 진행률·안내 문구는 확장 데이터를 기다리지 않고 지금 그립니다.
+    renderTodayChallenge();
 
     var dueN = srsDueWords().length;
     var srsBadge = document.getElementById("homeSrsBadge");
@@ -4615,6 +4712,633 @@
     toastTimer = setTimeout(function () { el.classList.remove("show"); }, 2600);
   }
 
+  // ================= 참여·습관 콘텐츠 =================
+  // 서버가 없으므로 모든 기록은 브라우저에만 남습니다. 대신 "매일 달라지는 것"과
+  // "끊기지 않는 흐름"으로 재방문을 만듭니다.
+
+  // ---------- 오늘의 챌린지 (날짜 시드 · 무한 체인 · 목표 바) ----------
+  var CHALLENGE_SIZE = 10;   // 한 세션에 푸는 문항 수
+  var CHALLENGE_POOL = 60;   // 미리 섞어 두는 문제 수 — 다 풀면 그때 다시 채웁니다(끝없이 이어짐)
+  var challenge = { q: [], idx: 0, correct: 0, marks: [], answered: false, done: false, session: 0 };
+  var challengeStore = storeObject("toeic1000_challenge");
+  var challengeAuto = false;
+  try { challengeAuto = localStorage.getItem("toeic1000_chain") === "1"; } catch (e) { /* 기본은 수동 진행 */ }
+  function saveChallengeStore() {
+    try { localStorage.setItem("toeic1000_challenge", JSON.stringify(challengeStore)); } catch (e) {}
+  }
+  /** 문자일 → 32비트 씨앗. 같은 날짜면 항상 같은 값이라 그날의 세트가 고정됩니다. */
+  function seedOf(key) {
+    var h = 2166136261;
+    for (var i = 0; i < key.length; i++) { h ^= key.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return h >>> 0;
+  }
+  /** 씨앗으로 고정한 섞기 — Math.random 을 쓰지 않아 새로고침해도 그날 세트가 그대로입니다. */
+  function seededShuffle(list, seed) {
+    var arr = list.slice();
+    var s = seed || 1;
+    function rnd() { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; }
+    for (var i = arr.length - 1; i > 0; i--) {
+      var j = Math.floor(rnd() * (i + 1));
+      var t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+    }
+    return arr;
+  }
+  /** 챌린지 문제 풀 — 뜻 고르기(1,000단어) + 혼동 어휘 + 어근을 섞습니다. */
+  function buildChallengePool() {
+    var words = allWords();
+    var names = words.map(function (w) { return w[0]; });
+    var vocabQs = words.map(function (w, wi) {
+      var others = seededShuffle(names.filter(function (x) { return x !== w[0]; }), seedOf(w[0] + "#" + wi)).slice(0, 3);
+      return {
+        kind: "vocab",
+        theme: "어휘 · UNIT " + unitNoOf(w[0]),
+        prompt: "다음 뜻에 맞는 단어를 고르세요.\n" + w[3],
+        answer: w[0], options: [w[0]].concat(others),
+        example: w[4], exampleKo: w[5], say: w[0]
+      };
+    });
+    var mix = buildMixPool();
+    return vocabQs.concat(mix.confuse).concat(mix.part);
+  }
+  function buildChallenge() {
+    var pool = seededShuffle(buildChallengePool(), seedOf(todayKey()));
+    challenge.q = pool.slice(0, CHALLENGE_POOL);
+    challenge.idx = 0;
+    challenge.correct = 0;
+    challenge.marks = [];
+    challenge.answered = false;
+    challenge.done = false;
+    challenge.session = 0;
+  }
+  function challengeEmoji() {
+    return challenge.marks.map(function (m) { return m ? "✅" : "❌"; }).join("");
+  }
+  function challengeShareText() {
+    var total = challenge.marks.length;
+    var pct = total ? Math.round(challenge.correct / total * 100) : 0;
+    return "toeic.monster 오늘의 챌린지 " + challenge.correct + "/" + total + " (" + pct + "%)" +
+      "\n" + challengeEmoji() + "\nhttps://toeic.monster/";
+  }
+  function startChallenge() {
+    if (!challenge.q.length || challenge.done || challenge.idx >= challenge.q.length) buildChallenge();
+    challenge.answered = false;
+    challenge.done = false;
+    challenge.session = 0;
+    renderChallenge();
+    renderTodayChallenge();
+    var box = document.getElementById("challengeBox");
+    if (box) scrollToEl(box, "nearest");
+    track("challenge_start", {});
+  }
+  function continueChallenge() {
+    if (challenge.idx >= challenge.q.length) buildChallenge();
+    challenge.answered = false;
+    challenge.done = false;
+    challenge.session = 0;
+    renderChallenge();
+    renderTodayChallenge();
+    track("challenge_continue", {});
+  }
+  function finishChallenge() {
+    challenge.done = true;
+    var key = todayKey();
+    challengeStore[key] = (challengeStore[key] || 0) + 1;
+    saveChallengeStore();
+    track("challenge_done", { correct: challenge.correct, total: challenge.marks.length });
+    renderChallenge();
+    renderTodayChallenge();
+    renderBadges();
+  }
+  function renderChallenge() {
+    var box = document.getElementById("challengeBox");
+    if (!box) return;
+    if (challenge.done) {
+      var total = challenge.marks.length;
+      var pct = total ? Math.round(challenge.correct / total * 100) : 0;
+      var msg = pct >= 80 ? "훌륭해요! 🔥" : pct >= 50 ? "좋아요, 오답을 복습해 보세요. 💪" : "기초부터 다시 확인해 보세요. 🌱";
+      box.innerHTML = '<div class="bank-card"><span class="bank-label">오늘의 챌린지 결과</span>' +
+        '<div class="bank-q">🎉 ' + challenge.correct + " / " + total + " 정답 (" + pct + '%)</div>' +
+        '<p class="practice-note">' + msg + ' 「이어서 계속」을 누르면 문제가 끝없이 이어집니다.</p>' +
+        '<div class="challenge-emoji" aria-hidden="true">' + challengeEmoji() + "</div></div>";
+      return;
+    }
+    if (!challenge.q.length) {
+      box.innerHTML = '<p class="practice-note">「챌린지 시작」을 누르면 오늘의 문제 10개가 나옵니다.</p>';
+      return;
+    }
+    var q = challenge.q[challenge.idx];
+    box.innerHTML = '<div class="bank-card"><span class="bank-label">' + esc(q.theme || "챌린지") + " · " + (challenge.session + 1) + " / " + CHALLENGE_SIZE + '</span>' +
+      '<div class="bank-q">' + esc(q.prompt) + (q.say ? ttsBtn(q.say, "단어 듣기") : "") + '</div><div class="bank-options">' +
+      q.options.map(function (o) { return '<button type="button" class="bank-opt">' + esc(o) + "</button>"; }).join("") +
+      '</div><div class="bank-feedback" id="challengeFb" role="status" aria-live="polite" aria-atomic="true"></div></div>';
+    box.querySelectorAll(".bank-opt").forEach(function (b) {
+      b.addEventListener("click", function () { answerChallenge(b); });
+    });
+  }
+  function answerChallenge(btn) {
+    if (challenge.answered) return;
+    challenge.answered = true;
+    var q = challenge.q[challenge.idx];
+    var ok = btn.textContent === q.answer;
+    if (ok) challenge.correct++;
+    challenge.marks.push(ok);
+    challenge.session++;
+    recordStat("challenge_" + (q.kind || "mix"), ok);
+    var box = document.getElementById("challengeBox");
+    box.querySelectorAll(".bank-opt").forEach(function (o) {
+      o.disabled = true;
+      if (o.textContent === q.answer) o.classList.add("correct");
+      if (o === btn && !ok) o.classList.add("wrong");
+    });
+    var fb = document.getElementById("challengeFb");
+    fb.innerHTML = (ok ? "정답입니다! 🎉 " : "오답입니다. 정답: <b>" + esc(q.answer) + "</b> ") +
+      (q.why ? '<div class="practice-note">💡 ' + esc(q.why) + "</div>" : "") + exFeedback(q);
+    restoreFocusToFeedback(fb);
+    // 문항 하나가 곳 학습 하나 — 오늘 목표 진행률에 반영합니다.
+    touchDaily();
+    challenge.idx++;
+    var last = challenge.session >= CHALLENGE_SIZE || challenge.idx >= challenge.q.length;
+    if (last) {
+      var fin = document.createElement("button");
+      fin.type = "button"; fin.className = "btn quiz-btn"; fin.style.marginTop = "10px";
+      fin.textContent = "🏁 결과 보기";
+      fin.addEventListener("click", finishChallenge);
+      fb.appendChild(fin);
+    } else if (challengeAuto && !reduceMotion) {
+      // 자동 진행을 켠 사용자만 문항 사이를 자동으로 넘깁니다(초점을 일지 않는 기본값 유지).
+      setTimeout(function () {
+        if (challenge.done) return;
+        challenge.answered = false;
+        renderChallenge();
+      }, 800);
+    } else {
+      var next = document.createElement("button");
+      next.type = "button"; next.className = "btn quiz-btn"; next.style.marginTop = "10px";
+      next.textContent = "다음 문제 →";
+      next.addEventListener("click", function () { challenge.answered = false; renderChallenge(); });
+      fb.appendChild(next);
+    }
+    renderTodayChallenge();
+  }
+  function renderTodayChallenge() {
+    var bar = document.getElementById("challengeFill");
+    var goalEl = document.getElementById("challengeGoal");
+    var subEl = document.getElementById("challengeSub");
+    var chainBtn = document.getElementById("challengeChain");
+    var shareEl = document.getElementById("challengeShare");
+    var pct = Math.min(100, Math.round(daily.count / DAILY_GOAL * 100));
+    if (bar) bar.style.width = pct + "%";
+    if (goalEl) goalEl.textContent = "오늘 " + daily.count + " / " + DAILY_GOAL + "개";
+    if (chainBtn) chainBtn.hidden = !challenge.done;
+    if (shareEl) shareEl.hidden = !challenge.marks.length;
+    if (subEl) {
+      subEl.textContent = challengeStore[todayKey()]
+        ? "오늘 챌린지를 완료했어요. 「이어서 계속」으로 더 풀 수 있고, 자정에 새 문제가 나옵니다."
+        : "매일 자정에 새로 나오는 " + CHALLENGE_SIZE + "문제입니다. 「자동 진행」을 켜면 끊김 없이 이어집니다.";
+    }
+  }
+
+  // ---------- 결과 공유 ----------
+  // 서버가 없으니 공유는 OS 공유 시트나 클립보드로 합니다(이미지 생성도 브라우저에서만).
+  function shareText(text, title) {
+    try {
+      if (navigator.share) {
+        navigator.share({ title: title || "toeic.monster", text: text }).catch(function () {});
+        return;
+      }
+    } catch (e) { /* 공유 시트를 못 쓰면 복사로 넘어갑니다 */ }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () {
+        showToast("📋 결과를 복사했어요. 붙여넣어 공유하세요!");
+      }).catch(function () { showToast(text); });
+      return;
+    }
+    showToast(text);
+  }
+
+  // ---------- 학습 알림을 캘린더로 내보내기 ----------
+  // 정적 사이트라 푸시 알림을 보낼 서버가 없습니다. 대신 사용자 캘린더 앱이 알림을 담당하도록
+  // .ics 파일을 만들어 내려받게 합니다(내일 20:00부터 30일 반복).
+  function pad2(n) { return (n < 10 ? "0" : "") + n; }
+  function icsStamp(d) {
+    return d.getFullYear() + pad2(d.getMonth() + 1) + pad2(d.getDate()) + "T" + pad2(d.getHours()) + pad2(d.getMinutes()) + "00";
+  }
+  function exportStudyIcs() {
+    var start = new Date();
+    start.setDate(start.getDate() + 1);
+    start.setHours(20, 0, 0, 0);
+    var end = new Date(start.getTime() + 30 * 60000);
+    var lines = [
+      "BEGIN:VCALENDAR",
+      "VERSION:2.0",
+      "PRODID:-//toeic.monster//study//KO",
+      "CALSCALE:GREGORIAN",
+      "BEGIN:VEVENT",
+      "UID:toeic-study-" + start.getTime() + "@toeic.monster",
+      "DTSTAMP:" + icsStamp(new Date()),
+      "DTSTART:" + icsStamp(start),
+      "DTEND:" + icsStamp(end),
+      "RRULE:FREQ=DAILY;COUNT=30",
+      "SUMMARY:TOEIC 단어 학습 (toeic.monster)",
+      "DESCRIPTION:오늘의 챌린지와 단어 30개를 학습합니다. https://toeic.monster/",
+      "URL:https://toeic.monster/",
+      "END:VEVENT",
+      "END:VCALENDAR"
+    ];
+    try {
+      var blob = new Blob([lines.join("\r\n")], { type: "text/calendar;charset=utf-8" });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url;
+      a.download = "toeic-monster-study.ics";
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(function () { URL.revokeObjectURL(url); if (a.parentNode) a.parentNode.removeChild(a); }, 0);
+      showToast("📅 캘린더 파일을 내려받았어요. 열어서 알림을 추가하세요.");
+      track("ics_export", {});
+    } catch (e) {
+      showToast("이 브라우저에서는 캘린더 파일을 만들 수 없어요.");
+    }
+  }
+
+  // ---------- 단어 딥다이브 (단어 인덱스 · 팝업) ----------
+  // 1,000단어를 한 곳에서 찾아 뜻·발음·예문·관련 표현까지 보여 줍니다.
+  // 지문 속 단어를 누르거나(③) 단어 찾기 입력으로 열립니다.
+  var wordIndex = {};
+  function buildWordIndex() {
+    wordIndex = {};
+    all.forEach(function (u) {
+      u.words.forEach(function (w) {
+        var key = String(w[0]).toLowerCase();
+        if (wordIndex[key]) return;
+        wordIndex[key] = { word: w[0], ipa: w[1], pron: w[2], meaning: w[3], ex: w[4], ko: w[5], exPron: w[6], level: u.level, unit: u.unit, title: u.title };
+      });
+    });
+  }
+  function unitNoOf(word) {
+    var e = wordIndex[String(word).toLowerCase()];
+    return e ? e.unit : "";
+  }
+  /** 숙어 데이터는 배열·객체 두 모양을 쓸 수 있어 둘 다 받아 줍니다. */
+  function idiomText(it) { return typeof it === "string" ? it : ((it && (it.en || it[0])) || ""); }
+  function idiomKo(it) { return typeof it === "string" ? "" : ((it && (it.ko || it[1])) || ""); }
+  /** 단어와 관련 있는 다른 표현을 모음니다 — 혼동 어휘·콜로케이션·숙어를 데이터에서 찾습니다. */
+  function relatedOf(word) {
+    var low = String(word).toLowerCase();
+    var out = { words: [], collo: [], idioms: [], confuse: [] };
+    CONFUSABLES.forEach(function (c) {
+      var parts = String(c.pair || "").split("/").map(function (s) { return s.trim().toLowerCase(); });
+      if (parts.indexOf(low) === -1) return;
+      parts.forEach(function (p) { if (p && p !== low && out.words.indexOf(p) === -1) out.words.push(p); });
+      out.confuse.push({ pair: c.pair, tip: c.tip });
+    });
+    (COLLOCATIONS || []).forEach(function (c) {
+      if (String(c.phrase || "").toLowerCase().indexOf(low) !== -1) out.collo.push(c);
+    });
+    (IDIOMS || []).forEach(function (it) {
+      if (String(idiomText(it)).toLowerCase().indexOf(low) !== -1) out.idioms.push(it);
+    });
+    return out;
+  }
+  var wordPopLastFocus = null;
+  function ensureWordPop() {
+    var el = document.getElementById("wordPop");
+    if (el) return el;
+    el = document.createElement("div");
+    el.id = "wordPop";
+    el.className = "word-pop";
+    el.hidden = true;
+    el.setAttribute("role", "dialog");
+    el.setAttribute("aria-modal", "true");
+    el.setAttribute("aria-label", "단어 상세");
+    el.innerHTML = '<div class="word-pop-card"><button type="button" class="word-pop-close" id="wordPopClose" aria-label="닫기">✕</button><div class="word-pop-body" id="wordPopBody"></div></div>';
+    document.body.appendChild(el);
+    el.addEventListener("click", function (e) {
+      var t = e.target;
+      if (t === el) { closeWordPop(); return; }
+      var rel = t && t.closest ? t.closest("[data-rel-word]") : null;
+      if (rel) { openWordPop(rel.getAttribute("data-rel-word")); return; }
+      var unitBtn = t && t.closest ? t.closest("[data-rel-unit]") : null;
+      if (unitBtn) { closeWordPop(); goUnit(parseInt(unitBtn.getAttribute("data-rel-unit"), 10)); }
+    });
+    var cb = document.getElementById("wordPopClose");
+    if (cb) cb.addEventListener("click", closeWordPop);
+    return el;
+  }
+  function closeWordPop() {
+    var el = document.getElementById("wordPop");
+    if (!el || el.hidden) return;
+    el.hidden = true;
+    if (wordPopLastFocus && wordPopLastFocus.focus) {
+      try { wordPopLastFocus.focus({ preventScroll: true }); } catch (e) {}
+    }
+  }
+  function openWordPop(word) {
+    var key = String(word || "").toLowerCase();
+    var info = wordIndex[key];
+    var el = ensureWordPop();
+    var body = document.getElementById("wordPopBody");
+    if (!body) return;
+    var html;
+    if (!info) {
+      html = '<p class="word-pop-miss">사전에 「' + esc(word) + '」가 없어요. 철자를 확인해 주세요.</p>';
+    } else {
+      var rel = relatedOf(info.word);
+      var relHtml = "";
+      // "이어서 볼 단어" — 혼동 짝 중 사전에 있는 단어 + 같은 유닛의 다른 단어.
+      // (사전에 없는 혼동 짝을 버튼으로 두면 누를 때마다 막다른 길이 됩니다. 그래서 글로만 짚어 줍니다.)
+      var relWords = rel.words.filter(function (w) { return !!wordIndex[w]; });
+      var unitWords = [];
+      all.forEach(function (u) {
+        if (u.unit !== info.unit) return;
+        u.words.forEach(function (w) {
+          var k = String(w[0]).toLowerCase();
+          if (k !== key && relWords.indexOf(k) === -1 && unitWords.indexOf(k) === -1 && unitWords.length < 6) unitWords.push(k);
+        });
+      });
+      var chips = relWords.concat(unitWords);
+      if (rel.confuse.length) {
+        relHtml += '<div class="word-pop-sec"><span class="word-pop-sec-t">🔀 혼동 어휘</span><ul class="word-pop-list">' +
+          rel.confuse.slice(0, 3).map(function (c) { return '<li><b lang="en">' + esc(c.pair) + "</b>" + (c.tip ? " — " + esc(c.tip) : "") + "</li>"; }).join("") +
+          "</ul></div>";
+      }
+      if (chips.length) {
+        relHtml += '<div class="word-pop-sec"><span class="word-pop-sec-t">🔗 이어서 볼 단어</span><div class="word-pop-chips">' +
+          chips.map(function (w) { return '<button type="button" class="word-chip" data-rel-word="' + escapeAttr(w) + '" lang="en">' + esc(w) + "</button>"; }).join("") +
+          "</div></div>";
+      }
+      if (rel.collo.length) {
+        relHtml += '<div class="word-pop-sec"><span class="word-pop-sec-t">🧱 함께 쓰는 표현</span><ul class="word-pop-list">' +
+          rel.collo.slice(0, 4).map(function (c) { return '<li><b lang="en">' + esc(c.phrase) + "</b> — " + esc(c.ko) + "</li>"; }).join("") +
+          "</ul></div>";
+      }
+      if (rel.idioms.length) {
+        relHtml += '<div class="word-pop-sec"><span class="word-pop-sec-t">💡 숙어·구동사</span><ul class="word-pop-list">' +
+          rel.idioms.slice(0, 4).map(function (it) { return '<li><b lang="en">' + esc(idiomText(it)) + "</b>" + (idiomKo(it) ? " — " + esc(idiomKo(it)) : "") + "</li>"; }).join("") +
+          "</ul></div>";
+      }
+      relHtml += '<div class="word-pop-sec"><span class="word-pop-sec-t">📚 이 단어가 있는 유닛</span><div class="word-pop-chips">' +
+        '<button type="button" class="word-chip" data-rel-unit="' + info.unit + '">UNIT ' + info.unit + " 전체 보기</button></div></div>";
+      html = '<div class="word-pop-head"><span class="word-pop-word" lang="en">' + esc(info.word) + "</span>" +
+        '<span class="word-pop-ipa" lang="en">' + esc(info.ipa) + "</span>" +
+        '<span class="word-pop-pron">' + esc(info.pron) + "</span>" + ttsBtn(info.word, "단어 듣기") + "</div>" +
+        '<p class="word-pop-mean">' + esc(info.meaning) + "</p>" +
+        '<p class="word-pop-meta">UNIT ' + info.unit + " · " + esc(info.title) + " · " + esc(info.level) + "</p>" +
+        '<div class="word-pop-ex" lang="en">' + esc(info.ex) + ttsBtn(info.ex, "예문 듣기") + '<br><span class="ex-ko">' + esc(info.ko) + "</span></div>" +
+        relHtml;
+    }
+    body.innerHTML = html;
+    wordPopLastFocus = document.activeElement;
+    el.hidden = false;
+    var cb = document.getElementById("wordPopClose");
+    if (cb && cb.focus) { try { cb.focus({ preventScroll: true }); } catch (e) {} }
+    track("word_lookup", { word: key });
+  }
+
+  // ---------- 읽기·듣기 라이브러리 (연재 지문 · 3단계) ----------
+  var LIBRARY = [];
+  var libraryRead = storeObject("toeic1000_library");
+  var libState = { idx: 0, level: "basic" };
+  var LIB_LEVELS = [["basic", "기초"], ["intermediate", "중급"], ["advanced", "고급"]];
+  function saveLibraryRead() {
+    try { localStorage.setItem("toeic1000_library", JSON.stringify(libraryRead)); } catch (e) {}
+  }
+  /** 지문 데이터 — 데이터가 아직 안 왔으면 extra.js 에서 직접 읽습니다(프리렌더용). */
+  function libData() {
+    if (typeof LIBRARY !== "undefined" && LIBRARY && LIBRARY.length) return LIBRARY;
+    if (typeof EXTRA === "object" && EXTRA && EXTRA.library && EXTRA.library.length) return EXTRA.library;
+    return [];
+  }
+  /** 지문을 문장 단위로 나눕니다 — 한 문장씩 듣고 따라 읽을 수 있어야 합니다. */
+  function splitSentences(text) {
+    var m = String(text == null ? "" : text).match(/[^.!?]+[.!?]*\s*/g);
+    if (!m) return [];
+    return m.map(function (s) { return s.trim(); }).filter(function (s) { return !!s; });
+  }
+  /**
+   * 지문 본문 — 문장마다 낭독 버튼을 붙이고, 사전에 있는 단어는 누를 수 있게 감쌈니다.
+   * (전체 낭독만 있으면 따라 읽기가 어려워, 문장별 버튼을 함께 둡니다.)
+   */
+  function libraryPassage(text) {
+    var sents = splitSentences(text);
+    if (!sents.length) return linkWords(text);
+    var out = "";
+    for (var i = 0; i < sents.length; i++) {
+      out += '<span class="lib-sent">' + linkWords(sents[i]) + ttsBtn(sents[i], "문장 듣기") + "</span> ";
+    }
+    return out;
+  }
+  /** 지문 속 단어를 누를 수 있게 감쌈니다(사전에 있는 단어만). */
+  /**
+   * 정적 지문(Part 7 은행·이메일 템플릿 등)에도 단어 조회를 붙입니다.
+   * 이 지문들은 index.html·앱 렌더에 이미 글자로 들어 있어, 그려진 뒤 텍스트 노드만 감쌈니다.
+   * 같은 자리를 두 번 처리하지 않게 data-lk 표시를 남깁니다.
+   */
+  function linkifyPassage(el) {
+    if (!el || el.getAttribute("data-lk") === "1") return;
+    var idx = (typeof wordIndex === "object" && wordIndex) ? wordIndex : null;
+    if (!idx || !document.createTreeWalker) return;
+    el.setAttribute("data-lk", "1");
+    var walker = document.createTreeWalker(el, 4, null); // 4 = SHOW_TEXT
+    var nodes = [];
+    while (walker.nextNode()) nodes.push(walker.currentNode);
+    for (var i = 0; i < nodes.length; i++) {
+      var node = nodes[i];
+      var txt = node.nodeValue;
+      if (!txt || !/[A-Za-z]/.test(txt)) continue;
+      var parent = node.parentNode;
+      if (!parent) continue;
+      var parts = txt.split(/([A-Za-z][A-Za-z'’-]*)/);
+      var frag = document.createDocumentFragment();
+      for (var j = 0; j < parts.length; j++) {
+        var part = parts[j];
+        if (!part) continue;
+        if (/^[A-Za-z]/.test(part) && idx[part.toLowerCase()]) {
+          var sp = document.createElement("span");
+          sp.className = "lk-word";
+          sp.setAttribute("data-w", part.toLowerCase());
+          sp.setAttribute("title", "뜻 보기");
+          sp.textContent = part;
+          frag.appendChild(sp);
+        } else {
+          frag.appendChild(document.createTextNode(part));
+        }
+      }
+      parent.replaceChild(frag, node);
+    }
+  }
+  /** 화면에 있는 모든 지문에 단어 조회를 붙입니다(이미 붙은 곳은 건너뜀). */
+  function linkifyPassages() {
+    var els = document.querySelectorAll(".reading-passage, .bank-q, .listen-script, .dialogue-text");
+    for (var i = 0; i < els.length; i++) linkifyPassage(els[i]);
+  }
+  function linkWords(text) {
+    var idx = (typeof wordIndex === "object" && wordIndex) ? wordIndex : null;
+    var toks = esc(text).split(/(\s+)/);
+    var out = "";
+    for (var i = 0; i < toks.length; i++) {
+      var tok = toks[i];
+      var clean = tok.replace(/^[^A-Za-z]+/, "").replace(/[^A-Za-z]+$/, "");
+      if (idx && clean && idx[clean.toLowerCase()]) {
+        out += '<span class="lk-word" data-w="' + escapeAttr(clean.toLowerCase()) + '" title="뜻 보기">' + tok + "</span>";
+      } else {
+        out += tok;
+      }
+    }
+    return out;
+  }
+  /** 연재를 몇 화까지 읽었는지 — 한 화라도 아무 난이도로 읽었으면 읽은 것으로 봅니다. */
+  function libraryReadLabel() {
+    var data = libData();
+    // 프리렌더 샌드박스에는 저장소(libraryRead)가 없어, 없으면 읽음 0 으로 셈합니다.
+    var readMap = (typeof libraryRead === "object" && libraryRead) ? libraryRead : {};
+    var n = 0;
+    data.forEach(function (x) {
+      if (readMap[x.no + "-basic"] || readMap[x.no + "-intermediate"] || readMap[x.no + "-advanced"]) n++;
+    });
+    return "연재 " + n + " / " + data.length + "화";
+  }
+  function markLibraryRead(key) {
+    var el = document.getElementById("libReadState");
+    if (libraryRead[key]) {
+      // 이미 읽은 화라도(문항을 푼 시점) 진행 표시는 갱신해 둡니다.
+      if (el) el.textContent = "✅ 읽음 · " + libraryReadLabel();
+      return;
+    }
+    libraryRead[key] = true;
+    saveLibraryRead();
+    renderBadges();
+    if (el) el.textContent = "✅ 읽음 · " + libraryReadLabel();
+  }
+  function renderLibrary() {
+    var box = document.getElementById("libraryBox");
+    if (!box) return;
+    var data = libData();
+    if (!data.length) { box.innerHTML = '<p class="practice-note">읽기 자료를 불러오는 중입니다…</p>'; return; }
+    var st = (typeof libState === "object" && libState) ? libState : { idx: 0, level: "basic" };
+    if (st.idx >= data.length) st.idx = 0;
+    var ep = data[st.idx];
+    var levels = ep.levels || {};
+    var lv = levels[st.level] || levels.basic;
+    if (!lv) { box.innerHTML = '<p class="practice-note">지문을 불러오지 못했습니다.</p>'; return; }
+    var readMap = (typeof libraryRead === "object" && libraryRead) ? libraryRead : {};
+    var readKey = ep.no + "-" + st.level;
+    var html = '<div class="library-card">';
+    html += '<div class="library-tabs" role="tablist" aria-label="난이도 선택">';
+    LIB_LEVELS.forEach(function (l) {
+      var on = l[0] === st.level;
+      html += '<button type="button" class="lib-tab' + (on ? " on" : "") + '" role="tab" aria-selected="' + (on ? "true" : "false") + '" data-lv="' + l[0] + '">' + l[1] + "</button>";
+    });
+    html += "</div>";
+    html += '<div class="library-head"><span class="library-no">' + ep.no + '화</span><span class="library-title">' + esc(ep.title) + '</span><span class="library-theme">' + esc(ep.theme) + ttsBtn(lv.text, "지문 전체 듣기") + "</span></div>";
+    html += '<div class="reading-passage library-passage" lang="en">' + libraryPassage(lv.text) + "</div>";
+    html += '<details class="library-ko"><summary>해석 보기</summary><p>' + esc(lv.ko) + "</p></details>";
+    (lv.qs || []).forEach(function (q, qi) {
+      html += '<div class="library-q"><p class="reading-q">Q' + (qi + 1) + ". " + esc(q.q) + '</p><div class="bank-options">';
+      (q.opts || []).forEach(function (o) {
+        html += '<button type="button" class="bank-opt lib-opt" data-ep="' + ep.no + '" data-lv="' + st.level + '" data-qi="' + qi + '" data-a="' + escapeAttr(q.a) + '">' + esc(o) + "</button>";
+      });
+      html += '</div><div class="bank-feedback" id="libFb' + ep.no + "-" + st.level + "-" + qi + '" role="status" aria-live="polite" aria-atomic="true"></div></div>';
+    });
+    // 다음 화 예고 — 이어지는 연재라 "다음이 궁금한" 이유로 다시 찾아오게 합니다.
+    var nextEp = data[(st.idx + 1) % data.length];
+    if (nextEp && nextEp !== ep) {
+      html += '<p class="library-next">다음 화 · <b>' + nextEp.no + "화 " + esc(nextEp.title) + "</b>" +
+        (nextEp.theme ? ' <span class="muted">(' + esc(nextEp.theme) + ")</span>" : "") + "</p>";
+    }
+    html += '<div class="library-foot">' +
+      '<button type="button" class="btn" id="libPrev">← 이전 화</button>' +
+      '<button type="button" class="btn quiz-btn" id="libNext">다음 화 →</button>' +
+      '<span class="muted" id="libReadState">' + (readMap[readKey] ? "✅ 읽음" : "아직 안 읽음") + " · " + libraryReadLabel() + "</span>" +
+      "</div>";
+    html += "</div>";
+    box.innerHTML = html;
+    box.querySelectorAll(".lib-tab").forEach(function (b) {
+      b.addEventListener("click", function () { libState.level = b.getAttribute("data-lv"); renderLibrary(); });
+    });
+    var pv = document.getElementById("libPrev");
+    if (pv) pv.addEventListener("click", function () { libState.idx = (libState.idx - 1 + data.length) % data.length; renderLibrary(); });
+    var nx = document.getElementById("libNext");
+    if (nx) nx.addEventListener("click", function () { libState.idx = (libState.idx + 1) % data.length; renderLibrary(); track("library_next", {}); });
+    box.querySelectorAll(".lib-opt").forEach(function (b) {
+      b.addEventListener("click", function () { answerLibrary(b, data); });
+    });
+  }
+  function answerLibrary(btn, data) {
+    if (btn.disabled) return;
+    var a = btn.getAttribute("data-a");
+    var ok = btn.textContent === a;
+    var epNo = btn.getAttribute("data-ep");
+    var lvName = btn.getAttribute("data-lv");
+    var qi = btn.getAttribute("data-qi");
+    var card = btn.closest(".library-card");
+    if (card) {
+      card.querySelectorAll('[data-ep="' + epNo + '"][data-lv="' + lvName + '"][data-qi="' + qi + '"]').forEach(function (o) {
+        o.disabled = true;
+        if (o.textContent === a) o.classList.add("correct");
+      });
+    }
+    if (!ok) btn.classList.add("wrong");
+    recordStat("library_" + lvName, ok);
+    var fb = document.getElementById("libFb" + epNo + "-" + lvName + "-" + qi);
+    if (fb) {
+      var why = "";
+      var epObj = (data || []).filter(function (x) { return String(x.no) === String(epNo); })[0];
+      var lvObj = epObj ? (epObj.levels || {})[lvName] : null;
+      var qObj = lvObj && lvObj.qs ? lvObj.qs[parseInt(qi, 10)] : null;
+      if (qObj && qObj.why) why = '<div class="practice-note">💡 ' + esc(qObj.why) + "</div>";
+      fb.innerHTML = (ok ? "정답입니다! 🎉 " : "오답입니다. 정답: <b>" + esc(a) + "</b> ") + why;
+      restoreFocusToFeedback(fb);
+    }
+    markLibraryRead(epNo + "-" + lvName);
+  }
+
+  // ---------- 참여 콘텐츠 버튼 연결 ----------
+  var challengeStartEl = document.getElementById("challengeStart");
+  if (challengeStartEl) challengeStartEl.addEventListener("click", startChallenge);
+  var challengeChainEl = document.getElementById("challengeChain");
+  if (challengeChainEl) challengeChainEl.addEventListener("click", continueChallenge);
+  var challengeShareEl = document.getElementById("challengeShare");
+  if (challengeShareEl) challengeShareEl.addEventListener("click", function () {
+    shareText(challengeShareText(), "toeic.monster 오늘의 챌린지");
+    track("share_challenge", {});
+  });
+  var challengeAutoEl = document.getElementById("challengeAuto");
+  if (challengeAutoEl) {
+    challengeAutoEl.checked = challengeAuto;
+    challengeAutoEl.addEventListener("change", function () {
+      challengeAuto = !!challengeAutoEl.checked;
+      try { localStorage.setItem("toeic1000_chain", challengeAuto ? "1" : "0"); } catch (e) {}
+    });
+  }
+  var goalSelEl = document.getElementById("goalSel");
+  if (goalSelEl) {
+    goalSelEl.innerHTML = GOAL_OPTIONS.map(function (n) { return '<option value="' + n + '">' + n + "개</option>"; }).join("");
+    goalSelEl.value = String(DAILY_GOAL);
+    goalSelEl.addEventListener("change", function () { setDailyGoal(parseInt(goalSelEl.value, 10)); });
+  }
+  var icsEl = document.getElementById("icsExport");
+  if (icsEl) icsEl.addEventListener("click", exportStudyIcs);
+  // 지문 속 단어(탭/클릭) → 단어 딥다이브
+  document.addEventListener("click", function (e) {
+    var lk = e.target && e.target.closest ? e.target.closest(".lk-word") : null;
+    if (lk) openWordPop(lk.getAttribute("data-w"));
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") closeWordPop();
+  });
+  var lookupEl = document.getElementById("lookupInput");
+  if (lookupEl) {
+    lookupEl.addEventListener("keydown", function (e) {
+      if (e.key !== "Enter") return;
+      e.preventDefault();
+      var q = String(lookupEl.value || "").trim().toLowerCase();
+      if (!q) return;
+      if (wordIndex[q]) openWordPop(q);
+      else showToast("🔎 「" + lookupEl.value.trim() + "」는 사전에 없어요. 철자를 확인해 주세요.");
+    });
+  }
+
   // ---------- 공유 버튼 ----------
   var shareBtn = document.createElement("button");
   shareBtn.className = "btn";
@@ -4962,6 +5686,7 @@
   function startMock() {
     stopMockTimer();
     genMock();
+    track("mock_start", { mode: document.getElementById("mockMode").value, questions: mockQ.length });
     mockIdx = 0;
     mockCorrect = 0;
     mockAnswered = false;
@@ -5052,6 +5777,14 @@
     nextBtn.textContent = (mockIdx === mockQ.length - 1) ? "결과 보기 📊" : "다음 ▶";
   }
 
+  /** 모의고사 결과 공유 문구 — 서버 없이 텍스트로만 공유합니다(점수·파트 요약). */
+  function mockShareText() {
+    var lcS = mockSections[0] || { correct: 0, total: 0 };
+    var rcS = mockSections[1] || { correct: 0, total: 0 };
+    return "toeic.monster 모의고사 " + mockCorrect + "/" + mockQ.length +
+      " · LC " + lcS.correct + "/" + lcS.total + " · RC " + rcS.correct + "/" + rcS.total +
+      "\nhttps://toeic.monster/";
+  }
   function showMockResult() {
     markQuest("exam");
     stopMockTimer();
@@ -5110,6 +5843,7 @@
       '<div class="fc-controls" style="justify-content:center">' +
       '<button class="btn" id="mockRestart">🔁 다시 풀기</button>' +
       '<button class="btn" id="mockWrong">📕 오답 복습</button>' +
+      '<button class="btn" id="mockShare">📤 결과 공유</button>' +
       '<button class="btn" id="mockBack">📖 목록으로</button>' +
       "</div></div>";
   }
@@ -5119,6 +5853,9 @@
   document.getElementById("mockBox").addEventListener("click", function (e) {
     if (e.target.classList.contains("quiz-opt") && !mockAnswered) {
       answerMock(e.target);
+    } else if (e.target.id === "mockShare") {
+      shareText(mockShareText(), "toeic.monster 모의고사");
+      track("share_mock", {});
     } else if (e.target.id === "mockNext") {
       mockIdx++;
       if (mockIdx >= mockQ.length) showMockResult();
@@ -5511,6 +6248,8 @@
     renderGrammarWrongNote();
     watchBookSections();
     collectUnits();
+    // 단어 딥다이브·지문 속 단어 조회에 쓰는 인덱스를 이때 한 번 만듭니다.
+    buildWordIndex();
     syncLevelButtons();
     // 단어 목록(1,000장 카드)은 홈이 아니라 사용자가 목록을 처음 열 때 그립니다(showListView).
     updateProgress();

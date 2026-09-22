@@ -32,6 +32,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import vm from "node:vm";
 import { fileURLToPath } from "node:url";
 import { readAppSource } from "./app-source.mjs";
 
@@ -740,6 +741,129 @@ console.log("\n[7] 교재 → 앱 딥링크 (?level=·&ch=)");
     assert(resolveChapter(books, "basic", 99) === 0, "없는 과 번호(ch=99)는 전체 과로 돌립니다");
     assert(resolveChapter(books, "advanced", 5) === 0, "그 단계에 없는 과는 전체 과로 돌립니다");
   }
+}
+
+/* ------------------------------------------------------------------ */
+/* 9. 참여·습관 콘텐츠 — 날짜 시드 챌린지 · 단어 딥다이브 · 읽기 라이브러리 */
+/* ------------------------------------------------------------------ */
+
+// 오늘의 챌린지는 "같은 날에는 같은 문제, 자정이 지나면 새 문제"를 씨앗 고정 섞기로 만듭니다.
+// 여기서는 그 규칙(결정성·날짜 구분)과, 새 UI 요소들이 마크업에 빠지지 않았는지 확인합니다.
+console.log("\n[9] 오늘의 챌린지 · 딥다이브 · 읽기 라이브러리");
+{
+  const seedBlock = slice("  function seedOf(key) {", "  function buildChallengePool() {", html, "씨앗·섞기 블록");
+  let seeded = null;
+  try {
+    seeded = new Function(`${seedBlock}\n  return { seedOf: seedOf, seededShuffle: seededShuffle };`)();
+  } catch (e) {
+    bad("씨앗·섞기 블록을 실행할 수 없습니다", e.message);
+  }
+  if (seeded) {
+    const a = seeded.seedOf("2026-09-22");
+    assert(a === seeded.seedOf("2026-09-22"), "같은 날짜는 항상 같은 씨앗을 만듭니다");
+    assert(a !== seeded.seedOf("2026-09-23"), "날짜가 바뀌면 씨앗도 바뀝니다");
+
+    const list = [];
+    for (let i = 0; i < 20; i++) list.push("w" + i);
+    const s1 = seeded.seededShuffle(list, a).join(",");
+    const s2 = seeded.seededShuffle(list, a).join(",");
+    assert(s1 === s2, "같은 씨앗이면 섞은 순서도 항상 같습니다(새로고침해도 그날 세트 유지)");
+    assert(
+      s1.split(",").sort().join(",") === list.slice().sort().join(","),
+      "섞어도 문제가 빠지거나 늘지 않습니다",
+    );
+    assert(s1 !== seeded.seededShuffle(list, seeded.seedOf("2026-09-23")).join(","), "다른 날은 다른 순서가 됩니다");
+  }
+
+  const weekBlock = slice("  function weekKeyOf(key) {", "  function freezeAvailable() {", html, "주 단위 키");
+  let weekKeyOf = null;
+  try {
+    weekKeyOf = new Function(`${weekBlock}\n  return weekKeyOf;`)();
+  } catch (e) {
+    bad("주 단위 키 블록을 실행할 수 없습니다", e.message);
+  }
+  if (weekKeyOf) {
+    assert(weekKeyOf("2026-09-22") === weekKeyOf("2026-09-22"), "같은 날은 같은 주 키를 갖습니다");
+    assert(weekKeyOf("2026-09-22") !== weekKeyOf("2026-10-06"), "2주 뒤는 다른 주 키를 갖습니다(보호권 주 1회)");
+  }
+
+  // 새 UI · 연결이 마크업·코드에 실제로 있는지(빠지면 기능이 조용히 사라집니다).
+  const countOf = (needle) => html.split(needle).length - 1;
+  for (const id of [
+    "challengeStart", "challengeChain", "challengeShare", "challengeAuto", "goalSel", "icsExport", "challengeBox",
+    "libraryBox", "lookupInput",
+  ]) {
+    assert(countOf(`id="${id}"`) === 1, `마크업에 #${id} 가 정확히 1개 있습니다`, `${countOf(`id="${id}"`)}개`);
+  }
+  assert(/data-target="읽기·듣기 라이브러리"/.test(html), "읽기 라이브러리 섹션 이동 칩이 있습니다");
+  assert(/class="home-section" aria-label="읽기·듣기 라이브러리"/.test(html), "읽기 라이브러리 섹션이 있습니다");
+  assert(/for="lookupInput"/.test(html), "단어 찾기 입력에 이름표(label)가 붙어 있습니다");
+
+  // 연재 지문 데이터 — 화·난이도·문항이 실제로 채워져 있는지 봅니다(내용이 비면 섹션이 조용히 빕니다).
+  const libSandbox = { window: {} };
+  vm.createContext(libSandbox);
+  vm.runInContext(read("data/extra.js"), libSandbox, { filename: "data/extra.js", timeout: 5000 });
+  const library = (libSandbox.window.TOEIC_EXTRA || {}).library || [];
+  assert(library.length >= 6, `연재 지문이 ${library.length}화 있습니다(6화 이상)`);
+  const libNos = library.map((e) => e.no);
+  assert(libNos.join(",") === libNos.slice().sort((a, b) => a - b).join(","), "연재 화 번호가 순서대로 이어집니다");
+  let libQ = 0;
+  let libBad = 0;
+  library.forEach((e) => {
+    ["basic", "intermediate", "advanced"].forEach((k) => {
+      const lv = (e.levels || {})[k];
+      if (!lv || !lv.text || !lv.ko) {
+        libBad++;
+        return;
+      }
+      if ((lv.qs || []).length < 3) libBad++;
+      (lv.qs || []).forEach((q) => {
+        libQ++;
+        if (!q.why || (q.opts || []).length < 2 || (q.opts || []).indexOf(q.a) === -1) libBad++;
+      });
+    });
+  });
+  assert(libBad === 0, "모든 화·난이도에 지문·해석과 문항 3개(보기·해설 포함)가 있습니다", `부족 ${libBad}곳`);
+  assert(libQ >= 54, `연재 문항이 ${libQ}개입니다(6화 × 3단계 × 3문항)`);
+  assert(/해석 보기/.test(html), "연재 지문에 해석 토글이 붙습니다");
+
+  // 문장 나누기 — 문장별 낭독 버튼의 근간(문장부호를 남기고 끊어야 낭독이 자연스럽습니다).
+  const sentBlock = slice("  function splitSentences(text) {", "  /**\n   * 지문 본문", html, "문장 나누기");
+  let splitSentences = null;
+  try {
+    splitSentences = new Function(`${sentBlock}\n  return splitSentences;`)();
+  } catch (e) {
+    bad("문장 나누기 블록을 실행할 수 없습니다", e.message);
+  }
+  if (splitSentences) {
+    const s3 = splitSentences("Mina starts her new job today. She arrives at nine. Her manager greets her.");
+    assert(s3.length === 3, `지문이 문장 3개로 나뉩니다 (${s3.length}개)`);
+    assert(s3[0] === "Mina starts her new job today.", `문장부호를 남겨 끊습니다 (${s3[0]})`);
+    assert(s3.join(" ") === "Mina starts her new job today. She arrives at nine. Her manager greets her.", "나눈 문장을 다시 붙이면 원문이 됩니다");
+    assert(splitSentences("").length === 0, "빈 지문은 문장 0개로 처리합니다");
+  }
+  assert(/title="문장 듣기"/.test(html), "지문에 문장별 낭독 버튼이 붙습니다");
+  assert(/class="lib-sent"/.test(html), "문장이 낭독 단위로 감싸집니다");
+  assert(/class="library-next"/.test(html), "다음 화 예고가 붙습니다");
+  assert(/function linkifyPassages\(/.test(html), "모든 지문(Part 7 등)에 단어 조회를 붙이는 통로가 있습니다");
+  assert(countOf('id="freezeChip"') === 1, "상단 보호권 상태 표시가 마크업에 정확히 1개 있습니다");
+  assert(/function libraryReadLabel\(/.test(html), "연재 읽음 진행을 세는 함수가 있습니다");
+
+  assert(/id="mockShare"/.test(html), "모의고사 결과에도 공유 버튼이 붙습니다");
+  assert(/function mockShareText\(/.test(html), "모의고사 공유 문구를 만드는 함수가 있습니다");
+
+  for (const fn of ["startChallenge", "renderLibrary", "openWordPop", "exportStudyIcs", "shareText", "track", "libraryPassage", "linkifyPassage"]) {
+    assert(
+      new RegExp(`function ${fn}\\(`).test(html),
+      `앱 코드에 ${fn}() 가 있습니다`,
+      "새 기능이 조용히 사라지지 않게 지킵니다",
+    );
+  }
+  assert(
+    /setAttribute\("role", "dialog"\)[\s\S]{0,220}setAttribute\("aria-label", "단어 상세"\)/.test(html),
+    "딥다이브 팝업이 접근 가능한 대화 상자입니다",
+  );
+  assert(/class="lk-word"/.test(html), "지문 속 단어가 누를 수 있게 감싸집니다");
 }
 
 /* ------------------------------------------------------------------ */

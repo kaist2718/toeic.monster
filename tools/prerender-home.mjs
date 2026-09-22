@@ -75,6 +75,9 @@ const SECTIONS = [
   { label: "빈출 구동사·숙어", ids: ["idiomGrid"], vars: ["IDIOMS", "IDIOM_PAGE", "idiomShown"], render: "renderIdioms", items: /idiom-card/g },
   { label: "전략·공략 가이드", ids: ["guideCardGrid"], render: "renderGuides", items: /guide-card/g },
   { label: "30일 스프린트", ids: ["sprintBox"], vars: ["all"], render: "renderSprint", items: /sprint-item/g },
+  // 읽기·듣기 라이브러리 — 지문·문항이 모두 읽는 내용이라 크롤러에게도 남깁니다.
+  // renderLibrary 가 부르는 도우미(libData·linkWords)도 함께 떼어내 실행해야 합니다.
+  { label: "읽기·듣기 라이브러리", ids: ["libraryBox"], vars: ["LIB_LEVELS"], fns: ["libData", "linkWords", "splitSentences", "libraryPassage", "libraryReadLabel"], render: "renderLibrary", items: /library-card/g },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -223,6 +226,10 @@ function renderSection(section) {
   for (const id of section.ids) elementOf(id).innerHTML = "";
   for (const name of section.vars || []) {
     vm.runInContext(extractVar(name), sandbox, { filename: `assets/app.js:var ${name}`, timeout: 5000 });
+  }
+  // 렌더 함수가 부르는 도우미들(선택) — 떼어내지 않으면 프리렌더에서 ReferenceError 가 납니다.
+  for (const fn of section.fns || []) {
+    vm.runInContext(extractFunction(fn), sandbox, { filename: `assets/app.js:${fn}`, timeout: 5000 });
   }
   vm.runInContext(extractFunction(section.render), sandbox, { filename: `assets/app.js:${section.render}`, timeout: 5000 });
   vm.runInContext(`${section.render}(${section.args || ""});`, sandbox, {

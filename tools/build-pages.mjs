@@ -449,7 +449,7 @@ ${body}
 </main>
 <footer class="ft wrap">
   <nav>
-    ${footerNav || `<a href="../">홈</a><a href="./">주제별 단어장</a><a href="idioms.html">빈출 구동사·숙어</a><a href="../grammar/">문법 교재</a><a href="../conversation/">회화 교재</a><a href="../privacy.html">개인정보처리방침</a><a href="../terms.html">이용약관</a>`}
+    ${footerNav || `<a href="../">홈</a><a href="./">주제별 단어장</a><a href="idioms.html">빈출 구동사·숙어</a><a href="../grammar/">문법 교재</a><a href="../conversation/">회화 교재</a><a href="../about.html">사이트 소개</a><a href="../privacy.html">개인정보처리방침</a><a href="../terms.html">이용약관</a>`}
   </nav>
   <p>👾 toeic.monster · TOEIC 어휘 무료 학습 사이트 · 학습 기록은 브라우저에만 저장됩니다</p>
 </footer>
@@ -1235,6 +1235,7 @@ ${units && units.length ? unitJumpList(units, -1, `📚 단어장 유닛 바로 
 const GUIDE_FOOTER =
   '<a href="../">홈</a><a href="../units/">주제별 단어장</a><a href="index.html">전략·공략 가이드</a>' +
   '<a href="../grammar/">문법 교재</a><a href="../conversation/">회화 교재</a>' +
+  '<a href="../about.html">사이트 소개</a>' +
   '<a href="../privacy.html">개인정보처리방침</a><a href="../terms.html">이용약관</a>';
 
 /** 전략·공략 가이드 허브의 문답. */
@@ -1432,6 +1433,7 @@ ${guides && guides.length ? guideJumpList(guides, g.slug) : ""}`;
 const GRAMMAR_FOOTER =
   '<a href="../">홈</a><a href="../units/">주제별 단어장</a><a href="index.html">문법 교재</a>' +
   '<a href="../conversation/">회화 교재</a><a href="../guides/">전략·공략 가이드</a>' +
+  '<a href="../about.html">사이트 소개</a>' +
   '<a href="../privacy.html">개인정보처리방침</a><a href="../terms.html">이용약관</a>';
 
 /** 과 번호에 붙는 앵커 id — 목차 링크와 감사(앵커 검증)가 함께 씁니다. */
@@ -1861,6 +1863,7 @@ ${sections}
 const CONVERSATION_FOOTER =
   '<a href="../">홈</a><a href="../units/">주제별 단어장</a><a href="index.html">회화 교재</a>' +
   '<a href="../grammar/">문법 교재</a><a href="../guides/">전략·공략 가이드</a>' +
+  '<a href="../about.html">사이트 소개</a>' +
   '<a href="../privacy.html">개인정보처리방침</a><a href="../terms.html">이용약관</a>';
 
 /** 회화 교재 허브의 문답. */
@@ -2421,6 +2424,8 @@ function buildSitemap(units, lastmod, guides, grammar, conversation) {
       (b.chapters || []).forEach((c) => add(`${SITE}/conversation/${chapterFile(b.id, c.no)}`, "monthly", "0.6"));
     });
   }
+  // 사이트 소개 — 운영 주체·학습 방법·데이터 정책을 담은 색인 대상 페이지.
+  add(`${SITE}/about.html`, "monthly", "0.5");
   // privacy.html·terms.html 은 robots=noindex 이므로 사이트맵에 넣지 않는다.
   // (noindex 페이지를 사이트맵에 제출하면 서치콘솔에서 오류로 보고된다.)
 
