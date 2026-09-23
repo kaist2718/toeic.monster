@@ -100,14 +100,11 @@
   var examBest = 0;
   try { examBest = parseInt(localStorage.getItem("toeic1000_exambest") || "0", 10) || 0; } catch (e) { examBest = 0; }
 
-  // ---------- 분석 이벤트 (Umami Cloud) ----------
-  // 쿠키를 쓰지 않는 익명 통계입니다. 어떤 기능이 실제로 쓰이는지 세어 다음 개선의 근거로 삼습니다.
-  // (분석이 막힌 환경에서도 학습은 그대로 돌아가야 하므로 조용히 넘어갑니다.)
-  function track(name, data) {
-    try {
-      if (window.umami && typeof window.umami.track === "function") window.umami.track(name, data || undefined);
-    } catch (e) { /* 분석 실패는 학습을 막지 않습니다 */ }
-  }
+  // ---------- 분석 이벤트 (비활성) ----------
+  // 방문 분석은 Counter.dev 를 씁니다(assets/analytics.js). Counter.dev 에는 Umami 의
+  // 커스텀 이벤트 기능이 없어, 아래 track(...) 호출은 **이름만 남겨 둡니다**
+  // (어떤 기능을 세던 것인지의 기록입니다). 이벤트를 지원하는 도구로 옮기면 이 함수 하나만 되살리면 됩니다.
+  function track() { /* Counter.dev 에는 커스텀 이벤트가 없습니다 */ }
 
   // ---------- 스트릭 보호권 ----------
   // 주 1회, 하루를 건너뛰어도 연속 기록이 끊기지 않습니다(연속 학습의 손실 회피를 지켜 주는 장치).
