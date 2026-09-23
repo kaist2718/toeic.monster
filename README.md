@@ -35,6 +35,7 @@ npm run serve       # http://127.0.0.1:8000 에서 미리보기
 
 ```
 index.html          홈(앱)의 마크업 — 첫 페인트 부트스트랩(테마)만 인라인으로 남습니다.
+about.html          사이트 소개 + 문의 폼(Formspree) — 푸터의 「문의하기」가 #contact 로 연결됩니다.
 units/ grammar/ conversation/ guides/   생성된 정적 페이지 (build-pages.mjs)
                     — units/ 안에 단어장 허브 · 유닛 30개 · 빈출 어휘 200선(frequency.html)
                       · 혼동 어휘 20쌍(confusion.html) · 숙어(idioms.html)
@@ -48,6 +49,34 @@ tools/              빌드·감사(콘텐츠·문구·구조·접근성)·점검
 promo/              홍보 영상·게시 도구 (사이트 배포 대상 아님)
 docs/               기획·점검 기록 (사이트 배포 대상 아님)
 ```
+
+## 문의 폼 (Formspree)
+
+문의는 별도 서버 없이 [Formspree](https://formspree.io)로 받습니다.
+
+**현재 연결 상태:** toeic.monster → `https://formspree.io/f/mkjgbwde`
+
+- 위치: `about.html` 의 `<section id="contact">` 안. 푸터(모든 페이지)의 「문의하기」가 이 섹션으로 이동합니다.
+- 수신처를 바꾸려면 **`about.html` 의 `<form ... action>` 한 줄**의 폼 ID만 바꾸면 됩니다.
+  사이트별로 다른 폼을 쓰려면 각 사이트의 `action` 에 각자의 폼 ID를 넣습니다.
+- 보내는 값: `type`(문의 유형) · `email`(답장 주소 — Formspree 가 회신 주소로 씁니다) · `where`(관련 단어·페이지) ·
+  `message` · `_subject`(유형·대상을 붙인 제목) · 맨 아래 인라인 스크립트가 AJAX 전송을 맡습니다.
+  reCAPTCHA를 켜면 `g-recaptcha-response` 가 더해집니다.
+- 전송 형식은 **`FormData`(multipart/form-data)** 입니다. `Content-Type` 을 직접 지정하지 않아
+  CORS 사전 요청(preflight)이 없고, 폼을 직접 POST 할 때와 같은 형식입니다.
+- **스팸 방지 기본값**: 숨은 함정 칸(`name="_gotcha"`)을 1px 로만 남겼습니다(표준 visually-hidden).
+  봇이 이 칸을 채우면 Formspree가 제출을 조용히 버립니다(사람에게는 보이지 않고 탭 순서에서도 빠집니다).
+- **reCAPTCHA v3 (선택)**: `<form data-recaptcha-key="">` 에 사이트 키를 넣으면 켜집니다
+  (같은 키의 비밀 키를 Formspree 폼 설정에 넣어야 합니다). 켠 경우에만 첫 전송 때 Google 스크립트를
+  한 번 불러오고 토큰을 붙입니다 — **비워 두면 외부 요청이 0** 입니다.
+- **스크립트가 없어도 동작합니다.**  `action` 으로 그대로 POST 되어 Formspree 안내 페이지가 뜹니다.
+  스크립트가 있으면 페이지 이동 없이 제자리에 성공·실패 문구를 보여 주고, 전송 중에는 버튼을 잠급니다.
+  실패·한도 초과(`429`)는 이메일 주소로도 보낼 수 있게 안내합니다.
+- 대시보드에서 **Restrict to domain → `toeic.monster`** 를 넣어 두면 다른 도메인에서 오는 제출이 스팸함으로 갑니다.
+  (이 설정은 프로젝트당 도메인 한 개입니다. 무료 플랜도 쓸 수 있습니다 — 폼·프로젝트 무제한, 월 50건 합산.)
+- `about.html` 은 `tools/stage-site.mjs` 의 **`PUBLIC_FILES` 에 있어야 배포됩니다.**
+  이 목록에 없던 동안 `about.html` 은 라이브에서 404 였고(푸터·sitemap 이 가리키는 채로) `npm run stage` 가 매번 실패했습니다.
+  새 페이지를 만들면 이 목록에 넣고 `npm run stage` 로 확인하세요.
 
 ## 배포
 

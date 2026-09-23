@@ -42,6 +42,9 @@ const SITE = "https://toeic.monster";
 const PUBLIC_FILES = [
   "index.html",
   "404.html",
+  // about.html 은 푸터(사이트 소개)와 sitemap.xml 이 부르는데 이 목록에 없어서
+  // 배포본에 담기지 않았습니다 — 라이브에서 404 였고, 아래 sitemap 검사도 매번 실패했습니다.
+  "about.html",
   "privacy.html",
   "terms.html",
   "manifest.webmanifest",

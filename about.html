@@ -102,13 +102,55 @@
   a { color: #3b5bdb; }
   .back { display: inline-block; margin-top: 10px; color: #3b5bdb; font-size: 14px; text-decoration: none; font-weight: 600; }
   .back:hover { text-decoration: underline; }
+  /* ── 문의 폼 ─────────────────────────────────────── */
+  .cf { margin-top: 14px; }
+  .cf-row { margin-bottom: 14px; }
+  .cf-row label { display: block; font-size: 13px; font-weight: 600; color: #343a40; margin-bottom: 6px; }
+  .cf-req { font-size: 11px; font-weight: 700; color: #c92a2a; }
+  .cf-opt { font-size: 11px; font-weight: 600; color: #868e96; }
+  .cf-row input, .cf-row select, .cf-row textarea {
+    width: 100%;
+    padding: 10px 12px;
+    font: inherit;
+    font-size: 14px;
+    color: #212529;
+    background: #fff;
+    border: 1px solid #d7dbe0;
+    border-radius: 8px;
+  }
+  .cf-row textarea { resize: vertical; min-height: 108px; }
+  .cf-row input:focus, .cf-row select:focus, .cf-row textarea:focus { border-color: #3b5bdb; box-shadow: 0 0 0 3px rgba(59, 91, 219, .16); }
+  .cf-row input:focus-visible, .cf-row select:focus-visible, .cf-row textarea:focus-visible { outline: 2px solid #3b5bdb; outline-offset: 1px; }
+  .cf-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 4px; }
+  .cf-submit { padding: 10px 20px; font: inherit; font-size: 14px; font-weight: 700; color: #fff; background: #3b5bdb; border: 0; border-radius: 8px; cursor: pointer; }
+  .cf-submit:hover { background: #2f4bc0; }
+  .cf-submit:disabled { background: #4c6bd6; cursor: progress; }
+  .cf-submit:focus-visible { outline: 2px solid #212529; outline-offset: 2px; }
+  .cf-status { margin: 0; font-size: 13px; color: #495057; }
+  .cf-status.cf-ok { color: #1c7c4a; }
+  .cf-status.cf-error { color: #c92a2a; }
+  .cf-alt { margin-top: 14px; }
+  /* 스팸 함정 칸 — 사람에게는 안 보이지만 봇은 채울 수 있게 문서 안에 둡니다.
+     (표준 visually-hidden 패턴 — display:none 은 봇도 건너뛰고, 화면 밖 이동은 가로 스크롤을 만듭니다.) */
+  .honeypot {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
 </style>
 </head>
 <body>
 <main class="wrap">
   <header>
     <h1>👾 toeic.monster 소개</h1>
-    <div class="date">최종 갱신: 2026년 9월 22일</div>
+    <div class="date">최종 갱신: 2026년 9월 23일</div>
   </header>
 
   <section>
@@ -165,13 +207,192 @@
     <p>문의 이메일로 알려 주시면 확인 후 반영합니다. 배포 전에 데이터 중복·표기·문항 정답·낭독 가능 여부를 기계적으로 점검하고, 브라우저에서 실제로 눌러 보는 점검도 함께 돌리고 있습니다.</p>
   </section>
 
-  <section>
+  <section id="contact">
     <h2>문의</h2>
-    <p>오탈자 제보, 콘텐츠 제안, 그 밖의 문의는 아래 주소로 보내 주세요.</p>
-    <p>📧 이메일: <a href="mailto:kaist2718@gmail.com">kaist2718@gmail.com</a></p>
+    <p>오탈자 제보, 콘텐츠 제안, 그 밖의 문의는 아래 폼으로 보내 주세요. 영업일 기준 2~3일 안에 답장드립니다.</p>
+
+    <!-- ▼ Formspree 연결 지점 (toeic.monster 문의 폼 ID: mkjgbwde).
+         action 의 폼 ID를 바꾸면 수신처가 바뀝니다.
+         data-recaptcha-key 에 Google reCAPTCHA v3 **사이트 키**를 넣으면 스팸 방지가 켜집니다
+         (Formspree 쪽에는 같은 키의 비밀 키를 넣어야 합니다. 비워 두면 외부 요청이 0입니다).
+         폼을 쓰기 어려운 환경을 위해 이메일 주소도 함께 안내합니다. -->
+    <form class="cf" id="contactForm" action="https://formspree.io/f/mkjgbwde"
+          method="POST" data-recaptcha-key="">
+      <div class="cf-row">
+        <label for="cfType">문의 유형</label>
+        <select id="cfType" name="type">
+          <option value="오탈자·오류 제보">오탈자·오류 제보</option>
+          <option value="콘텐츠 제안">콘텐츠 제안</option>
+          <option value="기타 문의">기타 문의</option>
+        </select>
+      </div>
+
+      <div class="cf-row">
+        <label for="cfEmail">답장 받을 이메일 <span class="cf-req">필수</span></label>
+        <input id="cfEmail" name="email" type="email" required autocomplete="email" placeholder="you@example.com">
+      </div>
+
+      <div class="cf-row">
+        <label for="cfWhere">관련 단어·페이지 <span class="cf-opt">선택</span></label>
+        <input id="cfWhere" name="where" type="text" placeholder="예: unit-12 · arrange">
+      </div>
+
+      <div class="cf-row">
+        <label for="cfMsg">내용 <span class="cf-req">필수</span></label>
+        <textarea id="cfMsg" name="message" rows="5" required placeholder="오탈자라면 어느 부분인지 함께 적어 주시면 훨씬 빠르게 고칠 수 있습니다."></textarea>
+      </div>
+
+      <!-- 제목은 스크립트가 유형·대상까지 붙여 다시 씁니다(스크립트가 없으면 이 값 그대로). -->
+      <input id="cfSubject" type="hidden" name="_subject" value="toeic.monster 문의">
+
+      <!-- 스팸 봇만 채우는 함정 칸 — 값이 있으면 Formspree가 제출을 버립니다.
+           화면에서는 1px 로만 남기고(display:none 이 아니라) 탭 순서에서도 뺐습니다. -->
+      <div class="honeypot" aria-hidden="true">
+        <label for="cfGotcha">이 칸은 비워 두세요</label>
+        <input id="cfGotcha" type="text" name="_gotcha" tabindex="-1" autocomplete="off">
+      </div>
+
+      <div class="cf-actions">
+        <button class="cf-submit" type="submit">보내기</button>
+        <p class="cf-status" id="cfStatus" role="status" aria-live="polite"></p>
+      </div>
+    </form>
+
+    <p class="cf-alt">폼이 동작하지 않으면 📧 이메일 <a href="mailto:kaist2718@gmail.com">kaist2718@gmail.com</a> 로도 받습니다.</p>
   </section>
 
   <a class="back" href="./">← toeic.monster 홈으로 돌아가기</a>
 </main>
+
+<script>
+  /* 문의 폼 — Formspree로 AJAX 전송(페이지 이동 없이 결과를 그 자리에 표시).
+     스크립트가 없으면 브라우저가 form 의 action 으로 그대로 POST 해 Formspree 안내 페이지가 뜹니다.
+     즉 이 스크립트는 “있으면 더 편한” 계층입니다(폼 자체는 스크립트 없이도 동작). */
+  (function () {
+    var form = document.getElementById("contactForm");
+    if (!form || typeof window.fetch !== "function") return;
+
+    var statusEl = document.getElementById("cfStatus");
+    var submitBtn = form.querySelector("button[type=submit]");
+    var typeEl = document.getElementById("cfType");
+    var whereEl = document.getElementById("cfWhere");
+    var subjectEl = document.getElementById("cfSubject");
+    var endpoint = form.getAttribute("action") || "";
+    var busy = false;
+
+    /* Google reCAPTCHA v3 — <form data-recaptcha-key="..."> 에 사이트 키를 넣으면 켜집니다
+       (Formspree 쪽에는 같은 키의 비밀 키를 넣어야 합니다).
+       비워 두면 Google 스크립트를 아예 불러오지 않아 외부 요청이 0입니다. */
+    var recaptchaKey = (form.getAttribute("data-recaptcha-key") || "").trim();
+    var recaptchaReady = false;
+    var recaptchaLoading = false;
+    var recaptchaQueue = [];
+
+    /* 스크립트를 한 번만 불러오고, 그 동안 들어온 요청은 모아 함께 처리합니다. */
+    function ensureRecaptcha(callback) {
+      if (recaptchaReady) return callback(true);
+
+      recaptchaQueue.push(callback);
+      if (recaptchaLoading) return;
+      recaptchaLoading = true;
+
+      var head = document.head || document.body;
+      var script = document.createElement("script");
+      script.src = "https://www.google.com/recaptcha/api.js?render=" + encodeURIComponent(recaptchaKey);
+      script.async = true;
+      script.onload = function () { flush(true); };
+      script.onerror = function () { flush(false); };
+      head.appendChild(script);
+
+      function flush(ok) {
+        recaptchaReady = ok;
+
+        var queue = recaptchaQueue;
+        recaptchaQueue = [];
+        queue.forEach(function (fn) { fn(ok); });
+      }
+    }
+
+    /* 토큰을 못 받아도 전송은 시도합니다(최종 판단은 Formspree — 실패하면 아래 안내가 뜹니다). */
+    function withRecaptchaToken(callback) {
+      if (!recaptchaKey) return callback("");
+
+      ensureRecaptcha(function (ok) {
+        if (!ok || !window.grecaptcha) return callback("");
+
+        window.grecaptcha.ready(function () {
+          window.grecaptcha.execute(recaptchaKey, { action: "submit" }).then(
+            function (token) { callback(token || ""); },
+            function () { callback(""); }
+          );
+        });
+      });
+    }
+
+    function say(message, isError) {
+      if (!statusEl) return;
+      statusEl.textContent = message || "";
+      statusEl.className = "cf-status" + (message ? (isError ? " cf-error" : " cf-ok") : "");
+    }
+
+    function finish() {
+      busy = false;
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "보내기";
+      }
+    }
+
+    form.addEventListener("submit", function (e) {
+      /* 브라우저 기본 검사(required · type=email)를 통과한 뒤에만 submit 이벤트가 옵니다. */
+      e.preventDefault();
+      if (busy) return;
+      busy = true;
+
+      say("");
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = "보내는 중…";
+      }
+      if (subjectEl && typeEl) {
+        var where = whereEl && whereEl.value.trim();
+        subjectEl.value = "toeic.monster · " + typeEl.value + (where ? " · " + where : "");
+      }
+
+      /* FormData(multipart/form-data) 로 보냅니다 — Content-Type 을 직접 지정하지 않아
+         CORS 사전 요청(preflight)이 없고, 폼을 그대로 POST 할 때와 같은 형식입니다. */
+      withRecaptchaToken(function (token) {
+        var data = new FormData(form);
+        if (token) data.set("g-recaptcha-response", token);
+
+        window.fetch(endpoint, {
+          method: "POST",
+          headers: { Accept: "application/json" },
+          body: data
+        }).then(sent, failed);
+      });
+
+      function sent(res) {
+        if (res.ok) {
+          say("문의를 보냈습니다. 적어 주신 주소로 답장드리겠습니다.", false);
+          form.reset();
+          finish();
+          return;
+        }
+
+        /* 429 는 Formspree 전송 한도(분당 20건 · 요금제별 월 한도) 초과입니다. */
+        say(res.status === 429
+          ? "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요."
+          : "전송하지 못했습니다. 잠시 후 다시 시도하거나 이메일로 보내 주세요.", true);
+        finish();
+      }
+
+      function failed() {
+        say("전송하지 못했습니다. 잠시 후 다시 시도하거나 이메일로 보내 주세요.", true);
+        finish();
+      }
+    });
+  })();
+</script>
 </body>
 </html>
