@@ -215,9 +215,11 @@
          action 의 폼 ID를 바꾸면 수신처가 바뀝니다.
          data-recaptcha-key 에 Google reCAPTCHA v3 **사이트 키**를 넣으면 스팸 방지가 켜집니다
          (Formspree 쪽에는 같은 키의 비밀 키를 넣어야 합니다. 비워 두면 외부 요청이 0입니다).
-         폼을 쓰기 어려운 환경을 위해 이메일 주소도 함께 안내합니다. -->
+         폼을 쓰기 어려운 환경을 위해 이메일 주소도 함께 안내합니다.
+         accept-charset="UTF-8" — 스크립트 없이 전송될 때 브라우저가 본문을 UTF-8 로
+         인코딩하도록 못 박습니다(한글이 CP949 로 나가면 수신 메일이 깨집니다). -->
     <form class="cf" id="contactForm" action="https://formspree.io/f/mkjgbwde"
-          method="POST" data-recaptcha-key="">
+          method="POST" data-recaptcha-key="" accept-charset="UTF-8">
       <div class="cf-row">
         <label for="cfType">문의 유형</label>
         <select id="cfType" name="type">
@@ -270,7 +272,9 @@
      즉 이 스크립트는 “있으면 더 편한” 계층입니다(폼 자체는 스크립트 없이도 동작). */
   (function () {
     var form = document.getElementById("contactForm");
-    if (!form || typeof window.fetch !== "function") return;
+    /* 본문을 UTF-8 로 직접 만들려면 URLSearchParams 가 필요합니다(없으면 그대로 POST). */
+    if (!form || typeof window.fetch !== "function" ||
+        typeof window.URLSearchParams !== "function") return;
 
     var statusEl = document.getElementById("cfStatus");
     var submitBtn = form.querySelector("button[type=submit]");
@@ -343,6 +347,28 @@
       }
     }
 
+    /* 폼 값을 UTF-8 퍼센트 인코딩 문자열로 만듭니다.
+       extra 는 폼 입력값에 덧붙일 값(토큰)입니다.
+
+       왜 FormData(multipart) 대신 직접 만드는가:
+         multipart 는 값 자체는 UTF-8 로 나가지만 "이 본문은 UTF-8" 이라는 표시가
+         본문에 없습니다. 그래서 수신 쪽이 다른 문자셋으로 해석하면 한글이 깨져
+         도착합니다(실제로 EUC-KR/CP949 로 해석된 깨진 메일을 받은 적이 있습니다).
+         x-www-form-urlencoded 는 문자셋을 Content-Type 에 적을 수 있고,
+         URLSearchParams 는 값을 항상 UTF-8 퍼센트 인코딩으로 만듭니다. */
+    function utf8Body(extra) {
+      var data = new FormData(form);
+
+      Object.keys(extra).forEach(function (name) { data.set(name, extra[name]); });
+
+      var params = new URLSearchParams();
+      data.forEach(function (value, name) {
+        if (typeof value === "string") params.append(name, value); /* 파일 필드는 없습니다 */
+      });
+
+      return params.toString();
+    }
+
     form.addEventListener("submit", function (e) {
       /* 브라우저 기본 검사(required · type=email)를 통과한 뒤에만 submit 이벤트가 옵니다. */
       e.preventDefault();
@@ -359,16 +385,20 @@
         subjectEl.value = "toeic.monster · " + typeEl.value + (where ? " · " + where : "");
       }
 
-      /* FormData(multipart/form-data) 로 보냅니다 — Content-Type 을 직접 지정하지 않아
-         CORS 사전 요청(preflight)이 없고, 폼을 그대로 POST 할 때와 같은 형식입니다. */
+      /* x-www-form-urlencoded + charset=UTF-8 로 보냅니다 — 문자셋을 본문에 적어 두어야
+         수신 쪽이 한글을 UTF-8 로 해석합니다.
+         x-www-form-urlencoded 는 CORS 안전 헤더라 사전 요청(preflight)이 없습니다. */
       withRecaptchaToken(function (token) {
-        var data = new FormData(form);
-        if (token) data.set("g-recaptcha-response", token);
+        var extra = {};
+        if (token) extra["g-recaptcha-response"] = token;
 
         window.fetch(endpoint, {
           method: "POST",
-          headers: { Accept: "application/json" },
-          body: data
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
+          },
+          body: utf8Body(extra)
         }).then(sent, failed);
       });
 

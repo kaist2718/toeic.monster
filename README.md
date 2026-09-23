@@ -62,8 +62,15 @@ docs/               기획·점검 기록 (사이트 배포 대상 아님)
 - 보내는 값: `type`(문의 유형) · `email`(답장 주소 — Formspree 가 회신 주소로 씁니다) · `where`(관련 단어·페이지) ·
   `message` · `_subject`(유형·대상을 붙인 제목) · 맨 아래 인라인 스크립트가 AJAX 전송을 맡습니다.
   reCAPTCHA를 켜면 `g-recaptcha-response` 가 더해집니다.
-- 전송 형식은 **`FormData`(multipart/form-data)** 입니다. `Content-Type` 을 직접 지정하지 않아
-  CORS 사전 요청(preflight)이 없고, 폼을 직접 POST 할 때와 같은 형식입니다.
+- **한글이 깨져 도착할 때**: 이 폼은 항상 UTF-8 로 보냅니다. 그런데 PowerShell·cmd 터미널에서
+  `curl`·스크립트로 시험 전송하면 Windows 콘솔 문자셋(CP949)으로 인코딩되어 메일이 깨져
+  도착합니다(이모지는 `?` 로 바뀝니다). 확인은 브라우저에서 폼에 직접 입력해 보내세요.
+- 전송 형식은 **`x-www-form-urlencoded` + `charset=UTF-8`** 입니다. 폼 값을 `URLSearchParams` 로
+  UTF-8 퍼센트 인코딩해 보내고 `Content-Type` 에 문자셋을 적습니다.
+  (예전에는 `FormData`(multipart)를 썼는데, multipart 본문에는 "이 본문은 UTF-8" 이라는 표시가
+  없어 수신 쪽이 EUC-KR/CP949 로 해석하면 한글 문의가 깨져 도착했습니다.
+  `x-www-form-urlencoded` 는 CORS 안전 헤더라 사전 요청(preflight)도 생기지 않습니다.
+  스크립트 없이 전송되는 경우를 위해 `<form>` 에 `accept-charset="UTF-8"` 도 함께 적어 두었습니다.)
 - **스팸 방지 기본값**: 숨은 함정 칸(`name="_gotcha"`)을 1px 로만 남겼습니다(표준 visually-hidden).
   봇이 이 칸을 채우면 Formspree가 제출을 조용히 버립니다(사람에게는 보이지 않고 탭 순서에서도 빠집니다).
 - **reCAPTCHA v3 (선택)**: `<form data-recaptcha-key="">` 에 사이트 키를 넣으면 켜집니다
