@@ -413,7 +413,7 @@ function page({ title, description, canonical, ld, body, footerNav, speak, chapt
 <link rel="icon" href="../icon-192.png" type="image/png" sizes="192x192">
 <!-- iOS 홈 화면은 SVG 아이콘을 쓰지 않으므로 PNG 를 따로 지정합니다(tools/make-icons.py 로 생성). -->
 <link rel="apple-touch-icon" href="../apple-touch-icon.png">
-<!-- 방문자 분석 (Counter.dev — 쿠키 미사용, 개인정보 미수집). 사이트 ID 는 assets/analytics.js 한 곳에서 정합니다. -->
+<!-- 방문자 분석 (자체 호스팅 — 쿠키 미사용, 개인정보 미수집). 설정은 assets/analytics.js 한 곳에서 정합니다. -->
 <script defer src="${ASSET_REL}analytics.js"><\/script>
 <script>
   // 앱(index.html)에서 고른 테마를 정적 페이지에도 첫 페인트 전에 적용해,
@@ -2346,7 +2346,7 @@ function build404Page() {
   })();
 </script>
 <link rel="stylesheet" href="${ASSET_ABS}site.css">
-<!-- 방문자 분석 (Counter.dev — 쿠키 미사용, 개인정보 미수집). 사이트 ID 는 assets/analytics.js 한 곳에서 정합니다. -->
+<!-- 방문자 분석 (자체 호스팅 — 쿠키 미사용, 개인정보 미수집). 설정은 assets/analytics.js 한 곳에서 정합니다. -->
 <script defer src="${ASSET_ABS}analytics.js"><\/script>
 </head>
 <body id="top">
