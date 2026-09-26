@@ -1095,7 +1095,7 @@ window.CONVERSATION_BOOKS.push({
         }
       ],
       mistakes: [
-        "Would you mind ~ing? 에 Yes, sure. 라고 답하는 실수 — mind 는 꺼리다라는 뜻이라 Yes 는 거절이 됩니다. 수락은 No, not at all. 입니다.",
+        "Would you mind ~ing? 에 Yes, sure. 라고 답하는 실수 — mind 는 꺼리다는 뜻이라 Yes 는 거절이 됩니다. 수락은 No, not at all. 입니다.",
         "부탁할 때 Please you help me. 라고 하는 실수 — Please help me. 또는 Could you help me? 로 씁니다.",
         "거절만 하고 대안을 말하지 않는 실수 — I'm busy now, but I can help at four. 처럼 대안을 붙입니다.",
         "Would you mind 뒤에 동사원형을 쓰는 실수 — mind 뒤에는 동명사가 와서 Would you mind closing the window? 입니다.",

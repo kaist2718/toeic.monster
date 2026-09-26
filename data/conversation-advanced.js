@@ -403,7 +403,7 @@ window.CONVERSATION_BOOKS.push({
             { en: "I don't have that number yet. I can get it by tomorrow morning.", ko: "그 수치는 아직 없습니다. 내일 아침까지는 확인할 수 있습니다." },
             { en: "That's outside my area. Mina would know better than I would.", ko: "그건 제 분야가 아닙니다. 미나가 저보다 잘 알 것입니다." }
           ],
-          note: "would know better than I would 는 저보다 잘 알 것이다는 뜻입니다. 모르는 것을 밝히면서 담당자를 연결해 주는 표현입니다."
+          note: "would know better than I would 는 저보다 잘 알 것이라는 뜻입니다. 모르는 것을 밝히면서 담당자를 연결해 주는 표현입니다."
         }
       ],
       mistakes: [

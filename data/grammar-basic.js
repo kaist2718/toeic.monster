@@ -399,7 +399,7 @@ window.GRAMMAR_BOOKS.push({
         },
         {
           h: "재귀대명사 — myself, yourself",
-          body: "주어와 목적어가 같을 때 재귀대명사를 씁니다. by oneself는 혼자서, enjoy oneself는 즐기다라는 뜻으로 자주 쓰입니다.",
+          body: "주어와 목적어가 같을 때 재귀대명사를 씁니다. by oneself는 혼자서, enjoy oneself는 즐기다는 뜻으로 자주 쓰입니다.",
           table: {
             head: ["주어", "재귀대명사", "예문"],
             rows: [
@@ -557,7 +557,7 @@ window.GRAMMAR_BOOKS.push({
         { q: "Our suppliers ____ delivery on all orders over one hundred dollars.", opts: ["offers", "offer", "is offering", "offering"], a: "offer", why: "복수 주어 Our suppliers 에는 원형 offer 를 씁니다." },
         { q: "The new software ____ three languages at the moment.", opts: ["support", "supports", "is supporting", "supported"], a: "supports", why: "일반적인 기능을 말하는 현재시제이므로 supports 를 씁니다." },
         { q: "Please be quiet. The director ____ a client in the conference room.", opts: ["meets", "is meeting", "meet", "met"], a: "is meeting", why: "지금 진행 중인 만남이므로 현재진행형 is meeting 을 씁니다." },
-        { q: "I ____ that the revised schedule works better for everyone.", opts: ["am thinking", "think", "thinking", "thinks"], a: "think", why: "생각하다라는 상태를 나타내므로 현재시제 think 를 씁니다." }
+        { q: "I ____ that the revised schedule works better for everyone.", opts: ["am thinking", "think", "thinking", "thinks"], a: "think", why: "생각하는 상태를 나타내므로 현재시제 think 를 씁니다." }
       ]
     },
     {
@@ -887,7 +887,7 @@ window.GRAMMAR_BOOKS.push({
               ["late", "late / lately", "lately 는 최근에라는 뜻"]
             ]
           },
-          note: "hardly 는 거의 아니다라는 뜻으로 hard 와 의미가 다릅니다. He works hard. 와 He hardly works. 는 정반대입니다."
+          note: "hardly 는 거의 아니라는 뜻으로 hard 와 의미가 다릅니다. He works hard. 와 He hardly works. 는 정반대입니다."
         },
         {
           h: "비교급과 최상급 만들기",
@@ -1091,8 +1091,8 @@ window.GRAMMAR_BOOKS.push({
         { q: "Please submit the expense report ____ Friday.", opts: ["until", "by", "since", "for"], a: "by", why: "늦어도 그때까지라는 기한은 by 로 나타냅니다." },
         { q: "Our company has operated in this market ____ 2011.", opts: ["for", "since", "by", "during"], a: "since", why: "2011 은 시작점이므로 since 를 씁니다." },
         { q: "The maintenance team worked ____ the holiday to finish on time.", opts: ["during", "since", "until", "by"], a: "during", why: "특정 기간 동안이라는 뜻이므로 during 을 씁니다." },
-        { q: "All visitors must comply ____ the safety regulations.", opts: ["to", "with", "for", "of"], a: "with", why: "comply with 는 규정을 준수하다라는 결합 표현입니다." },
-        { q: "The new manager is responsible ____ the entire sales team.", opts: ["of", "for", "to", "with"], a: "for", why: "be responsible for 는 ~에 책임이 있다라는 뜻입니다." },
+        { q: "All visitors must comply ____ the safety regulations.", opts: ["to", "with", "for", "of"], a: "with", why: "comply with 는 규정을 준수하다는 결합 표현입니다." },
+        { q: "The new manager is responsible ____ the entire sales team.", opts: ["of", "for", "to", "with"], a: "for", why: "be responsible for 는 ~에 책임이 있다는 뜻입니다." },
         { q: "We look forward to ____ your feedback on the proposal.", opts: ["receive", "receiving", "received", "receipt"], a: "receiving", why: "look forward to 의 to 는 전치사이므로 동명사 receiving 이 옵니다." }
       ]
     },
@@ -1295,7 +1295,7 @@ window.GRAMMAR_BOOKS.push({
         { q: "There ____ three delays on the shipping line last month.", opts: ["was", "were", "is", "has"], a: "were", why: "복수 명사와 과거 표현 last month 에 맞춰 were 를 씁니다." },
         { q: "____ there any seats left for the morning session?", opts: ["Is", "Are", "Does", "Has"], a: "Are", why: "복수 명사 seats 에 맞춰 Are there 로 묻습니다." },
         { q: "We do not have ____ copies of the brochure left.", opts: ["some", "any", "none", "much"], a: "any", why: "부정문에는 any 를 씁니다." },
-        { q: "The receptionist ____ checks the visitor log twice a day.", opts: ["hardly", "hard", "not", "no"], a: "hardly", why: "거의 ~않다라는 뜻의 부사는 hardly 입니다." },
+        { q: "The receptionist ____ checks the visitor log twice a day.", opts: ["hardly", "hard", "not", "no"], a: "hardly", why: "거의 ~않다는 뜻의 부사는 hardly 입니다." },
         { q: "I do not know ____ about the schedule change.", opts: ["anything", "nothing", "something", "none"], a: "anything", why: "이미 do not 으로 부정했으므로 anything 을 씁니다. 이중 부정을 피합니다." }
       ]
     },
