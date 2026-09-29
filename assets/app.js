@@ -3635,7 +3635,17 @@
     boxId: "paraBox", title: "동의어 치환", statKey: "para", count: 8,
     build: function () {
       return (EXTRA.paraphrase || []).map(function (p) {
-        return { tag: p.tag, prompt: p.prompt, answer: p.a, options: shuffleArr(p.opts.slice()), why: p.why };
+        // prompt = 「영어 문장 — 한국어 발문」 한 줄 — 지문(문장)과 발문으로 나눠 보여 주고,
+        // 정답을 고르면 예문과 해석(ko)을 함께 보여 줍니다(문맥 어휘 퀴즈와 같은 형식).
+        var prompt = String(p.prompt || "");
+        var cut = prompt.indexOf("—");
+        var en = (cut >= 0 ? prompt.slice(0, cut) : prompt).trim();
+        var ko = (cut >= 0 ? prompt.slice(cut + 1) : "").trim();
+        var plain = en.replace(/『|』/g, "");
+        return { tag: p.tag, passageHtml: esc(en), passageSay: plain,
+                 prompt: ko || prompt, answer: p.a,
+                 options: shuffleArr(p.opts.slice()), why: p.why,
+                 example: plain, exampleKo: p.ko || "" };
       });
     },
     emptyHint: "시작 버튼을 누르면 동의어 치환 8문제가 나옵니다."

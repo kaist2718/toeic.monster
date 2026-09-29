@@ -54,7 +54,7 @@ promo_center.bat
 11. **Windows 작업 스케줄러 등록/해제** — 도래한 예약을 매 N분 자동 확인(dry-run)
 12. **여러 영상 일괄 게시** — 영상 여러 개를 선택해 순차 게시
 13. **게시 이력 HTML 리포트** — 요약 통계와 함께 브라우저로 열기
-14. **게시 성과 수집·보고서** — YouTube/Instagram 조회수·좋아요 수집 및 보고서
+14. **게시 성과 수집·보고서·인사이트** — YouTube/Instagram 조회수·좋아요 수집, HTML 보고서, 종류별 성과·게시 시간대·추천 콘텐츠 인사이트
 15. **배포 전 검증** — 영상을 재생해 직접 확인하고, 9:16·60초·게시 메타(제목/설명/해시태그)를 점검한 뒤 게시
 16. **중복 게시 방지 기록 보기** — 사용한 단어·게시한 영상 기록 확인
 17. **중복 게시 방지 기록 초기화** — 전체 또는 UNIT·숙어·빈도·퀴즈별로 기록 삭제
@@ -67,6 +67,7 @@ promo_center.bat
 24. **동의어 치환 퀴즈 쇼츠 생성** — 동의어 치환 200문제(`data/extra.js` paraphrase)로 문제→정답 퀴즈 생성
 25. **동의어 치환 퀴즈 쇼츠 생성 후 게시** — 퀴즈 생성을 포함해 3번과 같은 흐름으로 게시까지 진행
 26. **남은 콘텐츠 수량 보기** — 종류별 사용/전체/남음과 합계를 표로 확인
+27. **콘텐츠 자동 준비** — N일치 쇼츠를 자동 생성하고 예약 게시까지 등록 (종류는 남은 콘텐츠 많은 순으로 자동 배합)
 
 생성·게시가 끝나면 **남은 콘텐츠 수량**(종류별 사용/전체/남음)을 자동으로 표시합니다(`make_shorts.py`·`publish.py` 공통).
 
@@ -103,6 +104,13 @@ python publish.py --video assets/shorts/idioms_come-across_shorts.mp4 --idioms -
 
 # 남은 콘텐츠 수량 보기(생성·게시는 끝날 때 자동 표시)
 python publish.py --list-remaining
+
+# N일치 쇼츠 자동 생성 + 예약 게시 등록 (종류는 남은 콘텐츠 많은 순으로 자동 배합)
+python publish.py --auto-plan 5 --plan-start "2026-10-01 19:00" --plan-days 1
+python publish.py --auto-plan 3 --plan-kind idioms   # 지정 종류로 생성만 (예약 없음)
+
+# 성과 인사이트 — 종류별 평균 조회수·좋은 게시 시간대·추천 콘텐츠
+python publish.py --stats-insights
 
 # 실제 업로드
 python publish.py --video assets/shorts/unit01_shorts.mp4 --unit 1 --platforms yt --youtube-privacy unlisted
@@ -282,12 +290,13 @@ python make_shorts.py --paraphrase --index 0 --bg wine --style modern
 생성이 끝나면 영상 옆에 같은 이름의 메타 파일(`unit01_shorts.json`)을 남깁니다. **게시 제목·설명은 이 파일을 읽어 만들어집니다** — 영상에 실제로 들어간 항목이라 제목이 내용과 어긋나지 않습니다. 메타가 없는 영상(예전 산출물)은 기존처럼 `--unit` / `--idioms` 로 남은 목록에서 하나를 골라 씁니다(`promo/assets/` 는 git 에 올라가지 않습니다).
 
 - **숙어 카드**: `--idioms` 를 주면 `data/idioms.js`(126선)에서 고릅니다. 숙어는 IPA·예문 발음이 없어 슬라이드에 **표현·뜻·예문·해석**만 들어가고, 상단 칩은 `TOEIC 빈출 숙어` + **목록 순번**입니다. 파일명은 첫 표현을 따 `idioms_take-advantage-of_shorts.mp4` 처럼 나와 배치끼리 덮어쓰지 않습니다(`--out` 으로 지정 가능).
-- **동의어 치환 퀴즈**: `--paraphrase` 를 주면 `data/extra.js` 의 paraphrase(200문제)에서 고릅니다. 한 문제가 **문제 슬라이드(문장 + 보기 A~D) → 정답 슬라이드(정답·해설)** 두 장이라, 3문제면 6장·약 36초입니다(`--words` 가 슬라이드 수를 두 배로 늘립니다). 문제 슬라이드는 영어 문장을, 정답 슬라이드는 정답 표현을 읽습니다. 파일명은 `quiz_expedite_shorts.mp4` 처럼 첫 표적 표현을 따릅니다.
+- **동의어 치환 퀴즈**: `--paraphrase` 를 주면 `data/extra.js` 의 paraphrase(200문제)에서 고릅니다. 한 문제가 **문제 슬라이드(문장 + 보기 A~D) → 정답 슬라이드(정답·해설·예문 해석)** 두 장이라, 3문제면 6장·약 36초입니다(`--words` 가 슬라이드 수를 두 배로 늘립니다). 문제 슬라이드는 영어 문장을, 정답 슬라이드는 정답 표현을 읽습니다. 파일명은 `quiz_expedite_shorts.mp4` 처럼 첫 표적 표현을 따릅니다.
 - **영어 음성 기본**: 단어·예문을 읽어 주는 TTS(edge-tts, 무료·인터넷 필요)가 기본 켜짐입니다. `--no-tts`로 끄면 앰비언트 사운드로 대체됩니다.
 - **두 목소리 기본**: 여성 `en-US-JennyNeural`이 먼저, 영국 남성 `en-GB-RyanNeural`이 이어서 **같은 단어·예문을 차례로** 읽습니다(사이에 0.4초 무음). 같은 문장을 두 번 읽으므로 음성이 약 2배가 되고, 그만큼 해당 슬라이드가 자동으로 길어집니다 — 5개 단어 기준 30초였으면 45~55초쯤 됩니다. 길게 느껴지면 `--words`를 줄이거나 `--single-voice`로 한 목소리만 쓰세요.
 - **목소리 선택**: `default_voice`(첫 번째, 기본 여성 `en-US-JennyNeural`)와 `default_voice2`(두 번째, 기본 영국 남성 `en-GB-RyanNeural`)를 설정 편집(메뉴 `9`)이나 쇼츠 생성 시 번호로 바꿀 수 있고, 직접 edge-tts 목소리 이름을 입력해도 됩니다. 두 번째는 `0. 없음`을 고르면 한 목소리만 씁니다. 여성은 `en-US-AriaNeural`·`en-GB-SoniaNeural`, 남성은 `en-US-GuyNeural`·`en-GB-RyanNeural`·`en-GB-ThomasNeural` 등을 쓸 수 있습니다.
 - **무음 방지**: TTS·음악이 실패하거나 없어도 부드러운 앰비언트 사운드가 들어갑니다. `--no-ambient`로 끌 수 있습니다.
 - **네모(□) 방지**: fontTools cmap으로 글리프 존재를 확인해, 한글 폰트에 없는 IPA 기호 등은 자동으로 IPA 커버 폰트(Arial 등)로 대체합니다.
+- **인트로·아웃로 기본 포함**: 첫 장에 「TOEIC 필수 어휘」 같은 브랜드 훅(기본 2.5초), 마지막 장에 사이트 유입 CTA 카드(기본 3초)가 자동으로 들어갑니다. `--no-intro`/`--no-outro` 로 끄거나 `--intro-sec`/`--outro-sec` 으로 길이를 바꿀 수 있습니다. 예상 길이가 Shorts 60초를 넘을 것 같으면 생성기가 미리 경고합니다.
 
 | 옵션 | 설명 |
 |---|---|
@@ -305,6 +314,8 @@ python make_shorts.py --paraphrase --index 0 --bg wine --style modern
 | `--voice2` | 두 번째 TTS 목소리 (기본 `en-GB-RyanNeural` — 영국 남성). `none`이면 한 목소리만 |
 | `--single-voice` | 한 목소리만 쓰기 (기본은 여성 + 영국 남성 두 목소리) |
 | `--no-ambient` | 기본 앰비언트 사운드 끄기 (무음 영상) |
+| `--no-intro` / `--intro-sec` | 인트로 슬라이드 끄기 / 길이 초 (기본 2.5) |
+| `--no-outro` / `--outro-sec` | 아웃로(CTA) 슬라이드 끄기 / 길이 초 (기본 3.0) |
 
 ## 7-1. 게시 성과 추적
 
@@ -313,7 +324,10 @@ python make_shorts.py --paraphrase --index 0 --bg wine --style modern
 ```bash
 python publish.py --stats          # YouTube(API 키)·Instagram(로그인) 성과 수집 → performance.json
 python publish.py --stats-report   # 성과를 HTML 보고서로 생성해 브라우저로 열기
+python publish.py --stats-insights # 종류별 성과·좋은 게시 시간대·추천 콘텐츠만 터미널로 확인
 ```
+
+- **인사이트**: 제목으로 콘텐츠 종류(단어/숙어/빈도/퀴즈)를 구분해 종류별 평균 조회수·좋아요를 계산하고, 조회수가 높았던 게시 시간대와 다음에 만들 콘텐츠를 추천합니다. HTML 보고서에도 같은 섹션이 들어가며, 원클릭 메뉴 **14번 → i** 로도 볼 수 있습니다.
 
 - YouTube는 `config.json`의 `youtube.api_key`가 있으면 키만으로 조회 가능합니다(공개 데이터).
 - Instagram은 계정 로그인(세션 캐시)이 필요하며, 수집 실패해도 다른 수집에는 영향이 없습니다.
@@ -340,6 +354,31 @@ python publish.py --allow-repeat ...   # 기록을 무시하고 다시 게시
 ```
 
 기록을 비우려면 원클릭 메뉴 **17번** 또는 `--reset-posted`를 사용하세요. `promo/posted.json`은 개인 운영 데이터라 git에 포함되지 않습니다.
+
+## 7-3. 콘텐츠 자동 준비 (하루치·N일치)
+
+원클릭 메뉴 **27번** 또는 `--auto-plan`으로 여러 날치 쇼츠를 한 번에 만들고 예약 게시까지 등록합니다. 종류를 고르지 않으면 **남은 콘텐츠가 많은 종류부터 돌려가며** 단어·숙어·빈도·퀴즈를 섞어 만듭니다. 테마·스타일·목소리·항목 수는 설정(메뉴 `9`)의 기본값을 따릅니다.
+
+```bash
+# 5일치를 매일 19시에 올라가도록 생성 + 예약 등록
+python publish.py --auto-plan 5 --plan-start "2026-10-01 19:00" --plan-days 1
+
+# 숙어 3편만 생성 (예약 없음)
+python publish.py --auto-plan 3 --plan-kind idioms
+```
+
+생성이 끝나면 각 영상의 예약 ID·시각이 표시되고, 예약 시각에 `--run-due`(또는 메뉴 `7`·Windows 작업 스케줄러)를 실행하면 게시됩니다.
+
+## 7-4. 사이트 유입 추적 (UTM·CTA)
+
+게시 설명의 사이트 링크에는 자동으로 UTM 태그가 붙습니다.
+
+```
+https://toeic.monster/?utm_source=shorts&utm_medium=social&utm_campaign=unit
+```
+
+- `utm_campaign`은 콘텐츠 종류(`unit`/`idioms`/`frequency`/`paraphrase`)라, 사이트 분석 도구에서 **종류별 유입 효과**를 바로 비교할 수 있습니다.
+- 영상 **인트로·아웃로**에도 사이트 CTA가 들어가고, 설명·해시태그에 **종류별 태그**(`#TOEIC숙어`·`#TOEIC퀴즈` 등)가 자동 추가되어 검색·추천 노출을 넓힙니다.
 
 ## 8. 배포 전 체크리스트
 

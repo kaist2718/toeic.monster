@@ -325,8 +325,10 @@ def load_paraphrase():
 
         opts_m = re.search(r'opts\s*:\s*\[((?:"(?:[^"\\]|\\.)*"\s*,?\s*)*)\]', item)
         opts = PARA_STR_RE.findall(opts_m.group(1)) if opts_m else []
+        ko_m = re.search(r'(?<![A-Za-z])ko\s*:\s*"((?:[^"\\]|\\.)*)"', item)
         out.append({"tag": grab("tag"), "prompt": grab("prompt"),
-                    "a": grab("a"), "opts": opts, "why": grab("why")})
+                    "a": grab("a"), "opts": opts, "why": grab("why"),
+                    "ko": ko_m.group(1) if ko_m else ""})
     return out
 
 
@@ -650,9 +652,24 @@ def vocab_title(row: list | None, item: dict, unit_no: int | None, unit_info: di
     return f"{term} | TOEIC 필수 어휘 {head}".strip() + " | toeic.monster"
 
 
+def site_link(site_url: str, path: str = "", campaign: str = "shorts") -> str:
+    """사이트 링크에 UTM 태그를 붙입니다 — 어떤 숏폼이 실제 사이트 방문을 만드는지 추적하기 위함.
+
+    utm_campaign 은 콘텐츠 종류(unit/idioms/frequency/paraphrase)로 구분해,
+    사이트 분석 도구에서 종류별 유입 효과를 바로 비교할 수 있습니다.
+    """
+    base = str(site_url or "https://toeic.monster/").rstrip("/")
+    if path and path != "/":
+        base += path if path.startswith("/") else "/" + path
+    else:
+        base += "/"
+    sep = "&" if "?" in base else "?"
+    return f"{base}{sep}utm_source=shorts&utm_medium=social&utm_campaign={campaign}"
+
+
 def vocab_desc(row: list | None, item: dict, site_url: str) -> str:
     """단어 영상 설명 — 원본 단어 행이 있으면 IPA까지 그대로 씁니다."""
-    tail = f"발음·예문으로 외우는 TOEIC 보카 1,000 → {site_url}"
+    tail = f"발음·예문으로 외우는 TOEIC 보카 1,000 → {site_link(site_url, '', 'unit')}"
     if row:
         return (f"TOEIC 필수 어휘 「{row[0]}」 [{row[1]}] {row[3]}\n"
                 f"예문: {row[4]}\n해석: {row[5]}\n\n{tail}")
@@ -684,7 +701,7 @@ def idioms_desc(items: list, site_url: str) -> str:
         if it.get("translation"):
             lines.append(f"   {it['translation']}")
     lines.append("")
-    lines.append(f"구동사·숙어 126선과 발음까지 → {site_url.rstrip('/')}/units/idioms.html")
+    lines.append(f"구동사·숙어 126선과 발음까지 → {site_link(site_url, '/units/idioms.html', 'idioms')}")
     return "\n".join(lines)
 
 
@@ -710,7 +727,7 @@ def freq_desc(items: list, site_url: str) -> str:
         if it.get("translation"):
             lines.append(f"   {it['translation']}")
     lines.append("")
-    lines.append(f"빈출 어휘 200선과 발음까지 → {site_url.rstrip('/')}/units/frequency.html")
+    lines.append(f"빈출 어휘 200선과 발음까지 → {site_link(site_url, '/units/frequency.html', 'frequency')}")
     return "\n".join(lines)
 
 
@@ -735,6 +752,8 @@ def quiz_desc(items: list, site_url: str) -> str:
     letters = "ABCD"
     for i, it in enumerate(rows, 1):
         lines.append(f"Q{i}. {it.get('example', '')}")
+        if it.get("ko"):
+            lines.append(f"   해석: {it['ko']}")
         opts = [str(o) for o in (it.get("options") or [])]
         if opts:
             lines.append("   " + " / ".join(f"{letters[j]}. {o}" for j, o in enumerate(opts[:4])))
@@ -742,7 +761,7 @@ def quiz_desc(items: list, site_url: str) -> str:
         if it.get("translation"):
             lines.append(f"   해설: {it['translation']}")
         lines.append("")
-    lines.append(f"같은 유형 200문제 — 홈의 「동의어 치환 훈련」에서 → {site_url.rstrip('/')}/")
+    lines.append(f"같은 유형 200문제 — 홈의 「동의어 치환 훈련」에서 → {site_link(site_url, '/', 'paraphrase')}")
     return "\n".join(lines)
 
 
@@ -758,6 +777,7 @@ def build_meta(cfg: dict, args) -> dict:
     desc = args.desc
     unit_info = {}
     chosen_word: str | None = None
+    kind = ""  # 콘텐츠 종류 — 종류별 해시태그·UTM 캠페인에 사용
     site_url = cfg.get("site_url", "https://toeic.monster/")
 
     saved = sidecar_for(args)
@@ -781,6 +801,7 @@ def build_meta(cfg: dict, args) -> dict:
             title = title or vocab_title(row, first, unit_no, unit_info)
             desc = desc or vocab_desc(row, first, site_url)
     elif args.unit:
+        kind = "unit"
         unit_info = load_unit_info().get(args.unit, {})
         words = load_unit_words(args.unit)
         if words:
@@ -805,11 +826,12 @@ def build_meta(cfg: dict, args) -> dict:
                 desc = (
                     f"TOEIC 필수 어휘 「{w[0]}」 [{w[1]}] {w[3]}\n"
                     f"예문: {w[4]}\n해석: {w[5]}\n\n"
-                    f"발음·예문으로 외우는 TOEIC 보카 1,000 → {cfg.get('site_url', 'https://toeic.monster/')}"
+                    f"발음·예문으로 외우는 TOEIC 보카 1,000 → {site_link(site_url, '', 'unit')}"
                 )
         elif not title:
             warn(f"UNIT {args.unit} 데이터를 읽지 못해 기본 제목을 사용합니다.")
     elif getattr(args, "idioms", False):
+        kind = "idioms"
         # 영상 메타가 없는 오래된 영상이나 직접 만든 영상을 위한 폴백입니다.
         rows = load_idioms() or []
         pool = rows
@@ -826,6 +848,7 @@ def build_meta(cfg: dict, args) -> dict:
         elif not title:
             warn("숙어 데이터를 읽지 못해 기본 제목을 사용합니다.")
     elif getattr(args, "frequency", False):
+        kind = "frequency"
         # 영상 메타가 없는 영상을 위한 폴백 — 빈도순 기출 어휘에서 남은 항목 중 하나를 고릅니다.
         rows = load_frequency() or []
         pool = rows
@@ -842,6 +865,7 @@ def build_meta(cfg: dict, args) -> dict:
         elif not title:
             warn("빈도 어휘 데이터를 읽지 못해 기본 제목을 사용합니다.")
     elif getattr(args, "paraphrase", False):
+        kind = "paraphrase"
         # 영상 메타가 없는 퀴즈 영상을 위한 폴백 — 동의어 치환에서 남은 항목 중 하나를 고릅니다.
         rows = load_paraphrase() or []
         pool = [r for r in rows if str(r.get("prompt", "")).strip()]
@@ -861,6 +885,15 @@ def build_meta(cfg: dict, args) -> dict:
     title = (title or cfg.get("default_title", "TOEIC 필수 어휘 | toeic.monster")).strip()[:100]
     desc = (desc or cfg.get("default_description", "")).strip()
     hashtags = " ".join("#" + h.strip().lstrip("#") for h in cfg.get("hashtags", []))
+    # 종류별 해시태그 — 검색·추천 노출을 넓히기 위해 콘텐츠 성격을 추가합니다(중복 제외).
+    kind_tags = {"unit": ("TOEIC단어", "영단어암기"),
+                 "idioms": ("TOEIC숙어", "구동사"),
+                 "frequency": ("TOEIC빈출", "기출어휘"),
+                 "paraphrase": ("TOEIC퀴즈", "동의어")}
+    existing_tags = {h.lower() for h in hashtags.split() if h.startswith("#")}
+    for tag in kind_tags.get(kind, ()):
+        if f"#{tag}".lower() not in existing_tags:
+            hashtags = (hashtags + " #" + tag).strip()
     if cfg.get("youtube", {}).get("include_shorts_tag", True) and "#Shorts" not in hashtags:
         hashtags += " #Shorts"
     return {"title": title, "desc": desc, "hashtags": hashtags, "unit": args.unit,
@@ -1856,6 +1889,174 @@ def run_batch_menu(cfg: dict) -> None:
     ok(f"일괄 게시 처리 완료: {len(picked)}개 영상")
 
 
+# ------------------------------------------------------- 콘텐츠 자동 준비 ----
+AUTO_KINDS = ("unit", "idioms", "frequency", "paraphrase")
+
+
+def next_unit_with_remaining() -> int | None:
+    """남은 단어가 가장 많은 UNIT 을 돌려줍니다(모두 소진되면 None)."""
+    best, best_n = None, -1
+    for i in range(1, 31):
+        words = load_unit_words(i) or []
+        used = posted_words_for_unit(i)
+        n = len([w for w in words if normalize_word(w[0]) not in used])
+        if n > best_n:
+            best, best_n = i, n
+    return best if best_n > 0 else None
+
+
+def build_shorts_command(cfg: dict, kind: str, words: int) -> list[str] | None:
+    """make_shorts.py 실행 명령 — config 의 기본값(테마·스타일·목소리)을 그대로 씁니다."""
+    promo = cfg.get("promo", {})
+    theme = str(promo.get("default_theme", "blue")).lower()
+    style = str(promo.get("default_style", "classic")).lower()
+    command = [sys.executable, str(PROMO / "make_shorts.py"),
+               "--words", str(words), "--bg", theme, "--style", style]
+    if kind == "idioms":
+        command.append("--idioms")
+    elif kind == "frequency":
+        command.append("--frequency")
+    elif kind == "paraphrase":
+        command.append("--paraphrase")
+    else:
+        unit = next_unit_with_remaining()
+        if unit is None:
+            return None
+        command.extend(["--unit", str(unit)])
+    if bool(promo.get("default_tts", False)):
+        command.append("--tts")
+        command.extend(["--voice", str(promo.get("default_voice", DEFAULT_VOICE) or DEFAULT_VOICE)])
+        voice2 = str(promo.get("default_voice2", DEFAULT_VOICE2) or "")
+        if voice2:
+            command.extend(["--voice2", voice2])
+        else:
+            command.append("--single-voice")
+    else:
+        command.append("--no-tts")
+    return command
+
+
+def run_auto_plan(cfg: dict, count: int, kind: str = "auto", *, start_at: str | None = None,
+                  interval_days: int = 1, words: int | None = None,
+                  platforms: str | None = None, privacy: str | None = None) -> list[Path]:
+    """N일치 쇼츠를 자동 생성하고, 시작 시각이 있으면 예약 게시까지 등록합니다.
+
+    kind=auto 는 종류를 돌려가며 섞어 만듭니다(남은 콘텐츠가 많은 종류 우선).
+    기본값(테마·스타일·목소리·항목 수)은 config.json 의 promo 설정을 따릅니다.
+    """
+    promo = cfg.get("promo", {})
+    if words is None:
+        try:
+            words = int(promo.get("default_words", 5) or 5)
+        except (TypeError, ValueError):
+            words = 5
+    words = min(10, max(1, words))
+    count = min(10, max(1, count))
+    interval_days = max(1, interval_days)
+
+    log("\n" + "=" * 62)
+    label = ", ".join(KIND_LABELS.get(k, k) for k in (kind,) if k != "auto") if kind != "auto" else "자동(남은 콘텐츠 많은 순)"
+    log(f"🗓️ 콘텐츠 자동 준비 — {count}개 · {label} · 항목 {words}개씩")
+    log("=" * 62)
+
+    videos: list[Path] = []
+    planned: dict[str, int] = {}
+    for n in range(count):
+        pick = kind
+        if kind == "auto":
+            inv = {r["key"]: r for r in content_inventory()}
+
+            def remaining(k: str) -> int:
+                return max(0, int(inv.get(k, {}).get("remaining", 0)) - planned.get(k, 0))
+
+            candidates = [k for k in AUTO_KINDS if remaining(k) > 0]
+            if not candidates:
+                warn("남은 콘텐츠가 없어 중단합니다 — 새 콘텐츠를 추가하거나 --reset-posted 로 초기화하세요.")
+                break
+            # 아직 안 만든 종류를 먼저 섞고, 같은 묶음 안에서는 남은 콘텐츠가 많은 쪽부터.
+            pick = min(candidates, key=lambda k: (planned.get(k, 0), -remaining(k)))
+        planned[pick] = planned.get(pick, 0) + 1
+        command = build_shorts_command(cfg, pick, words)
+        if command is None:
+            warn("남은 단어가 있는 UNIT 이 없어 중단합니다.")
+            break
+        log(f"\n▶ [{n + 1}/{count}] {KIND_LABELS.get(pick, pick)} 쇼츠 생성")
+        started = time.time()
+        if not run_menu_command(command):
+            fail(f"{n + 1}번째 쇼츠 생성에 실패해 중단합니다.")
+            break
+        video = newest_video_since(started)
+        if video is None:
+            fail("생성된 영상을 찾지 못했습니다.")
+            break
+        videos.append(video)
+        ok(f"생성 완료: {video.name}")
+
+    if not videos:
+        warn("만들어진 영상이 없습니다.")
+        return []
+
+    if not start_at:
+        log("\n생성만 완료했습니다. 예약 게시하려면:")
+        log('  python publish.py --auto-plan N --plan-start "YYYY-MM-DD HH:MM"')
+        log("  또는 메뉴 27번에서 '예약 등록', 영상 하나씩은 메뉴 5번을 쓸 수 있습니다.")
+        return videos
+
+    platforms = platforms or (",".join(resolve_platforms(cfg, "auto")) or "yt")
+    privacy = (privacy or str(promo.get("default_privacy", "unlisted"))).lower()
+    if privacy not in ("public", "unlisted", "private"):
+        privacy = "unlisted"
+    try:
+        first = parse_schedule_time(start_at)
+    except ValueError as exc:
+        fail(f"첫 예약 일시가 올바르지 않습니다: {exc}")
+        return videos
+    ok(f"\n예약 게시 등록 — {len(videos)}건 · 플랫폼 {platforms} · YouTube 공개 {privacy}")
+    for i, video in enumerate(videos):
+        when = (first + timedelta(days=interval_days * i)).strftime("%Y-%m-%d %H:%M")
+        try:
+            item = create_schedule(video=video, unit=None, platforms=platforms,
+                                   privacy=privacy, scheduled_at=when)
+        except ValueError as exc:
+            warn(f"{video.name}: 예약 실패 — {exc}")
+            continue
+        ok(f"  · {item['id']} · {item['scheduled_at']} · {video.name}")
+    log("\n예약 시각에 '7. 예약 게시 실행' 또는 --run-due 를 실행하면 게시됩니다.")
+    log("(Windows 작업 스케줄러 — 메뉴 11번 — 에 등록하면 자동으로 확인합니다.)")
+    return videos
+
+
+def auto_plan_menu(cfg: dict) -> None:
+    """메뉴 27: 하루치(또는 N일치) 콘텐츠를 자동으로 만들고 예약 게시까지 등록합니다."""
+    promo = cfg.get("promo", {})
+    try:
+        default_words = int(promo.get("default_words", 5) or 5)
+    except (TypeError, ValueError):
+        default_words = 5
+    count = ask_int("준비할 영상 수(1~10)", 3, 1, 10)
+    kind = ask_menu("종류 (auto/unit/idioms/frequency/paraphrase)", "auto").lower()
+    if kind not in ("auto",) + AUTO_KINDS:
+        warn("알 수 없는 종류라 자동으로 진행합니다.")
+        kind = "auto"
+    words = ask_int("영상에 넣을 항목 수(1~10)", default_words, 1, 10)
+    mode = ask_menu("예약 게시 등록(s) / 생성만(g)", "s").lower()
+    if mode in ("g", "생성", "생성만"):
+        run_auto_plan(cfg, count, kind, words=words)
+        return
+    default_start = (datetime.now().astimezone() + timedelta(days=1)).strftime("%Y-%m-%d") + " 19:00"
+    start = ask_menu("첫 예약 일시(YYYY-MM-DD HH:MM)", default_start)
+    interval = ask_int("게시 간격(일)", 1, 1, 30)
+    platforms = choose_platforms_menu(cfg)
+    default_privacy = str(promo.get("default_privacy", "unlisted")).lower()
+    if default_privacy not in ("public", "unlisted", "private"):
+        default_privacy = "unlisted"
+    privacy = ask_menu("YouTube 공개 범위(public/unlisted/private)", default_privacy)
+    if privacy not in ("public", "unlisted", "private"):
+        privacy = "unlisted"
+    run_auto_plan(cfg, count, kind, start_at=start, interval_days=interval,
+                  words=words, platforms=platforms, privacy=privacy)
+
+
 def probe_video_info(video: Path) -> dict:
     """ffprobe로 해상도·길이·크기를 가져옵니다. (실패 시 안전한 기본값)"""
     info = {"width": 0, "height": 0, "duration": 0.0, "size_mb": 0.0}
@@ -2159,6 +2360,92 @@ def display_performance(items: list[dict]) -> None:
     log(f"  합계: 조회수 {total_views:,} · 좋아요 {total_likes:,} (게시물 {len(items)}건)")
 
 
+# ------------------------------------------------------- 성과 인사이트 ----
+KIND_LABELS = {"unit": "단어", "idioms": "숙어", "frequency": "빈도 어휘",
+               "paraphrase": "동의어 치환", "other": "기타"}
+
+
+def classify_title(title: str) -> str:
+    """게시 제목에서 콘텐츠 종류를 판별합니다(성과 인사이트용)."""
+    t = str(title or "")
+    if "동의어 치환" in t:
+        return "paraphrase"
+    if "빈출 숙어" in t or "TOEIC 숙어" in t:
+        return "idioms"
+    if "빈출 어휘" in t:
+        return "frequency"
+    if "필수 어휘" in t:
+        return "unit"
+    return "other"
+
+
+def _published_hour(value: str) -> int | None:
+    """게시 일시에서 로컬 시간대 기준 '시'를 뽑습니다(형식이 이상하면 None)."""
+    raw = str(value or "").replace("Z", "+00:00").replace(" ", "T")
+    try:
+        return datetime.fromisoformat(raw).astimezone().hour
+    except ValueError:
+        return None
+
+
+def performance_insights(items: list[dict]) -> dict:
+    """성과 데이터에서 종류별 성과·좋은 게시 시간대·TOP 영상을 뽑습니다."""
+    by_kind: dict[str, list[dict]] = {}
+    for it in items:
+        by_kind.setdefault(classify_title(it.get("title", "")), []).append(it)
+    kind_stats = []
+    for k, rows in by_kind.items():
+        views = [int(r.get("view_count", 0) or 0) for r in rows]
+        likes = sum(int(r.get("like_count", 0) or 0) for r in rows)
+        kind_stats.append({"kind": k, "label": KIND_LABELS.get(k, k), "count": len(rows),
+                           "total_views": sum(views), "avg_views": sum(views) / len(rows),
+                           "avg_likes": likes / len(rows)})
+    kind_stats.sort(key=lambda r: r["avg_views"], reverse=True)
+
+    hours: dict[int, list[int]] = {}
+    for it in items:
+        h = _published_hour(it.get("published_at", ""))
+        if h is not None:
+            hours.setdefault(h, []).append(int(it.get("view_count", 0) or 0))
+    hour_stats = sorted(({"hour": h, "count": len(v), "avg_views": sum(v) / len(v)}
+                         for h, v in hours.items()),
+                        key=lambda r: r["avg_views"], reverse=True)[:3]
+
+    top = sorted(items, key=lambda x: int(x.get("view_count", 0) or 0), reverse=True)[:5]
+    return {"kind_stats": kind_stats, "hour_stats": hour_stats, "top": top}
+
+
+def show_performance_insights() -> None:
+    """터미널에 성과 인사이트를 요약해 보여 줍니다."""
+    if not PERF_FILE.exists():
+        warn("성과 데이터가 없습니다. 먼저 '게시 성과 수집'을 실행하세요.")
+        return
+    try:
+        data = json.loads(PERF_FILE.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        warn(f"성과 파일을 읽지 못했습니다: {exc}")
+        return
+    items = data.get("items", [])
+    if not items:
+        warn("수집된 성과가 없습니다.")
+        return
+    ins = performance_insights(items)
+    log("\n💡 성과 인사이트")
+    log("  종류별 평균 조회수:")
+    for row in ins["kind_stats"]:
+        log(f"   · {row['label']:<7} {row['count']:>3}건 · 평균 조회 {row['avg_views']:>9,.0f}"
+            f" · 평균 좋아요 {row['avg_likes']:>7,.0f}")
+    if ins["kind_stats"]:
+        best = ins["kind_stats"][0]
+        log(f"  👉 추천: 「{best['label']}」 콘텐츠를 이어서 — 평균 조회수가 가장 높습니다")
+    if ins["hour_stats"]:
+        hours = " · ".join(f"{h['hour']}시(평균 {h['avg_views']:,.0f})" for h in ins["hour_stats"])
+        log(f"  🕐 좋은 게시 시간대: {hours}")
+    log("  🏆 조회수 TOP:")
+    for i, it in enumerate(ins["top"], 1):
+        log(f"   {i}. {str(it.get('title', ''))[:44]} — {int(it.get('view_count', 0) or 0):,}")
+
+
 def collect_performance(cfg: dict) -> dict:
     """게시 이력의 URL에서 영상 성과를 수집해 performance.json 으로 저장합니다."""
     rows = [r for r in read_history_rows()
@@ -2211,6 +2498,15 @@ def write_performance_report(open_after: bool = True) -> Path | None:
         f"<td>{i.get('view_count', 0):,}</td><td>{i.get('like_count', 0):,}</td>"
         f"<td>{i.get('comment_count', 0):,}</td><td>{esc_html(i.get('published_at', ''))}</td></tr>"
         for i in sorted(items, key=lambda x: x.get("view_count", 0), reverse=True))
+    # ── 인사이트: 종류별 성과 · 좋은 게시 시간대 · 추천 ──
+    ins = performance_insights(items)
+    kind_rows = "".join(
+        f"<tr><td>{esc_html(r['label'])}</td><td>{r['count']}건</td>"
+        f"<td>{r['avg_views']:,.0f}</td><td>{r['avg_likes']:,.0f}</td><td>{r['total_views']:,}</td></tr>"
+        for r in ins["kind_stats"])
+    hour_html = " · ".join(f"{h['hour']}시 (평균 {h['avg_views']:,.0f})" for h in ins["hour_stats"]) or "데이터 부족"
+    recommend = (f"「{ins['kind_stats'][0]['label']}」 콘텐츠를 이어서 만들면 평균 조회수가 가장 높습니다"
+                 if ins["kind_stats"] else "데이터가 더 쌓이면 추천이 생깁니다")
     html = f"""<!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -2223,6 +2519,9 @@ def write_performance_report(open_after: bool = True) -> Path | None:
   .card {{ background: #16233a; border: 1px solid #24344f; border-radius: 12px; padding: 14px 20px; min-width: 120px; }}
   .card b {{ display: block; font-size: 24px; color: #7dd3fc; }} .card span {{ font-size: 12px; color: #8fa3c0; }}
   ul {{ color: #aebfd8; font-size: 13px; margin-bottom: 24px; }}
+  h2 {{ font-size: 16px; margin: 28px 0 10px; }}
+  .tip {{ background: #123047; border: 1px solid #1d4e6b; border-radius: 10px; padding: 12px 16px;
+         color: #a5e3ff; font-size: 13px; margin-bottom: 14px; }}
   table {{ width: 100%; border-collapse: collapse; font-size: 13px; }}
   th, td {{ text-align: left; padding: 8px 10px; border-bottom: 1px solid #24344f; }}
   th {{ color: #8fa3c0; font-size: 12px; }}
@@ -2237,6 +2536,11 @@ def write_performance_report(open_after: bool = True) -> Path | None:
   <div class="card"><b>{total_likes:,}</b><span>총 좋아요</span></div>
 </div>
 <ul>{plat_html}</ul>
+<h2>💡 인사이트</h2>
+<div class="tip">👉 추천: {esc_html(recommend)}</div>
+<table><thead><tr><th>콘텐츠 종류</th><th>게시 수</th><th>평균 조회수</th><th>평균 좋아요</th><th>총 조회수</th></tr></thead><tbody>{kind_rows}</tbody></table>
+<p class="sub">🕐 좋은 게시 시간대(평균 조회수): {esc_html(hour_html)}</p>
+<h2>📋 전체 게시물</h2>
 <table><thead><tr><th>플랫폼</th><th>제목</th><th>조회수</th><th>좋아요</th><th>댓글</th><th>게시일</th></tr></thead><tbody>{table_rows}</tbody></table>
 </body></html>"""
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
@@ -2456,6 +2760,7 @@ def interactive_menu() -> None:
         log(" 24. 동의어 치환 퀴즈 쇼츠 생성")
         log(" 25. 동의어 치환 퀴즈 쇼츠 생성 후 게시")
         log(" 26. 남은 콘텐츠 수량 보기")
+        log(" 27. 콘텐츠 자동 준비 — N일치 생성 + 예약 게시 등록")
         log("  0. 종료")
         action = ask_menu("메뉴", menu_default)
         if action == "0":
@@ -2556,9 +2861,11 @@ def interactive_menu() -> None:
             write_history_report()
             continue
         if action == "14":
-            sub = ask_menu("성과 수집(c) / 보고서(r)", "c").lower()
+            sub = ask_menu("성과 수집(c) / 보고서(r) / 인사이트(i)", "c").lower()
             if sub in ("c", "수집", "수"):
                 collect_performance(cfg)
+            elif sub in ("i", "인사이트", "분석"):
+                show_performance_insights()
             else:
                 write_performance_report()
             continue
@@ -2570,6 +2877,9 @@ def interactive_menu() -> None:
             continue
         if action == "26":
             print_remaining()
+            continue
+        if action == "27":
+            auto_plan_menu(cfg)
             continue
         if action == "17":
             target = ask_menu("초기화 대상 (all · UNIT 번호 · idioms · frequency · paraphrase)", "all")
@@ -2600,7 +2910,7 @@ def interactive_menu() -> None:
             if meta.get("word"):
                 mark_words_posted(unit, [meta["word"]])
             continue
-        if action not in ("1", "2", "3", "5", "20", "21"):
+        if action not in ("1", "2", "3", "5", "20", "21", "22", "23", "24", "25", "27"):
             warn("메뉴 번호를 확인해 주세요.")
             continue
 
@@ -2629,7 +2939,8 @@ def interactive_menu() -> None:
         kind = ("idioms" if action in ("20", "21")
                 else "frequency" if action in ("22", "23")
                 else "paraphrase" if action in ("24", "25") else "unit")
-        unit = choose_unit(default_unit) if kind == "unit" else None
+        # 기존 영상 게시(2)는 영상 메타가 있으면 UNIT을 묻지 않으므로, 여기서는 생성(1·3)만 묻습니다.
+        unit = choose_unit(default_unit) if (kind == "unit" and action in ("1", "3")) else None
         video = None
         if action in ("1", "3", "20", "21", "22", "23", "24", "25"):
             words = str(ask_int("영상에 넣을 항목 수(1~10)", default_words, 1, 10))
@@ -2693,7 +3004,7 @@ def interactive_menu() -> None:
                 log(f"영상 메타 사용: {describe_saved_meta(saved)} (제목·설명 자동)")
                 unit = None
             else:
-                unit_raw = ask_menu("자동 제목에 사용할 UNIT 번호(취소하려면 0)", str(unit))
+                unit_raw = ask_menu("자동 제목에 사용할 UNIT 번호(취소하려면 0)", str(unit or default_unit))
                 if unit_raw == "0":
                     unit = None
                 else:
@@ -2701,6 +3012,7 @@ def interactive_menu() -> None:
                         unit = int(unit_raw)
                     except ValueError:
                         warn("잘못된 UNIT이라 기본값을 사용합니다.")
+                        unit = default_unit
 
         platforms = choose_platforms_menu(cfg)
         privacy = ask_menu("YouTube 공개 범위(public/unlisted/private)", default_privacy)
@@ -2786,6 +3098,16 @@ def main() -> None:
     ap.add_argument("--report", action="store_true", help="게시 이력 HTML 리포트 생성")
     ap.add_argument("--stats", action="store_true", help="게시 성과 수집 (YouTube/Instagram)")
     ap.add_argument("--stats-report", action="store_true", help="수집된 성과를 HTML 보고서로 생성")
+    ap.add_argument("--stats-insights", action="store_true",
+                    help="성과 인사이트 — 종류별 성과·좋은 게시 시간대·추천 콘텐츠")
+    ap.add_argument("--auto-plan", type=int, metavar="N",
+                    help="N일치 쇼츠를 자동 생성하고 (--plan-start 지정 시) 예약 게시까지 등록")
+    ap.add_argument("--plan-kind", default="auto",
+                    choices=["auto", "unit", "idioms", "frequency", "paraphrase"],
+                    help="--auto-plan 콘텐츠 종류 (기본 auto — 남은 콘텐츠가 많은 순)")
+    ap.add_argument("--plan-start", help="--auto-plan 첫 예약 일시: YYYY-MM-DD HH:MM (생략하면 생성만)")
+    ap.add_argument("--plan-days", type=int, default=1, help="예약 게시 간격(일) (기본 1)")
+    ap.add_argument("--plan-words", type=int, help="영상당 항목 수 (기본: 설정 default_words)")
     ap.add_argument("--install-task", nargs="?", const=10, type=int, metavar="MIN",
                     help="Windows 작업 스케줄러에 매 MIN분 예약 확인 등록 (기본 10)")
     ap.add_argument("--remove-task", action="store_true", help="Windows 작업 스케줄러 등록 해제")
@@ -2878,6 +3200,13 @@ def main() -> None:
         return
     if args.stats_report:
         write_performance_report()
+        return
+    if args.stats_insights:
+        show_performance_insights()
+        return
+    if args.auto_plan is not None:
+        run_auto_plan(cfg, args.auto_plan, args.plan_kind, start_at=args.plan_start,
+                      interval_days=args.plan_days, words=args.plan_words)
         return
     if args.install_task:
         install_scheduled_task(interval_min=args.install_task)

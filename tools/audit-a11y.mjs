@@ -367,7 +367,7 @@ const BUDGETS = [
   ["assets/site.css", 20 * 1024, "정적 페이지 공용 스타일"],
   ["assets/fonts/pretendard-variable.woff2", 250 * 1024, "본문 서체 서브셋 — 글자가 늘었으면 tools/make-font-subset.py 재실행"],
   ["data/app-data.js", 110 * 1024, "앱 학습 데이터"],
-  ["data/extra.js", 280 * 1024, "확장 콘텐츠(지연 로드) — 빈도 어휘 200선 예문 보강 포함(docs/frequency-shorts-plan.md)"],
+  ["data/extra.js", 310 * 1024, "확장 콘텐츠(지연 로드) — 빈도 어휘 200선 예문 보강 · 동의어 치환 200문제 예문 해석 포함(docs/frequency-shorts-plan.md)"],
 ];
 const overBudget = [];
 for (const [file, cap, why] of BUDGETS) {

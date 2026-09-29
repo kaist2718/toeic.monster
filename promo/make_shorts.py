@@ -509,6 +509,87 @@ def render_slide(idx: int, total: int, unit_no: int, unit_info: dict, wd: list,
     return img
 
 
+# --------------------------------------------------------- intro/outro ----
+INTRO_SEC = 2.5   # 인트로 슬라이드 길이(초) — --intro-sec 으로 변경, --no-intro 로 끄기
+OUTRO_SEC = 3.0   # 아웃로(CTA) 슬라이드 길이(초) — --outro-sec 으로 변경, --no-outro 로 끄기
+
+# 종류별 인트로 큰 제목 · 안내 줄
+KIND_HOOKS = {
+    "unit":      ("TOEIC 필수 어휘", "발음 · 예문 · 해석까지"),
+    "idioms":    ("TOEIC 빈출 숙어", "구동사 · 숙어 126선"),
+    "frequency": ("TOEIC 빈출 어휘", "기출 빈도순 200선"),
+    "paraphrase": ("TOEIC 동의어 치환", "기출 퀴즈 200문제"),
+}
+
+
+def _fit_font(draw, text: str, font_path: str | None, size: int, max_w: int, min_size: int = 34):
+    """텍스트가 max_w 를 넘지 않을 때까지 폰트를 줄여 반환합니다."""
+    font = load_font(font_path, size, bold=True)
+    while text_width(draw, text, font) > max_w and font.size > min_size:
+        font = load_font(font_path, font.size - 8, bold=True)
+    return font
+
+
+def render_intro_slide(subtitle: str, theme: str, font_path: str | None,
+                       kind: str = "unit") -> Image.Image:
+    """인트로 슬라이드 — 첫 1초 안에 '무엇을 배우는지' 알려 주는 브랜드 훅."""
+    global ACCENT_THEME
+    ACCENT_THEME = ACCENT[theme]
+    top, bottom = THEMES[theme]
+    img = vertical_gradient((W, H), top, bottom)
+    draw = ImageDraw.Draw(img, "RGBA")
+    draw_deco(draw)
+
+    head, tail = KIND_HOOKS.get(kind, KIND_HOOKS["unit"])
+
+    chip_font = load_font(font_path, 42, bold=True)
+    draw_pill(draw, W // 2, 330, "TOEIC · 매일 1분 암기", chip_font, (255, 255, 255), (0, 0, 0, 70))
+
+    head_font = _fit_font(draw, head, font_path, 132, W - 120, 56)
+    draw_text_rich(draw, head, head_font, (255, 255, 255), y=680)
+
+    if subtitle:
+        sub_font = _fit_font(draw, subtitle, font_path, 58, W - 160, 32)
+        draw_text_rich(draw, subtitle, sub_font, ACCENT_THEME, y=890)
+
+    tail_font = _fit_font(draw, tail, font_path, 46, W - 200, 28)
+    draw_text_rich(draw, tail, tail_font, (215, 225, 250), y=1030)
+
+    foot_font = load_font(font_path, 44, bold=True)
+    draw_text_rich(draw, "toeic.monster", foot_font, (255, 255, 255), y=1745)
+    return img
+
+
+def render_outro_slide(theme: str, font_path: str | None) -> Image.Image:
+    """아웃로 슬라이드 — 사이트 유입 CTA(구독·팔로우·사이트 방문)."""
+    global ACCENT_THEME
+    ACCENT_THEME = ACCENT[theme]
+    top, bottom = THEMES[theme]
+    img = vertical_gradient((W, H), top, bottom)
+    draw = ImageDraw.Draw(img, "RGBA")
+    draw_deco(draw)
+
+    chip_font = load_font(font_path, 42, bold=True)
+    draw_pill(draw, W // 2, 330, "오늘의 학습 완료!", chip_font, (255, 255, 255), (0, 0, 0, 70))
+
+    site = "toeic.monster"
+    site_font = _fit_font(draw, site, font_path, 128, W - 120, 56)
+    draw_text_rich(draw, site, site_font, (255, 255, 255), y=640)
+
+    sub_font = _fit_font(draw, "무료 TOEIC 어휘 · 숙어 · 기출 퀴즈", font_path, 56, W - 160, 30)
+    draw_text_rich(draw, "무료 TOEIC 어휘 · 숙어 · 기출 퀴즈", sub_font, ACCENT_THEME, y=850)
+
+    cta_font = load_font(font_path, 46, bold=True)
+    draw_pill(draw, W // 2, 1120, "구독 · 팔로우하면 매일 새 영상", cta_font, (255, 255, 255), (0, 0, 0, 70))
+
+    note_font = _fit_font(draw, "발음 · 예문 · 해설은 사이트에서 무료", font_path, 42, W - 200, 26)
+    draw_text_rich(draw, "발음 · 예문 · 해설은 사이트에서 무료", note_font, (215, 225, 250), y=1300)
+
+    foot_font = load_font(font_path, 44, bold=True)
+    draw_text_rich(draw, "toeic.monster", foot_font, (255, 255, 255), y=1745)
+    return img
+
+
 def slug(text: str, limit: int = 28) -> str:
     """표현을 파일명에 쓸 수 있게 바꿉니다(영문·숫자만 남기고 하이픈으로 이음)."""
     s = re.sub(r"[^a-z0-9]+", "-", str(text).lower()).strip("-")
@@ -762,6 +843,7 @@ def parse_paraphrase(item: dict) -> dict:
     return {"sentence": sentence, "target": target, "question": ko,
             "opts": [str(o) for o in (item.get("opts") or [])],
             "a": str(item.get("a", "")), "why": str(item.get("why", "")),
+            "tr": str(item.get("ko", "")),
             "tag": str(item.get("tag", ""))}
 
 
@@ -913,7 +995,14 @@ def render_quiz_answer(idx: int, total: int, rank: int, q: dict,
         lines = wrap_phrases(q["sentence"], q["target"], en_font, W - 200, draw)
     y = max(y + 50, 900.0)
     draw.line([200, y - 34, W - 200, y - 34], fill=(255, 255, 255, 70), width=3)
-    draw_quiz_lines(draw, lines[:4], q["target"], en_font, y, 66, (222, 230, 245), ACCENT_THEME)
+    y = draw_quiz_lines(draw, lines[:4], q["target"], en_font, y, 66, (222, 230, 245), ACCENT_THEME)
+
+    # ── 예문 해석 ──
+    tr = str(q.get("tr") or "")
+    if tr:
+        tr_font = load_font(font_path, 38, bold=False)
+        tr_lines = wrap_phrases(tr, "", tr_font, W - 200, draw)
+        draw_quiz_lines(draw, tr_lines[:3], "", tr_font, y + 34, 56, (200, 210, 235), (200, 210, 235))
 
     # ── 푸터 ──
     foot_font = load_font(font_path, 44, bold=True)
@@ -1009,6 +1098,15 @@ def build_audio(word: str, en_ex: str, voices: list[str], slide_dur: float, tmp:
             "-t", str(dur), str(slide_wav)]
     subprocess.run(cmd, capture_output=True)
     return slide_wav, dur
+
+
+def build_silence(dur: float, tmp: Path, i: int) -> Path:
+    """인트로·아웃로용 무음 wav — TTS 병합용 목록에 슬라이드 길이만큼 자리를 채웁니다."""
+    out = tmp / f"audio_{i}.wav"
+    subprocess.run([_FFMPEG, "-y", "-hide_banner", "-loglevel", "error",
+                    "-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=44100",
+                    "-t", f"{dur:.3f}", "-c:a", "pcm_s16le", str(out)], capture_output=True)
+    return out
 
 
 def run_ffmpeg(args: list[str]) -> bool:
@@ -1122,6 +1220,10 @@ def main() -> None:
     ap.add_argument("--music-volume", type=float, default=0.15, help="배경음악 볼륨 0~1 (기본 0.15)")
     ap.add_argument("--no-ambient", action="store_true",
                     help="기본 배경 사운드(앰비언트) 끄기 — --tts/--music 없이는 무음 영상이 됩니다")
+    ap.add_argument("--no-intro", action="store_true", help="인트로 슬라이드 끄기")
+    ap.add_argument("--intro-sec", type=float, default=INTRO_SEC, help=f"인트로 길이 초 (기본 {INTRO_SEC:g})")
+    ap.add_argument("--no-outro", action="store_true", help="아웃로(CTA) 슬라이드 끄기")
+    ap.add_argument("--outro-sec", type=float, default=OUTRO_SEC, help=f"아웃로 길이 초 (기본 {OUTRO_SEC:g})")
     ap.add_argument("--dry-run", action="store_true", help="계획만 출력하고 종료")
     args = ap.parse_args()
 
@@ -1224,7 +1326,9 @@ def main() -> None:
 
     # 퀴즈는 한 문제가 「문제 → 정답」 두 장이라 슬라이드 수가 항목 수의 두 배입니다.
     slide_count = len(picked) * (2 if args.paraphrase else 1)
-    total_dur = slide_count * args.slide_sec
+    intro_sec = 0.0 if args.no_intro else max(0.0, args.intro_sec)
+    outro_sec = 0.0 if args.no_outro else max(0.0, args.outro_sec)
+    total_dur = slide_count * args.slide_sec + intro_sec + outro_sec
     if args.out:
         out = Path(args.out)
     elif args.idioms:
@@ -1254,7 +1358,17 @@ def main() -> None:
     log(f"{source_label if kind != 'unit' else '단어'}  : {len(picked)}개 ({', '.join(w[0] for w in picked[:6])}{' …' if len(picked) > 6 else ''})")
     if kind == "paraphrase":
         log(f"구성  : 문제 {len(picked)}개 · 슬라이드 {slide_count}장 (문제 → 정답 순서)")
-    log(f"길이  : 약 {total_dur:.0f}초 ({slide_count}장 × {args.slide_sec:g}초), {FPS}fps")
+    log(f"길이  : 약 {total_dur:.0f}초 ({slide_count}장 × {args.slide_sec:g}초"
+        + (f" + 인트로 {intro_sec:g}초" if intro_sec else "")
+        + (f" + 아웃로 {outro_sec:g}초" if outro_sec else "") + f"), {FPS}fps")
+    if intro_sec or outro_sec:
+        log("구성  : " + " · ".join(x for x in (["인트로"] if intro_sec else [])
+                               + ["본문"] + (["아웃로(CTA)"] if outro_sec else [])))
+    # TTS 는 목소리를 두 번 읽어 슬라이드가 늘어나므로, Shorts 60초 예산을 미리 알려 줍니다.
+    est = intro_sec + outro_sec + slide_count * args.slide_sec * (1.8 if args.tts else 1.0)
+    if est > 60:
+        warn(f"예상 길이가 약 {est:.0f}초로 Shorts 60초를 넘을 수 있습니다 — "
+             "--words 축소 · --single-voice · --no-intro/--no-outro 를 검토하세요.")
     log(f"출력  : {out} ({W}x{H}, 9:16 세로)")
     log(f"스타일: {args.style}")
     log(f"음성  : {'edge-tts (' + ' + '.join(voices) + ')' if args.tts else '없음 (--no-tts 로 끔)'}")
@@ -1275,24 +1389,34 @@ def main() -> None:
         # ── 슬라이드 렌더링 + 프레임 출력 ──
         # (그림, (낭독할 낱말, 낭독할 문장)) 쌍으로 만들어 두면 아래 루프가 종류를 몰라도 됩니다.
         # 퀴즈는 한 문제가 문제·정답 두 장이라 picked 와 길이가 다릅니다.
-        plan: list[tuple[Image.Image, tuple[str, str]]] = []
+        # (그림, (낭독할 낱말, 낭독할 문장), 기본 길이) — say 가 None 이면 무음 슬라이드(인트로·아웃로).
+        plan: list[tuple[Image.Image, tuple[str, str] | None, float]] = []
         try:
+            if intro_sec:
+                if kind == "unit":
+                    intro_sub = f"UNIT {unit_no} · {unit_info.get('title', '')}".strip(" ·")
+                else:
+                    first_term = str(picked[0][0])
+                    intro_sub = f"{first_term} 외 {len(picked) - 1}개" if len(picked) > 1 else first_term
+                plan.append((render_intro_slide(intro_sub, args.bg, args.font, kind), None, intro_sec))
             if args.paraphrase:
                 for i, w in enumerate(picked):
                     q = w[8]
                     plan.append((render_quiz_question(i * 2, slide_count, w[7], q, args.bg, args.font, args.style),
-                                 (q["target"], q["sentence"])))
+                                 (q["target"], q["sentence"]), args.slide_sec))
                     plan.append((render_quiz_answer(i * 2 + 1, slide_count, w[7], q, args.bg, args.font, args.style),
-                                 (q["a"], "")))
+                                 (q["a"], ""), args.slide_sec))
             elif args.idioms:
-                plan = [(render_idiom_slide(i, len(picked), w[7], w, args.bg, args.font, args.style),
-                         (w[0], w[4])) for i, w in enumerate(picked)]
+                plan += [(render_idiom_slide(i, len(picked), w[7], w, args.bg, args.font, args.style),
+                          (w[0], w[4]), args.slide_sec) for i, w in enumerate(picked)]
             elif args.frequency:
-                plan = [(render_freq_slide(i, len(picked), w[7], w, args.bg, args.font, args.style),
-                         (w[0], w[4])) for i, w in enumerate(picked)]
+                plan += [(render_freq_slide(i, len(picked), w[7], w, args.bg, args.font, args.style),
+                          (w[0], w[4]), args.slide_sec) for i, w in enumerate(picked)]
             else:
-                plan = [(render_slide(i, len(picked), unit_no, unit_info, w, args.bg, args.font, args.style),
-                         (w[0], w[4])) for i, w in enumerate(picked)]
+                plan += [(render_slide(i, len(picked), unit_no, unit_info, w, args.bg, args.font, args.style),
+                          (w[0], w[4]), args.slide_sec) for i, w in enumerate(picked)]
+            if outro_sec:
+                plan.append((render_outro_slide(args.bg, args.font), None, outro_sec))
         except RuntimeError as exc:
             fail(str(exc))
             sys.exit(2)
@@ -1301,17 +1425,20 @@ def main() -> None:
         frame_files: list[Path] = []
         prev_last = None
         tts_failed = False
-        for si, (slide, say) in enumerate(plan):
-            dur = args.slide_sec
+        for si, (slide, say, base_dur) in enumerate(plan):
+            dur = base_dur
             if args.tts and not tts_failed:
-                try:
-                    wav, dur = build_audio(say[0], say[1], voices, dur, tmp, si)
-                    if dur > args.slide_sec:
-                        log(f"   · {say[0]}: 음성 {dur - 0.8:.1f}초 → 슬라이드 연장")
-                except Exception as exc:
-                    tts_failed = True
-                    warn(f"TTS 음성 생성 실패({exc}) — 앰비언트 사운드로 대체합니다.")
-                    dur = args.slide_sec
+                if say is None:
+                    build_silence(base_dur, tmp, si)  # 인트로·아웃로 — TTS 병합용 무음 자리를 채웁니다
+                else:
+                    try:
+                        wav, dur = build_audio(say[0], say[1], voices, base_dur, tmp, si)
+                        if dur > base_dur:
+                            log(f"   · {say[0]}: 음성 {dur - 0.8:.1f}초 → 슬라이드 연장")
+                    except Exception as exc:
+                        tts_failed = True
+                        warn(f"TTS 음성 생성 실패({exc}) — 앰비언트 사운드로 대체합니다.")
+                        dur = base_dur
             n = max(2, int(round(dur * FPS)))
             for i in range(n):
                 t = i / (n - 1) if n > 1 else 0.0
@@ -1363,7 +1490,8 @@ def main() -> None:
                       unit_no=None if kind != "unit" else unit_no,
                       items=picked, voices=voices if args.tts else [],
                       quiz=[{"question": w[8]["question"], "options": w[8]["opts"],
-                             "tag": w[8]["tag"]} for w in picked] if args.paraphrase else None)
+                             "tag": w[8]["tag"], "ko": w[8].get("tr", "")}
+                            for w in picked] if args.paraphrase else None)
         if not args.allow_repeat:
             added = mark_words_posted(bucket, [w[0] for w in picked])
             if added:
