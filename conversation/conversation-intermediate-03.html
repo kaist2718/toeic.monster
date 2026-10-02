@@ -231,6 +231,22 @@
         <ol class="gquiz-opts"><li>Yes, I did.</li><li>Yes, I have. I went to one in Singapore last year.</li><li>Yes, I am.</li><li>Yes, I go.</li></ol>
         <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: Yes, I have. I went to one in Singapore last year.</b><br>Have you ever ~ 에는 Yes, I have. 로 답하고, 구체적 시점을 말할 때는 과거시제로 바꿉니다.</p></details>
       </div>
+      <script>
+        /* 보기 순서를 불러올 때마다 섞어 정답이 항상 같은 자리에 오지 않게 합니다(재배치하므로 ol 번호도 자동 정렬). */
+        (function () {
+          var host = document.currentScript && document.currentScript.parentNode;
+          var lists = (host || document).querySelectorAll(".gquiz-opts");
+          for (var i = 0; i < lists.length; i++) {
+            var arr = [], c;
+            for (c = lists[i].firstElementChild; c; c = c.nextElementSibling) arr.push(c);
+            for (var j = arr.length - 1; j > 0; j--) {
+              var k = Math.floor(Math.random() * (j + 1)), t = arr[j];
+              arr[j] = arr[k]; arr[k] = t;
+            }
+            for (var m = 0; m < arr.length; m++) lists[i].appendChild(arr[m]);
+          }
+        })();
+      </script>
     </div>
     <nav class="chnav" aria-label="03과 이동">
       <a class="up" href="conversation-intermediate.html">← 중급 영어회화 전체</a>

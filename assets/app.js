@@ -2447,10 +2447,10 @@
     var qs = [];
     COLLOCATIONS.forEach(function (c) {
       qs.push({ tag: "콜로케이션 뜻", prompt: "「" + c.phrase + "」의 뜻으로 알맞은 것은?", answer: c.ko,
-        options: [c.ko].concat(pickN(shuffleArr(kos.slice()), [c.ko], 3)),
+        options: shuffleArr([c.ko].concat(pickN(shuffleArr(kos.slice()), [c.ko], 3))),
         why: c.phrase + " = " + c.ko, example: c.ex, exampleKo: c.exKo, promptSay: c.phrase });
       qs.push({ tag: "콜로케이션 표현", prompt: "「" + c.ko + "」에 해당하는 표현은?", answer: c.phrase,
-        options: [c.phrase].concat(pickN(shuffleArr(phrases.slice()), [c.phrase], 3)),
+        options: shuffleArr([c.phrase].concat(pickN(shuffleArr(phrases.slice()), [c.phrase], 3))),
         why: c.phrase + " = " + c.ko, example: c.ex, exampleKo: c.exKo, promptSay: c.phrase });
     });
     return qs;
@@ -2768,7 +2768,7 @@
     html += '<div id="p34Qs">';
     s.qs.forEach(function (q, qi) {
       html += '<div class="dialogue-q"><p class="dialogue-qtext">Q' + (qi + 1) + ". " + esc(q.q) + '</p>';
-      q.opts.forEach(function (o) { html += '<button type="button" class="quiz-opt p34-opt" data-qi="' + qi + '" data-a="' + escapeAttr(q.a) + '">' + esc(o) + '</button>'; });
+      shuffleArr(q.opts.slice()).forEach(function (o) { html += '<button type="button" class="quiz-opt p34-opt" data-qi="' + qi + '" data-a="' + escapeAttr(q.a) + '">' + esc(o) + '</button>'; });
       html += '<div class="quiz-feedback" id="p34Fb' + qi + '" role="status" aria-live="polite" aria-atomic="true"></div></div>';
     });
     html += '</div></div>';
@@ -3219,7 +3219,7 @@
     var qh = "";
     d.quiz.forEach(function (q, qi) {
       qh += '<div class="dialogue-q"><p class="dialogue-qtext">Q' + (qi + 1) + ". " + esc(q.q) + '</p>';
-      q.opts.forEach(function (o) {
+      shuffleArr(q.opts.slice()).forEach(function (o) {
         qh += '<button type="button" class="quiz-opt dq-opt" data-qi="' + qi + '" data-a="' + escapeAttr(q.a) + '">' + esc(o) + '</button>';
       });
       qh += '<div class="quiz-feedback" id="dqFb' + qi + '" role="status" aria-live="polite" aria-atomic="true"></div></div>';
@@ -3263,11 +3263,14 @@
     if (!box) return;
     var questions = PART_BANK[part] || PART_BANK["5"];
     partBankState[part] = partBankState[part] || { answered: {} };
+    partBankState[part].order = partBankState[part].order || {};
     box.innerHTML = questions.map(function (item, qi) {
       var answered = partBankState[part].answered[qi];
+      // 답을 고르고 다시 그려도 순서가 튀지 않도록 문제마다 한 번만 섞어 둡니다.
+      partBankState[part].order[qi] = partBankState[part].order[qi] || shuffleArr(item.opts.slice());
       var html = '<article class="bank-card"><span class="bank-label">TOEIC Part ' + part + ' · ' + (qi + 1) + '번</span>' +
         '<div class="bank-q">' + esc(item.q) + ttsBtn(item.q, "문제 듣기") + '</div><div class="bank-options">';
-      item.opts.forEach(function (opt) {
+      partBankState[part].order[qi].forEach(function (opt) {
         var state = answered ? (opt === item.a ? " correct" : answered.choice === opt ? " wrong" : "") : "";
         html += '<button type="button" class="bank-opt' + state + '" data-part="' + part + '" data-qi="' + qi + '" data-answer="' + escapeAttr(item.a) + '"' + (answered ? " disabled" : "") + '>' + esc(opt) + '</button>';
       });
@@ -3310,7 +3313,7 @@
     var grid = document.getElementById("readingGrid");
     if (!grid) return;
     grid.innerHTML = READING_MINI.map(function (item, i) {
-      return '<article class="reading-card"><span class="bank-label">' + esc(item.type) + '</span><h3>' + esc(item.title) + '</h3><div class="reading-passage">' + esc(item.text) + ttsBtn(item.text, "지문 듣기") + '</div><div class="reading-q">' + esc(item.q) + '</div><select class="reading-answer" data-reading="' + i + '" aria-label="' + esc(item.title) + ' 문제 정답 선택"><option value="">정답을 선택하세요</option>' + item.opts.map(function (o) { return '<option>' + esc(o) + '</option>'; }).join("") + '</select><div class="bank-feedback" id="readingFeedback' + i + '" role="status" aria-live="polite" aria-atomic="true"></div></article>';
+      return '<article class="reading-card"><span class="bank-label">' + esc(item.type) + '</span><h3>' + esc(item.title) + '</h3><div class="reading-passage">' + esc(item.text) + ttsBtn(item.text, "지문 듣기") + '</div><div class="reading-q">' + esc(item.q) + '</div><select class="reading-answer" data-reading="' + i + '" aria-label="' + esc(item.title) + ' 문제 정답 선택"><option value="">정답을 선택하세요</option>' + seededShuffle(item.opts, seedOf(item.title)).map(function (o) { return '<option>' + esc(o) + '</option>'; }).join("") + '</select><div class="bank-feedback" id="readingFeedback' + i + '" role="status" aria-live="polite" aria-atomic="true"></div></article>';
     }).join("");
     grid.querySelectorAll(".reading-answer").forEach(function (select) {
       select.addEventListener("change", function () {
@@ -3344,7 +3347,8 @@
     html += '<div id="drQs">';
     s.qs.forEach(function (q, qi) {
       html += '<div class="dialogue-q"><p class="dialogue-qtext">Q' + (qi + 1) + ". " + esc(q.q) + '</p>';
-      q.opts.forEach(function (o) { html += '<button type="button" class="quiz-opt p34-opt" data-qi="' + qi + '" data-a="' + escapeAttr(q.a) + '">' + esc(o) + '</button>'; });
+      // 프리렌더 대상이라 Math.random 대신 지문별 고정 씨앗 셔플을 씁니다(빌드마다 결과가 같아야 함).
+      seededShuffle(q.opts, seedOf(q.q)).forEach(function (o) { html += '<button type="button" class="quiz-opt p34-opt" data-qi="' + qi + '" data-a="' + escapeAttr(q.a) + '">' + esc(o) + '</button>'; });
       html += '<div class="quiz-feedback" id="drFb' + qi + '" role="status" aria-live="polite" aria-atomic="true"></div></div>';
     });
     html += '</div></div>';
@@ -3603,7 +3607,7 @@
     html += '<div class="practice-actions"><button type="button" class="btn quiz-btn" id="p6Next">🔄 다른 지문</button></div>';
     s.blanks.forEach(function (b) {
       html += '<div class="p6-q"><p class="reading-q">(' + b.n + ') 빈칸에 알맞은 것은?</p><div class="bank-options">';
-      b.opts.forEach(function (o) { html += '<button type="button" class="bank-opt" data-b="' + b.n + '" data-a="' + escapeAttr(b.a) + '">' + esc(o) + '</button>'; });
+      shuffleArr(b.opts.slice()).forEach(function (o) { html += '<button type="button" class="bank-opt" data-b="' + b.n + '" data-a="' + escapeAttr(b.a) + '">' + esc(o) + '</button>'; });
       html += '</div><div class="bank-feedback" id="p6Fb' + b.n + '" role="status" aria-live="polite" aria-atomic="true"></div></div>';
     });
     html += '</div>';
@@ -4761,7 +4765,7 @@
         kind: "vocab",
         theme: "어휘 · UNIT " + unitNoOf(w[0]),
         prompt: "다음 뜻에 맞는 단어를 고르세요.\n" + w[3],
-        answer: w[0], options: [w[0]].concat(others),
+        answer: w[0], options: shuffleArr([w[0]].concat(others)),
         example: w[4], exampleKo: w[5], say: w[0]
       };
     });
@@ -5243,7 +5247,8 @@
     html += '<details class="library-ko"><summary>해석 보기</summary><p>' + esc(lv.ko) + "</p></details>";
     (lv.qs || []).forEach(function (q, qi) {
       html += '<div class="library-q"><p class="reading-q">Q' + (qi + 1) + ". " + esc(q.q) + '</p><div class="bank-options">';
-      (q.opts || []).forEach(function (o) {
+      // 프리렌더 대상이라 Math.random 대신 문항별 고정 씨앗 셔플을 씁니다(빌드마다 결과가 같아야 함).
+      seededShuffle(q.opts || [], seedOf(q.q)).forEach(function (o) {
         html += '<button type="button" class="bank-opt lib-opt" data-ep="' + ep.no + '" data-lv="' + st.level + '" data-qi="' + qi + '" data-a="' + escapeAttr(q.a) + '">' + esc(o) + "</button>";
       });
       html += '</div><div class="bank-feedback" id="libFb' + ep.no + "-" + st.level + "-" + qi + '" role="status" aria-live="polite" aria-atomic="true"></div></div>';

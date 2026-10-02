@@ -68,6 +68,7 @@ promo_center.bat
 25. **동의어 치환 퀴즈 쇼츠 생성 후 게시** — 퀴즈 생성을 포함해 3번과 같은 흐름으로 게시까지 진행
 26. **남은 콘텐츠 수량 보기** — 종류별 사용/전체/남음과 합계를 표로 확인
 27. **콘텐츠 자동 준비** — N일치 쇼츠를 자동 생성하고 예약 게시까지 등록 (종류는 남은 콘텐츠 많은 순으로 자동 배합)
+28. **게시된 영상 YouTube 설명 갱신** — 이미 업로드한 영상의 제목·설명을 새 형식(모든 단어·퀴즈 정답 위치 포함)으로 다시 만들어 교체. 먼저 미리보기를 보여 주고 확인 후 적용하며, 태그·카테고리·공개 설정은 그대로 둡니다
 
 생성·게시가 끝나면 **남은 콘텐츠 수량**(종류별 사용/전체/남음)을 자동으로 표시합니다(`make_shorts.py`·`publish.py` 공통).
 
@@ -111,6 +112,16 @@ python publish.py --auto-plan 3 --plan-kind idioms   # 지정 종류로 생성�
 
 # 성과 인사이트 — 종류별 평균 조회수·좋은 게시 시간대·추천 콘텐츠
 python publish.py --stats-insights
+
+# 게시된 영상 YouTube 설명 갱신 — 새 형식(모든 단어·퀴즈 정답 위치)으로 미리보기만
+python publish.py --refresh-desc
+
+# 실제로 적용 — 기본은 미리보기라 --apply 가 있어야 YouTube를 수정합니다
+python publish.py --refresh-desc --apply            # 제목·설명 모두 갱신
+python publish.py --refresh-desc --apply --keep-title   # 설명만 갱신, 제목 유지
+
+# 한 영상만 갱신
+python publish.py --refresh-desc --video assets/shorts/quiz_follow-up-on_shorts.mp4
 
 # 실제 업로드
 python publish.py --video assets/shorts/unit01_shorts.mp4 --unit 1 --platforms yt --youtube-privacy unlisted
@@ -288,6 +299,11 @@ python make_shorts.py --paraphrase --index 0 --bg wine --style modern
 `9:16 / 1080×1920 / 30fps` 영상을 만들며, 한글·IPA 폰트를 자동 탐색합니다. 생성 전 `--dry-run`으로 계획을 확인할 수 있습니다.
 
 생성이 끝나면 영상 옆에 같은 이름의 메타 파일(`unit01_shorts.json`)을 남깁니다. **게시 제목·설명은 이 파일을 읽어 만들어집니다** — 영상에 실제로 들어간 항목이라 제목이 내용과 어긋나지 않습니다. 메타가 없는 영상(예전 산출물)은 기존처럼 `--unit` / `--idioms` 로 남은 목록에서 하나를 골라 씁니다(`promo/assets/` 는 git 에 올라가지 않습니다).
+
+- **제목**: `첫 단어 외 단어 N개 | TOEIC 필수 어휘 UNIT … | toeic.monster` — 숙어·빈도·퀴즈와 같은 형식(항목 1개면 `첫 단어 | …`)
+- **설명**: 영상에 들어간 **모든 단어**를 발음(IPA)·뜻·예문·해석과 함께 번호 목록으로 적습니다(숙어·빈도·퀴즈 설명과 동일한 형식). 검색 노출과 영상 다시 보기에 모두 쓰입니다.
+- **Instagram 캡션**은 2,200자 제한에 맞추되 해시태그는 남기고 설명 본문을 줄입니다.
+- **퀴즈 정답 위치 랜덤**: 퀴즈(`--paraphrase`)는 문제마다 보기 순서를 랜덤으로 섞어 정답이 항상 `A` 에 오지 않습니다(`--seed` 를 지정하면 같은 시드에서 같은 순서). 메타 파일이 이 순서를 그대로 저장하므로 영상·제목·설명이 일치하고, 설명의 `정답: B. …` 표기도 영상의 정답 위치와 같습니다.
 
 - **숙어 카드**: `--idioms` 를 주면 `data/idioms.js`(126선)에서 고릅니다. 숙어는 IPA·예문 발음이 없어 슬라이드에 **표현·뜻·예문·해석**만 들어가고, 상단 칩은 `TOEIC 빈출 숙어` + **목록 순번**입니다. 파일명은 첫 표현을 따 `idioms_take-advantage-of_shorts.mp4` 처럼 나와 배치끼리 덮어쓰지 않습니다(`--out` 으로 지정 가능).
 - **동의어 치환 퀴즈**: `--paraphrase` 를 주면 `data/extra.js` 의 paraphrase(200문제)에서 고릅니다. 한 문제가 **문제 슬라이드(문장 + 보기 A~D) → 정답 슬라이드(정답·해설·예문 해석)** 두 장이라, 3문제면 6장·약 36초입니다(`--words` 가 슬라이드 수를 두 배로 늘립니다). 문제 슬라이드는 영어 문장을, 정답 슬라이드는 정답 표현을 읽습니다. 파일명은 `quiz_expedite_shorts.mp4` 처럼 첫 표적 표현을 따릅니다.

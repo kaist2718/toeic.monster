@@ -239,6 +239,22 @@
         <ol class="gquiz-opts"><li>to review</li><li>review</li><li>reviewing</li><li>reviewed</li></ol>
         <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: review</b><br>사역동사 let 뒤 목적격 보어는 동사 원형 review 입니다.</p></details>
       </div>
+      <script>
+        /* 보기 순서를 불러올 때마다 섞어 정답이 항상 같은 자리에 오지 않게 합니다(재배치하므로 ol 번호도 자동 정렬). */
+        (function () {
+          var host = document.currentScript && document.currentScript.parentNode;
+          var lists = (host || document).querySelectorAll(".gquiz-opts");
+          for (var i = 0; i < lists.length; i++) {
+            var arr = [], c;
+            for (c = lists[i].firstElementChild; c; c = c.nextElementSibling) arr.push(c);
+            for (var j = arr.length - 1; j > 0; j--) {
+              var k = Math.floor(Math.random() * (j + 1)), t = arr[j];
+              arr[j] = arr[k]; arr[k] = t;
+            }
+            for (var m = 0; m < arr.length; m++) lists[i].appendChild(arr[m]);
+          }
+        })();
+      </script>
     </div>
     <nav class="chnav" aria-label="12과 이동">
       <a class="up" href="basic.html">← 기초 영문법 전체</a>

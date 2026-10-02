@@ -84,7 +84,8 @@ UNIT_FILE_RE = re.compile(r"window\.VOCAB_UNITS\s*\[\s*(\d+)\s*\]\s*=\s*(\[[\s\S
 # 숙어는 한 덩어리입니다: window.VOCAB_IDIOMS = [ [표현, 뜻, 예문, 해석], ... ];
 IDIOM_FILE_RE = re.compile(r"window\.VOCAB_IDIOMS\s*=\s*(\[[\s\S]*?\]);")
 UNITS_BLOCK_RE = re.compile(r"var UNITS\s*=\s*\[([\s\S]*?)\];")
-UNIT_ENTRY_RE = re.compile(r"\{\s*id:\s*(\d+)[^}]*?title:\s*\"([^\"]*)\"[^}]*?level:\s*\"([^\"]*)\"[^}]*?icon:\s*\"([^\"]*)\"\s*\}")
+# title·level·icon 사이는 sub 같은 다른 필드가 끼어들 수 있어 [^}]*? 로 건너뜁니다.
+UNIT_ENTRY_RE = re.compile(r"\{\s*id:\s*(\d+)[^}]*?title:\s*\"([^\"]*)\"[^}]*?level:\s*\"([^\"]*)\"[^}]*?icon:\s*\"([^\"]*)\"[^}]*?\}")
 
 
 def log(msg: str) -> None:
@@ -350,22 +351,28 @@ def quiz_item_from(row: dict) -> dict:
             "meaning": str(row.get("a", "")),
             "example": PARA_TARGET_RE.sub(lambda m: m.group(1), en).strip(),
             "translation": str(row.get("why", "")),
+            "ko": str(row.get("ko", "")),
             "options": [str(o) for o in (row.get("opts") or [])]}
 
 
 def load_unit_info() -> dict:
-    """index.html 의 UNITS 메타데이터(id -> {title, level, icon}) 파싱."""
-    index = ROOT / "index.html"
-    if not index.exists():
-        return {}
-    text = index.read_text(encoding="utf-8")
-    m = UNITS_BLOCK_RE.search(text)
-    if not m:
-        return {}
-    info = {}
-    for em in UNIT_ENTRY_RE.finditer(m.group(1)):
-        info[int(em.group(1))] = {"title": em.group(2), "level": em.group(3), "icon": em.group(4)}
-    return info
+    """UNITS 메타데이터(id -> {title, level, icon}) 파싱.
+
+    UNITS 배열은 data/app-data.js 로 옮겨졌고, 예전에는 index.html 안에 있었습니다.
+    두 곳을 모두 확인해 사이트 구조가 바뀌어도 유닛명·아이콘을 잃지 않습니다.
+    """
+    for candidate in (ROOT / "data" / "app-data.js", ROOT / "index.html"):
+        if not candidate.exists():
+            continue
+        m = UNITS_BLOCK_RE.search(candidate.read_text(encoding="utf-8"))
+        if not m:
+            continue
+        info = {}
+        for em in UNIT_ENTRY_RE.finditer(m.group(1)):
+            info[int(em.group(1))] = {"title": em.group(2), "level": em.group(3), "icon": em.group(4)}
+        if info:
+            return info
+    return {}
 
 
 # --------------------------------------------------------------------------- #
@@ -645,11 +652,46 @@ def find_unit_row(unit_no: int | None, term: str) -> list | None:
     return None
 
 
-def vocab_title(row: list | None, item: dict, unit_no: int | None, unit_info: dict) -> str:
-    """단어 영상 제목 — 기존 형식을 유지합니다."""
-    term = (row[0] if row else item.get("term", "")) or ""
-    head = f"UNIT {unit_no} {unit_info.get('title', '')}".strip() if unit_no else ""
-    return f"{term} | TOEIC 필수 어휘 {head}".strip() + " | toeic.monster"
+def vocab_entries(unit_no: int | None, items: list) -> list[dict]:
+    """영상 메타 항목을 단어장 원본으로 보강한 설명용 목록으로 만듭니다.
+
+    메타에는 IPA가 빠져 있을 수 있어 같은 단어를 data/unitNN.js 에서 다시 찾아 채웁니다.
+    """
+    out = []
+    for it in items:
+        if not isinstance(it, dict):
+            continue
+        term = str(it.get("term", "")).strip()
+        if not term:
+            continue
+        row = find_unit_row(unit_no, term)
+        out.append({
+            "term": (row[0] if row else term) or term,
+            "ipa": ((row[1] if row else "") or it.get("ipa", "")) or "",
+            "meaning": ((row[3] if row else "") or it.get("meaning", "")) or "",
+            "example": ((row[4] if row else "") or it.get("example", "")) or "",
+            "translation": ((row[5] if row else "") or it.get("translation", "")) or "",
+        })
+    return out
+
+
+def brand_title(head: str, category: str) -> str:
+    """게시 제목 공통 뼈대 — {핵심} | {종류 라벨} | toeic.monster.
+
+    유닛·숙어·빈도·퀴즈 제목이 모두 이 구조를 써서, 목록에서 한 종류만 형식이 다르지 않습니다.
+    """
+    return f"{head} | {category} | toeic.monster"
+
+
+def vocab_title(entries: list[dict], unit_no: int | None, unit_info: dict) -> str:
+    """단어 영상 제목 — 첫 단어 + 나머지 개수 (숙어·빈도 영상 제목과 같은 형식)."""
+    terms = [e["term"] for e in entries if e.get("term")]
+    unit_label = f"UNIT {unit_no} {unit_info.get('title', '')}".strip() if unit_no else ""
+    category = f"TOEIC 필수 어휘 {unit_label}".strip()
+    if not terms:
+        return f"{category} | toeic.monster"
+    head = terms[0] if len(terms) == 1 else f"{terms[0]} 외 단어 {len(terms) - 1}개"
+    return brand_title(head, category)
 
 
 def site_link(site_url: str, path: str = "", campaign: str = "shorts") -> str:
@@ -667,14 +709,37 @@ def site_link(site_url: str, path: str = "", campaign: str = "shorts") -> str:
     return f"{base}{sep}utm_source=shorts&utm_medium=social&utm_campaign={campaign}"
 
 
-def vocab_desc(row: list | None, item: dict, site_url: str) -> str:
-    """단어 영상 설명 — 원본 단어 행이 있으면 IPA까지 그대로 씁니다."""
-    tail = f"발음·예문으로 외우는 TOEIC 보카 1,000 → {site_link(site_url, '', 'unit')}"
-    if row:
-        return (f"TOEIC 필수 어휘 「{row[0]}」 [{row[1]}] {row[3]}\n"
-                f"예문: {row[4]}\n해석: {row[5]}\n\n{tail}")
-    return (f"TOEIC 필수 어휘 「{item.get('term', '')}」 {item.get('meaning', '')}\n"
-            f"예문: {item.get('example', '')}\n해석: {item.get('translation', '')}\n\n{tail}")
+def fmt_ipa(ipa: str) -> str:
+    """IPA 표기 — 원본이 /…/ 또는 […] 로 이미 감싸져 있으면 그대로, 아니면 [ ] 로 감쌉니다."""
+    ipa = str(ipa or "").strip()
+    if not ipa:
+        return ""
+    if ipa.startswith(("[", "/")):
+        return f" {ipa}"
+    return f" [{ipa}]"
+
+
+def vocab_desc(entries: list[dict], site_url: str, unit_label: str = "") -> str:
+    """단어 영상 설명 — 영상에 들어간 단어를 발음·뜻·예문과 함께 모두 적습니다.
+
+    숏폼 설명은 검색 노출과 다시 보기 모두에 쓰이므로, 제목에 못 넣은 나머지 단어를
+    여기서 살립니다(숙어·빈도·퀴즈 설명과 같은 형식).
+    """
+    rows = [e for e in entries if e.get("term")]
+    head = f"TOEIC 필수 어휘 {len(rows)}개" if len(rows) > 1 else "TOEIC 필수 어휘"
+    if unit_label:
+        head += f" · {unit_label}"
+    lines = [head, ""]
+    for i, e in enumerate(rows, 1):
+        ipa = fmt_ipa(e.get("ipa", ""))
+        lines.append(f"{i}. {e['term']}{ipa} — {e.get('meaning', '')}")
+        if e.get("example"):
+            lines.append(f"   {e['example']}")
+        if e.get("translation"):
+            lines.append(f"   {e['translation']}")
+    lines.append("")
+    lines.append(f"발음·예문으로 외우는 TOEIC 보카 1,000 → {site_link(site_url, '', 'unit')}")
+    return "\n".join(lines)
 
 
 def idioms_title(items: list) -> str:
@@ -682,9 +747,8 @@ def idioms_title(items: list) -> str:
     terms = [str(it.get("term", "")).strip() for it in items if str(it.get("term", "")).strip()]
     if not terms:
         return "TOEIC 빈출 숙어 | toeic.monster"
-    if len(terms) == 1:
-        return f"{terms[0]} | TOEIC 빈출 숙어 | toeic.monster"
-    return f"{terms[0]} 외 숙어 {len(terms) - 1}개 | TOEIC 빈출 숙어 | toeic.monster"
+    head = terms[0] if len(terms) == 1 else f"{terms[0]} 외 숙어 {len(terms) - 1}개"
+    return brand_title(head, "TOEIC 빈출 숙어")
 
 
 def idioms_desc(items: list, site_url: str) -> str:
@@ -710,9 +774,8 @@ def freq_title(items: list) -> str:
     terms = [str(it.get("term", "")).strip() for it in items if str(it.get("term", "")).strip()]
     if not terms:
         return "TOEIC 빈출 어휘 | toeic.monster"
-    if len(terms) == 1:
-        return f"{terms[0]} | TOEIC 빈출 어휘 | toeic.monster"
-    return f"{terms[0]} 외 빈출 어휘 {len(terms) - 1}개 | TOEIC 빈출 어휘 | toeic.monster"
+    head = terms[0] if len(terms) == 1 else f"{terms[0]} 외 빈출 어휘 {len(terms) - 1}개"
+    return brand_title(head, "TOEIC 빈출 어휘")
 
 
 def freq_desc(items: list, site_url: str) -> str:
@@ -720,7 +783,7 @@ def freq_desc(items: list, site_url: str) -> str:
     rows = [it for it in items if str(it.get("term", "")).strip()]
     lines = [f"TOEIC 빈출 어휘 {len(rows)}개" if len(rows) > 1 else "TOEIC 빈출 어휘", ""]
     for i, it in enumerate(rows, 1):
-        ipa = f" [{it['ipa']}]" if it.get("ipa") else ""
+        ipa = fmt_ipa(it.get("ipa", ""))
         lines.append(f"{i}. {it.get('term', '')}{ipa} — {it.get('meaning', '')}")
         if it.get("example"):
             lines.append(f"   {it['example']}")
@@ -738,8 +801,8 @@ def quiz_title(items: list) -> str:
         return "TOEIC 동의어 치환 퀴즈 | toeic.monster"
     head = f"{first.get('term', '')} ≈ {first.get('meaning', '')}".strip(" ≈")
     if len(items) == 1:
-        return f"{head} | TOEIC 동의어 치환 퀴즈 | toeic.monster"
-    return f"{head} 외 동의어 치환 {len(items) - 1}문제 | toeic.monster"
+        return brand_title(head, "TOEIC 동의어 치환 퀴즈")
+    return brand_title(f"{head} 외 동의어 치환 {len(items) - 1}문제", "TOEIC 동의어 치환 퀴즈")
 
 
 def quiz_desc(items: list, site_url: str) -> str:
@@ -757,7 +820,10 @@ def quiz_desc(items: list, site_url: str) -> str:
         opts = [str(o) for o in (it.get("options") or [])]
         if opts:
             lines.append("   " + " / ".join(f"{letters[j]}. {o}" for j, o in enumerate(opts[:4])))
-        lines.append(f"   정답: {it.get('meaning', '')}")
+        ans = str(it.get("meaning", ""))
+        # 영상의 정답 위치(A~D)와 설명이 어긋나지 않도록 실제 보기 순서에서 정답 문자를 찾습니다.
+        letter = f"{letters[opts.index(ans)]}. " if ans in opts[:4] else ""
+        lines.append(f"   정답: {letter}{ans}")
         if it.get("translation"):
             lines.append(f"   해설: {it['translation']}")
         lines.append("")
@@ -777,6 +843,7 @@ def build_meta(cfg: dict, args) -> dict:
     desc = args.desc
     unit_info = {}
     chosen_word: str | None = None
+    word_bucket: int | str | None = None  # 중복 기록 버킷 — UNIT 번호 / idioms / frequency / paraphrase
     kind = ""  # 콘텐츠 종류 — 종류별 해시태그·UTM 캠페인에 사용
     site_url = cfg.get("site_url", "https://toeic.monster/")
 
@@ -796,10 +863,10 @@ def build_meta(cfg: dict, args) -> dict:
         else:
             unit_no = saved.get("unit") if isinstance(saved.get("unit"), int) else None
             unit_info = load_unit_info().get(unit_no, {}) if unit_no else {}
-            first = items[0] if isinstance(items[0], dict) else {}
-            row = find_unit_row(unit_no, str(first.get("term", "")))
-            title = title or vocab_title(row, first, unit_no, unit_info)
-            desc = desc or vocab_desc(row, first, site_url)
+            entries = vocab_entries(unit_no, items)
+            unit_label = f"UNIT {unit_no} {unit_info.get('title', '')}".strip()
+            title = title or vocab_title(entries, unit_no, unit_info)
+            desc = desc or vocab_desc(entries, site_url, unit_label)
     elif args.unit:
         kind = "unit"
         unit_info = load_unit_info().get(args.unit, {})
@@ -819,15 +886,14 @@ def build_meta(cfg: dict, args) -> dict:
                          f"--reset-posted 로 초기화할 수 있습니다. 전체 단어에서 선택합니다.")
             w = random.choice(pool)
             chosen_word = w[0]
-            unit_tag = f"UNIT {args.unit} {unit_info.get('title', '')}".strip()
+            word_bucket = args.unit
+            entries = [{"term": w[0], "ipa": w[1], "meaning": w[3],
+                        "example": w[4], "translation": w[5]}]
+            unit_label = f"UNIT {args.unit} {unit_info.get('title', '')}".strip()
             if not title:
-                title = f"{w[0]} | TOEIC 필수 어휘 {unit_tag} | toeic.monster"
+                title = vocab_title(entries, args.unit, unit_info)
             if not desc:
-                desc = (
-                    f"TOEIC 필수 어휘 「{w[0]}」 [{w[1]}] {w[3]}\n"
-                    f"예문: {w[4]}\n해석: {w[5]}\n\n"
-                    f"발음·예문으로 외우는 TOEIC 보카 1,000 → {site_link(site_url, '', 'unit')}"
-                )
+                desc = vocab_desc(entries, site_url, unit_label)
         elif not title:
             warn(f"UNIT {args.unit} 데이터를 읽지 못해 기본 제목을 사용합니다.")
     elif getattr(args, "idioms", False):
@@ -843,6 +909,7 @@ def build_meta(cfg: dict, args) -> dict:
         if pool:
             r = random.choice(pool)
             one = {"term": r[0], "meaning": r[1], "example": r[2], "translation": r[3]}
+            chosen_word, word_bucket = one["term"], IDIOM_BUCKET
             title = title or idioms_title([one])
             desc = desc or idioms_desc([one], site_url)
         elif not title:
@@ -860,6 +927,7 @@ def build_meta(cfg: dict, args) -> dict:
         if pool:
             r = random.choice(pool)
             one = {"term": r[0], "ipa": r[1], "meaning": r[3], "example": r[4], "translation": r[5]}
+            chosen_word, word_bucket = one["term"], FREQUENCY_BUCKET
             title = title or freq_title([one])
             desc = desc or freq_desc([one], site_url)
         elif not title:
@@ -877,6 +945,7 @@ def build_meta(cfg: dict, args) -> dict:
         if pool:
             r = random.choice(pool)
             one = quiz_item_from(r)
+            chosen_word, word_bucket = one["term"], PARAPHRASE_BUCKET
             title = title or quiz_title([one])
             desc = desc or quiz_desc([one], site_url)
         elif not title:
@@ -897,7 +966,7 @@ def build_meta(cfg: dict, args) -> dict:
     if cfg.get("youtube", {}).get("include_shorts_tag", True) and "#Shorts" not in hashtags:
         hashtags += " #Shorts"
     return {"title": title, "desc": desc, "hashtags": hashtags, "unit": args.unit,
-            "unit_info": unit_info, "word": chosen_word}
+            "unit_info": unit_info, "word": chosen_word, "word_bucket": word_bucket}
 
 
 def resolve_platforms(cfg: dict, arg: str | None) -> list[str]:
@@ -1081,7 +1150,7 @@ def run_scheduled_item(item: dict, cfg: dict, *, dry_run: bool = False) -> bool:
                        video=str(video), unit=item.get("unit"), title=meta["title"], url=url or "",
                        message="예약 게시 실행" if url else "플랫폼 게시 실패 또는 건너뜀")
     if not dry_run and all_ok and meta.get("word"):
-        mark_words_posted(item.get("unit"), [meta["word"]])
+        mark_words_posted(meta.get("word_bucket") or item.get("unit"), [meta["word"]])
     return all_ok
 
 
@@ -1165,18 +1234,29 @@ def open_url(url: str) -> bool:
     return bool(opened)
 
 
-def build_caption(meta: dict) -> str:
-    """설명 + 해시태그를 합친 캡션을 만듭니다."""
+def build_caption(meta: dict, max_len: int = 0) -> str:
+    """설명 + 해시태그를 합친 캡션을 만듭니다.
+
+    max_len 을 주면 플랫폼 제한(예: Instagram 2,200자)에 맞추고,
+    해시태그는 검색 노출에 필수라 남기고 설명 본문을 줄입니다.
+    """
     caption = meta.get("desc", "") or ""
     if meta.get("hashtags"):
         caption = f"{caption}\n\n{meta['hashtags']}" if caption else meta["hashtags"]
+    if max_len and len(caption) > max_len:
+        tags = meta.get("hashtags", "") or ""
+        keep = tags if tags and len(tags) + 2 < max_len else ""
+        room = max_len - len(keep) - (3 if keep else 0)  # 줄임표(…) 자리
+        caption = caption[:max(0, room)].rstrip() + "…"
+        if keep:
+            caption += f"\n\n{keep}"
     return caption
 
 
 def manual_publish(video: Path, meta: dict, short: str, cfg: dict, *, mark: bool = True) -> bool:
     """업로드 페이지를 열고 캡션을 복사해 수동 게시를 돕습니다."""
     name = PLATFORM_NAMES.get(short, short)
-    caption = build_caption(meta)
+    caption = build_caption(meta, max_len=2200 if short == "ig" else 0)
     log("\n" + "=" * 62)
     log(f"📋 {name} 수동 게시 도우미")
     log("=" * 62)
@@ -1574,6 +1654,122 @@ def args_youtube_privacy(yt: dict) -> str:
 
 
 # --------------------------------------------------------------------------- #
+# 게시된 영상 메타 갱신 — 새 설명 형식(모든 단어·퀴즈 정답 위치) 반영
+# --------------------------------------------------------------------------- #
+YT_URL_RE = re.compile(r"youtu\.be/([\w-]+)")
+
+
+def yt_refresh_targets(video: Path | None = None) -> list[dict]:
+    """게시 이력에서 YouTube 영상 id·로컬 경로를 모읍니다(같은 영상은 마지막 게시 기준)."""
+    found: dict[str, dict] = {}
+    for r in read_history_rows():
+        if r.get("event") != "publish":
+            continue
+        m = YT_URL_RE.search(r.get("url", ""))
+        if not m:
+            continue
+        path = Path(r.get("video", "") or "")
+        if not path.is_absolute():
+            path = PROMO / path
+        if video is not None and path.resolve() != video.resolve():
+            continue
+        found[m.group(1)] = {"video_id": m.group(1), "video": path, "title": r.get("title", "")}
+    return list(found.values())[::-1]  # 최근 게시한 영상이 먼저 오도록
+
+
+def refresh_youtube_descriptions(cfg: dict, *, video: Path | None = None,
+                                 apply: bool = False, keep_title: bool = False) -> None:
+    """게시된 YouTube 영상의 제목·설명을 최신 형식으로 다시 만듭니다.
+
+    make_shorts.py 가 남긴 메타(*.json)로 새 형식 설명(모든 단어·퀴즈 정답 위치 포함)을
+    만들어 YouTube videos.update 로 교체합니다. 태그·카테고리·언어 설정은 그대로 두고
+    설명(과 선택적으로 제목)만 바꿉니다. 이미 공개된 영상이라 조심스럽게 바꾸도록
+    기본은 미리보기이고, apply=True 일 때만 실제로 수정합니다.
+    """
+    targets = yt_refresh_targets(video)
+    if not targets:
+        warn("게시 이력에서 YouTube 영상을 찾지 못했습니다. (--history 로 확인)")
+        return
+    plans: list[dict] = []
+    for t in targets:
+        saved = load_video_meta(t["video"])
+        if not saved:
+            # 메타가 없으면 영상에 무엇이 들어갔는지 몰라 설명을 지어내면 어긋납니다 — 건너뜁니다.
+            warn(f"메타 없음 — 건너뜁니다: {t['video'].name} ({t['video_id']})")
+            continue
+        m_args = argparse.Namespace(video=str(t["video"]), unit=None, title=None, desc=None,
+                                    platforms="auto", dry_run=True, youtube_privacy=None,
+                                    allow_repeat=False)
+        meta = build_meta(cfg, m_args)
+        desc = meta["desc"]
+        if meta.get("hashtags"):
+            desc = f"{desc}\n\n{meta['hashtags']}" if desc else meta["hashtags"]
+        plans.append({**t, "meta": meta, "new_desc": desc})
+    if not plans:
+        warn("메타가 있는 영상이 없어 갱신할 수 없습니다.")
+        return
+
+    log(f"\n🎬 게시된 영상 설명 갱신 대상 {len(plans)}건 (새 형식: 모든 단어·정답 위치)")
+    for i, p in enumerate(plans, 1):
+        log(f"  {i}. {p['video'].name} · https://youtu.be/{p['video_id']}")
+        if keep_title:
+            log(f"     제목: 유지 — {p['title'][:60]}")
+        else:
+            log(f"     제목(신): {p['meta']['title']}")
+        log(f"     설명(신): {len(p['new_desc']):,}자 — {p['new_desc'].splitlines()[0]}")
+    if len(plans) == 1:
+        log("\n--- 새 설명 전체 ---")
+        log(plans[0]["new_desc"])
+        log("--- 여기까지 ---")
+    if not apply:
+        log("\n미리보기입니다. 적용하려면 --apply 를 붙이거나 메뉴 28 번을 사용하세요.")
+        return
+
+    try:
+        from googleapiclient.discovery import build
+    except ImportError:
+        fail("google-api-python-client 미설치 — pip install -r requirements.txt")
+        return
+    creds = get_youtube_credentials(cfg, interactive=True)
+    if not creds:
+        return
+    youtube = build("youtube", "v3", credentials=creds, cache_discovery=False)
+    done = 0
+    for p in plans:
+        vid = p["video_id"]
+        try:
+            resp = youtube.videos().list(part="snippet", id=vid).execute()
+            found = resp.get("items") or []
+            if not found:
+                warn(f"YouTube 에서 영상을 찾지 못했습니다(삭제·비공개?): {vid}")
+                continue
+            old = found[0].get("snippet", {})
+            # videos.update 는 snippet 을 통째로 바꾸므로 기존 태그·언어를 그대로 되돌려 넣습니다.
+            snippet = {
+                "title": old.get("title", "") if keep_title else p["meta"]["title"],
+                "description": p["new_desc"],
+                "categoryId": old.get("categoryId") or "27",
+                "tags": old.get("tags", []),
+            }
+            for key in ("defaultLanguage", "defaultAudioLanguage"):
+                if old.get(key):
+                    snippet[key] = old[key]
+            youtube.videos().update(part="snippet", body={"id": vid, "snippet": snippet}).execute()
+            done += 1
+            ok(f"갱신 완료: {p['video'].name} → https://youtu.be/{vid}")
+            append_history(event="refresh-desc", status="success", platform="yt",
+                           video=str(p["video"]), title=snippet["title"],
+                           url=f"https://youtu.be/{vid}",
+                           message="제목·설명 갱신" + (" (제목 유지)" if keep_title else ""))
+        except Exception as exc:  # 영상마다 기록만 남기고 다음 영상은 계속 진행합니다.
+            warn(f"갱신 실패: {vid} — {exc}")
+            append_history(event="refresh-desc", status="failed", platform="yt",
+                           video=str(p["video"]), title=p["meta"]["title"],
+                           url=f"https://youtu.be/{vid}", message=str(exc)[:200])
+    ok(f"YouTube 설명 갱신 완료: {done}/{len(plans)}건")
+
+
+# --------------------------------------------------------------------------- #
 # Instagram Reels (instagrapi)
 # --------------------------------------------------------------------------- #
 def instagram_login(cl, ig: dict) -> None:
@@ -1661,9 +1857,8 @@ def upload_instagram(video: Path, meta: dict, cfg: dict, dry_run: bool) -> str |
         warn("자동 로그인이 막히면 업로드 페이지를 여는 수동 게시 폴백을 사용하세요.")
         return None
 
-    caption = meta["desc"]
-    if meta["hashtags"]:
-        caption = f"{caption}\n\n{meta['hashtags']}" if caption else meta["hashtags"]
+    # Instagram 캡션은 2,200자 제한이 있어 초과하면 해시태그를 남기고 자릅니다.
+    caption = build_caption(meta, max_len=2200)
     try:
         log("   Instagram Reels 업로드 시작...")
         media = cl.clip_upload(str(video), caption=caption)
@@ -2182,24 +2377,27 @@ def write_history_report(open_after: bool = True) -> Path | None:
     publishes = [r for r in rows if r.get("event") == "publish"]
     status_count: dict[str, int] = {}
     platform_count: dict[str, int] = {}
-    total_views = 0
     for r in publishes:
         status = r.get("status", "") or ""
         status_count[status] = status_count.get(status, 0) + 1
         platform = r.get("platform", "") or ""
         if platform:
             platform_count[platform] = platform_count.get(platform, 0) + 1
-        try:
-            total_views += int(r.get("view_count", 0) or 0)
-        except (TypeError, ValueError):
-            pass
+    # 조회수는 이력 CSV 에 없어 performance.json (성과 수집 결과)에서 가져옵니다.
+    total_views = 0
+    try:
+        perf = json.loads(PERF_FILE.read_text(encoding="utf-8"))
+        total_views = sum(int(i.get("view_count", 0) or 0) for i in perf.get("items", []))
+    except (OSError, json.JSONDecodeError, AttributeError):
+        pass
     names = {"yt": "YouTube Shorts", "ig": "Instagram Reels", "tt": "TikTok"}
     cards = "".join(
         f'<div class="card"><b>{v}</b><span>{k}</span></div>'
         for k, v in [("총 게시", len(publishes)),
                      ("성공", status_count.get("success", 0)),
                      ("실패", status_count.get("failed", 0)),
-                     ("dry-run", status_count.get("dry-run", 0))])
+                     ("dry-run", status_count.get("dry-run", 0)),
+                     ("총 조회수", f"{total_views:,}")])
     plat = "".join(
         f"<li>{names.get(k, k)}: {v}건</li>" for k, v in sorted(platform_count.items()))
     table_rows = "".join(
@@ -2761,6 +2959,7 @@ def interactive_menu() -> None:
         log(" 25. 동의어 치환 퀴즈 쇼츠 생성 후 게시")
         log(" 26. 남은 콘텐츠 수량 보기")
         log(" 27. 콘텐츠 자동 준비 — N일치 생성 + 예약 게시 등록")
+        log(" 28. 게시된 영상 YouTube 설명 갱신 (새 형식 반영)")
         log("  0. 종료")
         action = ask_menu("메뉴", menu_default)
         if action == "0":
@@ -2881,6 +3080,23 @@ def interactive_menu() -> None:
         if action == "27":
             auto_plan_menu(cfg)
             continue
+        if action == "28":
+            keep_title = not ask_yes_no("제목도 함께 갱신할까요?", True)
+            only = ask_menu("대상 영상 파일명 일부 (Enter=전체)", "")
+            video = None
+            if only.strip():
+                hits = [p for p in list_videos_menu() if only.strip().lower() in p.name.lower()]
+                if not hits:
+                    warn("일치하는 영상이 없습니다.")
+                    continue
+                if len(hits) > 1:
+                    log("여러 개가 일치합니다: " + ", ".join(p.name for p in hits[:6]))
+                    continue
+                video = hits[0]
+            refresh_youtube_descriptions(cfg, video=video, apply=False, keep_title=keep_title)
+            if ask_yes_no("위 내용으로 YouTube 제목·설명을 실제 갱신할까요?", False):
+                refresh_youtube_descriptions(cfg, video=video, apply=True, keep_title=keep_title)
+            continue
         if action == "17":
             target = ask_menu("초기화 대상 (all · UNIT 번호 · idioms · frequency · paraphrase)", "all")
             if ask_yes_no("중복 방지 기록을 초기화할까요?", False):
@@ -2908,7 +3124,7 @@ def interactive_menu() -> None:
             for short in (p.strip() for p in platforms.split(",") if p.strip()):
                 manual_publish(video, meta, short, cfg)
             if meta.get("word"):
-                mark_words_posted(unit, [meta["word"]])
+                mark_words_posted(meta.get("word_bucket") or unit, [meta["word"]])
             continue
         if action not in ("1", "2", "3", "5", "20", "21", "22", "23", "24", "25", "27"):
             warn("메뉴 번호를 확인해 주세요.")
@@ -3083,6 +3299,12 @@ def main() -> None:
     ap.add_argument("--list-schedules", action="store_true", help="예약 목록 출력")
     ap.add_argument("--cancel-schedule", metavar="ID", help="예약 ID 취소")
     ap.add_argument("--history", action="store_true", help="최근 게시 이력 CSV 출력")
+    ap.add_argument("--refresh-desc", action="store_true",
+                    help="게시된 YouTube 영상 제목·설명을 새 형식으로 갱신 (기본 미리보기)")
+    ap.add_argument("--apply", action="store_true",
+                    help="--refresh-desc 를 실제로 적용 (없으면 미리보기만)")
+    ap.add_argument("--keep-title", action="store_true",
+                    help="--refresh-desc 에서 제목은 두고 설명만 갱신")
     ap.add_argument("--list-posted", action="store_true",
                     help="사용한 단어·게시한 영상 기록 출력 (중복 방지)")
     ap.add_argument("--list-remaining", action="store_true",
@@ -3158,6 +3380,11 @@ def main() -> None:
     if args.history:
         show_history_menu()
         return
+    if args.refresh_desc:
+        video = resolve_video(args) if args.video else None
+        refresh_youtube_descriptions(cfg, video=video, apply=args.apply,
+                                     keep_title=args.keep_title)
+        return
     if args.list_posted:
         show_posted_menu()
         return
@@ -3190,7 +3417,7 @@ def main() -> None:
         for short in platforms:
             manual_publish(video, meta, short, cfg)
         if meta.get("word"):
-            mark_words_posted(args.unit, [meta["word"]])
+            mark_words_posted(meta.get("word_bucket") or args.unit, [meta["word"]])
         return
     if args.report:
         write_history_report()
@@ -3321,7 +3548,7 @@ def publish_single(cfg: dict, args, video: Path) -> None:
 
     if not args.dry_run and any(url and url != "dry-run" for _short, url in results):
         if meta.get("word"):
-            mark_words_posted(args.unit, [meta["word"]])
+            mark_words_posted(meta.get("word_bucket") or args.unit, [meta["word"]])
         log(f"🔁 중복 방지 기록 저장: {POSTED_FILE.name}")
 
     log("-" * 62)

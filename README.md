@@ -18,8 +18,8 @@ npm run serve       # http://127.0.0.1:8000 에서 미리보기
 | 명령 | 하는 일 |
 | --- | --- |
 | `npm run build` | 정적 페이지 전체 생성 + 홈 사전 렌더 (결과물은 커밋 대상) |
-| `npm run audit` | 콘텐츠·문구·사이트 감사 (빠진 파일·오타·프리캐시 어긋남) |
-| `npm test` | DOM 을 흉내 낸 UX·TTS·문법 퀴즈 테스트 |
+| `npm run audit` | 콘텐츠·문구·사이트·접근성·밀도 감사 (빠진 파일·오타·프리캐시 어긋남) |
+| `npm test` | DOM 을 흉내 낸 홈 UX·TTS·문법/회화 퀴즈 테스트 |
 | `npm run verify` | 생성물이 소스와 어긋나지 않는지 확인 |
 | `npm run check:ci` | 위 네 가지를 한 번에 (CI 가 돌리는 것과 같습니다) |
 | `npm run check:browser` | 실제 브라우저로 100여 항목 점검 (로컬·배포 전용) |

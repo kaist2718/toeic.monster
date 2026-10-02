@@ -316,6 +316,22 @@
         <ol class="gquiz-opts"><li>have been checking</li><li>checked</li><li>check</li><li>are checked</li></ol>
         <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: have been checking</b><br>아침 내내 계속되고 있는 진행을 강조하므로 현재완료진행형을 씁니다.</p></details>
       </div>
+      <script>
+        /* 보기 순서를 불러올 때마다 섞어 정답이 항상 같은 자리에 오지 않게 합니다(재배치하므로 ol 번호도 자동 정렬). */
+        (function () {
+          var host = document.currentScript && document.currentScript.parentNode;
+          var lists = (host || document).querySelectorAll(".gquiz-opts");
+          for (var i = 0; i < lists.length; i++) {
+            var arr = [], c;
+            for (c = lists[i].firstElementChild; c; c = c.nextElementSibling) arr.push(c);
+            for (var j = arr.length - 1; j > 0; j--) {
+              var k = Math.floor(Math.random() * (j + 1)), t = arr[j];
+              arr[j] = arr[k]; arr[k] = t;
+            }
+            for (var m = 0; m < arr.length; m++) lists[i].appendChild(arr[m]);
+          }
+        })();
+      </script>
     </div>
     <nav class="chnav" aria-label="01과 이동">
       <a class="up" href="#toc">↑ 목차</a>
@@ -433,6 +449,22 @@
         <ol class="gquiz-opts"><li>was occurred</li><li>occurred</li><li>was occurring</li><li>is occurred</li></ol>
         <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: occurred</b><br>occur 는 자동사이므로 수동태로 쓰지 않고 과거형 occurred 를 씁니다.</p></details>
       </div>
+      <script>
+        /* 보기 순서를 불러올 때마다 섞어 정답이 항상 같은 자리에 오지 않게 합니다(재배치하므로 ol 번호도 자동 정렬). */
+        (function () {
+          var host = document.currentScript && document.currentScript.parentNode;
+          var lists = (host || document).querySelectorAll(".gquiz-opts");
+          for (var i = 0; i < lists.length; i++) {
+            var arr = [], c;
+            for (c = lists[i].firstElementChild; c; c = c.nextElementSibling) arr.push(c);
+            for (var j = arr.length - 1; j > 0; j--) {
+              var k = Math.floor(Math.random() * (j + 1)), t = arr[j];
+              arr[j] = arr[k]; arr[k] = t;
+            }
+            for (var m = 0; m < arr.length; m++) lists[i].appendChild(arr[m]);
+          }
+        })();
+      </script>
     </div>
     <nav class="chnav" aria-label="02과 이동">
       <a class="up" href="#toc">↑ 목차</a>
@@ -541,6 +573,22 @@
         <ol class="gquiz-opts"><li>where</li><li>when</li><li>why</li><li>which</li></ol>
         <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: why</b><br>선행사 reason 뒤에는 관계부사 why 를 씁니다.</p></details>
       </div>
+      <script>
+        /* 보기 순서를 불러올 때마다 섞어 정답이 항상 같은 자리에 오지 않게 합니다(재배치하므로 ol 번호도 자동 정렬). */
+        (function () {
+          var host = document.currentScript && document.currentScript.parentNode;
+          var lists = (host || document).querySelectorAll(".gquiz-opts");
+          for (var i = 0; i < lists.length; i++) {
+            var arr = [], c;
+            for (c = lists[i].firstElementChild; c; c = c.nextElementSibling) arr.push(c);
+            for (var j = arr.length - 1; j > 0; j--) {
+              var k = Math.floor(Math.random() * (j + 1)), t = arr[j];
+              arr[j] = arr[k]; arr[k] = t;
+            }
+            for (var m = 0; m < arr.length; m++) lists[i].appendChild(arr[m]);
+          }
+        })();
+      </script>
     </div>
     <nav class="chnav" aria-label="03과 이동">
       <a class="up" href="#toc">↑ 목차</a>
@@ -669,6 +717,22 @@
         <ol class="gquiz-opts"><li>holding</li><li>hold</li><li>to hold</li><li>held</li></ol>
         <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: to hold</b><br>명사 room 뒤에서 형용사처럼 꾸미는 용도의 to부정사를 씁니다.</p></details>
       </div>
+      <script>
+        /* 보기 순서를 불러올 때마다 섞어 정답이 항상 같은 자리에 오지 않게 합니다(재배치하므로 ol 번호도 자동 정렬). */
+        (function () {
+          var host = document.currentScript && document.currentScript.parentNode;
+          var lists = (host || document).querySelectorAll(".gquiz-opts");
+          for (var i = 0; i < lists.length; i++) {
+            var arr = [], c;
+            for (c = lists[i].firstElementChild; c; c = c.nextElementSibling) arr.push(c);
+            for (var j = arr.length - 1; j > 0; j--) {
+              var k = Math.floor(Math.random() * (j + 1)), t = arr[j];
+              arr[j] = arr[k]; arr[k] = t;
+            }
+            for (var m = 0; m < arr.length; m++) lists[i].appendChild(arr[m]);
+          }
+        })();
+      </script>
     </div>
     <nav class="chnav" aria-label="04과 이동">
       <a class="up" href="#toc">↑ 목차</a>
@@ -787,6 +851,22 @@
         <ol class="gquiz-opts"><li>Because</li><li>Not</li><li>Despite</li><li>Although</li></ol>
         <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: Not</b><br>부정의 뜻은 분사 앞에 Not 을 두어 나타냅니다.</p></details>
       </div>
+      <script>
+        /* 보기 순서를 불러올 때마다 섞어 정답이 항상 같은 자리에 오지 않게 합니다(재배치하므로 ol 번호도 자동 정렬). */
+        (function () {
+          var host = document.currentScript && document.currentScript.parentNode;
+          var lists = (host || document).querySelectorAll(".gquiz-opts");
+          for (var i = 0; i < lists.length; i++) {
+            var arr = [], c;
+            for (c = lists[i].firstElementChild; c; c = c.nextElementSibling) arr.push(c);
+            for (var j = arr.length - 1; j > 0; j--) {
+              var k = Math.floor(Math.random() * (j + 1)), t = arr[j];
+              arr[j] = arr[k]; arr[k] = t;
+            }
+            for (var m = 0; m < arr.length; m++) lists[i].appendChild(arr[m]);
+          }
+        })();
+      </script>
     </div>
     <nav class="chnav" aria-label="05과 이동">
       <a class="up" href="#toc">↑ 목차</a>
@@ -905,6 +985,22 @@
         <ol class="gquiz-opts"><li>If</li><li>Had</li><li>Were</li><li>Should</li></ol>
         <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: Had</b><br>if 를 생략하고 had 를 도치한 가정법 과거완료 형태입니다.</p></details>
       </div>
+      <script>
+        /* 보기 순서를 불러올 때마다 섞어 정답이 항상 같은 자리에 오지 않게 합니다(재배치하므로 ol 번호도 자동 정렬). */
+        (function () {
+          var host = document.currentScript && document.currentScript.parentNode;
+          var lists = (host || document).querySelectorAll(".gquiz-opts");
+          for (var i = 0; i < lists.length; i++) {
+            var arr = [], c;
+            for (c = lists[i].firstElementChild; c; c = c.nextElementSibling) arr.push(c);
+            for (var j = arr.length - 1; j > 0; j--) {
+              var k = Math.floor(Math.random() * (j + 1)), t = arr[j];
+              arr[j] = arr[k]; arr[k] = t;
+            }
+            for (var m = 0; m < arr.length; m++) lists[i].appendChild(arr[m]);
+          }
+        })();
+      </script>
     </div>
     <nav class="chnav" aria-label="06과 이동">
       <a class="up" href="#toc">↑ 목차</a>
@@ -1021,6 +1117,22 @@
         <ol class="gquiz-opts"><li>must have gone</li><li>must go</li><li>must have went</li><li>must going</li></ol>
         <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: must have gone</b><br>현재 상황을 근거로 과거를 추측하고, have 뒤에는 과거분사 gone 이 옵니다.</p></details>
       </div>
+      <script>
+        /* 보기 순서를 불러올 때마다 섞어 정답이 항상 같은 자리에 오지 않게 합니다(재배치하므로 ol 번호도 자동 정렬). */
+        (function () {
+          var host = document.currentScript && document.currentScript.parentNode;
+          var lists = (host || document).querySelectorAll(".gquiz-opts");
+          for (var i = 0; i < lists.length; i++) {
+            var arr = [], c;
+            for (c = lists[i].firstElementChild; c; c = c.nextElementSibling) arr.push(c);
+            for (var j = arr.length - 1; j > 0; j--) {
+              var k = Math.floor(Math.random() * (j + 1)), t = arr[j];
+              arr[j] = arr[k]; arr[k] = t;
+            }
+            for (var m = 0; m < arr.length; m++) lists[i].appendChild(arr[m]);
+          }
+        })();
+      </script>
     </div>
     <nav class="chnav" aria-label="07과 이동">
       <a class="up" href="#toc">↑ 목차</a>
@@ -1130,6 +1242,22 @@
         <ol class="gquiz-opts"><li>to ring</li><li>ring</li><li>rang</li><li>rings</li></ol>
         <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: ring</b><br>지각동사 hear 뒤에는 동사 원형을 씁니다.</p></details>
       </div>
+      <script>
+        /* 보기 순서를 불러올 때마다 섞어 정답이 항상 같은 자리에 오지 않게 합니다(재배치하므로 ol 번호도 자동 정렬). */
+        (function () {
+          var host = document.currentScript && document.currentScript.parentNode;
+          var lists = (host || document).querySelectorAll(".gquiz-opts");
+          for (var i = 0; i < lists.length; i++) {
+            var arr = [], c;
+            for (c = lists[i].firstElementChild; c; c = c.nextElementSibling) arr.push(c);
+            for (var j = arr.length - 1; j > 0; j--) {
+              var k = Math.floor(Math.random() * (j + 1)), t = arr[j];
+              arr[j] = arr[k]; arr[k] = t;
+            }
+            for (var m = 0; m < arr.length; m++) lists[i].appendChild(arr[m]);
+          }
+        })();
+      </script>
     </div>
     <nav class="chnav" aria-label="08과 이동">
       <a class="up" href="#toc">↑ 목차</a>
@@ -1246,6 +1374,22 @@
         <ol class="gquiz-opts"><li>late</li><li>later</li><li>latest</li><li>lately</li></ol>
         <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: later</b><br>no later than 은 늦어도라는 뜻의 관용 표현입니다.</p></details>
       </div>
+      <script>
+        /* 보기 순서를 불러올 때마다 섞어 정답이 항상 같은 자리에 오지 않게 합니다(재배치하므로 ol 번호도 자동 정렬). */
+        (function () {
+          var host = document.currentScript && document.currentScript.parentNode;
+          var lists = (host || document).querySelectorAll(".gquiz-opts");
+          for (var i = 0; i < lists.length; i++) {
+            var arr = [], c;
+            for (c = lists[i].firstElementChild; c; c = c.nextElementSibling) arr.push(c);
+            for (var j = arr.length - 1; j > 0; j--) {
+              var k = Math.floor(Math.random() * (j + 1)), t = arr[j];
+              arr[j] = arr[k]; arr[k] = t;
+            }
+            for (var m = 0; m < arr.length; m++) lists[i].appendChild(arr[m]);
+          }
+        })();
+      </script>
     </div>
     <nav class="chnav" aria-label="09과 이동">
       <a class="up" href="#toc">↑ 목차</a>
@@ -1359,6 +1503,22 @@
         <ol class="gquiz-opts"><li>that</li><li>what</li><li>who</li><li>which</li></ol>
         <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: that</b><br>완전한 절을 이끌고 목적어 역할을 하므로 that 을 씁니다.</p></details>
       </div>
+      <script>
+        /* 보기 순서를 불러올 때마다 섞어 정답이 항상 같은 자리에 오지 않게 합니다(재배치하므로 ol 번호도 자동 정렬). */
+        (function () {
+          var host = document.currentScript && document.currentScript.parentNode;
+          var lists = (host || document).querySelectorAll(".gquiz-opts");
+          for (var i = 0; i < lists.length; i++) {
+            var arr = [], c;
+            for (c = lists[i].firstElementChild; c; c = c.nextElementSibling) arr.push(c);
+            for (var j = arr.length - 1; j > 0; j--) {
+              var k = Math.floor(Math.random() * (j + 1)), t = arr[j];
+              arr[j] = arr[k]; arr[k] = t;
+            }
+            for (var m = 0; m < arr.length; m++) lists[i].appendChild(arr[m]);
+          }
+        })();
+      </script>
     </div>
     <nav class="chnav" aria-label="10과 이동">
       <a class="up" href="#toc">↑ 목차</a>
@@ -1476,6 +1636,22 @@
         <ol class="gquiz-opts"><li>opens</li><li>opened</li><li>would open</li><li>opening</li></ol>
         <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: opens</b><br>지금도 유효한 일반적인 사실은 시제를 그대로 둡니다.</p></details>
       </div>
+      <script>
+        /* 보기 순서를 불러올 때마다 섞어 정답이 항상 같은 자리에 오지 않게 합니다(재배치하므로 ol 번호도 자동 정렬). */
+        (function () {
+          var host = document.currentScript && document.currentScript.parentNode;
+          var lists = (host || document).querySelectorAll(".gquiz-opts");
+          for (var i = 0; i < lists.length; i++) {
+            var arr = [], c;
+            for (c = lists[i].firstElementChild; c; c = c.nextElementSibling) arr.push(c);
+            for (var j = arr.length - 1; j > 0; j--) {
+              var k = Math.floor(Math.random() * (j + 1)), t = arr[j];
+              arr[j] = arr[k]; arr[k] = t;
+            }
+            for (var m = 0; m < arr.length; m++) lists[i].appendChild(arr[m]);
+          }
+        })();
+      </script>
     </div>
     <nav class="chnav" aria-label="11과 이동">
       <a class="up" href="#toc">↑ 목차</a>
@@ -1593,6 +1769,22 @@
         <ol class="gquiz-opts"><li>but</li><li>or</li><li>and</li><li>so</li></ol>
         <details><summary>정답과 해설 보기</summary><p class="gquiz-a"><b>정답: and</b><br>두 동작을 대등하게 이어 주는 등위접속사 and 가 맞습니다.</p></details>
       </div>
+      <script>
+        /* 보기 순서를 불러올 때마다 섞어 정답이 항상 같은 자리에 오지 않게 합니다(재배치하므로 ol 번호도 자동 정렬). */
+        (function () {
+          var host = document.currentScript && document.currentScript.parentNode;
+          var lists = (host || document).querySelectorAll(".gquiz-opts");
+          for (var i = 0; i < lists.length; i++) {
+            var arr = [], c;
+            for (c = lists[i].firstElementChild; c; c = c.nextElementSibling) arr.push(c);
+            for (var j = arr.length - 1; j > 0; j--) {
+              var k = Math.floor(Math.random() * (j + 1)), t = arr[j];
+              arr[j] = arr[k]; arr[k] = t;
+            }
+            for (var m = 0; m < arr.length; m++) lists[i].appendChild(arr[m]);
+          }
+        })();
+      </script>
     </div>
     <nav class="chnav" aria-label="12과 이동">
       <a class="up" href="#toc">↑ 목차</a>

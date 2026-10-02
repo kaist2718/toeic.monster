@@ -518,7 +518,7 @@ KIND_HOOKS = {
     "unit":      ("TOEIC 필수 어휘", "발음 · 예문 · 해석까지"),
     "idioms":    ("TOEIC 빈출 숙어", "구동사 · 숙어 126선"),
     "frequency": ("TOEIC 빈출 어휘", "기출 빈도순 200선"),
-    "paraphrase": ("TOEIC 동의어 치환", "기출 퀴즈 200문제"),
+    "paraphrase": ("TOEIC 동의어 치환 퀴즈", "기출 퀴즈 200문제"),
 }
 
 
@@ -921,7 +921,7 @@ def render_quiz_question(idx: int, total: int, rank: int, q: dict,
     draw = ImageDraw.Draw(img, "RGBA")
     if ly["deco"]:
         draw_deco(draw)
-    draw_quiz_chip(draw, font_path, "TOEIC 동의어 치환", str(rank))
+    draw_quiz_chip(draw, font_path, "TOEIC 동의어 치환 퀴즈", str(rank))
 
     # ── 발문(한국어) ──
     q_font = load_font(font_path, 46, bold=True)
@@ -1315,6 +1315,14 @@ def main() -> None:
                      f"--allow-repeat 로 다시 사용할 수 있습니다. 전체에서 선택합니다.")
         n = min(args.words, len(pool))
         picked = rng.sample(pool, n)
+
+    if args.paraphrase:
+        # 정답이 항상 A 에 몰리지 않도록 문제마다 보기 순서를 섞습니다.
+        # 슬라이드 렌더링·메타(*.json)·게시 설명이 모두 이 순서를 그대로 쓰므로 영상과 설명이 일치합니다.
+        # --seed 를 지정하면 같은 시드에서 항상 같은 순서가 나옵니다.
+        for w in picked:
+            opts = list(w[8].get("opts") or [])
+            w[8]["opts"] = rng.sample(opts, len(opts)) if opts else []
 
     music = Path(args.music) if args.music else None
     if music is not None:
