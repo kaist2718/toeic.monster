@@ -3309,11 +3309,38 @@
     }).join("");
   }
 
+  /** 그려진 보기의 순서를 화면에서 섞습니다 — 정답이 항상 같은 자리에 오지 않게 하기 위함입니다.
+   *
+   *  렌더가 끝난 뒤 DOM 에서 노드 순서만 바꾸므로, 사전 렌더(prerender)로 미리 심어 둔 HTML 은
+   *  매빌드 그대로 남고 브라우저에서는 그려질 때마다 순서가 달라집니다.
+   *  (프리렌더는 이 함수까지 떼어 실행하는데, 그쪽 가짜 DOM 에는 섞을 노드가 없어 그대로 둡니다.) */
+  function shuffleRenderedOptions(root) {
+    if (!root || typeof root.querySelectorAll !== "function" || typeof shuffleArr !== "function") return;
+    // 지정한 자리부터 차례로 다시 꽂아 순서만 바꿉니다(이벤트 리스너는 노드를 따라갑니다).
+    function move(parent, nodes, anchor) {
+      var arr = Array.prototype.slice.call(nodes);
+      if (arr.length < 2) return;
+      shuffleArr(arr);
+      arr.forEach(function (n) { parent.insertBefore(n, anchor || null); });
+    }
+    // 보기 묶음마다 — 문제은행·라이브러리 버튼 묶음 / 대화·Part 3·4·이중독해 문항 / 리딩 미니 선택지
+    root.querySelectorAll(".bank-options").forEach(function (box) {
+      move(box, box.querySelectorAll(".bank-opt"), null);
+    });
+    root.querySelectorAll(".dialogue-q").forEach(function (q) {
+      move(q, q.querySelectorAll(".quiz-opt"), q.querySelector(".quiz-feedback"));
+    });
+    root.querySelectorAll("select.reading-answer").forEach(function (sel) {
+      // 맨 앞 "정답을 선택하세요" 는 자리를 지키고 보기들만 섞습니다.
+      move(sel, Array.prototype.slice.call(sel.querySelectorAll("option"), 1), null);
+    });
+  }
+
   function renderReadings() {
     var grid = document.getElementById("readingGrid");
     if (!grid) return;
     grid.innerHTML = READING_MINI.map(function (item, i) {
-      return '<article class="reading-card"><span class="bank-label">' + esc(item.type) + '</span><h3>' + esc(item.title) + '</h3><div class="reading-passage">' + esc(item.text) + ttsBtn(item.text, "지문 듣기") + '</div><div class="reading-q">' + esc(item.q) + '</div><select class="reading-answer" data-reading="' + i + '" aria-label="' + esc(item.title) + ' 문제 정답 선택"><option value="">정답을 선택하세요</option>' + seededShuffle(item.opts, seedOf(item.title)).map(function (o) { return '<option>' + esc(o) + '</option>'; }).join("") + '</select><div class="bank-feedback" id="readingFeedback' + i + '" role="status" aria-live="polite" aria-atomic="true"></div></article>';
+      return '<article class="reading-card"><span class="bank-label">' + esc(item.type) + '</span><h3>' + esc(item.title) + '</h3><div class="reading-passage">' + esc(item.text) + ttsBtn(item.text, "지문 듣기") + '</div><div class="reading-q">' + esc(item.q) + '</div><select class="reading-answer" data-reading="' + i + '" aria-label="' + esc(item.title) + ' 문제 정답 선택"><option value="">정답을 선택하세요</option>' + item.opts.map(function (o) { return '<option>' + esc(o) + '</option>'; }).join("") + '</select><div class="bank-feedback" id="readingFeedback' + i + '" role="status" aria-live="polite" aria-atomic="true"></div></article>';
     }).join("");
     grid.querySelectorAll(".reading-answer").forEach(function (select) {
       select.addEventListener("change", function () {
@@ -3325,6 +3352,7 @@
         fb.style.color = ok ? "var(--green-text)" : "var(--red-text)";
       });
     });
+    shuffleRenderedOptions(grid);
   }
 
   // ---------- 11) Part 7 복수 지문(이중 지문) ----------
@@ -3347,8 +3375,7 @@
     html += '<div id="drQs">';
     s.qs.forEach(function (q, qi) {
       html += '<div class="dialogue-q"><p class="dialogue-qtext">Q' + (qi + 1) + ". " + esc(q.q) + '</p>';
-      // 프리렌더 대상이라 Math.random 대신 지문별 고정 씨앗 셔플을 씁니다(빌드마다 결과가 같아야 함).
-      seededShuffle(q.opts, seedOf(q.q)).forEach(function (o) { html += '<button type="button" class="quiz-opt p34-opt" data-qi="' + qi + '" data-a="' + escapeAttr(q.a) + '">' + esc(o) + '</button>'; });
+      q.opts.forEach(function (o) { html += '<button type="button" class="quiz-opt p34-opt" data-qi="' + qi + '" data-a="' + escapeAttr(q.a) + '">' + esc(o) + '</button>'; });
       html += '<div class="quiz-feedback" id="drFb' + qi + '" role="status" aria-live="polite" aria-atomic="true"></div></div>';
     });
     html += '</div></div>';
@@ -3382,6 +3409,7 @@
         restoreFocusToFeedback(fb);
       });
     });
+    shuffleRenderedOptions(box);
   }
 
   var speakingPromptIdx = 0;
@@ -5247,8 +5275,7 @@
     html += '<details class="library-ko"><summary>해석 보기</summary><p>' + esc(lv.ko) + "</p></details>";
     (lv.qs || []).forEach(function (q, qi) {
       html += '<div class="library-q"><p class="reading-q">Q' + (qi + 1) + ". " + esc(q.q) + '</p><div class="bank-options">';
-      // 프리렌더 대상이라 Math.random 대신 문항별 고정 씨앗 셔플을 씁니다(빌드마다 결과가 같아야 함).
-      seededShuffle(q.opts || [], seedOf(q.q)).forEach(function (o) {
+      (q.opts || []).forEach(function (o) {
         html += '<button type="button" class="bank-opt lib-opt" data-ep="' + ep.no + '" data-lv="' + st.level + '" data-qi="' + qi + '" data-a="' + escapeAttr(q.a) + '">' + esc(o) + "</button>";
       });
       html += '</div><div class="bank-feedback" id="libFb' + ep.no + "-" + st.level + "-" + qi + '" role="status" aria-live="polite" aria-atomic="true"></div></div>';
@@ -5276,6 +5303,7 @@
     box.querySelectorAll(".lib-opt").forEach(function (b) {
       b.addEventListener("click", function () { answerLibrary(b, data); });
     });
+    shuffleRenderedOptions(box);
   }
   function answerLibrary(btn, data) {
     if (btn.disabled) return;

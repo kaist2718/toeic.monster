@@ -67,8 +67,8 @@ const SECTIONS = [
   { label: "빈도순 기출 어휘", ids: ["freqGrid"], render: "renderFrequency", args: '"", 20', items: /freq-item/g },
   { label: "어원 암기 팁", ids: ["mnemonicGrid"], vars: ["MNEMONICS"], render: "renderMnemonics", items: /mnemonic-card/g },
   { label: "동의어·반의어", ids: ["relationGrid"], vars: ["RELATIONS"], render: "renderRelations", items: /relation-card/g },
-  { label: "리딩 미니 지문", ids: ["readingGrid"], vars: ["READING_MINI"], fns: ["seedOf", "seededShuffle"], render: "renderReadings", items: /reading-card/g },
-  { label: "Part 7 복수 지문", ids: ["doubleReadingGrid"], vars: ["DOUBLE_READING", "drIdx"], fns: ["seedOf", "seededShuffle"], render: "renderDoubleReading", items: /dr-card/g },
+  { label: "리딩 미니 지문", ids: ["readingGrid"], vars: ["READING_MINI"], fns: ["shuffleRenderedOptions"], render: "renderReadings", items: /reading-card/g },
+  { label: "Part 7 복수 지문", ids: ["doubleReadingGrid"], vars: ["DOUBLE_READING", "drIdx"], fns: ["shuffleRenderedOptions"], render: "renderDoubleReading", items: /dr-card/g },
   { label: "이메일·회의 템플릿", ids: ["templateGrid"], vars: ["BIZ_TEMPLATES"], render: "renderTemplates", items: /reading-card/g },
   { label: "말하기·쓰기 템플릿", ids: ["speakTplGrid", "writeTplGrid"], render: "renderTplExtra", items: /reading-card/g },
   { label: "S&W 시험 구성·연습", ids: ["swFormatBox", "speakDrillBox", "writeDrillBox"], render: "renderSwExtra", items: /(?:sw-row|speaking-card|writing-card)/g },
@@ -77,7 +77,7 @@ const SECTIONS = [
   { label: "30일 스프린트", ids: ["sprintBox"], vars: ["all"], render: "renderSprint", items: /sprint-item/g },
   // 읽기·듣기 라이브러리 — 지문·문항이 모두 읽는 내용이라 크롤러에게도 남깁니다.
   // renderLibrary 가 부르는 도우미(libData·linkWords)도 함께 떼어내 실행해야 합니다.
-  { label: "읽기·듣기 라이브러리", ids: ["libraryBox"], vars: ["LIB_LEVELS"], fns: ["libData", "linkWords", "splitSentences", "libraryPassage", "libraryReadLabel", "seedOf", "seededShuffle"], render: "renderLibrary", items: /library-card/g },
+  { label: "읽기·듣기 라이브러리", ids: ["libraryBox"], vars: ["LIB_LEVELS"], fns: ["libData", "linkWords", "splitSentences", "libraryPassage", "libraryReadLabel", "shuffleRenderedOptions"], render: "renderLibrary", items: /library-card/g },
 ];
 
 /* ------------------------------------------------------------------ */
