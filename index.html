@@ -214,6 +214,7 @@
         <button class="btn" id="btnDiag" aria-label="실력 진단">🧭 진단</button>
         <button class="btn" id="btnDash" aria-label="학습 대시보드">📊 대시보드</button>
         <button class="btn" id="btnGuide" aria-label="TOEIC 시험 안내 열기">📘 가이드</button>
+        <a class="btn topbar-resource-link" href="#resource-hub" aria-label="학습 자료 허브로 이동">🌐 학습 자료 허브</a>
       </div>
     </nav>
   </div>
@@ -336,6 +337,7 @@
         <button type="button" class="btn-hero" id="homeResume" hidden>▶ 이어서 학습</button>
         <button type="button" class="btn-hero" id="homeStartFlash">🃏 암기 카드</button>
         <button type="button" class="btn-hero" id="homeDiag">🧭 실력 진단</button>
+        <a class="btn-hero btn-hero-link" id="homeResourceHub" href="#resource-hub">🌐 학습 자료 둘러보기</a>
       </div>
     </section>
 
@@ -353,6 +355,7 @@
       <button type="button" class="sn-chip" data-target="오늘의 대화문">🎧 대화문</button>
       <button type="button" class="sn-chip" data-target="읽기·듣기 라이브러리">📚 라이브러리</button>
         </div>
+        <a class="sn-resource-link" href="#resource-hub">🌐 자료 허브</a>
         <button type="button" class="sn-toggle" id="snToggle" aria-expanded="false" aria-controls="snMore">🗂 전체 목차 <span class="sn-toggle-ico">▾</span></button>
         <span class="sn-current" id="snCurrent" aria-hidden="true"></span>
       </div>
@@ -999,7 +1002,7 @@
       </div>
     </section>
 
-    <section class="home-section" aria-label="학습 자료 허브">
+    <section class="home-section" id="resource-hub" aria-label="학습 자료 허브">
       <div class="section-head">
         <div>
           <h2 class="home-section-title">🌐 더 넓게 공부하는 학습 자료 허브</h2>
@@ -1593,6 +1596,7 @@
     <a href="./">홈</a>
     <a href="units/">주제별 단어장 (30개 유닛)</a>
     <a href="units/idioms.html">빈출 구동사·숙어</a>
+    <a href="#resource-hub">학습 자료 허브</a>
     <a href="about.html">사이트 소개</a>
     <a href="privacy.html">개인정보처리방침</a>
     <a href="terms.html">이용약관</a>
@@ -1609,7 +1613,9 @@
       <button class="btn modal-close" id="tocClose" aria-label="목차 창 닫기">✕</button>
     </div>
     <div class="modal-body">
-      <p class="toc-hint">섹션을 고르면 그 자리로 이동합니다. 지금 보고 있는 섹션은 <b>지금</b> 으로 표시됩니다.</p>
+      <label class="sr-only" for="tocSearch">전체 목차 검색</label>
+      <input type="search" class="toc-search" id="tocSearch" placeholder="🔎 주제 검색 (예: 문법, 리스닝, 자료 허브)" autocomplete="off" aria-controls="tocModalBody">
+      <p class="toc-hint" id="tocSearchStatus" role="status" aria-live="polite">섹션을 고르면 그 자리로 이동합니다. 지금 보고 있는 섹션은 <b>지금</b> 으로 표시됩니다.</p>
       <div class="toc-panel-body" id="tocModalBody"></div>
     </div>
   </div>
@@ -1621,6 +1627,7 @@
   <button type="button" class="sec-jump-btn" id="secPrev" aria-label="이전 섹션으로 이동" title="이전 섹션">▲</button>
   <button type="button" class="sec-jump-btn" id="secNext" aria-label="다음 섹션으로 이동" title="다음 섹션">▼</button>
   <button type="button" class="sec-jump-btn" id="btnToc" aria-label="전체 목차 열기" title="전체 목차">🗂</button>
+  <a class="sec-jump-btn sec-jump-resource" href="#resource-hub" aria-label="학습 자료 허브로 이동" title="학습 자료 허브">🌐</a>
 </div>
 
 <button type="button" class="to-top print-hide" id="toTop" aria-label="맨 위로" title="맨 위로" hidden>↑</button>

@@ -27,6 +27,9 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const TARGETS = ["units", "guides", "grammar", "conversation", "assets", "404.html", "sitemap.xml"];
+// 앱 CSS·JS 는 생성물이 아니라 index.html 과 함께 직접 수정하는 원본입니다.
+// 존재 여부는 계속 검사하되, 원본 코드 변경을 생성물 불일치로 오인하지 않습니다.
+const SOURCE_ASSETS = new Set(["assets/app.css", "assets/app.js"]);
 
 const git = (args) =>
   execFileSync("git", args, { cwd: ROOT, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
@@ -95,6 +98,7 @@ for (const file of all) {
     extra.push(file);
     continue;
   }
+  if (SOURCE_ASSETS.has(file)) continue; // 직접 편집하는 원본은 HEAD 내용과 비교하지 않습니다.
   if (isBinary(file)) {
     const headBytes = gitBuffer(["show", `HEAD:${file}`]);
     const diskBytes = fs.readFileSync(path.join(ROOT, file));

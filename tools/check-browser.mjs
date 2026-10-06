@@ -284,6 +284,10 @@ try {
 
   check(desktop.homeSections === 55, `홈 섹션 55개가 그려졌습니다 (${desktop.homeSections}개)`);
   check(desktop.renderedAtHome === 0, `첫 화면에 숨은 단어 카드를 그리지 않습니다 (${desktop.renderedAtHome}장)`);
+  check(await evaluate(`!!document.querySelector('.topbar-resource-link[href="#resource-hub"]')`), "자료 허브 링크가 고정 상단바에 표시됩니다");
+  check(await evaluate(`!!document.querySelector('#homeResourceHub[href="#resource-hub"]')`), "자료 허브로 이동하는 메인 CTA가 있습니다");
+  check(await evaluate(`!!document.querySelector('.sn-resource-link[href="#resource-hub"]')`), "자료 허브로 이동하는 섹션 바로가기가 있습니다");
+  check(await evaluate(`!!document.querySelector('.sec-jump-resource[href="#resource-hub"]')`), "긴 페이지의 부동 내비게이션에도 자료 허브 링크가 있습니다");
   check(desktop.conversationCards === 4, `회화 교재 카드가 그려졌습니다 (${desktop.conversationCards}장 · 교재 3권 + 허브)`);
   check(desktop.searchbar === "none", "홈에서는 검색창·난이도 필터가 숨겨져 있습니다");
   check(desktop.headerLines <= 2, `상단바가 ${desktop.headerLines}줄입니다 (1100px 에서 ${desktop.headerHeight}px)`);
@@ -855,6 +859,15 @@ try {
       // 공용 스타일이 실제로 붙었는지 — 파일이 404 면 .wrap 의 max-width 가 사라집니다.
       check(wide.sheets.includes("site.css"), `${label}(${file}): 공용 스타일(site.css)을 불러옵니다`);
       check(wide.wrapMax === "880px", `${label}(${file}): 공용 스타일이 적용됩니다 (.wrap max-width ${wide.wrapMax})`);
+      const globalNav = await evaluate(`(() => {
+        const nav = document.querySelector('header.bar nav.global-nav[aria-label="주요 학습 자료"]');
+        const footer = document.querySelector('footer.ft nav[aria-label="사이트 이동"]');
+        const links = nav ? [...nav.querySelectorAll("a")].map((a) => a.getAttribute("href")) : [];
+        const footerLinks = footer ? [...footer.querySelectorAll("a")].map((a) => a.getAttribute("href")) : [];
+        return { links, footerLinks, overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth };
+      })()`);
+      check(globalNav.links.length === 4 && globalNav.links.every((href) => href), `${label}(${file}): 주요 학습 자료 네비게이션이 있습니다 (${globalNav.links.join(", ") || "없음"})`);
+      check(globalNav.footerLinks.some((href) => href && /#resource-hub$/.test(href)), `${label}(${file}): 푸터에서 학습 자료 허브로 이동할 수 있습니다`);
       // 정적 페이지도 같은 서체 파일을 씁니다 — 404 로 조용해지면 모든 정적 페이지가 시스템 글꼴이 됩니다.
       check(
         /Pretendard Variable/.test(wide.fonts),
@@ -1149,6 +1162,25 @@ try {
     localStorage.setItem("toeic1000_lastword", "require");
   })()`);
   await openPage("index.html");
+  const resourceJump = await evaluate(`(() => {
+    const link = document.querySelector(".topbar-resource-link");
+    link.click();
+    const section = document.getElementById("resource-hub");
+    return {
+      hash: location.hash,
+      y: Math.round(window.pageYOffset),
+      top: Math.round(section.getBoundingClientRect().top),
+      hiddenGroup: section.closest("details.home-group")?.open === false,
+    };
+  })()`);
+  await waitForScrollSettle({ initial: 400 });
+  check(resourceJump.hash === "#resource-hub", `자료 허브 바로가기 주소가 해시로 표시됩니다 (${resourceJump.hash})`);
+  check(resourceJump.hiddenGroup !== true, "자료 허브 바로가기가 목적 섹션을 표시합니다");
+  check(await evaluate(`Math.abs(document.getElementById("resource-hub").getBoundingClientRect().top) < 200`), "고정 메뉴 링크를 누르면 자료 허브가 화면에 도착합니다");
+  await openPage("index.html#resource-hub");
+  await waitForScrollSettle({ initial: 500 });
+  check(await evaluate(`location.hash === "#resource-hub" && Math.abs(document.getElementById("resource-hub").getBoundingClientRect().top) < 200`), "직접 연 #resource-hub 주소도 자료 허브로 이동합니다");
+
   const resumeState = await evaluate(
     `(() => { const b = document.getElementById("homeResume"); return { hidden: b.hidden, text: b.textContent.trim() }; })()`,
   );
@@ -1240,6 +1272,15 @@ try {
     afterPrev < afterNext.y - 40,
     `섹션 이동: 「이전 섹션」이 위 섹션으로 돌아갑니다 (y ${afterNext.y} → ${afterPrev})`,
   );
+  const deepResourceLink = await evaluate(`(() => {
+    const a = document.querySelector(".sec-jump-resource");
+    const visible = a && a.getBoundingClientRect().width > 0;
+    if (visible) a.click();
+    return { visible, hash: location.hash };
+  })()`);
+  await waitForScrollSettle({ initial: 400 });
+  check(deepResourceLink.visible, "깊은 스크롤 구간에서 자료 허브 부동 링크가 보입니다");
+  check(await evaluate(`Math.abs(document.getElementById("resource-hub").getBoundingClientRect().top) < 200`), "깊은 구간의 자료 허브 링크가 해당 섹션으로 이동합니다");
 
   // 「/」 — 54섹션을 훑어보지 않고 바로 찾기 위한 단축키.
   await evaluate(`window.scrollTo(0, 0)`);
@@ -1292,10 +1333,36 @@ try {
   })()`);
   check(tocOpen.found && !tocOpen.hidden, "전체 목차: 깊은 구간에서 목차 버튼이 나타납니다");
   check(tocOpen.shown === true, "전체 목차: 목차 버튼으로 창이 열립니다");
+  check(await evaluate(`getComputedStyle(document.getElementById("tocSearch")).display !== "none"`), "전체 목차: 검색창이 브라우저 화면에 표시됩니다");
   check(
     tocOpen.chips > 0 && tocOpen.chips === tocOpen.inline,
     `전체 목차: 섹션 메뉴 ${tocOpen.inline}개가 그대로 들어 있습니다 (복제 ${tocOpen.chips}개)`,
   );
+  const tocSearchResults = await evaluate(`(() => {
+    const input = document.getElementById("tocSearch");
+    input.value = "자료 허브";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    return {
+      focused: document.activeElement === input,
+      visible: [...document.querySelectorAll("#tocModalBody .sn-chip")].filter((c) => !c.hidden).map((c) => c.getAttribute("data-target")),
+      hiddenGroups: [...document.querySelectorAll("#tocModalBody .sn-group")].filter((g) => g.hidden).length,
+      status: document.getElementById("tocSearchStatus").textContent,
+    };
+  })()`);
+  check(tocSearchResults.focused, "전체 목차: 열면 바로 주제를 입력할 수 있도록 검색창에 초점이 갑니다");
+  check(tocSearchResults.visible.length === 1 && tocSearchResults.visible[0] === "학습 자료 허브", `전체 목차: 검색어가 결과를 좁힙니다 (${tocSearchResults.visible.join(", ") || "결과 없음"})`);
+  check(/검색 결과 1개/.test(tocSearchResults.status), "전체 목차: 검색 결과 개수를 안내합니다");
+  const tocNoResults = await evaluate(`(() => {
+    const input = document.getElementById("tocSearch");
+    input.value = "이런 주제는 없음";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    return {
+      visible: [...document.querySelectorAll("#tocModalBody .sn-chip")].filter((c) => !c.hidden).length,
+      status: document.getElementById("tocSearchStatus").textContent,
+    };
+  })()`);
+  check(tocNoResults.visible === 0 && /검색 결과가 없습니다/.test(tocNoResults.status), "전체 목차: 검색 결과가 없을 때 안내합니다");
+  await evaluate(`(() => { const input = document.getElementById("tocSearch"); input.value = ""; input.dispatchEvent(new Event("input", { bubbles: true })); })()`);
 
   // 목차에서 섹션을 고르면 창이 닫히고 그 섹션 위로 이동해야 합니다.
   const tocPick = await evaluate(`(() => {

@@ -158,9 +158,14 @@ body{font-family:"Pretendard Variable",Pretendard,"Noto Sans KR","Apple SD Gothi
 a{color:var(--primary)}
 .wrap{max-width:880px;margin:0 auto;padding:0 20px}
 header.bar{background:var(--topbar-bg);color:#fff}
-header.bar .wrap{padding:14px 20px;display:flex;flex-wrap:wrap;align-items:baseline;gap:10px}
+header.bar .wrap{padding:14px 20px;display:flex;flex-wrap:wrap;align-items:center;gap:10px}
 header.bar a{color:#fff;text-decoration:none;font-weight:800;font-size:20px;letter-spacing:-.5px}
 header.bar small{opacity:.88;font-size:12.5px}
+.global-nav{display:flex;flex-wrap:wrap;gap:4px 8px;margin-left:auto}
+header.bar .global-nav a{display:inline-flex;align-items:center;min-height:40px;padding:5px 10px;border:1px solid rgba(255,255,255,.35);border-radius:8px;font-size:13px;letter-spacing:0}
+header.bar .global-nav a:hover{background:rgba(255,255,255,.14);text-decoration:underline}
+@media(max-width:600px){header.bar .wrap{gap:6px}.global-nav{width:100%;margin-left:0}.global-nav a{flex:1;justify-content:center}}
+.global-nav a:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 main{padding:0 0 30px}
 .crumb{font-size:13px;color:var(--muted);margin:20px 0 12px}
 .crumb a{display:inline-block;padding:5px 8px;text-decoration:none}
@@ -441,14 +446,17 @@ ${ld}
   <div class="wrap">
     <a href="../">toeic.monster</a>
     <small>발음·예문으로 외우는 TOEIC 필수 어휘 1,000</small>
+    <nav class="global-nav" aria-label="주요 학습 자료">
+      <a href="../units/">단어장</a><a href="../grammar/">문법</a><a href="../conversation/">회화</a><a href="../guides/">학습 가이드</a>
+    </nav>
   </div>
 </header>
 <main class="wrap" id="main">
 ${body}
 </main>
 <footer class="ft wrap">
-  <nav>
-    ${footerNav || `<a href="../">홈</a><a href="./">주제별 단어장</a><a href="idioms.html">빈출 구동사·숙어</a><a href="../grammar/">문법 교재</a><a href="../conversation/">회화 교재</a><a href="../about.html">사이트 소개</a><a href="../privacy.html">개인정보처리방침</a><a href="../terms.html">이용약관</a>`}
+  <nav aria-label="사이트 이동">
+    <a href="../">홈</a><a href="../units/">단어장</a><a href="../units/idioms.html">빈출 구동사·숙어</a><a href="../grammar/">문법 교재</a><a href="../conversation/">회화 교재</a><a href="../guides/">전략·공략 가이드</a><a href="../index.html#resource-hub">학습 자료 허브</a>${footerNav || ""}<a href="../about.html">사이트 소개</a><a href="../privacy.html">개인정보처리방침</a><a href="../terms.html">이용약관</a>
   </nav>
   <p>👾 toeic.monster · TOEIC 어휘 무료 학습 사이트 · 학습 기록은 브라우저에만 저장됩니다</p>
 </footer>
@@ -1231,11 +1239,7 @@ ${units && units.length ? unitJumpList(units, -1, `📚 단어장 유닛 바로 
 /* 6-2. 전략·공략 가이드 (data/extra.js)                                */
 /* ------------------------------------------------------------------ */
 
-const GUIDE_FOOTER =
-  '<a href="../">홈</a><a href="../units/">주제별 단어장</a><a href="index.html">전략·공략 가이드</a>' +
-  '<a href="../grammar/">문법 교재</a><a href="../conversation/">회화 교재</a>' +
-  '<a href="../about.html">사이트 소개</a>' +
-  '<a href="../privacy.html">개인정보처리방침</a><a href="../terms.html">이용약관</a>';
+const GUIDE_FOOTER = '<a href="index.html">현재 가이드 허브</a>';
 
 /** 전략·공략 가이드 허브의 문답. */
 const FAQ_GUIDES = [
@@ -1429,11 +1433,7 @@ ${guides && guides.length ? guideJumpList(guides, g.slug) : ""}`;
 /* 6-3. 단계별 문법 교재 (data/grammar-*.js)                            */
 /* ------------------------------------------------------------------ */
 
-const GRAMMAR_FOOTER =
-  '<a href="../">홈</a><a href="../units/">주제별 단어장</a><a href="index.html">문법 교재</a>' +
-  '<a href="../conversation/">회화 교재</a><a href="../guides/">전략·공략 가이드</a>' +
-  '<a href="../about.html">사이트 소개</a>' +
-  '<a href="../privacy.html">개인정보처리방침</a><a href="../terms.html">이용약관</a>';
+const GRAMMAR_FOOTER = '<a href="index.html">현재 문법 교재</a>';
 
 /** 과 번호에 붙는 앵커 id — 목차 링크와 감사(앵커 검증)가 함께 씁니다. */
 const chapterAnchor = (no) => `ch-${String(no).padStart(2, "0")}`;
@@ -1875,11 +1875,7 @@ ${sections}
 /* 스타일을 한 번 더 구워 넣으면 같은 4KB 를 4개 페이지가 더 받습니다.  */
 /* ------------------------------------------------------------------ */
 
-const CONVERSATION_FOOTER =
-  '<a href="../">홈</a><a href="../units/">주제별 단어장</a><a href="index.html">회화 교재</a>' +
-  '<a href="../grammar/">문법 교재</a><a href="../guides/">전략·공략 가이드</a>' +
-  '<a href="../about.html">사이트 소개</a>' +
-  '<a href="../privacy.html">개인정보처리방침</a><a href="../terms.html">이용약관</a>';
+const CONVERSATION_FOOTER = '<a href="index.html">현재 회화 교재</a>';
 
 /** 회화 교재 허브의 문답. */
 const FAQ_CONVERSATION = [
@@ -2387,6 +2383,9 @@ function build404Page() {
   <div class="wrap">
     <a href="/">toeic.monster</a>
     <small>발음·예문으로 외우는 TOEIC 필수 어휘 1,000</small>
+    <nav class="global-nav" aria-label="주요 학습 자료">
+      <a href="/units/">단어장</a><a href="/grammar/">문법</a><a href="/conversation/">회화</a><a href="/guides/">학습 가이드</a>
+    </nav>
   </div>
 </header>
 <main class="wrap" id="main">
@@ -2399,8 +2398,8 @@ ${links}
   </ul>
 </main>
 <footer class="ft wrap">
-  <nav>
-    <a href="/">홈</a><a href="/units/">주제별 단어장</a><a href="/units/idioms.html">빈출 구동사·숙어</a><a href="/privacy.html">개인정보처리방침</a><a href="/terms.html">이용약관</a>
+  <nav aria-label="사이트 이동">
+    <a href="/">홈</a><a href="/units/">단어장</a><a href="/grammar/">문법 교재</a><a href="/conversation/">회화 교재</a><a href="/guides/">전략·공략 가이드</a><a href="/index.html#resource-hub">학습 자료 허브</a><a href="/units/idioms.html">빈출 구동사·숙어</a><a href="/about.html">사이트 소개</a><a href="/privacy.html">개인정보처리방침</a><a href="/terms.html">이용약관</a>
   </nav>
   <p>👾 toeic.monster · TOEIC 어휘 무료 학습 사이트 · 학습 기록은 브라우저에만 저장됩니다</p>
 </footer>

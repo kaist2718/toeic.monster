@@ -3064,6 +3064,8 @@
   // 가려고 「맨 위로」를 거쳐야 했습니다. 섹션 메뉴를 그대로 복제해 어디서든 열 수 있게 합니다.
   var tocModal = document.getElementById("tocModal");
   var tocBody = document.getElementById("tocModalBody");
+  var tocSearch = document.getElementById("tocSearch");
+  var tocSearchStatus = document.getElementById("tocSearchStatus");
   var snMoreSrc = document.getElementById("snMore");
   var snQuickSrc = document.querySelector(".section-nav .sn-row");
   if (tocModal && tocBody && snMoreSrc) {
@@ -3072,14 +3074,39 @@
       (snQuickSrc ? '<div class="sn-group"><span class="sn-group-label">자주 찾는 섹션</span>' + snQuickSrc.innerHTML + "</div>" : "") +
       snMoreSrc.innerHTML;
   }
+  function filterToc(query) {
+    if (!tocBody) return;
+    var term = String(query || "").trim().toLocaleLowerCase("ko");
+    var chips = [].slice.call(tocBody.querySelectorAll(".sn-chip"));
+    var visible = 0;
+    chips.forEach(function (chip) {
+      var match = !term || (chip.textContent + " " + chip.getAttribute("data-target")).toLocaleLowerCase("ko").indexOf(term) !== -1;
+      chip.hidden = !match;
+      if (match) visible++;
+    });
+    [].slice.call(tocBody.querySelectorAll(".sn-group")).forEach(function (group) {
+      group.hidden = !group.querySelector(".sn-chip:not([hidden])");
+    });
+    if (tocSearchStatus) {
+      tocSearchStatus.textContent = term
+        ? (visible ? "검색 결과 " + visible + "개 · 항목을 고르면 해당 섹션으로 이동합니다." : "검색 결과가 없습니다. 다른 단어로 검색해 보세요.")
+        : "섹션을 고르면 그 자리로 이동합니다. 지금 보고 있는 섹션은 ‘지금’으로 표시됩니다.";
+    }
+  }
+  if (tocSearch) tocSearch.addEventListener("input", function () { filterToc(tocSearch.value); });
   function openToc() {
     if (!tocModal || tocModal.classList.contains("show")) return;
     tocModal.classList.add("show");
     // 뒤로가기·닫기 버튼으로 닫히도록 history 항목을 빌리고, 뒤 화면 스크롤을 막습니다.
     pushMenuGuard();
     document.body.classList.add("modal-open");
-    var closeBtn = document.getElementById("tocClose");
-    if (closeBtn) closeBtn.focus();
+    if (tocSearch) {
+      filterToc(tocSearch.value);
+      tocSearch.focus();
+    } else {
+      var closeBtn = document.getElementById("tocClose");
+      if (closeBtn) closeBtn.focus();
+    }
   }
   function closeToc() {
     if (!tocModal || !tocModal.classList.contains("show")) return;
@@ -3096,7 +3123,7 @@
   // 목차에서 섹션을 고르면 창을 닫고 그 자리로 갑니다.
   if (tocBody) tocBody.addEventListener("click", function (e) {
     var chip = e.target.closest ? e.target.closest(".sn-chip") : null;
-    if (!chip) return;
+    if (!chip || chip.hidden) return;
     var sec = document.querySelector('.home-section[aria-label="' + chip.getAttribute("data-target") + '"]');
     // 창을 닫으면 빌려 둔 기록 항목을 되돌리는데, 그때 브라우저가 스크롤 위치를 복원합니다.
     // 복원이 우리 이동을 되감을 수 있어, 도착할 때까지 몇 번 더 확인해 이동합니다.
@@ -3106,6 +3133,10 @@
       keepAt(sec);
     }
     closeToc();
+    if (tocSearch) {
+      tocSearch.value = "";
+      filterToc("");
+    }
   });
 
   // 지금 보고 있는 섹션의 칩을 강조해, 긴 페이지에서도 위치를 알 수 있게 합니다.
@@ -6402,7 +6433,8 @@
     "conversation-quiz-basic": { section: "회화 문제 풀이", level: "basic", book: "conversation" },
     "conversation-quiz-intermediate": { section: "회화 문제 풀이", level: "intermediate", book: "conversation" },
     "conversation-quiz-advanced": { section: "회화 문제 풀이", level: "advanced", book: "conversation" },
-    "dashboard": { section: "주간 학습 리포트" }
+    "dashboard": { section: "주간 학습 리포트" },
+    "resource-hub": { section: "학습 자료 허브" }
   };
   function goToHash(hash) {
     var key = "";

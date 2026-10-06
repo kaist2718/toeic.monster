@@ -305,6 +305,14 @@ console.log("\n[4] 상단바 구성");
   for (const id of ["btnHome", "btnList", "btnFlash", "btnQuiz", "btnMore"]) {
     assert(new RegExp(`id="${id}"`).test(alwaysVisible), `${id} 는 늘 보입니다`);
   }
+  assert(/class="btn topbar-resource-link" href="#resource-hub"/.test(morePanel), "자료 허브 딥링크가 상단 네비게이션의 더 보기 메뉴에 있습니다");
+  assert(/id="homeResourceHub" href="#resource-hub"/.test(html), "메인 히어로에 자료 허브 바로가기 CTA가 있습니다");
+  assert(/class="sn-resource-link" href="#resource-hub"/.test(html), "섹션 바로가기 줄에 자료 허브 링크가 있습니다");
+  assert(/class="sec-jump-btn sec-jump-resource" href="#resource-hub"/.test(html), "긴 페이지의 부동 섹션 이동 컨트롤에 자료 허브 바로가기가 있습니다");
+  assert(/class="footer-links"[\s\S]*?<a href="#resource-hub">학습 자료 허브<\/a>/.test(html), "푸터에서도 자료 허브를 다시 찾을 수 있습니다");
+  const generatedTemplate = read("tools/build-pages.mjs");
+  assert(/class="global-nav" aria-label="주요 학습 자료"[\s\S]*?<a href="\.\.\/guides\/">학습 가이드<\/a>/.test(generatedTemplate), "정적 교재 상단에도 주요 자료 네비게이션을 생성합니다");
+  assert(/<a href="\.\.\/index\.html#resource-hub">학습 자료 허브<\/a>/.test(generatedTemplate), "정적 교재 푸터에서도 학습 자료 허브에 연결됩니다");
 
   // 화면 전환 코드가 쓰는 버튼 id 가 모두 마크업에 한 번식 있는지(없으면 클릭 이벤트 등록이 조용히 실패합니다).
   const btnIds = (html.match(/var BTN_IDS = \[([^\]]*)\]/) || [])[1] || "";
@@ -797,6 +805,12 @@ console.log("\n[9] 오늘의 챌린지 · 딥다이브 · 읽기 라이브러리
   }
   assert(/data-target="읽기·듣기 라이브러리"/.test(html), "읽기 라이브러리 섹션 이동 칩이 있습니다");
   assert(/class="home-section" aria-label="읽기·듣기 라이브러리"/.test(html), "읽기 라이브러리 섹션이 있습니다");
+  assert(/class="home-section" id="resource-hub" aria-label="학습 자료 허브"/.test(html), "자료 허브에 바로 이동할 수 있는 주소가 있습니다");
+  assert(/"resource-hub": \{ section: "학습 자료 허브" \}/.test(html), "#resource-hub 주소가 실제 학습 자료 허브 섹션으로 연결됩니다");
+  assert(/type="search" class="toc-search" id="tocSearch"[^>]*aria-controls="tocModalBody"/.test(html), "전체 목차에 결과를 좁힐 수 있는 검색 입력이 있습니다");
+  assert(/id="tocSearchStatus" role="status" aria-live="polite"/.test(html), "목차 검색 결과와 빈 결과가 보조 기술에 전달됩니다");
+  assert(/function filterToc\(query\)/.test(html) && /chip\.hidden = !match/.test(html), "목차 검색이 일치하는 섹션만 표시합니다");
+  assert(/tocSearchStatus\.textContent = term[\s\S]{0,250}검색 결과가 없습니다/.test(html), "목차 검색에 결과 개수와 빈 결과 안내가 있습니다");
   assert(/href="https:\/\/blog\.naver\.com\/monsterlab1" target="_blank" rel="noopener noreferrer"/.test(html), "관련 읽을거리 블로그가 안전한 새 탭 링크로 열립니다");
   assert(/고전·철학 에세이/.test(html) && /TOEIC 교재가 아닌 선택형 읽을거리/.test(html), "외부 블로그의 주제와 TOEIC 학습 자료가 아님을 명확히 안내합니다");
   assert(/for="lookupInput"/.test(html), "단어 찾기 입력에 이름표(label)가 붙어 있습니다");
