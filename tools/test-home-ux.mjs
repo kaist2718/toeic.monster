@@ -797,6 +797,8 @@ console.log("\n[9] 오늘의 챌린지 · 딥다이브 · 읽기 라이브러리
   }
   assert(/data-target="읽기·듣기 라이브러리"/.test(html), "읽기 라이브러리 섹션 이동 칩이 있습니다");
   assert(/class="home-section" aria-label="읽기·듣기 라이브러리"/.test(html), "읽기 라이브러리 섹션이 있습니다");
+  assert(/href="https:\/\/blog\.naver\.com\/monsterlab1" target="_blank" rel="noopener noreferrer"/.test(html), "관련 읽을거리 블로그가 안전한 새 탭 링크로 열립니다");
+  assert(/고전·철학 에세이/.test(html) && /TOEIC 교재가 아닌 선택형 읽을거리/.test(html), "외부 블로그의 주제와 TOEIC 학습 자료가 아님을 명확히 안내합니다");
   assert(/for="lookupInput"/.test(html), "단어 찾기 입력에 이름표(label)가 붙어 있습니다");
 
   // 연재 지문 데이터 — 화·난이도·문항이 실제로 채워져 있는지 봅니다(내용이 비면 섹션이 조용히 빕니다).
