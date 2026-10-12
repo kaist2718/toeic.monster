@@ -9,7 +9,7 @@ Ken Burns 줌 효과와 슬라이드 간 크로스페이드, 선택적으로 영
 
 사용법:
   python make_shorts.py --unit 1                     # UNIT 1 단어 5개 랜덤 → assets/shorts/unit01_shorts.mp4
-  python make_shorts.py --unit 3 --words 7 --tts     # 7개 + 영어 음성(edge-tts)
+  python make_shorts.py --unit 3 --words 7 --tts     # 7개 + 영어 음성(Windows 로컬 또는 edge-tts)
   python make_shorts.py --unit 5 --seed 42 --bg purple
   python make_shorts.py --unit 2 --words 3 --dry-run # 계획만 출력
   python make_shorts.py --unit 1 --allow-repeat      # 이미 쓴 단어도 다시 사용
@@ -30,9 +30,11 @@ TTS 사용 시: pip install edge-tts  (인터넷 필요, 무료/키 불필요)
 from __future__ import annotations
 
 import argparse
+import base64
 import json
 import random
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -1022,9 +1024,83 @@ def crop_zoom(img: Image.Image, scale: float) -> Image.Image:
 VOICE_GAP = 0.4  # 두 목소리 사이 무음(초) — 같은 문장이 두 번 읽히므로 구분을 준다
 
 
+def _synthesize_windows_sapi(text: str, voice: str, out: Path) -> Path:
+    """Windows에 설치된 SAPI 영어 음성으로 네트워크 없이 로컬 합성합니다."""
+    powershell = shutil.which("powershell") or shutil.which("pwsh")
+    if not powershell:
+        raise RuntimeError("PowerShell을 찾을 수 없습니다.")
+
+    match = re.match(r"([a-z]{2}-[A-Z]{2})-", voice)
+    culture = match.group(1) if match else "en-US"
+    male_voice = re.search(
+        r"(?i)(?:guy|ryan|thomas|davis|andrew|brian|christopher|eric|roger|william|liam|george)",
+        voice,
+    ) is not None
+    gender = "Male" if male_voice else "Female"
+    wave = out.with_suffix(".wav")
+
+    def ps_quote(value: str) -> str:
+        return "'" + value.replace("'", "''") + "'"
+
+    script = f"""
+$ErrorActionPreference = 'Stop'
+Add-Type -AssemblyName System.Speech
+$synth = New-Object System.Speech.Synthesis.SpeechSynthesizer
+try {{
+    $installed = @($synth.GetInstalledVoices() | Where-Object {{ $_.Enabled }})
+    $targetCulture = {ps_quote(culture)}
+    $targetGender = {ps_quote(gender)}
+    $selected = $installed | Where-Object {{
+        $_.VoiceInfo.Culture.Name -eq $targetCulture -and $_.VoiceInfo.Gender.ToString() -eq $targetGender
+    }} | Select-Object -First 1
+    if (-not $selected) {{
+        $selected = $installed | Where-Object {{
+            $_.VoiceInfo.Culture.TwoLetterISOLanguageName -eq 'en' -and $_.VoiceInfo.Gender.ToString() -eq $targetGender
+        }} | Select-Object -First 1
+    }}
+    if (-not $selected) {{
+        $selected = $installed | Where-Object {{ $_.VoiceInfo.Culture.Name -eq $targetCulture }} | Select-Object -First 1
+    }}
+    if (-not $selected) {{
+        $selected = $installed | Where-Object {{ $_.VoiceInfo.Culture.TwoLetterISOLanguageName -eq 'en' }} | Select-Object -First 1
+    }}
+    if (-not $selected) {{ throw '설치된 영어 Windows 음성이 없습니다.' }}
+    Write-Output ('SELECTED_VOICE=' + $selected.VoiceInfo.Name + '|' + $selected.VoiceInfo.Culture.Name + '|' + $selected.VoiceInfo.Gender)
+    $synth.SelectVoice($selected.VoiceInfo.Name)
+    $synth.SetOutputToWaveFile({ps_quote(str(wave))})
+    $synth.Speak({ps_quote(text)})
+    $synth.SetOutputToNull()
+}} finally {{
+    $synth.Dispose()
+}}
+"""
+    encoded = base64.b64encode(script.encode("utf-16le")).decode("ascii")
+    result = subprocess.run(
+        [powershell, "-NoLogo", "-NoProfile", "-NonInteractive", "-EncodedCommand", encoded],
+        capture_output=True, text=True,
+    )
+    if result.returncode != 0 or not wave.exists() or wave.stat().st_size <= 44:
+        wave.unlink(missing_ok=True)
+        detail = (result.stderr or result.stdout or "음성 파일이 생성되지 않았습니다.").strip()
+        raise RuntimeError(detail[-500:])
+    selected = next((line.partition("=")[2] for line in result.stdout.splitlines()
+                     if line.startswith("SELECTED_VOICE=")), "")
+    if selected:
+        log(f"Windows 로컬 음성: {selected.replace('|', ' / ')}")
+    return wave
+
+
 async def tts_speak(text: str, voice: str, out: Path) -> Path:
+    if sys.platform == "win32":
+        try:
+            return _synthesize_windows_sapi(text, voice, out)
+        except Exception as exc:
+            raise RuntimeError(f"Windows 로컬 TTS 실패({voice}): {exc}") from exc
+
     import edge_tts
     await edge_tts.Communicate(text, voice).save(str(out))
+    if not out.exists() or out.stat().st_size == 0:
+        raise RuntimeError("Edge TTS가 빈 음성 파일을 반환했습니다.")
     return out
 
 
@@ -1074,8 +1150,7 @@ def build_audio(word: str, en_ex: str, voices: list[str], slide_dur: float, tmp:
     tts_files: list[Path] = []
     for vi, v in enumerate(voices):
         part = tmp / f"tts_{i}_{vi}.mp3"
-        asyncio.run(tts_speak(text, v, part))
-        tts_files.append(part)
+        tts_files.append(asyncio.run(tts_speak(text, v, part)))
 
     # 목소리 사이 무음까지 더해 실제 음성 길이를 어림한다.
     audio_len = sum(probe_duration(p) for p in tts_files) + VOICE_GAP * (len(tts_files) - 1)
@@ -1085,18 +1160,23 @@ def build_audio(word: str, en_ex: str, voices: list[str], slide_dur: float, tmp:
     cmd = [_FFMPEG, "-y", "-hide_banner", "-loglevel", "error"]
     for p in tts_files:
         cmd += ["-i", str(p)]
+    normalize = "aresample=44100,aformat=sample_fmts=fltp:channel_layouts=stereo"
     if len(tts_files) == 1:
-        fc = f"[0:a]apad=whole_dur={dur}[a]"
+        fc = f"[0:a]{normalize},apad=whole_dur={dur}[a]"
     else:
-        # 마지막 목소리를 뺀 나머지 뒤에 짧은 무음을 붙여 이어 붙인다.
-        head = "".join(f"[{vi}:a]apad=pad_dur={VOICE_GAP}[p{vi}];"
+        # 로컬 SAPI WAV와 Edge MP3의 샘플레이트·채널 수를 통일한 뒤 이어 붙입니다.
+        head = "".join(f"[{vi}:a]{normalize},apad=pad_dur={VOICE_GAP}[p{vi}];"
                         for vi in range(len(tts_files) - 1))
-        chain = "".join(f"[p{vi}]" for vi in range(len(tts_files) - 1)) + f"[{len(tts_files) - 1}:a]"
+        head += f"[{len(tts_files) - 1}:a]{normalize}[p{len(tts_files) - 1}];"
+        chain = "".join(f"[p{vi}]" for vi in range(len(tts_files)))
         fc = (f"{head}{chain}concat=n={len(tts_files)}:v=0:a=1[cat];"
               f"[cat]apad=whole_dur={dur}[a]")
     cmd += ["-filter_complex", fc, "-map", "[a]", "-ar", "44100", "-ac", "2",
             "-t", str(dur), str(slide_wav)]
-    subprocess.run(cmd, capture_output=True)
+    result = subprocess.run(cmd, capture_output=True)
+    if result.returncode != 0 or not slide_wav.exists() or slide_wav.stat().st_size == 0:
+        detail = result.stderr.decode(errors="replace").strip()
+        raise RuntimeError(f"TTS 오디오 병합 실패: {detail[-500:] or '출력 파일이 없습니다.'}")
     return slide_wav, dur
 
 
@@ -1208,7 +1288,7 @@ def main() -> None:
     ap.add_argument("--allow-repeat", action="store_true",
                     help="이미 사용한 단어도 다시 사용 (중복 방지 무시)")
     ap.add_argument("--tts", dest="tts", action="store_true", default=True,
-                    help="영어 TTS 음성(기본 켜짐 — edge-tts, 인터넷 필요)")
+                    help="영어 TTS 음성(기본 켜짐 — Windows에서는 로컬 음성 우선)")
     ap.add_argument("--no-tts", dest="tts", action="store_false", help="영어 TTS 끄기")
     ap.add_argument("--voice", default="en-US-JennyNeural",
                     help="첫 번째 TTS 목소리 — 여성 (기본 en-US-JennyNeural)")
@@ -1379,7 +1459,8 @@ def main() -> None:
              "--words 축소 · --single-voice · --no-intro/--no-outro 를 검토하세요.")
     log(f"출력  : {out} ({W}x{H}, 9:16 세로)")
     log(f"스타일: {args.style}")
-    log(f"음성  : {'edge-tts (' + ' + '.join(voices) + ')' if args.tts else '없음 (--no-tts 로 끔)'}")
+    tts_engine = "Windows SAPI 로컬 음성" if sys.platform == "win32" else "edge-tts (온라인)"
+    log(f"음성  : {tts_engine} ({' + '.join(voices)})" if args.tts else "음성  : 없음 (--no-tts 로 끔)")
     if args.tts and len(voices) > 1:
         log(f"        {len(voices)}개 목소리가 같은 문장을 이어 읽습니다 — 음성이 약 2배라 슬라이드가 길어집니다")
         log("        짧게 만들려면 --words 를 줄이거나 --single-voice 로 한 목소리만 쓰세요")

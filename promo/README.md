@@ -307,9 +307,10 @@ python make_shorts.py --paraphrase --index 0 --bg wine --style modern
 
 - **숙어 카드**: `--idioms` 를 주면 `data/idioms.js`(126선)에서 고릅니다. 숙어는 IPA·예문 발음이 없어 슬라이드에 **표현·뜻·예문·해석**만 들어가고, 상단 칩은 `TOEIC 빈출 숙어` + **목록 순번**입니다. 파일명은 첫 표현을 따 `idioms_take-advantage-of_shorts.mp4` 처럼 나와 배치끼리 덮어쓰지 않습니다(`--out` 으로 지정 가능).
 - **동의어 치환 퀴즈**: `--paraphrase` 를 주면 `data/extra.js` 의 paraphrase(200문제)에서 고릅니다. 한 문제가 **문제 슬라이드(문장 + 보기 A~D) → 정답 슬라이드(정답·해설·예문 해석)** 두 장이라, 3문제면 6장·약 36초입니다(`--words` 가 슬라이드 수를 두 배로 늘립니다). 문제 슬라이드는 영어 문장을, 정답 슬라이드는 정답 표현을 읽습니다. 파일명은 `quiz_expedite_shorts.mp4` 처럼 첫 표적 표현을 따릅니다.
-- **영어 음성 기본**: 단어·예문을 읽어 주는 TTS(edge-tts, 무료·인터넷 필요)가 기본 켜짐입니다. `--no-tts`로 끄면 앰비언트 사운드로 대체됩니다.
-- **두 목소리 기본**: 여성 `en-US-JennyNeural`이 먼저, 영국 남성 `en-GB-RyanNeural`이 이어서 **같은 단어·예문을 차례로** 읽습니다(사이에 0.4초 무음). 같은 문장을 두 번 읽으므로 음성이 약 2배가 되고, 그만큼 해당 슬라이드가 자동으로 길어집니다 — 5개 단어 기준 30초였으면 45~55초쯤 됩니다. 길게 느껴지면 `--words`를 줄이거나 `--single-voice`로 한 목소리만 쓰세요.
-- **목소리 선택**: `default_voice`(첫 번째, 기본 여성 `en-US-JennyNeural`)와 `default_voice2`(두 번째, 기본 영국 남성 `en-GB-RyanNeural`)를 설정 편집(메뉴 `9`)이나 쇼츠 생성 시 번호로 바꿀 수 있고, 직접 edge-tts 목소리 이름을 입력해도 됩니다. 두 번째는 `0. 없음`을 고르면 한 목소리만 씁니다. 여성은 `en-US-AriaNeural`·`en-GB-SoniaNeural`, 남성은 `en-US-GuyNeural`·`en-GB-RyanNeural`·`en-GB-ThomasNeural` 등을 쓸 수 있습니다.
+- **영어 음성 기본**: Windows에서는 설치된 SAPI 영어 음성을 로컬에서 우선 사용하고, Windows 외 환경에서는 edge-tts 온라인 음성을 씁니다. `--no-tts`로 끄면 앰비언트 사운드로 대체됩니다. Windows에서 `en-US-JennyNeural`처럼 Edge 음성 이름을 지정해도 해당 이름을 찾는 게 아니라 SAPI에서 언어·성별이 맞는 로컬 음성을 선택합니다.
+- **두 목소리 기본**: 기본 설정은 첫 번째 여성 음성 요청 후 두 번째 영국 남성 음성 요청입니다. Windows에 요청한 로캘 음성이 없으면 설치된 영어 음성 중 성별을 우선해 대체하며, 생성 로그에 실제 선택된 음성을 표시합니다. 예를 들어 미국 여성·영국 남성 음성이 없으면 현재 확인된 미국 영어 여성(Zira)·남성(David)이 선택됩니다. 슬라이드 길이는 음성 길이에 맞춰 자동 연장됩니다 — 길게 느껴지면 `--words`를 줄이거나 `--single-voice`로 한 목소리만 쓰세요.
+- **목소리 선택**: `default_voice`와 `default_voice2`는 플랫폼에 따라 Windows 로컬 음성의 언어·성별 선택 힌트 또는 edge-tts 목소리 이름으로 사용됩니다. Windows Narrator의 자연스러운 Jenny/Ryan 음성은 SAPI에 자동 노출되지 않으므로 이 스크립트에서 곧바로 사용할 수 있다고 보장되지 않습니다.
+- **Windows 영어 음성 설치**: Windows 11의 `설정 → 시간 및 언어 → 언어 및 지역 → 언어 추가`에서 `English (United States)` 또는 `English (United Kingdom)`을 추가하고, 각 언어의 **언어 옵션**에서 음성/Text-to-speech 기능을 설치할 수 있습니다. 언어 팩은 표시 언어를 바꾸지 않고 추가할 수 있습니다. 음성 엔진의 설치 상태에 따라 SAPI에 나타나기까지 재부팅이나 로그아웃이 필요할 수 있습니다.
 - **무음 방지**: TTS·음악이 실패하거나 없어도 부드러운 앰비언트 사운드가 들어갑니다. `--no-ambient`로 끌 수 있습니다.
 - **네모(□) 방지**: fontTools cmap으로 글리프 존재를 확인해, 한글 폰트에 없는 IPA 기호 등은 자동으로 IPA 커버 폰트(Arial 등)로 대체합니다.
 - **인트로·아웃로 기본 포함**: 첫 장에 「TOEIC 필수 어휘」 같은 브랜드 훅(기본 2.5초), 마지막 장에 사이트 유입 CTA 카드(기본 3초)가 자동으로 들어갑니다. `--no-intro`/`--no-outro` 로 끄거나 `--intro-sec`/`--outro-sec` 으로 길이를 바꿀 수 있습니다. 예상 길이가 Shorts 60초를 넘을 것 같으면 생성기가 미리 경고합니다.
