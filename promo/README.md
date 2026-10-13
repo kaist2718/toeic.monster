@@ -13,6 +13,7 @@ promo/
 ├── config.json            # 실제 설정 (자동 생성, git 제외)
 ├── requirements.txt       # Python 의존성
 ├── assets/shorts/         # 배포할 쇼츠 mp4
+├── assets/tts/            # 내려받은 로컬 TTS(Piper) 음성 모델 (.onnx)
 └── .secrets/              # OAuth·세션 파일
 ```
 
@@ -25,8 +26,9 @@ promo/
    - 설정·의존성 점검
    - 메모장에서 설정 파일 열기
 2. `config.json`에 사용할 계정/API 정보를 입력합니다.
-3. `promo/promo_center.bat`을 실행합니다.
-4. 메뉴에서 `3. 쇼츠 생성 후 게시`를 선택합니다.
+3. (선택) 원클릭 메뉴 **29번**에서 낭독 TTS 엔진·목소리를 정하고, 원하면 로컬(Piper) 음성을 내려받습니다. 건너뛰면 Windows 내장 TTS 로 그대로 낭독합니다.
+4. `promo/promo_center.bat`을 실행합니다.
+5. 메뉴에서 `3. 쇼츠 생성 후 게시`를 선택합니다.
 
 `promo_center.bat`은 `py -3`을 우선 사용하고, 없으면 `python`을 사용합니다. BAT에 경로를 고정하지 않아 다른 Windows PC에서도 실행하기 쉽습니다.
 
@@ -69,6 +71,7 @@ promo_center.bat
 26. **남은 콘텐츠 수량 보기** — 종류별 사용/전체/남음과 합계를 표로 확인
 27. **콘텐츠 자동 준비** — N일치 쇼츠를 자동 생성하고 예약 게시까지 등록 (종류는 남은 콘텐츠 많은 순으로 자동 배합)
 28. **게시된 영상 YouTube 설명 갱신** — 이미 업로드한 영상의 제목·설명을 새 형식(모든 단어·퀴즈 정답 위치 포함)으로 다시 만들어 교체. 먼저 미리보기를 보여 주고 확인 후 적용하며, 태그·카테고리·공개 설정은 그대로 둡니다
+29. **TTS 엔진·목소리 설정** — 로컬 TTS(Piper) / Windows 내장 엔진 선택, 첫·두 번째 목소리 지정, Piper 음성 내려받기(`list` 로 영어 목록), 테스트 음성 재생까지 한 자리에서 설정하고 `config.json` 에 저장합니다
 
 생성·게시가 끝나면 **남은 콘텐츠 수량**(종류별 사용/전체/남음)을 자동으로 표시합니다(`make_shorts.py`·`publish.py` 공통).
 
@@ -171,8 +174,9 @@ python publish.py --remove-task
 
 - `default_unit`, `default_words`, `default_theme`, `default_style`: 생성 메뉴 기본값
 - `default_tts`: TTS 기본 선택 여부
-- `default_voice`: 첫 번째 TTS 목소리(Windows 내장 음성 이름, 기본 영국 여성). 예: 여성 `Microsoft Hazel Desktop`, 남성 `Microsoft David Desktop`. 생성 시 번호로 바꿀 수 있음
-- `default_voice2`: 두 번째 TTS 목소리(기본 미국 남성 `Microsoft David Desktop`). **빈 문자열이면 한 목소리만** 사용
+- `tts_engine`: 낭독 TTS 엔진 — `auto`(기본, 내려받은 로컬 Piper 음성이 있으면 Piper 없으면 Windows) / `piper` / `windows`. 터미널 메뉴 **29번**에서 바꿀 수 있음
+- `default_voice`: 첫 번째 TTS 목소리(여성 역할). 엔진이 `piper`면 `en_US-amy-medium` 같은 로컬 음성 이름, `windows`면 `Microsoft Hazel Desktop` 같은 Windows 내장 음성 이름. 생성 시 번호로 바꿀 수 있음
+- `default_voice2`: 두 번째 TTS 목소리(남성). 예: `en_US-ryan-medium`(로컬) 또는 `Microsoft David Desktop`(Windows 내장). **빈 문자열이면 한 목소리만** 사용
 - `default_privacy`: YouTube 기본 공개 범위. 처음에는 `unlisted` 권장
 - `confirm_real_upload`: 실제 게시 전 확인 질문 사용 여부. 안전을 위해 `true` 권장
 - `youtube.api_key`: 성과 수집(`--stats`) 전용 Google Cloud **API 키**. 공개 데이터 조회라 OAuth 없이 사용 가능
@@ -279,9 +283,10 @@ python make_shorts.py --unit 2 --index 0 --slide-sec 4 --dry-run
 # 배경음악 추가 (볼륨 0.2, TTS와 함께 쓰면 음성 위에 깔림)
 python make_shorts.py --unit 1 --music assets/music/calm.mp3 --music-volume 0.2
 
-# 목소리: 기본은 여성 + 남성 두 목소리(설치된 Windows 음성)
+# 목소리: 기본은 여성 + 남성 두 목소리(설치된 Windows 음성 또는 내려받은 로컬 Piper 음성)
 python make_shorts.py --unit 1 --single-voice            # 여성 하나만
 python make_shorts.py --unit 1 --voice2 "Microsoft David Desktop"  # 두 번째 목소리를 지정
+python make_shorts.py --unit 1 --engine piper --voice en_US-amy-medium --voice2 en_US-ryan-medium  # 로컬 TTS 강제
 
 # 숙어 126선(data/idioms.js) — 유닛 대신 --idioms
 python make_shorts.py --idioms --words 5
@@ -307,10 +312,17 @@ python make_shorts.py --paraphrase --index 0 --bg wine --style modern
 
 - **숙어 카드**: `--idioms` 를 주면 `data/idioms.js`(126선)에서 고릅니다. 숙어는 IPA·예문 발음이 없어 슬라이드에 **표현·뜻·예문·해석**만 들어가고, 상단 칩은 `TOEIC 빈출 숙어` + **목록 순번**입니다. 파일명은 첫 표현을 따 `idioms_take-advantage-of_shorts.mp4` 처럼 나와 배치끼리 덮어쓰지 않습니다(`--out` 으로 지정 가능).
 - **동의어 치환 퀴즈**: `--paraphrase` 를 주면 `data/extra.js` 의 paraphrase(200문제)에서 고릅니다. 한 문제가 **문제 슬라이드(문장 + 보기 A~D) → 정답 슬라이드(정답·해설·예문 해석)** 두 장이라, 3문제면 6장·약 36초입니다(`--words` 가 슬라이드 수를 두 배로 늘립니다). 문제 슬라이드는 영어 문장을, 정답 슬라이드는 정답 표현을 읽습니다. 파일명은 `quiz_expedite_shorts.mp4` 처럼 첫 표적 표현을 따릅니다.
-- **영어 음성 기본**: 낭독은 **Windows 내장 TTS(SAPI)** 로만 만듭니다 — 인터넷 연결이나 별도 TTS 패키지가 필요 없습니다. `--no-tts`로 끄면 앰비언트 사운드로 대체됩니다. `--voice`에 설치된 Windows 음성 이름(예: `Microsoft Zira Desktop`)을 주면 그 음성을 그대로 쓰고, `en-US-JennyNeural`처럼 언어·성별로 된 이름을 주면 설치된 음성 중 언어·성별이 맞는 것을 골라 씁니다.
-- **두 목소리 기본**: 기본 설정은 첫 번째 **영국 여성** 음성 후 두 번째 **미국 남성** 음성이 같은 문장을 이어서 읽습니다(설치된 음성이 없으면 같은 성별의 다른 로캘으로 대체). Windows에 요청한 로캘 음성이 없으면 설치된 영어 음성 중 성별을 우선해 대체하며, 생성 로그에 실제 선택된 음성을 표시합니다. 예를 들어 영국 여성 음성이 없으면 미국 영어 여성(Zira)이, 미국 남성 음성이 없으면 설치된 다른 영어 남성(David)이 선택됩니다. 슬라이드 길이는 음성 길이에 맞춰 자동 연장됩니다 — 길게 느껴지면 `--words`를 줄이거나 `--single-voice`로 한 목소리만 쓰세요.
-- **목소리 선택**: 메뉴·기본 설정의 목소리 선택지는 **이 PC에 설치된 Windows 내장 음성**을 먼저 보여 줍니다(영어 음성이 앞에 오고, 설치 목록을 못 구하면 기본 후보를 보여 줍니다). `default_voice`와 `default_voice2`에는 설치된 음성 이름을 넣으면 되고, 예전 언어·성별 이름(`en-US-JennyNeural` 등)은 그대로 두어도 설치된 음성 중에서 대체해 고릅니다. Windows Narrator의 자연스러운 Jenny/Ryan 음성은 SAPI에 자동 노출되지 않으므로 이 스크립트에서 곧바로 사용할 수 있다고 보장되지 않습니다.
-- **Windows 영어 음성 설치**: Windows 11의 `설정 → 시간 및 언어 → 언어 및 지역 → 언어 추가`에서 `English (United States)` 또는 `English (United Kingdom)`을 추가하고, 각 언어의 **언어 옵션**에서 음성/Text-to-speech 기능을 설치할 수 있습니다. 언어 팩은 표시 언어를 바꾸지 않고 추가할 수 있습니다. 음성 엔진의 설치 상태에 따라 SAPI에 나타나기까지 재부팅이나 로그아웃이 필요할 수 있습니다.
+- **로컬 낭독 기본**: 낭독은 **로컬 TTS** 로만 만듭니다 — 인터넷·API 가 필요 없습니다. `--engine auto`(기본)는 내려받은 **Piper**(ONNX) 음성이 있으면 그 목소리로, 없으면 **Windows 내장 SAPI** 로 만듭니다. `--engine piper` / `--engine windows` 로 강제할 수 있고, `--no-tts` 로 끄면 앰비언트 사운드로 대체됩니다. `--voice`/`--voice2` 에는 그 엔진의 음성 이름을 씁니다 — Piper 는 `en_US-amy-medium` 같은 이름, Windows 는 `Microsoft Zira Desktop` 같은 이름(예전 `en-US-JennyNeural` 처럼 언어·성별로 된 이름도 설치된 음성 중에서 고릅니다).
+- **두 목소리 기본**: 기본 설정은 첫 번째 **여성** 음성 후 두 번째 **남성** 음성이 같은 문장을 이어서 읽습니다(Windows 내장 엔진은 영국 여성 + 미국 남성 우선, Piper 를 내려받았다면 `config.json` 에 지정된 남녀 음성). Windows에 요청한 로캘 음성이 없으면 설치된 영어 음성 중 성별을 우선해 대체하며, 생성 로그에 실제 선택된 엔진·음성을 표시합니다. 예를 들어 영국 여성 음성이 없으면 미국 영어 여성(Zira)이, 미국 남성 음성이 없으면 설치된 다른 영어 남성(David)이 선택됩니다. 슬라이드 길이는 음성 길이에 맞춰 자동 연장됩니다 — 길게 느껴지면 `--words`를 줄이거나 `--single-voice`로 한 목소리만 쓰세요.
+- **목소리 선택**: 메뉴·기본 설정의 목소리 선택지는 **선택한 엔진의 음성**을 보여 줍니다. 엔진이 `auto`면 내려받은 로컬(Piper) 음성이 있으면 그 목록을, 없으면 **이 PC에 설치된 Windows 내장 음성**을 보여 주고(영어 음성이 앞에 오고, 설치 목록을 못 구하면 기본 후보를 보여 줍니다). `default_voice`와 `default_voice2`에는 해당 엔진의 음성 이름을 넣으면 되고, Windows 쪽은 예전 언어·성별 이름(`en-US-JennyNeural` 등)을 그대로 두어도 설치된 음성 중에서 대체해 고릅니다. Windows Narrator의 자연스러운 Jenny/Ryan 음성은 SAPI에 자동 노출되지 않으므로 SAPI 에서는 바로 쓸 수 있다고 보장되지 않습니다.
+- **TTS 설정 메뉴(29번)**: 원클릭 메뉴 **29. TTS 엔진·목소리 설정** 에서 엔진(auto/piper/windows)·첫·두 번째 목소리·Piper 음성 내려받기·테스트 재생을 한 자리에서 정합니다. 현재 엔진이 실제로 어떤 목소리로 낭독하는지도 함께 보여 줍니다. 저장하면 `config.json` 의 `promo.tts_engine`·`default_voice`·`default_voice2` 에 반영되고, 생성 메뉴(1·3·20~25)와 자동 준비(27번)가 그대로 씁니다.
+- **마지막 선택 저장**: 생성 메뉴(1·3·20~25)에서 기본값과 다르게 TTS 사용 여부·목소리를 고르면, 생성 전에 「선택한 TTS 설정을 다음부터 기본값으로 저장할까요?」(기본 예)를 물어봅니다. 저장하면 `config.json` 의 `default_tts`·`default_voice`·`default_voice2` 가 갱신되어 다음부터 그대로 씁니다. 그때그때 다르게 쓰려면 `n` 을 누르고, 값이 그대로면 묻지도 않습니다.
+- **로컬 TTS(Piper) 설치·음성 내려받기**: `piper-tts` 는 `requirements.txt` 에 포함되어 `setup.bat` 실행으로 설치됩니다. 음성 모델은 `promo/assets/tts/` 에 내려받아야 합니다 — 메뉴 **29번**의 내려받기(`list` 입력 시 영어 음성 전체 목록) 또는
+  ```bash
+  python -m piper.download_voices en_US-amy-medium --download-dir promo/assets/tts
+  ```
+  한 음성당 약 20~65MB 이며, 내려받는 순간 인터넷 없이 씁니다. 내려받지 않았거나 패키지가 없으면 엔진이 Windows 내장 SAPI 로 내려가므로 기존과 똑같이 동작합니다.
+- **Windows 영어 음성 설치** (엔진을 `windows` 로 쓸 때): Windows 11의 `설정 → 시간 및 언어 → 언어 및 지역 → 언어 추가`에서 `English (United States)` 또는 `English (United Kingdom)`을 추가하고, 각 언어의 **언어 옵션**에서 음성/Text-to-speech 기능을 설치할 수 있습니다. 언어 팩은 표시 언어를 바꾸지 않고 추가할 수 있습니다. 음성 엔진의 설치 상태에 따라 SAPI에 나타나기까지 재부팅이나 로그아웃이 필요할 수 있습니다.
 - **무음 방지**: TTS·음악이 실패하거나 없어도 부드러운 앰비언트 사운드가 들어갑니다. `--no-ambient`로 끌 수 있습니다.
 - **네모(□) 방지**: fontTools cmap으로 글리프 존재를 확인해, 한글 폰트에 없는 IPA 기호 등은 자동으로 IPA 커버 폰트(Arial 등)로 대체합니다.
 - **인트로·아웃로 기본 포함**: 첫 장에 「TOEIC 필수 어휘」 같은 브랜드 훅(기본 2.5초), 마지막 장에 사이트 유입 CTA 카드(기본 3초)가 자동으로 들어갑니다. `--no-intro`/`--no-outro` 로 끄거나 `--intro-sec`/`--outro-sec` 으로 길이를 바꿀 수 있습니다. 예상 길이가 Shorts 60초를 넘을 것 같으면 생성기가 미리 경고합니다.
@@ -327,8 +339,9 @@ python make_shorts.py --paraphrase --index 0 --bg wine --style modern
 | `--tts` / `--no-tts` | 영어 TTS 켜기(기본) / 끄기 |
 | `--words` | 영상에 넣을 항목 수 — 단어/숙어/빈도 (기본 5). 퀴즈는 문제 수이고 슬라이드는 2배 |
 | `--out` | 출력 mp4 경로 (기본: `assets/shorts/unitNN_shorts.mp4` · 숙어 `idioms_<표현>_shorts.mp4` · 빈도 `frequency_<표제어>_shorts.mp4` · 퀴즈 `quiz_<표현>_shorts.mp4`) |
-| `--voice` | 첫 번째 TTS 목소리 (기본: 설치된 영국 여성 영어 음성 — 예 `Microsoft Hazel Desktop`, 없으면 미국 여성) |
-| `--voice2` | 두 번째 TTS 목소리 (기본: 설치된 미국 남성 영어 음성 — 예 `Microsoft David Desktop`). `none`이면 한 목소리만 |
+| `--voice` | 첫 번째 TTS 목소리 (기본: 엔진 자동 선택 — 내려받은 Piper 음성 또는 Windows 내장 영국 여성) |
+| `--voice2` | 두 번째 TTS 목소리 (기본: 엔진 자동 선택 — 내려받은 Piper 음성 또는 Windows 내장 미국 남성). `none`이면 한 목소리만 |
+| `--engine` | 낭독 TTS 엔진: `auto`(기본, 로컬 우선) / `piper`(로컬 Piper · 오프라인) / `windows`(내장 SAPI) |
 | `--single-voice` | 한 목소리만 쓰기 (기본은 여성 + 남성 두 목소리) |
 | `--no-ambient` | 기본 앰비언트 사운드 끄기 (무음 영상) |
 | `--no-intro` / `--intro-sec` | 인트로 슬라이드 끄기 / 길이 초 (기본 2.5) |

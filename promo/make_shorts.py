@@ -18,15 +18,20 @@ Ken Burns 줌 효과와 슬라이드 간 크로스페이드, 선택적으로 영
   python make_shorts.py --idioms --words 5           # 숙어 126선에서 5개 (→ assets/shorts/idioms_*_shorts.mp4)
   python make_shorts.py --idioms --index 0 --bg mint # 숙어 목록의 특정 순번만
 
-음성 기본값은 **두 목소리**입니다 — Windows 내장 영어 여성(영국 우선) 음성이 먼저, 남성(미국
-우선) 음성이 이어서 같은 단어·예문을 읽습니다. 음성 길이가 약 2배가 되므로 슬라이드가 자동으로 늘어납니다.
-낭독은 Windows 내장 TTS(SAPI)만 쓰므로 인터넷·별도 패키지가 필요 없습니다.
+음성 기본값은 **두 목소리**입니다 — 먼저 여성, 이어서 남성이 같은 단어·예문을 읽습니다. 음성 길이가
+약 2배가 되므로 슬라이드가 자동으로 늘어납니다. --single-voice 나 --voice2 none 으로 한 목소리만 쓸 수 있습니다.
+
+낭독 엔진(--engine)은 세 가지입니다.
+  auto   : 내려받은 로컬(Piper) 음성이 있으면 로컬, 없으면 Windows 내장 (기본)
+  piper  : 로컬 Piper(ONNX) 모델로 이 PC에서 합성 — 인터넷·API 불필요, assets/tts 에 음성 모델 필요
+  windows: Windows 내장 TTS(SAPI) — 인터넷·패키지 불필요
+메뉴 29(원클릭 센터)에서 엔진·목소리 선택, 음성 내려받기, 테스트 재생을 할 수 있습니다.
 
 중복 방지: 이미 쓴 단어는 다음 생성에서 자동으로 제외되고 promo/posted.json 에 기록됩니다.
 
 필요 패키지: Pillow, imageio-ffmpeg (pip install -r requirements.txt)
-TTS 사용 시: Windows 내장 TTS(SAPI) 영어 음성 (인터넷·패키지 불필요,
-  Windows 설정 → 시간 및 언어 → 음성 에서 영어 음성을 추가할 수 있습니다)
+TTS 사용 시: 로컬 Piper(pip install piper-tts + 음성 내려받기) 또는
+  Windows 내장 TTS(SAPI) — 둘 다 인터넷 없이 동작합니다 (설치 상태는 --dry-run 로그 참고)
 """
 
 from __future__ import annotations
@@ -40,6 +45,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import wave
 from pathlib import Path
 
 try:
@@ -56,13 +62,16 @@ except ImportError:
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from publish import (  # noqa: E402
+    DEFAULT_TTS_ENGINE,
     DEFAULT_VOICE,
     DEFAULT_VOICE2,
     FREQUENCY_BUCKET,
+    TTS_ENGINES,
     IDIOM_BUCKET,
     PARAPHRASE_BUCKET,
     POSTED_FILE,
     fail,
+    list_piper_voices,
     load_frequency,
     load_idioms,
     load_paraphrase,
@@ -70,11 +79,16 @@ from publish import (  # noqa: E402
     load_unit_words,
     log,
     mark_words_posted,
+    normalize_tts_engine,
     normalize_word,
     now_iso,
     ok,
+    piper_available,
+    piper_default_voice,
+    piper_voice_path,
     posted_words_for_unit,
     print_remaining,
+    resolve_tts_engine,
     warn,
 )
 
@@ -1106,14 +1120,72 @@ try {{
     return wave
 
 
-def tts_speak(text: str, voice: str, out: Path) -> Path:
-    """Windows 내장 TTS(SAPI)로 목소리를 만듭니다 — 온라인 TTS는 쓰지 않습니다."""
+def tts_speak(text: str, voice: str, out: Path, engine: str = "auto") -> Path:
+    """TTS 로 낭독 음성(wav)을 만듭니다 — 어디까지나 이 PC에서 합성하고 온라인 TTS 는 쓰지 않습니다.
+
+    engine: "piper"(로컬 Piper · 오프라인), "windows"(내장 SAPI),
+            "auto"(음성 이름과 설치 상태로 판별 — 내려받은 로컬 음성이면 Piper).
+    """
+    real = resolve_tts_engine(engine, voice)
+    if real == "piper":
+        try:
+            return _synthesize_piper(text, voice, out)
+        except RuntimeError:
+            raise
+        except Exception as exc:
+            raise RuntimeError(f"로컬 Piper TTS 실패({voice}): {exc}") from exc
     if sys.platform != "win32":
-        raise RuntimeError("쇼츠 낭독은 Windows 내장 TTS(SAPI)만 씁니다 — Windows 에서 실행하세요.")
+        raise RuntimeError("Windows 내장 TTS(SAPI)는 Windows 에서만 씁니다 — "
+                           "--engine piper 로 로컬 TTS 를 쓰거나 --no-tts 로 끄세요.")
     try:
         return _synthesize_windows_sapi(text, voice, out)
     except Exception as exc:
         raise RuntimeError(f"Windows 내장 TTS 실패({voice}): {exc}") from exc
+
+
+# 로컬 Piper — 음성 모델을 한 번만 올려 놓고 슬라이드마다 재사용합니다 (매번 올리면 슬라이드당 1~2초 손해).
+_PIPER_SESSIONS: dict[str, object] = {}
+_PIPER_FALLBACK_WARNED: set[str] = set()
+
+
+def _piper_model(voice: str) -> tuple[str, "Path"]:
+    """요청한 목소리의 .onnx 경로 — 내려받지 않은 이름이면 남녀 기본값으로 대체하고 알립니다."""
+    path = piper_voice_path(voice)
+    if path is not None:
+        return str(voice), path
+    fallback = piper_default_voice(
+        male=bool(re.search(r"(?i)(david|ryan|guy|brian|george|male|andrew|thomas|joe|mike|norman)",
+                            str(voice or ""))))
+    if not fallback or piper_voice_path(fallback) is None:
+        raise RuntimeError("내려받은 Piper 음성이 없습니다 — 원클릭 메뉴 29 또는 "
+                           "`python -m piper.download_voices en_US-amy-medium "
+                           "--download-dir promo/assets/tts` 로 내려받으세요.")
+    if str(voice) not in _PIPER_FALLBACK_WARNED:
+        _PIPER_FALLBACK_WARNED.add(str(voice))
+        warn(f"요청한 목소리 '{voice}' 는 내려받은 Piper 음성이 아니라 '{fallback}' 로 씁니다 "
+             "(메뉴 29 에서 바꿀 수 있습니다).")
+    return fallback, piper_voice_path(fallback)  # type: ignore[return-value]
+
+
+def _synthesize_piper(text: str, voice: str, out: Path) -> Path:
+    """로컬 Piper(ONNX) 모델로 낭독 wav 를 만듭니다 — 인터넷·API 가 필요 없습니다."""
+    try:
+        from piper import PiperVoice
+    except ImportError as exc:
+        raise RuntimeError("piper-tts 가 미설치입니다 — pip install piper-tts (또는 --engine windows 로 SAPI 사용)") from exc
+    label, model = _piper_model(voice)
+    session = _PIPER_SESSIONS.get(str(model))
+    if session is None:
+        session = PiperVoice.load(str(model))
+        _PIPER_SESSIONS.clear()          # 메모리 보호 — 한 번에 하나의 모델만 올려 둡니다
+        _PIPER_SESSIONS[str(model)] = session
+    with wave.open(str(out), "wb") as wf:
+        session.synthesize_wav(text, wf)
+    if not out.exists() or out.stat().st_size <= 44:
+        out.unlink(missing_ok=True)
+        raise RuntimeError("Piper 가 빈 wav 만 만들었습니다 (모델·텍스트 확인)")
+    log(f"  로컬 Piper 음성: {label} ({out.name})")
+    return out
 
 
 def resolve_voices(voice: str, voice2: str, single: bool) -> list[str]:
@@ -1151,7 +1223,8 @@ def probe_duration(path: Path) -> float:
     return 0.0
 
 
-def build_audio(word: str, en_ex: str, voices: list[str], slide_dur: float, tmp: Path, i: int) -> tuple[Path, float]:
+def build_audio(word: str, en_ex: str, voices: list[str], slide_dur: float, tmp: Path, i: int,
+                engine: str = "auto") -> tuple[Path, float]:
     """목소리별 TTS 를 만들어 차례로 이어 붙이고 슬라이드 길이에 맞춘 wav 로 변환합니다.
 
     두 목소리를 쓰면 같은 문장을 두 번 읽어 음성이 약 2배가 되고, 그만큼 슬라이드도 늘어납니다.
@@ -1161,7 +1234,7 @@ def build_audio(word: str, en_ex: str, voices: list[str], slide_dur: float, tmp:
     tts_files: list[Path] = []
     for vi, v in enumerate(voices):
         part = tmp / f"tts_{i}_{vi}.wav"
-        tts_files.append(tts_speak(text, v, part))
+        tts_files.append(tts_speak(text, v, part, engine))
 
     # 목소리 사이 무음까지 더해 실제 음성 길이를 어림한다.
     audio_len = sum(probe_duration(p) for p in tts_files) + VOICE_GAP * (len(tts_files) - 1)
@@ -1299,12 +1372,15 @@ def main() -> None:
     ap.add_argument("--allow-repeat", action="store_true",
                     help="이미 사용한 단어도 다시 사용 (중복 방지 무시)")
     ap.add_argument("--tts", dest="tts", action="store_true", default=True,
-                    help="영어 TTS 음성(기본 켜짐 — Windows 내장 TTS 사용, 인터넷 불필요)")
+                    help="영어 TTS 음성(기본 켜짐 — 로컬 TTS 만 사용, 인터넷 불필요)")
     ap.add_argument("--no-tts", dest="tts", action="store_false", help="영어 TTS 끄기")
-    ap.add_argument("--voice", default=DEFAULT_VOICE,
-                    help=f"첫 번째 TTS 목소리 — 여성 (기본 {DEFAULT_VOICE})")
-    ap.add_argument("--voice2", default=DEFAULT_VOICE2,
-                    help=f"두 번째 TTS 목소리 — 남성 (기본 {DEFAULT_VOICE2}). none 이면 하나만 사용")
+    ap.add_argument("--engine", default=DEFAULT_TTS_ENGINE,
+                    choices=[key for key, _label in TTS_ENGINES],
+                    help="TTS 엔진: auto(로컬 우선·없으면 Windows) / piper(로컬 Piper, 오프라인) / windows(내장 SAPI)")
+    ap.add_argument("--voice", default=None,
+                    help="첫 번째 TTS 목소리 — 여성 (기본: 엔진에 맞는 자동 선택)")
+    ap.add_argument("--voice2", default=None,
+                    help="두 번째 TTS 목소리 — 남성 (기본: 엔진에 맞는 자동 선택). none 이면 하나만 사용")
     ap.add_argument("--single-voice", action="store_true",
                     help="한 목소리만 쓰기 (기본은 여성 + 남성 두 목소리)")
     ap.add_argument("--music", help="배경음악 오디오 파일(mp3/wav) 경로 (선택)")
@@ -1321,11 +1397,29 @@ def main() -> None:
     if not _PIL_OK:
         sys.exit("Pillow 미설치 — pip install -r requirements.txt")
 
-    voices = resolve_voices(args.voice, args.voice2, args.single_voice)
+    # TTS 엔진·목소리 — auto 는 내려받은 로컬(Piper) 음성이 있으면 로컬, 없으면 Windows 내장입니다.
+    engine_req = normalize_tts_engine(args.engine)
+    first_engine = resolve_tts_engine(engine_req, args.voice or "")
+    if not args.voice:
+        args.voice = piper_default_voice() if first_engine == "piper" else DEFAULT_VOICE
+    engine = resolve_tts_engine(engine_req, args.voice)
+    if not args.voice2:
+        args.voice2 = piper_default_voice(male=True) if engine == "piper" else DEFAULT_VOICE2
 
-    if args.tts and sys.platform != "win32":
-        sys.exit("쇼츠 낭독은 Windows 내장 TTS(SAPI)만 씁니다 — Windows 에서 실행하거나 "
-                 "--no-tts 로 끄세요.")
+    if args.tts:
+        if engine == "piper":
+            if not piper_available():
+                sys.exit("TTS 엔진 piper 를 쓰려면 piper-tts 가 필요합니다 — pip install piper-tts "
+                         "(또는 --engine windows 로 변경)")
+            if not list_piper_voices():
+                sys.exit("내려받은 Piper 음성이 없습니다 — 원클릭 메뉴 29 또는 "
+                         "`python -m piper.download_voices en_US-amy-medium "
+                         "--download-dir promo/assets/tts` 로 내려받으세요.")
+        elif sys.platform != "win32":
+            sys.exit("쇼츠 낭독의 Windows 내장 TTS(SAPI)는 Windows 에서만 씁니다 — "
+                     "--engine piper 로 로컬 TTS 를 쓰거나 --no-tts 로 끄세요.")
+
+    voices = resolve_voices(args.voice, args.voice2, args.single_voice)
 
     if not args.idioms and not args.frequency and not args.paraphrase and args.unit is None:
         sys.exit("--unit 을 지정하거나, 숙어는 --idioms, 빈도 어휘는 --frequency, "
@@ -1474,8 +1568,12 @@ def main() -> None:
              "--words 축소 · --single-voice · --no-intro/--no-outro 를 검토하세요.")
     log(f"출력  : {out} ({W}x{H}, 9:16 세로)")
     log(f"스타일: {args.style}")
-    tts_engine = "Windows 내장 TTS(SAPI) · 네트워크 불필요"
-    log(f"음성  : {tts_engine} ({' + '.join(voices)})" if args.tts else "음성  : 없음 (--no-tts 로 끔)")
+    if args.tts:
+        engine_label = ("로컬 Piper TTS · 오프라인(인터넷 불필요)" if engine == "piper"
+                        else "Windows 내장 TTS(SAPI) · 네트워크 불필요")
+        log(f"음성  : {engine_label} (엔진 {engine} · {' + '.join(voices)})")
+    else:
+        log("음성  : 없음 (--no-tts 로 끔)")
     if args.tts and len(voices) > 1:
         log(f"        {len(voices)}개 목소리가 같은 문장을 이어 읽습니다 — 음성이 약 2배라 슬라이드가 길어집니다")
         log("        짧게 만들려면 --words 를 줄이거나 --single-voice 로 한 목소리만 쓰세요")
@@ -1536,7 +1634,7 @@ def main() -> None:
                     build_silence(base_dur, tmp, si)  # 인트로·아웃로 — TTS 병합용 무음 자리를 채웁니다
                 else:
                     try:
-                        wav, dur = build_audio(say[0], say[1], voices, base_dur, tmp, si)
+                        wav, dur = build_audio(say[0], say[1], voices, base_dur, tmp, si, engine)
                         if dur > base_dur:
                             log(f"   · {say[0]}: 음성 {dur - 0.8:.1f}초 → 슬라이드 연장")
                     except Exception as exc:

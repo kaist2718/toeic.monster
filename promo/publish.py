@@ -75,6 +75,24 @@ HISTORY_FILE = PROMO / "publish_history.csv"
 REPORT_DIR = PROMO / "reports"
 PERF_FILE = PROMO / "performance.json"
 POSTED_FILE = PROMO / "posted.json"
+# 로컬 TTS(Piper) — promo/assets/tts 에 .onnx 음성 모델을 내려받아 오프라인으로 씁니다.
+# 내려받기: 메뉴 29 또는
+#   python -m piper.download_voices en_US-amy-medium --download-dir promo/assets/tts
+# (설치: pip install piper-tts — 안 되면 엔진을 windows 로 두면 Windows 내장 SAPI 를 씁니다)
+PIPER_VOICE_DIR = PROMO / "assets" / "tts"
+DEFAULT_TTS_ENGINE = "auto"
+TTS_ENGINES = (
+    ("auto", "자동 — 내려받은 로컬(Piper) 음성 우선, 없으면 Windows 내장"),
+    ("piper", "로컬 Piper TTS (오프라인)"),
+    ("windows", "Windows 내장 TTS(SAPI)"),
+)
+# 기본 후보 — 내려받았다면 남성·여성 목소리로 먼저 쓰는 이름 순서입니다.
+PIPER_FEMALE_DEFAULTS = ("en_US-amy", "en_GB-southern_english_female", "en_US-kathleen",
+                          "en_US-hfc_female", "en_US-ljspeech")
+PIPER_MALE_DEFAULTS = ("en_US-ryan", "en_GB-alan", "en_GB-northern_english_male",
+                       "en_US-hfc_male", "en_US-norman")
+PIPER_LOCALE_LABELS = {"US": "미국 영어", "GB": "영국 영어", "AU": "호주 영어"}
+_PIPER_VOICES: list[str] | None = None
 SCHED_TASK_NAME = "toeic_monster_promo"
 HISTORY_FIELDS = [
     "timestamp", "event", "status", "schedule_id", "scheduled_at", "platform",
@@ -166,6 +184,23 @@ def config_issues(cfg: dict) -> tuple[list[str], list[str]]:
     tt = cfg.get("tiktok", {})
     if tt.get("enabled") and not tt.get("ms_token"):
         warnings.append("TikTok이 활성화됐지만 ms_token이 비어 있습니다.")
+    # 낭독 TTS 엔진 점검 — 로컬 TTS(Piper) 를 골랐는데 준비가 안 됐으면 알려 줍니다.
+    promo = cfg.get("promo", {})
+    engine = tts_engine_of(cfg)
+    if engine == "piper":
+        if not piper_available():
+            warnings.append("TTS 엔진이 piper 인데 piper-tts 가 미설치입니다 — pip install piper-tts (또는 엔진을 windows 로)")
+        elif not list_piper_voices():
+            warnings.append("TTS 엔진이 piper 인데 내려받은 로컬 음성이 없습니다 — 메뉴 29 에서 내려받으세요.")
+        else:
+            for key in ("default_voice", "default_voice2"):
+                value = str(promo.get(key, "") or "")
+                if value and not piper_voice_path(value):
+                    warnings.append(
+                        f"piper 엔진인데 {key} '{value}' 는 내려받은 Piper 음성이 아닙니다 — 메뉴 29 에서 다시 고르세요.")
+    elif engine == "auto" and piper_available() and not list_piper_voices() \
+            and promo.get("default_tts", True):
+        warnings.append("로컬 TTS(piper-tts) 는 설치됐지만 내려받은 음성이 없어 Windows 내장 TTS 로 낭독합니다 — 메뉴 29 에서 음성을 내려받으세요.")
     return errors, warnings
 
 
@@ -183,7 +218,8 @@ def dependency_status() -> list[tuple[str, bool, str]]:
     ]
     result = [(name, importlib.util.find_spec(module) is not None, purpose)
               for name, module, purpose in checks]
-    # 낭독은 Windows 내장 TTS(SAPI)로만 만드므로 온라인 TTS 패키지는 필요 없습니다.
+    # 낭독은 로컬 TTS(Piper) 또는 Windows 내장 TTS(SAPI)로 만듭니다 — 온라인 TTS 는 쓰지 않습니다.
+    result.append(("로컬 TTS(Piper)", piper_ready(), "쇼츠 영어 낭독(오프라인 · pip install piper-tts + 음성 내려받기)"))
     result.append(("Windows 내장 TTS", windows_tts_available(), "쇼츠 영어 낭독(네트워크 불필요)"))
     ffmpeg_ok = bool(shutil.which("ffmpeg"))
     try:
@@ -1944,22 +1980,50 @@ def ask_int(prompt: str, default: int, minimum: int, maximum: int) -> int:
         warn(f"{minimum}~{maximum} 범위로 입력해 주세요.")
 
 
-def ask_voice(prompt: str, default: str, allow_none: bool = False) -> str:
-    """목소리를 번호로 고르거나 Windows 내장 TTS 음성 이름을 직접 입력합니다.
+def ask_tts_engine(default: str = DEFAULT_TTS_ENGINE) -> str:
+    """쇼츠 낭독에 쓸 TTS 엔진을 고릅니다 (auto / piper / windows)."""
+    current = normalize_tts_engine(default)
+    log("\n쇼츠 낭독 TTS 엔진")
+    for key, label in TTS_ENGINES:
+        mark = " ← 현재" if key == current else ""
+        log(f"  {key:<8} — {label}{mark}")
+    log(f"  (설치 상태: piper-tts {'설치됨' if piper_available() else '미설치'} · "
+        f"내려받은 로컬 음성 {len(list_piper_voices())}개 · Windows 내장 음성 {len(list_windows_voices())}개)")
+    raw = ask_menu("엔진(auto/piper/windows)", current).strip().lower()
+    if raw and raw not in ("auto", "piper", "windows", "sapi", "win"):
+        warn(f"알 수 없는 엔진 '{raw}' — 자동(auto)으로 처리합니다.")
+    return normalize_tts_engine(raw)
 
-    고를 수 있는 목소리는 이 PC에 설치된 Windows 음성입니다.
+
+def _voice_for_engine(engine: str, current: str, male: bool = False) -> str:
+    """엔진에 맞지 않는 목소리 이름이면 그 엔진의 기본값으로 대체해 돌려줍니다."""
+    if engine == "piper" and not piper_voice_path(current):
+        return piper_default_voice(male=male) or current
+    if engine == "windows" and current and not _looks_like_windows_voice(current):
+        return DEFAULT_VOICE2 if male else DEFAULT_VOICE
+    return current
+
+
+def ask_voice(prompt: str, default: str, allow_none: bool = False, engine: str = "auto") -> str:
+    """목소리를 번호로 고르거나 음성 이름을 직접 입력합니다.
+
+    engine(auto/piper/windows) 에 따라 보여 주는 후보 목록이 달라집니다.
+    auto 는 내려받은 로컬(Piper) 음성이 있으면 그 목록을, 없으면 이 PC에 설치된 Windows 음성을 보여 줍니다.
     allow_none=True 이면 '0. 없음' 항목이 생기고, 고르면 빈 문자열을 돌려줍니다(한 목소리만 사용).
     """
-    choices = short_voice_choices()
-    shown = voice_label(default) if default else ("없음" if allow_none else voice_label(DEFAULT_VOICE))
+    engine = normalize_tts_engine(engine)
+    choices = tts_voice_choices(engine)
+    shown = voice_label(default, engine) if default else ("없음" if allow_none else "—")
     log(f"\n{prompt} (엔터: {shown})")
     if allow_none:
         log("  0. 없음 — 한 목소리만 사용")
     for i, (name, label) in enumerate(choices, 1):
         log(f"  {i}. {name} — {label}")
-    if not list_windows_voices():
+    if not choices:
+        warn("내려받은 Piper 음성이 없습니다 — 메뉴 29 에서 내려받거나 엔진을 windows 로 두세요.")
+    elif engine != "piper" and not list_windows_voices():
         warn("설치된 Windows 음성을 확인하지 못해 기본 후보를 보여 줍니다 — 설치된 음성 이름을 직접 입력해도 됩니다.")
-    log("  번호를 고르거나 Windows 음성 이름을 직접 입력하세요.")
+    log("  번호를 고르거나 음성 이름을 직접 입력하세요.")
     raw = ask_menu("목소리 번호/이름", default or ("0" if allow_none else "")).strip()
     if allow_none and (raw == "0" or raw.lower() in ("none", "off", "-", "없음")):
         return ""
@@ -2126,6 +2190,7 @@ def build_shorts_command(cfg: dict, kind: str, words: int) -> list[str] | None:
         command.extend(["--unit", str(unit)])
     if bool(promo.get("default_tts", False)):
         command.append("--tts")
+        command.extend(["--engine", tts_engine_of(cfg)])
         command.extend(["--voice", str(promo.get("default_voice", DEFAULT_VOICE) or DEFAULT_VOICE)])
         voice2 = str(promo.get("default_voice2", DEFAULT_VOICE2) or "")
         if voice2:
@@ -2853,6 +2918,136 @@ def windows_tts_available() -> bool:
     return sys.platform == "win32" and bool(list_windows_voices())
 
 
+# --------------------------------------------------------------------------- #
+# 로컬 TTS(Piper) 함수들
+# --------------------------------------------------------------------------- #
+
+def normalize_tts_engine(value=None) -> str:
+    """엔진 이름을 auto/piper/windows 로 정규화합니다 (잘못된 값은 auto)."""
+    name = str(value or "").strip().lower()
+    if name in ("piper", "auto"):
+        return name
+    if name in ("windows", "sapi", "win"):
+        return "windows"
+    return DEFAULT_TTS_ENGINE
+
+
+def tts_engine_of(cfg: dict) -> str:
+    """config의 promo.tts_engine — 없으면 자동(auto)."""
+    return normalize_tts_engine(cfg.get("promo", {}).get("tts_engine"))
+
+
+def piper_available() -> bool:
+    """piper-tts 패키지가 설치되어 있는지."""
+    try:
+        return importlib.util.find_spec("piper") is not None
+    except Exception:
+        return False
+
+
+def list_piper_voices() -> list[str]:
+    """assets/tts 에 내려받은 Piper 음성(.onnx) 이름 목록 — 없으면 빈 목록."""
+    global _PIPER_VOICES
+    if _PIPER_VOICES is None:
+        try:
+            _PIPER_VOICES = sorted(p.stem for p in PIPER_VOICE_DIR.glob("*.onnx"))
+        except OSError:
+            _PIPER_VOICES = []
+    return _PIPER_VOICES
+
+
+def piper_voice_path(name) -> "Path | None":
+    """음성 이름에 해당하는 .onnx 파일 경로 (없으면 None)."""
+    name = str(name or "").strip()
+    if not name:
+        return None
+    path = PIPER_VOICE_DIR / f"{name}.onnx"
+    return path if path.is_file() else None
+
+
+def piper_ready() -> bool:
+    """로컬 Piper 로 낭독할 수 있는지 (패키지 + 내려받은 음성)."""
+    return piper_available() and bool(list_piper_voices())
+
+
+def piper_default_voice(male: bool = False) -> str:
+    """남성/여성용 Piper 기본 목소리 — 내려받은 목록에서 후보 순서대로 고릅니다."""
+    voices = list_piper_voices()
+    if not voices:
+        return ""
+    for prefix in PIPER_MALE_DEFAULTS if male else PIPER_FEMALE_DEFAULTS:
+        for voice in voices:
+            if voice.startswith(prefix):
+                return voice
+    tag = "male" if male else "female"
+    for voice in voices:
+        if tag in voice.lower():
+            return voice
+    return voices[-1] if male else voices[0]
+
+
+def piper_voice_label(name: str) -> str:
+    """Piper 음성 이름 → '영국 영어 · 여성 · low (16MB)' 같은 안내."""
+    name = str(name or "").strip()
+    size = ""
+    path = piper_voice_path(name)
+    if path is not None:
+        try:
+            size = f" · {path.stat().st_size / (1024 * 1024):.0f}MB"
+        except OSError:
+            pass
+    m = re.match(r"^[a-z]{2}_([A-Z]{2})-(.+?)-([^-]+)$", name)
+    if not m:
+        return size.lstrip(" ·")
+    region, short_name, quality = m.group(1), m.group(2), m.group(3)
+    where = PIPER_LOCALE_LABELS.get(region, region)
+    lower = short_name.lower()
+    if "female" in lower:
+        who = "여성"
+    elif "male" in lower:
+        who = "남성"
+    else:
+        who = short_name
+    return f"{where} · {who} · {quality}{size}"
+
+
+def _looks_like_windows_voice(name: str) -> bool:
+    """Windows 내장 SAPI 음성 이름처럼 보이는지 판별 (자동 엔진 선택용)."""
+    name = str(name or "").strip()
+    if name.startswith("Microsoft "):
+        return True
+    if re.match(r"^[a-z]{2}-[A-Z]{2}-", name):          # en-US-JennyNeural 같은 언어·성별 이름
+        return True
+    return any(name == voice for voice, _label in short_voice_choices())
+
+
+def resolve_tts_engine(engine, voice: str = "") -> str:
+    """실제로 쓸 TTS 엔진을 정합니다.
+
+    auto 는 ① 음성 이름이 내려받은 Piper 음성이면 Piper, ② Windows 음성 이름이면 SAPI,
+    ③ 목소리가 비어 있으면 내려받은 로컬 음성이 있으면 Piper 없으면 SAPI.
+    """
+    engine = normalize_tts_engine(engine)
+    if engine != "auto":
+        return engine
+    if piper_voice_path(voice) and piper_available():
+        return "piper"
+    if voice and _looks_like_windows_voice(voice):
+        return "windows"
+    return "piper" if piper_ready() else "windows"
+
+
+def tts_voice_choices(engine: str = "auto") -> list[tuple[str, str]]:
+    """엔진별로 메뉴에 보여 줄 목소리 후보 — (이름, 안내)."""
+    if engine == "windows":
+        return short_voice_choices()
+    piper = [(voice, piper_voice_label(voice)) for voice in list_piper_voices()]
+    if piper:
+        return piper
+    # piper 를 골랐는데 음성이 없으면 빈 목록(안내 문구는 ask_voice 가 띄웁니다).
+    return [] if engine == "piper" else short_voice_choices()
+
+
 def short_voice_choices() -> list[tuple[str, str]]:
     """메뉴에 보여 줄 목소리 — Windows 에 설치된 내장 음성을 우선합니다.
 
@@ -2884,14 +3079,14 @@ DEFAULT_VOICE = _pick_default_voice("Female", ("en-GB", "en-AU", "en-US"), "Micr
 DEFAULT_VOICE2 = _pick_default_voice("Male", ("en-US", "en-GB", "en-AU"), "Microsoft David Desktop")
 
 
-def voice_label(name: str) -> str:
-    """목소리 이름에 로캘 · 성별 안내를 붙여 돌려줍니다."""
-    for voice, label in short_voice_choices():
-        if voice == name:
+def voice_label(name: str, engine: str = "auto") -> str:
+    """목소리 이름에 엔진·로캘·성별 안내를 붙여 돌려줍니다."""
+    seen: list[str] = []
+    for voice, label in tts_voice_choices(engine) + [(v, piper_voice_label(v)) for v in list_piper_voices()] \
+            + short_voice_choices() + SHORTS_VOICES:
+        if voice == name and voice not in seen:
             return f"{name} ({label})"
-    for voice, label in SHORTS_VOICES:
-        if voice == name:
-            return f"{name} ({label})"
+        seen.append(voice)
     return name
 
 
@@ -2904,9 +3099,160 @@ def make_short_choices() -> tuple[list[str], list[str]]:
                 ["classic", "modern", "minimal"])
 
 
+# --------------------------------------------------------------------------- #
+# TTS 엔진·목소리 설정 메뉴 (메뉴 9 / 메뉴 29 공용)
+# --------------------------------------------------------------------------- #
+TTS_TEST_TEXT = "Come across means to meet unexpectedly. Please expedite the report."
+
+
+def show_piper_voice_catalog() -> bool:
+    """내려받을 수 있는 영어 Piper 음성 목록을 보여 줍니다 (네트워크 필요)."""
+    try:
+        r = subprocess.run([sys.executable, "-m", "piper.download_voices"],
+                           capture_output=True, text=True, timeout=120)
+    except (OSError, subprocess.SubprocessError) as exc:
+        fail(f"음성 목록 조회 실패: {exc}")
+        return False
+    names = [line.strip() for line in (r.stdout or "").splitlines() if line.strip().startswith("en_")]
+    if not names:
+        warn("영어 음성 목록을 받아오지 못했습니다 — 인터넷 연결을 확인하세요.")
+        return False
+    log(f"\n사용 가능한 영어 Piper 음성 {len(names)}개 (영어 외 다른 언어는 목록에서 제외)")
+    for i, name in enumerate(names, 1):
+        log(f"  {i}. {name} — {piper_voice_label(name)}")
+    return True
+
+
+def run_piper_download(name: str) -> bool:
+    """Piper 음성 하나를 assets/tts 로 내려받습니다."""
+    try:
+        PIPER_VOICE_DIR.mkdir(parents=True, exist_ok=True)
+        r = subprocess.run([sys.executable, "-m", "piper.download_voices", name,
+                            "--download-dir", str(PIPER_VOICE_DIR)],
+                           capture_output=True, text=True, timeout=600)
+    except (OSError, subprocess.SubprocessError) as exc:
+        fail(f"Piper 음성 내려받기 실패: {exc}")
+        return False
+    global _PIPER_VOICES
+    _PIPER_VOICES = None   # 내려받은 직후 목록 새로고침
+    if r.returncode != 0 or piper_voice_path(name) is None:
+        lines = [ln.strip() for ln in
+                 ((r.stderr or "") + "\n" + (r.stdout or "")).splitlines() if ln.strip()]
+        detail = lines[-1] if lines else ""
+        fail(f"Piper 음성 내려받기 실패: {name}{(' — ' + detail) if detail else ''}")
+        return False
+    ok(f"내려받았습니다: {name} ({piper_voice_label(name)}) → {PIPER_VOICE_DIR}")
+    return True
+
+
+def download_piper_voice_menu() -> bool:
+    """Piper 음성을 하나 내려받습니다. 성공하면 True."""
+    if not piper_available():
+        warn("piper-tts 가 설치되어 있지 않습니다 — pip install piper-tts 를 먼저 실행하세요.")
+        return False
+    log("\nPiper 음성 내려받기 — promo/assets/tts 에 저장됩니다 (한 음성당 약 20~65MB, 네트워크 필요)")
+    log("  예: en_US-amy-medium · en_US-ryan-medium · en_GB-southern_english_female-low")
+    while True:
+        name = ask_menu("음성 이름 (list: 영어 목록, Enter: 건너뛰기)", "").strip()
+        if not name:
+            return False
+        if name.lower() in ("list", "목록", "l"):
+            show_piper_voice_catalog()
+            continue
+        if run_piper_download(name):
+            return True
+        if not ask_yes_no("다른 이름으로 다시 내려받을까요?", False):
+            return False
+
+
+def run_tts_test(engine: str, voice: str) -> None:
+    """선택한 목소리로 짧은 영어 문장을 합성해 저장하고 재생합니다."""
+    engine = resolve_tts_engine(engine, voice)
+    if not voice:
+        warn("선택된 목소리가 없어 테스트할 수 없습니다.")
+        return
+    try:
+        from make_shorts import tts_speak  # 런타임 import (make_shorts → publish 순환 import 방지)
+    except Exception as exc:
+        fail(f"쇼츠 생성기를 불러오지 못했습니다: {exc}")
+        return
+    out = PIPER_VOICE_DIR / "tts_test.wav"
+    try:
+        out.parent.mkdir(parents=True, exist_ok=True)
+        tts_speak(TTS_TEST_TEXT, voice, out, engine)
+    except Exception as exc:
+        fail(f"TTS 테스트 실패({voice} · {engine}): {exc}")
+        return
+    ok(f"테스트 음성 저장: {out}")
+    try:
+        import winsound
+        winsound.PlaySound(str(out), winsound.SND_FILENAME)
+    except Exception:
+        open_path(out)   # 재생이 안 되면 기본 앱으로 엽니다
+
+
+def tts_settings_flow(cfg: dict, *, full: bool = False) -> dict:
+    """TTS 엔진·낭독 사용 여부·목소리를 입력받아 cfg 에 담습니다.
+
+    full=True 면 메뉴 29 처럼 음성 내려받기와 테스트 재생까지 묻습니다(메뉴 9 에서는 생략).
+    """
+    promo = cfg.setdefault("promo", {})
+    engine = ask_tts_engine(str(promo.get("tts_engine", DEFAULT_TTS_ENGINE) or DEFAULT_TTS_ENGINE))
+    promo["tts_engine"] = engine
+    promo["default_tts"] = ask_yes_no("쇼츠 영어 낭독(TTS) 사용", bool(promo.get("default_tts", True)))
+    if full and engine in ("auto", "piper"):
+        if not list_piper_voices() and ask_yes_no("Piper 음성을 내려받을까요?", piper_available()):
+            download_piper_voice_menu()
+        elif list_piper_voices() and ask_yes_no("Piper 음성을 더 내려받을까요?", False):
+            download_piper_voice_menu()
+    # 엔진에 맞지 않는 예전 목소리 이름이 있으면 그 엔진의 기본값을 제안합니다.
+    promo["default_voice"] = ask_voice(
+        "첫 번째 TTS 목소리 (여성)",
+        _voice_for_engine(engine, str(promo.get("default_voice", "") or "")), engine=engine)
+    promo["default_voice2"] = ask_voice(
+        "두 번째 TTS 목소리 (남성)",
+        _voice_for_engine(engine, str(promo.get("default_voice2", "") or ""), male=True),
+        allow_none=True, engine=engine)
+    if promo.get("default_voice2") and promo["default_voice2"] == promo.get("default_voice"):
+        promo["default_voice2"] = ""
+        warn("두 목소리가 같아 두 번째 목소리를 비웠습니다(한 목소리로 낭독).")
+    if full and promo.get("default_tts"):
+        if ask_yes_no("선택한 목소리로 테스트 음성을 들어볼까요?", True):
+            run_tts_test(engine, str(promo.get("default_voice", "") or ""))
+    return cfg
+
+
+def tts_voice_menu(cfg: dict) -> dict:
+    """메뉴 29 — 로컬 TTS(Piper) 엔진과 낭독 목소리를 설정합니다."""
+    log("\n" + "=" * 62)
+    log("🔊 TTS 엔진·목소리 설정")
+    log("=" * 62)
+    promo = cfg.get("promo", {})
+    current_engine = tts_engine_of(cfg)
+    effective = resolve_tts_engine(current_engine, str(promo.get("default_voice", "") or ""))
+    log(f"  현재 엔진: {current_engine} → 실제 낭독: {effective} "
+        f"({'로컬 오프라인' if effective == 'piper' else 'Windows 내장'})")
+    log(f"  낭독(TTS): {'켜짐' if promo.get('default_tts', True) else '꺼짐'} · "
+        f"목소리 {voice_label(str(promo.get('default_voice', '') or ''), current_engine)}"
+        f"{(' + ' + voice_label(str(promo.get('default_voice2', '') or ''), current_engine)) if promo.get('default_voice2') else ''}")
+    log(f"  설치 상태: piper-tts {'설치됨' if piper_available() else '미설치'} · "
+        f"내려받은 로컬 음성 {len(list_piper_voices())}개 · Windows 내장 음성 {len(list_windows_voices())}개")
+    tts_settings_flow(cfg, full=True)
+    save_config(cfg)
+    ok(f"TTS 설정을 저장했습니다: {CONFIG_FILE}")
+    return cfg
+
+
 def show_config_status(cfg: dict) -> None:
     log("\n🔐 설정·환경 상태")
     log(f"  설정 파일: {'config.json' if config_is_real() else 'config.example.json (예제)'}")
+    promo_cfg = cfg.get("promo", {})
+    engine = tts_engine_of(cfg)
+    voice1 = str(promo_cfg.get("default_voice", "") or "")
+    voice2 = str(promo_cfg.get("default_voice2", "") or "")
+    log(f"  🔊 낭독 TTS: 엔진 {engine} → 실제 {resolve_tts_engine(engine, voice1)} · "
+        f"{voice_label(voice1, engine)}{(' + ' + voice_label(voice2, engine)) if voice2 else ' (한 목소리)'}"
+        f" · {'사용' if promo_cfg.get('default_tts', True) else '사용 안 함'}")
     errors, warnings = config_issues(cfg)
     for name, installed, purpose in dependency_status():
         log(f"  {'✅' if installed else '⬜'} {name}: {'준비됨' if installed else '미설치'} · {purpose}")
@@ -2934,11 +3280,8 @@ def configure_menu(cfg: dict) -> dict:
     promo["default_style"] = ask_menu(f"기본 카드 스타일({'/'.join(styles)})", str(promo.get("default_style", "classic"))).lower()
     if promo["default_style"] not in styles:
         promo["default_style"] = "classic"
-    promo["default_tts"] = ask_yes_no("기본으로 TTS 추가", bool(promo.get("default_tts", False)))
-    promo["default_voice"] = ask_voice("기본 TTS 목소리 (여성)", str(promo.get("default_voice", DEFAULT_VOICE) or DEFAULT_VOICE))
-    promo["default_voice2"] = ask_voice(
-        "두 번째 TTS 목소리 (남성)",
-        str(promo.get("default_voice2", DEFAULT_VOICE2) or DEFAULT_VOICE2), allow_none=True)
+    # TTS 엔진·목소리 (메뉴 29 와 같은 흐름 — 내려받기·테스트는 메뉴 29 에서만)
+    tts_settings_flow(cfg, full=False)
     promo["confirm_real_upload"] = ask_yes_no("실제 게시 전 확인 질문 사용", bool(promo.get("confirm_real_upload", True)))
     yt = cfg.setdefault("youtube", {})
     yt["enabled"] = ask_yes_no("YouTube 사용", bool(yt.get("enabled", True)))
@@ -3041,6 +3384,7 @@ def interactive_menu() -> None:
         log(" 26. 남은 콘텐츠 수량 보기")
         log(" 27. 콘텐츠 자동 준비 — N일치 생성 + 예약 게시 등록")
         log(" 28. 게시된 영상 YouTube 설명 갱신 (새 형식 반영)")
+        log(" 29. TTS 엔진·목소리 설정 (로컬 음성 내려받기·테스트 재생)")
         log("  0. 종료")
         action = ask_menu("메뉴", menu_default)
         if action == "0":
@@ -3178,6 +3522,14 @@ def interactive_menu() -> None:
             if ask_yes_no("위 내용으로 YouTube 제목·설명을 실제 갱신할까요?", False):
                 refresh_youtube_descriptions(cfg, video=video, apply=True, keep_title=keep_title)
             continue
+        if action == "29":
+            tts_voice_menu(cfg)
+            promo_cfg = cfg.get("promo", {})
+            default_tts = bool(promo_cfg.get("default_tts", True))
+            default_voice = str(promo_cfg.get("default_voice", DEFAULT_VOICE) or DEFAULT_VOICE)
+            # 빈 문자열이면 '두 번째 목소리 없음'을 뜻합니다(오른쪽 or DEFAULT_VOICE2 를 쓰지 않음).
+            default_voice2 = str(promo_cfg.get("default_voice2", DEFAULT_VOICE2) or "")
+            continue
         if action == "17":
             target = ask_menu("초기화 대상 (all · UNIT 번호 · idioms · frequency · paraphrase)", "all")
             if ask_yes_no("중복 방지 기록을 초기화할까요?", False):
@@ -3260,16 +3612,45 @@ def interactive_menu() -> None:
                 command.append("--paraphrase")
             else:
                 command.extend(["--unit", str(unit)])
-            if ask_yes_no("영어 TTS를 추가할까요?", default_tts):
+            tts_on = ask_yes_no("영어 TTS를 추가할까요?", default_tts)
+            picked_voice = picked_voice2 = ""
+            if tts_on:
                 command.append("--tts")
-                command.extend(["--voice", ask_voice("첫 번째 TTS 목소리 (여성)", default_voice)])
-                voice2 = ask_voice("두 번째 TTS 목소리 (남성)", default_voice2, allow_none=True)
-                if voice2:
-                    command.extend(["--voice2", voice2])
+                tts_engine = tts_engine_of(cfg)
+                command.extend(["--engine", tts_engine])
+                picked_voice = ask_voice("첫 번째 TTS 목소리 (여성)", default_voice, engine=tts_engine)
+                command.extend(["--voice", picked_voice])
+                picked_voice2 = ask_voice("두 번째 TTS 목소리 (남성)", default_voice2, allow_none=True,
+                                          engine=tts_engine)
+                if picked_voice2:
+                    command.extend(["--voice2", picked_voice2])
                 else:
                     command.append("--single-voice")
             else:
                 command.append("--no-tts")
+            # 이번에 고른 TTS 설정을 다음부터 기본값으로 저장할지 묻습니다(메뉴 9·29 와 같은 자리에 저장).
+            promo_now = cfg.setdefault("promo", {})
+            tts_changed = bool(promo_now.get("default_tts", True)) != tts_on or (
+                tts_on and (picked_voice != default_voice or picked_voice2 != default_voice2))
+            if tts_changed and ask_yes_no("선택한 TTS 설정을 다음부터 기본값으로 저장할까요?", True):
+                engine_now = tts_engine_of(cfg)
+                promo_now["default_tts"] = bool(tts_on)
+                if tts_on:
+                    promo_now["default_voice"] = picked_voice
+                    promo_now["default_voice2"] = picked_voice2
+                save_config(cfg)
+                if tts_on:
+                    first_label = voice_label(str(promo_now.get("default_voice", "") or ""), engine_now)
+                    second_label = voice_label(str(promo_now.get("default_voice2", "") or ""), engine_now)
+                    second_part = (f" + {second_label}" if promo_now.get("default_voice2")
+                                   else " (한 목소리)")
+                    ok(f"TTS 기본값을 저장했습니다: {CONFIG_FILE.name} · 엔진 {engine_now} · "
+                       f"{first_label}{second_part}")
+                else:
+                    ok(f"TTS 기본값을 저장했습니다: {CONFIG_FILE.name} · 낭독(TTS) 끔")
+                default_tts = bool(tts_on)
+                default_voice = str(promo_now.get("default_voice", default_voice) or default_voice)
+                default_voice2 = str(promo_now.get("default_voice2", default_voice2) or "")
             if ask_yes_no("배경음악을 추가할까요?(파일 경로 필요)", False):
                 music_path = ask_menu("배경음악 파일(mp3/wav) 경로")
                 if music_path:
