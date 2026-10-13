@@ -9,7 +9,7 @@ Ken Burns 줌 효과와 슬라이드 간 크로스페이드, 선택적으로 영
 
 사용법:
   python make_shorts.py --unit 1                     # UNIT 1 단어 5개 랜덤 → assets/shorts/unit01_shorts.mp4
-  python make_shorts.py --unit 3 --words 7 --tts     # 7개 + 영어 음성(Windows 로컬 또는 edge-tts)
+  python make_shorts.py --unit 3 --words 7 --tts     # 7개 + 영어 음성(Windows 내장 TTS)
   python make_shorts.py --unit 5 --seed 42 --bg purple
   python make_shorts.py --unit 2 --words 3 --dry-run # 계획만 출력
   python make_shorts.py --unit 1 --allow-repeat      # 이미 쓴 단어도 다시 사용
@@ -18,13 +18,15 @@ Ken Burns 줌 효과와 슬라이드 간 크로스페이드, 선택적으로 영
   python make_shorts.py --idioms --words 5           # 숙어 126선에서 5개 (→ assets/shorts/idioms_*_shorts.mp4)
   python make_shorts.py --idioms --index 0 --bg mint # 숙어 목록의 특정 순번만
 
-음성 기본값은 **두 목소리**입니다 — 여성(en-US-JennyNeural)이 먼저, 영국 남성(en-GB-RyanNeural)이
-이어서 같은 단어·예문을 읽습니다. 음성 길이가 약 2배가 되므로 슬라이드가 자동으로 늘어납니다.
+음성 기본값은 **두 목소리**입니다 — Windows 내장 영어 여성(영국 우선) 음성이 먼저, 남성(미국
+우선) 음성이 이어서 같은 단어·예문을 읽습니다. 음성 길이가 약 2배가 되므로 슬라이드가 자동으로 늘어납니다.
+낭독은 Windows 내장 TTS(SAPI)만 쓰므로 인터넷·별도 패키지가 필요 없습니다.
 
 중복 방지: 이미 쓴 단어는 다음 생성에서 자동으로 제외되고 promo/posted.json 에 기록됩니다.
 
 필요 패키지: Pillow, imageio-ffmpeg (pip install -r requirements.txt)
-TTS 사용 시: pip install edge-tts  (인터넷 필요, 무료/키 불필요)
+TTS 사용 시: Windows 내장 TTS(SAPI) 영어 음성 (인터넷·패키지 불필요,
+  Windows 설정 → 시간 및 언어 → 음성 에서 영어 음성을 추가할 수 있습니다)
 """
 
 from __future__ import annotations
@@ -54,6 +56,8 @@ except ImportError:
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from publish import (  # noqa: E402
+    DEFAULT_VOICE,
+    DEFAULT_VOICE2,
     FREQUENCY_BUCKET,
     IDIOM_BUCKET,
     PARAPHRASE_BUCKET,
@@ -1025,7 +1029,11 @@ VOICE_GAP = 0.4  # 두 목소리 사이 무음(초) — 같은 문장이 두 번
 
 
 def _synthesize_windows_sapi(text: str, voice: str, out: Path) -> Path:
-    """Windows에 설치된 SAPI 영어 음성으로 네트워크 없이 로컬 합성합니다."""
+    """Windows에 설치된 내장 SAPI 음성으로 네트워크 없이 로컬 합성합니다.
+
+    voice 가 설치된 Windows 음성 이름(예: "Microsoft David Desktop")이면 그 음성을 그대로 쓰고,
+    아니면 언어·성별 힌트(en-US-JennyNeural 처럼)로 맞는 음성을 찾아 씁니다.
+    """
     powershell = shutil.which("powershell") or shutil.which("pwsh")
     if not powershell:
         raise RuntimeError("PowerShell을 찾을 수 없습니다.")
@@ -1033,7 +1041,8 @@ def _synthesize_windows_sapi(text: str, voice: str, out: Path) -> Path:
     match = re.match(r"([a-z]{2}-[A-Z]{2})-", voice)
     culture = match.group(1) if match else "en-US"
     male_voice = re.search(
-        r"(?i)(?:guy|ryan|thomas|davis|andrew|brian|christopher|eric|roger|william|liam|george)",
+        r"(?i)(?:guy|ryan|thomas|davis|david|andrew|brian|christopher|eric|roger|"
+        r"william|liam|george|james|michael|richard|daniel|kevin|mark|alex|aaron)",
         voice,
     ) is not None
     gender = "Male" if male_voice else "Female"
@@ -1050,9 +1059,16 @@ try {{
     $installed = @($synth.GetInstalledVoices() | Where-Object {{ $_.Enabled }})
     $targetCulture = {ps_quote(culture)}
     $targetGender = {ps_quote(gender)}
-    $selected = $installed | Where-Object {{
-        $_.VoiceInfo.Culture.Name -eq $targetCulture -and $_.VoiceInfo.Gender.ToString() -eq $targetGender
-    }} | Select-Object -First 1
+    $requested = {ps_quote(voice)}
+    $selected = $null
+    if ($requested) {{
+        $selected = $installed | Where-Object {{ $_.VoiceInfo.Name -eq $requested }} | Select-Object -First 1
+    }}
+    if (-not $selected) {{
+        $selected = $installed | Where-Object {{
+            $_.VoiceInfo.Culture.Name -eq $targetCulture -and $_.VoiceInfo.Gender.ToString() -eq $targetGender
+        }} | Select-Object -First 1
+    }}
     if (-not $selected) {{
         $selected = $installed | Where-Object {{
             $_.VoiceInfo.Culture.TwoLetterISOLanguageName -eq 'en' -and $_.VoiceInfo.Gender.ToString() -eq $targetGender
@@ -1086,28 +1102,24 @@ try {{
     selected = next((line.partition("=")[2] for line in result.stdout.splitlines()
                      if line.startswith("SELECTED_VOICE=")), "")
     if selected:
-        log(f"Windows 로컬 음성: {selected.replace('|', ' / ')}")
+        log(f"Windows 내장 음성: {selected.replace('|', ' / ')}")
     return wave
 
 
-async def tts_speak(text: str, voice: str, out: Path) -> Path:
-    if sys.platform == "win32":
-        try:
-            return _synthesize_windows_sapi(text, voice, out)
-        except Exception as exc:
-            raise RuntimeError(f"Windows 로컬 TTS 실패({voice}): {exc}") from exc
-
-    import edge_tts
-    await edge_tts.Communicate(text, voice).save(str(out))
-    if not out.exists() or out.stat().st_size == 0:
-        raise RuntimeError("Edge TTS가 빈 음성 파일을 반환했습니다.")
-    return out
+def tts_speak(text: str, voice: str, out: Path) -> Path:
+    """Windows 내장 TTS(SAPI)로 목소리를 만듭니다 — 온라인 TTS는 쓰지 않습니다."""
+    if sys.platform != "win32":
+        raise RuntimeError("쇼츠 낭독은 Windows 내장 TTS(SAPI)만 씁니다 — Windows 에서 실행하세요.")
+    try:
+        return _synthesize_windows_sapi(text, voice, out)
+    except Exception as exc:
+        raise RuntimeError(f"Windows 내장 TTS 실패({voice}): {exc}") from exc
 
 
 def resolve_voices(voice: str, voice2: str, single: bool) -> list[str]:
     """실제로 쓸 목소리 목록을 돌려줍니다.
 
-    기본은 첫 목소리 + 두 번째 목소리(영국 남성)입니다.
+    기본은 첫 목소리 + 두 번째 목소리(남성)입니다.
     --single-voice 이거나 두 번째가 none/off 이거나 같은 목소리면 하나만 씁니다.
     """
     voices = [voice]
@@ -1145,12 +1157,11 @@ def build_audio(word: str, en_ex: str, voices: list[str], slide_dur: float, tmp:
     두 목소리를 쓰면 같은 문장을 두 번 읽어 음성이 약 2배가 되고, 그만큼 슬라이드도 늘어납니다.
     (wav, 실제 슬라이드 길이) 반환.
     """
-    import asyncio
     text = f"{word}. {en_ex}"
     tts_files: list[Path] = []
     for vi, v in enumerate(voices):
-        part = tmp / f"tts_{i}_{vi}.mp3"
-        tts_files.append(asyncio.run(tts_speak(text, v, part)))
+        part = tmp / f"tts_{i}_{vi}.wav"
+        tts_files.append(tts_speak(text, v, part))
 
     # 목소리 사이 무음까지 더해 실제 음성 길이를 어림한다.
     audio_len = sum(probe_duration(p) for p in tts_files) + VOICE_GAP * (len(tts_files) - 1)
@@ -1288,14 +1299,14 @@ def main() -> None:
     ap.add_argument("--allow-repeat", action="store_true",
                     help="이미 사용한 단어도 다시 사용 (중복 방지 무시)")
     ap.add_argument("--tts", dest="tts", action="store_true", default=True,
-                    help="영어 TTS 음성(기본 켜짐 — Windows에서는 로컬 음성 우선)")
+                    help="영어 TTS 음성(기본 켜짐 — Windows 내장 TTS 사용, 인터넷 불필요)")
     ap.add_argument("--no-tts", dest="tts", action="store_false", help="영어 TTS 끄기")
-    ap.add_argument("--voice", default="en-US-JennyNeural",
-                    help="첫 번째 TTS 목소리 — 여성 (기본 en-US-JennyNeural)")
-    ap.add_argument("--voice2", default="en-GB-RyanNeural",
-                    help="두 번째 TTS 목소리 — 영국 남성 (기본 en-GB-RyanNeural). none 이면 하나만 사용")
+    ap.add_argument("--voice", default=DEFAULT_VOICE,
+                    help=f"첫 번째 TTS 목소리 — 여성 (기본 {DEFAULT_VOICE})")
+    ap.add_argument("--voice2", default=DEFAULT_VOICE2,
+                    help=f"두 번째 TTS 목소리 — 남성 (기본 {DEFAULT_VOICE2}). none 이면 하나만 사용")
     ap.add_argument("--single-voice", action="store_true",
-                    help="한 목소리만 쓰기 (기본은 여성 + 영국 남성 두 목소리)")
+                    help="한 목소리만 쓰기 (기본은 여성 + 남성 두 목소리)")
     ap.add_argument("--music", help="배경음악 오디오 파일(mp3/wav) 경로 (선택)")
     ap.add_argument("--music-volume", type=float, default=0.15, help="배경음악 볼륨 0~1 (기본 0.15)")
     ap.add_argument("--no-ambient", action="store_true",
@@ -1311,6 +1322,10 @@ def main() -> None:
         sys.exit("Pillow 미설치 — pip install -r requirements.txt")
 
     voices = resolve_voices(args.voice, args.voice2, args.single_voice)
+
+    if args.tts and sys.platform != "win32":
+        sys.exit("쇼츠 낭독은 Windows 내장 TTS(SAPI)만 씁니다 — Windows 에서 실행하거나 "
+                 "--no-tts 로 끄세요.")
 
     if not args.idioms and not args.frequency and not args.paraphrase and args.unit is None:
         sys.exit("--unit 을 지정하거나, 숙어는 --idioms, 빈도 어휘는 --frequency, "
@@ -1459,7 +1474,7 @@ def main() -> None:
              "--words 축소 · --single-voice · --no-intro/--no-outro 를 검토하세요.")
     log(f"출력  : {out} ({W}x{H}, 9:16 세로)")
     log(f"스타일: {args.style}")
-    tts_engine = "Windows SAPI 로컬 음성" if sys.platform == "win32" else "edge-tts (온라인)"
+    tts_engine = "Windows 내장 TTS(SAPI) · 네트워크 불필요"
     log(f"음성  : {tts_engine} ({' + '.join(voices)})" if args.tts else "음성  : 없음 (--no-tts 로 끔)")
     if args.tts and len(voices) > 1:
         log(f"        {len(voices)}개 목소리가 같은 문장을 이어 읽습니다 — 음성이 약 2배라 슬라이드가 길어집니다")

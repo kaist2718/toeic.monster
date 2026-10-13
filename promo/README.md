@@ -171,8 +171,8 @@ python publish.py --remove-task
 
 - `default_unit`, `default_words`, `default_theme`, `default_style`: 생성 메뉴 기본값
 - `default_tts`: TTS 기본 선택 여부
-- `default_voice`: 첫 번째 TTS 목소리(edge-tts 이름). 예: 여성 `en-US-JennyNeural`, 남성 `en-US-GuyNeural`. 생성 시 번호로 바꿀 수 있음
-- `default_voice2`: 두 번째 TTS 목소리(기본 영국 남성 `en-GB-RyanNeural`). **빈 문자열이면 한 목소리만** 사용
+- `default_voice`: 첫 번째 TTS 목소리(Windows 내장 음성 이름, 기본 영국 여성). 예: 여성 `Microsoft Hazel Desktop`, 남성 `Microsoft David Desktop`. 생성 시 번호로 바꿀 수 있음
+- `default_voice2`: 두 번째 TTS 목소리(기본 미국 남성 `Microsoft David Desktop`). **빈 문자열이면 한 목소리만** 사용
 - `default_privacy`: YouTube 기본 공개 범위. 처음에는 `unlisted` 권장
 - `confirm_real_upload`: 실제 게시 전 확인 질문 사용 여부. 안전을 위해 `true` 권장
 - `youtube.api_key`: 성과 수집(`--stats`) 전용 Google Cloud **API 키**. 공개 데이터 조회라 OAuth 없이 사용 가능
@@ -279,9 +279,9 @@ python make_shorts.py --unit 2 --index 0 --slide-sec 4 --dry-run
 # 배경음악 추가 (볼륨 0.2, TTS와 함께 쓰면 음성 위에 깔림)
 python make_shorts.py --unit 1 --music assets/music/calm.mp3 --music-volume 0.2
 
-# 목소리: 기본은 여성 + 영국 남성 두 목소리
+# 목소리: 기본은 여성 + 남성 두 목소리(설치된 Windows 음성)
 python make_shorts.py --unit 1 --single-voice            # 여성 하나만
-python make_shorts.py --unit 1 --voice2 en-GB-ThomasNeural  # 두 번째를 다른 영국 남성으로
+python make_shorts.py --unit 1 --voice2 "Microsoft David Desktop"  # 두 번째 목소리를 지정
 
 # 숙어 126선(data/idioms.js) — 유닛 대신 --idioms
 python make_shorts.py --idioms --words 5
@@ -307,9 +307,9 @@ python make_shorts.py --paraphrase --index 0 --bg wine --style modern
 
 - **숙어 카드**: `--idioms` 를 주면 `data/idioms.js`(126선)에서 고릅니다. 숙어는 IPA·예문 발음이 없어 슬라이드에 **표현·뜻·예문·해석**만 들어가고, 상단 칩은 `TOEIC 빈출 숙어` + **목록 순번**입니다. 파일명은 첫 표현을 따 `idioms_take-advantage-of_shorts.mp4` 처럼 나와 배치끼리 덮어쓰지 않습니다(`--out` 으로 지정 가능).
 - **동의어 치환 퀴즈**: `--paraphrase` 를 주면 `data/extra.js` 의 paraphrase(200문제)에서 고릅니다. 한 문제가 **문제 슬라이드(문장 + 보기 A~D) → 정답 슬라이드(정답·해설·예문 해석)** 두 장이라, 3문제면 6장·약 36초입니다(`--words` 가 슬라이드 수를 두 배로 늘립니다). 문제 슬라이드는 영어 문장을, 정답 슬라이드는 정답 표현을 읽습니다. 파일명은 `quiz_expedite_shorts.mp4` 처럼 첫 표적 표현을 따릅니다.
-- **영어 음성 기본**: Windows에서는 설치된 SAPI 영어 음성을 로컬에서 우선 사용하고, Windows 외 환경에서는 edge-tts 온라인 음성을 씁니다. `--no-tts`로 끄면 앰비언트 사운드로 대체됩니다. Windows에서 `en-US-JennyNeural`처럼 Edge 음성 이름을 지정해도 해당 이름을 찾는 게 아니라 SAPI에서 언어·성별이 맞는 로컬 음성을 선택합니다.
-- **두 목소리 기본**: 기본 설정은 첫 번째 여성 음성 요청 후 두 번째 영국 남성 음성 요청입니다. Windows에 요청한 로캘 음성이 없으면 설치된 영어 음성 중 성별을 우선해 대체하며, 생성 로그에 실제 선택된 음성을 표시합니다. 예를 들어 미국 여성·영국 남성 음성이 없으면 현재 확인된 미국 영어 여성(Zira)·남성(David)이 선택됩니다. 슬라이드 길이는 음성 길이에 맞춰 자동 연장됩니다 — 길게 느껴지면 `--words`를 줄이거나 `--single-voice`로 한 목소리만 쓰세요.
-- **목소리 선택**: `default_voice`와 `default_voice2`는 플랫폼에 따라 Windows 로컬 음성의 언어·성별 선택 힌트 또는 edge-tts 목소리 이름으로 사용됩니다. Windows Narrator의 자연스러운 Jenny/Ryan 음성은 SAPI에 자동 노출되지 않으므로 이 스크립트에서 곧바로 사용할 수 있다고 보장되지 않습니다.
+- **영어 음성 기본**: 낭독은 **Windows 내장 TTS(SAPI)** 로만 만듭니다 — 인터넷 연결이나 별도 TTS 패키지가 필요 없습니다. `--no-tts`로 끄면 앰비언트 사운드로 대체됩니다. `--voice`에 설치된 Windows 음성 이름(예: `Microsoft Zira Desktop`)을 주면 그 음성을 그대로 쓰고, `en-US-JennyNeural`처럼 언어·성별로 된 이름을 주면 설치된 음성 중 언어·성별이 맞는 것을 골라 씁니다.
+- **두 목소리 기본**: 기본 설정은 첫 번째 **영국 여성** 음성 후 두 번째 **미국 남성** 음성이 같은 문장을 이어서 읽습니다(설치된 음성이 없으면 같은 성별의 다른 로캘으로 대체). Windows에 요청한 로캘 음성이 없으면 설치된 영어 음성 중 성별을 우선해 대체하며, 생성 로그에 실제 선택된 음성을 표시합니다. 예를 들어 영국 여성 음성이 없으면 미국 영어 여성(Zira)이, 미국 남성 음성이 없으면 설치된 다른 영어 남성(David)이 선택됩니다. 슬라이드 길이는 음성 길이에 맞춰 자동 연장됩니다 — 길게 느껴지면 `--words`를 줄이거나 `--single-voice`로 한 목소리만 쓰세요.
+- **목소리 선택**: 메뉴·기본 설정의 목소리 선택지는 **이 PC에 설치된 Windows 내장 음성**을 먼저 보여 줍니다(영어 음성이 앞에 오고, 설치 목록을 못 구하면 기본 후보를 보여 줍니다). `default_voice`와 `default_voice2`에는 설치된 음성 이름을 넣으면 되고, 예전 언어·성별 이름(`en-US-JennyNeural` 등)은 그대로 두어도 설치된 음성 중에서 대체해 고릅니다. Windows Narrator의 자연스러운 Jenny/Ryan 음성은 SAPI에 자동 노출되지 않으므로 이 스크립트에서 곧바로 사용할 수 있다고 보장되지 않습니다.
 - **Windows 영어 음성 설치**: Windows 11의 `설정 → 시간 및 언어 → 언어 및 지역 → 언어 추가`에서 `English (United States)` 또는 `English (United Kingdom)`을 추가하고, 각 언어의 **언어 옵션**에서 음성/Text-to-speech 기능을 설치할 수 있습니다. 언어 팩은 표시 언어를 바꾸지 않고 추가할 수 있습니다. 음성 엔진의 설치 상태에 따라 SAPI에 나타나기까지 재부팅이나 로그아웃이 필요할 수 있습니다.
 - **무음 방지**: TTS·음악이 실패하거나 없어도 부드러운 앰비언트 사운드가 들어갑니다. `--no-ambient`로 끌 수 있습니다.
 - **네모(□) 방지**: fontTools cmap으로 글리프 존재를 확인해, 한글 폰트에 없는 IPA 기호 등은 자동으로 IPA 커버 폰트(Arial 등)로 대체합니다.
@@ -327,9 +327,9 @@ python make_shorts.py --paraphrase --index 0 --bg wine --style modern
 | `--tts` / `--no-tts` | 영어 TTS 켜기(기본) / 끄기 |
 | `--words` | 영상에 넣을 항목 수 — 단어/숙어/빈도 (기본 5). 퀴즈는 문제 수이고 슬라이드는 2배 |
 | `--out` | 출력 mp4 경로 (기본: `assets/shorts/unitNN_shorts.mp4` · 숙어 `idioms_<표현>_shorts.mp4` · 빈도 `frequency_<표제어>_shorts.mp4` · 퀴즈 `quiz_<표현>_shorts.mp4`) |
-| `--voice` | 첫 번째 TTS 목소리 (기본 `en-US-JennyNeural` — 여성). 여성: Jenny/Aria/Sonia, 남성: Guy/Davis/Ryan 등 |
-| `--voice2` | 두 번째 TTS 목소리 (기본 `en-GB-RyanNeural` — 영국 남성). `none`이면 한 목소리만 |
-| `--single-voice` | 한 목소리만 쓰기 (기본은 여성 + 영국 남성 두 목소리) |
+| `--voice` | 첫 번째 TTS 목소리 (기본: 설치된 영국 여성 영어 음성 — 예 `Microsoft Hazel Desktop`, 없으면 미국 여성) |
+| `--voice2` | 두 번째 TTS 목소리 (기본: 설치된 미국 남성 영어 음성 — 예 `Microsoft David Desktop`). `none`이면 한 목소리만 |
+| `--single-voice` | 한 목소리만 쓰기 (기본은 여성 + 남성 두 목소리) |
 | `--no-ambient` | 기본 앰비언트 사운드 끄기 (무음 영상) |
 | `--no-intro` / `--intro-sec` | 인트로 슬라이드 끄기 / 길이 초 (기본 2.5) |
 | `--no-outro` / `--outro-sec` | 아웃로(CTA) 슬라이드 끄기 / 길이 초 (기본 3.0) |

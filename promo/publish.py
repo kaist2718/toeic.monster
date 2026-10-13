@@ -40,6 +40,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import base64
 import csv
 import getpass
 import hashlib
@@ -176,13 +177,14 @@ def dependency_status() -> list[tuple[str, bool, str]]:
         ("Google API", "googleapiclient", "YouTube 업로드"),
         ("Google OAuth", "google_auth_oauthlib", "YouTube 로그인"),
         ("instagrapi", "instagrapi", "Instagram 업로드"),
-        ("edge-tts", "edge_tts", "선택 TTS"),
         ("pyotp", "pyotp", "Instagram 2단계 인증 자동 입력(선택)"),
         ("TikTokApi", "TikTokApi", "TikTok 업로드(선택)"),
         ("playwright", "playwright", "TikTok 브라우저 자동화(선택)"),
     ]
     result = [(name, importlib.util.find_spec(module) is not None, purpose)
               for name, module, purpose in checks]
+    # 낭독은 Windows 내장 TTS(SAPI)로만 만드므로 온라인 TTS 패키지는 필요 없습니다.
+    result.append(("Windows 내장 TTS", windows_tts_available(), "쇼츠 영어 낭독(네트워크 불필요)"))
     ffmpeg_ok = bool(shutil.which("ffmpeg"))
     try:
         import imageio_ffmpeg  # noqa: F401
@@ -1943,24 +1945,28 @@ def ask_int(prompt: str, default: int, minimum: int, maximum: int) -> int:
 
 
 def ask_voice(prompt: str, default: str, allow_none: bool = False) -> str:
-    """목소리를 번호로 고르거나 edge-tts 목소리 이름을 직접 입력합니다.
+    """목소리를 번호로 고르거나 Windows 내장 TTS 음성 이름을 직접 입력합니다.
 
+    고를 수 있는 목소리는 이 PC에 설치된 Windows 음성입니다.
     allow_none=True 이면 '0. 없음' 항목이 생기고, 고르면 빈 문자열을 돌려줍니다(한 목소리만 사용).
     """
-    shown = voice_label(default) if default else ("없음" if allow_none else DEFAULT_VOICE)
+    choices = short_voice_choices()
+    shown = voice_label(default) if default else ("없음" if allow_none else voice_label(DEFAULT_VOICE))
     log(f"\n{prompt} (엔터: {shown})")
     if allow_none:
         log("  0. 없음 — 한 목소리만 사용")
-    for i, (name, label) in enumerate(SHORTS_VOICES, 1):
+    for i, (name, label) in enumerate(choices, 1):
         log(f"  {i}. {name} — {label}")
-    log("  번호를 고르거나 목소리 이름을 직접 입력하세요.")
+    if not list_windows_voices():
+        warn("설치된 Windows 음성을 확인하지 못해 기본 후보를 보여 줍니다 — 설치된 음성 이름을 직접 입력해도 됩니다.")
+    log("  번호를 고르거나 Windows 음성 이름을 직접 입력하세요.")
     raw = ask_menu("목소리 번호/이름", default or ("0" if allow_none else "")).strip()
     if allow_none and (raw == "0" or raw.lower() in ("none", "off", "-", "없음")):
         return ""
     if raw.isdigit():
         idx = int(raw)
-        if 1 <= idx <= len(SHORTS_VOICES):
-            return SHORTS_VOICES[idx - 1][0]
+        if 1 <= idx <= len(choices):
+            return choices[idx - 1][0]
     return raw or default
 
 
@@ -2786,28 +2792,103 @@ def remove_scheduled_task() -> None:
 # --------------------------------------------------------------------------- #
 # 쇼츠 생성기 선택지 (make_shorts 와의 순환 import 방지를 위해 런타임 import)
 # --------------------------------------------------------------------------- #
-# edge-tts 영어 목소리 후보 — (목소리 이름, 성별·억양 안내). --voice 값으로 그대로 전달됩니다.
+# Windows 내장 TTS(SAPI) 목소리 후보 — (목소리 이름, 안내). --voice 값으로 그대로 전달됩니다.
+# 아래 목록은 설치된 Windows 음성을 직접 나열하지 못할 때(비 Windows·PowerShell 없음) 쓰는 기본 후보입니다.
 SHORTS_VOICES: list[tuple[str, str]] = [
-    ("en-US-JennyNeural", "여성 · 미국"),
-    ("en-US-AriaNeural", "여성 · 미국"),
-    ("en-US-MichelleNeural", "여성 · 미국"),
-    ("en-GB-SoniaNeural", "여성 · 영국"),
-    ("en-AU-NatashaNeural", "여성 · 호주"),
-    ("en-US-GuyNeural", "남성 · 미국"),
-    ("en-US-DavisNeural", "남성 · 미국"),
-    ("en-US-EricNeural", "남성 · 미국"),
-    ("en-US-SteffanNeural", "남성 · 미국"),
-    ("en-GB-RyanNeural", "남성 · 영국"),
-    ("en-GB-ThomasNeural", "남성 · 영국"),
-    ("en-AU-WilliamNeural", "남성 · 호주"),
+    ("Microsoft Jenny Desktop", "여성 · 미국"),
+    ("Microsoft Aria Desktop", "여성 · 미국"),
+    ("Microsoft Zira Desktop", "여성 · 미국"),
+    ("Microsoft Sonia Desktop", "여성 · 영국"),
+    ("Microsoft Hazel Desktop", "여성 · 영국"),
+    ("Microsoft Guy Desktop", "남성 · 미국"),
+    ("Microsoft David Desktop", "남성 · 미국"),
+    ("Microsoft Ryan Desktop", "남성 · 영국"),
+    ("Microsoft Brian Desktop", "남성 · 영국"),
+    ("Microsoft George Desktop", "남성 · 영국"),
 ]
-DEFAULT_VOICE = "en-US-JennyNeural"
-# 두 번째 목소리(영국 남성) — 쇼츠 기본값은 두 목소리라 설정을 비우면 한 목소리만 씁니다.
-DEFAULT_VOICE2 = "en-GB-RyanNeural"
+
+_WINDOWS_VOICES: list[tuple[str, str, str]] | None = None
+
+
+def list_windows_voices() -> list[tuple[str, str, str]]:
+    """Windows에 설치된 내장 TTS(SAPI) 음성을 (이름, 로캘, 성별) 목록으로 돌려줍니다.
+
+    Windows 가 아니거나 PowerShell·음성이 없으면 빈 목록을 돌려줍니다. 결과는 프로세스에 묶어 둡니다.
+    """
+    global _WINDOWS_VOICES
+    if _WINDOWS_VOICES is not None:
+        return _WINDOWS_VOICES
+    voices: list[tuple[str, str, str]] = []
+    powershell = None
+    if sys.platform == "win32":
+        powershell = shutil.which("powershell") or shutil.which("pwsh")
+    if powershell:
+        script = (
+            "Add-Type -AssemblyName System.Speech\n"
+            "$synth = New-Object System.Speech.Synthesis.SpeechSynthesizer\n"
+            "try { $synth.GetInstalledVoices() | Where-Object { $_.Enabled } | ForEach-Object { "
+            "$_.VoiceInfo.Name + '|' + $_.VoiceInfo.Culture.Name + '|' + $_.VoiceInfo.Gender } } "
+            "finally { $synth.Dispose() }"
+        )
+        encoded = base64.b64encode(script.encode("utf-16le")).decode("ascii")
+        try:
+            result = subprocess.run(
+                [powershell, "-NoLogo", "-NoProfile", "-NonInteractive", "-EncodedCommand", encoded],
+                capture_output=True, text=True, timeout=30,
+            )
+        except Exception:
+            result = None
+        if result is not None and result.returncode == 0:
+            for line in result.stdout.splitlines():
+                name, sep1, rest = line.strip().partition("|")
+                culture, sep2, gender = rest.partition("|")
+                if sep1 and sep2 and name:
+                    voices.append((name, culture, gender.strip()))
+    _WINDOWS_VOICES = voices
+    return voices
+
+
+def windows_tts_available() -> bool:
+    """쇼츠 낭독에 쓸 Windows 내장 TTS(SAPI)를 쓸 수 있는지 여부."""
+    return sys.platform == "win32" and bool(list_windows_voices())
+
+
+def short_voice_choices() -> list[tuple[str, str]]:
+    """메뉴에 보여 줄 목소리 — Windows 에 설치된 내장 음성을 우선합니다.
+
+    영어 음성을 먼저 보여 주고(낭독 문장이 영어), 설치 목록을 못 구하면 SHORTS_VOICES 를 씁니다.
+    """
+    installed = list_windows_voices()
+    if not installed:
+        return list(SHORTS_VOICES)
+    english = [v for v in installed if v[1].lower().startswith("en")]
+    others = [v for v in installed if not v[1].lower().startswith("en")]
+    return [(name, f"{culture} · {'여성' if gender == 'Female' else '남성'}")
+            for name, culture, gender in english + others]
+
+
+def _pick_default_voice(gender: str, cultures: tuple[str, ...], fallback: str) -> str:
+    """설치된 영어 Windows 음성에서 기본 목소리를 고릅니다. 없으면 폴백 이름을 씁니다."""
+    english = [v for v in list_windows_voices() if v[2] == gender and v[1].lower().startswith("en")]
+    for culture in cultures:
+        for name, installed_culture, _gender in english:
+            if installed_culture == culture:
+                return name
+    return english[0][0] if english else fallback
+
+
+# 기본 목소리 — Windows 에 설치된 영어 음성에서 자동으로 고릅니다(첫 목소리는 영국 여성 우선,
+# 두 번째는 미국 남성 우선 → 없으면 다른 로캘의 같은 성별). 설치 목록을 못 구하면 아래 폴백 이름이 힌트로 쓰입니다.
+DEFAULT_VOICE = _pick_default_voice("Female", ("en-GB", "en-AU", "en-US"), "Microsoft Sonia Desktop")
+# 두 번째 목소리 — 쇼츠 기본값은 두 목소리라 설정을 비우면 한 목소리만 씁니다.
+DEFAULT_VOICE2 = _pick_default_voice("Male", ("en-US", "en-GB", "en-AU"), "Microsoft David Desktop")
 
 
 def voice_label(name: str) -> str:
-    """목소리 이름에 성별·억양 안내를 붙여 돌려줍니다."""
+    """목소리 이름에 로캘 · 성별 안내를 붙여 돌려줍니다."""
+    for voice, label in short_voice_choices():
+        if voice == name:
+            return f"{name} ({label})"
     for voice, label in SHORTS_VOICES:
         if voice == name:
             return f"{name} ({label})"
@@ -2856,7 +2937,7 @@ def configure_menu(cfg: dict) -> dict:
     promo["default_tts"] = ask_yes_no("기본으로 TTS 추가", bool(promo.get("default_tts", False)))
     promo["default_voice"] = ask_voice("기본 TTS 목소리 (여성)", str(promo.get("default_voice", DEFAULT_VOICE) or DEFAULT_VOICE))
     promo["default_voice2"] = ask_voice(
-        "두 번째 TTS 목소리 (영국 남성)",
+        "두 번째 TTS 목소리 (남성)",
         str(promo.get("default_voice2", DEFAULT_VOICE2) or DEFAULT_VOICE2), allow_none=True)
     promo["confirm_real_upload"] = ask_yes_no("실제 게시 전 확인 질문 사용", bool(promo.get("confirm_real_upload", True)))
     yt = cfg.setdefault("youtube", {})
@@ -3182,7 +3263,7 @@ def interactive_menu() -> None:
             if ask_yes_no("영어 TTS를 추가할까요?", default_tts):
                 command.append("--tts")
                 command.extend(["--voice", ask_voice("첫 번째 TTS 목소리 (여성)", default_voice)])
-                voice2 = ask_voice("두 번째 TTS 목소리 (영국 남성)", default_voice2, allow_none=True)
+                voice2 = ask_voice("두 번째 TTS 목소리 (남성)", default_voice2, allow_none=True)
                 if voice2:
                     command.extend(["--voice2", voice2])
                 else:

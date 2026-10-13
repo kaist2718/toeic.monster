@@ -19,6 +19,4 @@ Pillow>=10.0.0
 imageio-ffmpeg>=0.4.9
 # 글리프 존재 확인용 (IPA 네모 방지 폴백)
 fonttools>=4.40.0
-
-# 쇼츠 TTS 음성 (make_shorts.py --tts, 인터넷 필요, 무료)
-edge-tts>=6.1.0
+# 쇼츠 낭독은 Windows 내장 TTS(SAPI)로 만들므로 별도 TTS 패키지는 필요 없습니다.
