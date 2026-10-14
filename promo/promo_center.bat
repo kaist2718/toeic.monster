@@ -44,6 +44,9 @@ echo  toeic.monster promo center - one click launcher
 echo  =================================================================
 echo    promo_center.bat                     interactive menu (default)
 echo    promo_center.bat menu                open the same menu
+echo    promo_center.bat menu-list           print the numbered menu list (1~29)
+echo    promo_center.bat 5                   run menu 5 right away
+echo    promo_center.bat 1-4                 run menus 1..4 in order (15,16 works too)
 echo    promo_center.bat check               config / dependencies / OAuth check
 echo    promo_center.bat verify              pre-publish check (play + metadata)
 echo    promo_center.bat report              publish history HTML report
@@ -54,6 +57,8 @@ echo    promo_center.bat --video ^<mp4^> --unit 1 --dry-run
 echo    promo_center.bat --auto-plan 5 --plan-start "2026-10-01 19:00"
 echo.
 echo    * A leading bare word is expanded as a flag:  check means --check
+echo    * A leading number runs that menu:  5 = menu 5,  1-4 = menus 1 to 4,  15,16 = two menus
+echo    * Inside the menu: range (1-4) - multi (15,16) - repeat (r) - search (tts) - help (?)
 echo    * It runs promo/publish.py under the hood.
 echo  =================================================================
 echo.

@@ -8,6 +8,7 @@
     "default_words": 5,
     "default_theme": "blue",
     "default_style": "classic",
+    "default_menu": "9",
     "tts_engine": "auto",
     "default_voice": "Microsoft Hazel Desktop",
     "default_voice2": "Microsoft David Desktop",
