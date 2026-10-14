@@ -1040,6 +1040,8 @@ def crop_zoom(img: Image.Image, scale: float) -> Image.Image:
 
 # ---------------------------------------------------------------- tts -----
 VOICE_GAP = 0.4  # 두 목소리 사이 무음(초) — 같은 문장이 두 번 읽히므로 구분을 준다
+WORD_GAP = 0.4   # 단어와 예문 사이 무음(초) — 설치된 piper-tts 는 문장 사이 무음 기능이 없어
+                 # 한 문자열로 합성하면 붙어서 읽으므로(실측 틈 0초) 개별 합성 후 여기에 끼워 넣는다
 
 
 def _synthesize_windows_sapi(text: str, voice: str, out: Path) -> Path:
@@ -1224,36 +1226,57 @@ def probe_duration(path: Path) -> float:
 
 
 def build_audio(word: str, en_ex: str, voices: list[str], slide_dur: float, tmp: Path, i: int,
-                engine: str = "auto") -> tuple[Path, float]:
+                engine: str = "auto", word_gap: float = WORD_GAP) -> tuple[Path, float]:
     """목소리별 TTS 를 만들어 차례로 이어 붙이고 슬라이드 길이에 맞춘 wav 로 변환합니다.
 
+    단어와 예문은 각각 따로 합성한 뒤 word_gap 초의 무음을 끼워 붙입니다 —
+    piper 는 문장 사이 무음을 넣지 않아 한 문자열로 합성하면 단어와 문장이 붙어 버립니다.
     두 목소리를 쓰면 같은 문장을 두 번 읽어 음성이 약 2배가 되고, 그만큼 슬라이드도 늘어납니다.
     (wav, 실제 슬라이드 길이) 반환.
     """
-    text = f"{word}. {en_ex}"
-    tts_files: list[Path] = []
-    for vi, v in enumerate(voices):
-        part = tmp / f"tts_{i}_{vi}.wav"
-        tts_files.append(tts_speak(text, v, part, engine))
+    gap = max(0.0, float(word_gap or 0.0))
+    parts = [text for text in (str(word or "").strip(), str(en_ex or "").strip()) if text]
+    if not parts:
+        # 낱말·예문이 모두 비면 합성하지 않고 무음 슬라이드로 둡니다.
+        build_silence(slide_dur, tmp, i)
+        return tmp / f"audio_{i}.wav", slide_dur
 
-    # 목소리 사이 무음까지 더해 실제 음성 길이를 어림한다.
-    audio_len = sum(probe_duration(p) for p in tts_files) + VOICE_GAP * (len(tts_files) - 1)
+    segments: list[tuple[Path, float]] = []   # (합성 wav, 그 파일 뒤에 붙일 무음 초)
+    for vi, v in enumerate(voices):
+        last_voice = vi == len(voices) - 1
+        paths = [tts_speak(text, v, tmp / f"tts_{i}_{vi}_{pi}.wav", engine)
+                 for pi, text in enumerate(parts)]
+        for pi, path in enumerate(paths):
+            trailing = 0.0
+            if pi == 0 and len(paths) > 1:
+                trailing += gap            # 단어 → 예문 사이 휴지
+            if pi == len(paths) - 1 and not last_voice:
+                trailing += VOICE_GAP      # 앞 목소리 → 다음 목소리 사이 휴지
+            segments.append((path, trailing))
+
+    # 휴지까지 더해 실제 음성 길이를 어림한다.
+    audio_len = sum(probe_duration(p) + pad for p, pad in segments)
     dur = max(slide_dur, audio_len + 0.8)  # 음성이 길면 슬라이드 연장
 
     slide_wav = tmp / f"audio_{i}.wav"
     cmd = [_FFMPEG, "-y", "-hide_banner", "-loglevel", "error"]
-    for p in tts_files:
+    for p, _pad in segments:
         cmd += ["-i", str(p)]
     normalize = "aresample=44100,aformat=sample_fmts=fltp:channel_layouts=stereo"
-    if len(tts_files) == 1:
-        fc = f"[0:a]{normalize},apad=whole_dur={dur}[a]"
+    if len(segments) == 1:
+        pad = segments[0][1]
+        fc = (f"[0:a]{normalize}" + (f",apad=pad_dur={pad:g}" if pad > 0 else "")
+              + f",apad=whole_dur={dur}[a]")
     else:
         # 로컬 SAPI WAV와 Edge MP3의 샘플레이트·채널 수를 통일한 뒤 이어 붙입니다.
-        head = "".join(f"[{vi}:a]{normalize},apad=pad_dur={VOICE_GAP}[p{vi}];"
-                        for vi in range(len(tts_files) - 1))
-        head += f"[{len(tts_files) - 1}:a]{normalize}[p{len(tts_files) - 1}];"
-        chain = "".join(f"[p{vi}]" for vi in range(len(tts_files)))
-        fc = (f"{head}{chain}concat=n={len(tts_files)}:v=0:a=1[cat];"
+        head = ""
+        for k, (_p, pad) in enumerate(segments):
+            head += f"[{k}:a]{normalize}"
+            if pad > 0:
+                head += f",apad=pad_dur={pad:g}"
+            head += f"[p{k}];"
+        chain = "".join(f"[p{k}]" for k in range(len(segments)))
+        fc = (f"{head}{chain}concat=n={len(segments)}:v=0:a=1[cat];"
               f"[cat]apad=whole_dur={dur}[a]")
     cmd += ["-filter_complex", fc, "-map", "[a]", "-ar", "44100", "-ac", "2",
             "-t", str(dur), str(slide_wav)]
@@ -1363,6 +1386,8 @@ def main() -> None:
                     help="동의어 치환 퀴즈 숏폼(data/extra.js paraphrase)을 만듭니다 — 한 문제당 문제·정답 2장")
     ap.add_argument("--words", type=int, default=5, help="영상에 넣을 항목 수 — 단어/숙어 (기본 5)")
     ap.add_argument("--slide-sec", type=float, default=6.0, help="슬라이드당 길이 초 (기본 6)")
+    ap.add_argument("--word-gap", type=float, default=WORD_GAP,
+                    help=f"단어와 예문 사이 무음 초 (기본 {WORD_GAP:g}, 0 이면 붙여 읽음)")
     ap.add_argument("--out", help="출력 mp4 경로 (기본: assets/shorts/unitNN_shorts.mp4)")
     ap.add_argument("--bg", default="blue", choices=sorted(THEMES), help="배경 테마")
     ap.add_argument("--style", default="classic", choices=STYLE_NAMES, help="카드 스타일: classic/modern/minimal")
@@ -1634,7 +1659,8 @@ def main() -> None:
                     build_silence(base_dur, tmp, si)  # 인트로·아웃로 — TTS 병합용 무음 자리를 채웁니다
                 else:
                     try:
-                        wav, dur = build_audio(say[0], say[1], voices, base_dur, tmp, si, engine)
+                        wav, dur = build_audio(say[0], say[1], voices, base_dur, tmp, si, engine,
+                                                args.word_gap)
                         if dur > base_dur:
                             log(f"   · {say[0]}: 음성 {dur - 0.8:.1f}초 → 슬라이드 연장")
                     except Exception as exc:

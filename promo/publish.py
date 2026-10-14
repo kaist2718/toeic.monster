@@ -42,13 +42,16 @@ import argparse
 import ast
 import base64
 import csv
+import difflib
 import getpass
 import hashlib
 import importlib.util
 import json
+import os
 import random
 import re
 import shutil
+import statistics
 import subprocess
 import sys
 import time
@@ -2979,6 +2982,11 @@ def piper_default_voice(male: bool = False) -> str:
         for voice in voices:
             if voice.startswith(prefix):
                 return voice
+    # 기본 후보가 없으면 성별 분류 결과(이름 힌트 · F0 측정 캐시)에서 남/녀를 먼저 고릅니다.
+    want = GENDER_MALE if male else GENDER_FEMALE
+    for voice in voices:
+        if piper_voice_gender(voice) == want:
+            return voice
     tag = "male" if male else "female"
     for voice in voices:
         if tag in voice.lower():
@@ -3001,14 +3009,220 @@ def piper_voice_label(name: str) -> str:
         return size.lstrip(" ·")
     region, short_name, quality = m.group(1), m.group(2), m.group(3)
     where = PIPER_LOCALE_LABELS.get(region, region)
-    lower = short_name.lower()
-    if "female" in lower:
-        who = "여성"
-    elif "male" in lower:
-        who = "남성"
-    else:
-        who = short_name
+    # 성별(이름 힌트 → F0 측정 캐시)이 판정되면 이름 대신 성별을, 아니면 데이터셋 이름을 씁니다.
+    who = piper_voice_gender(name) or short_name
     return f"{where} · {who} · {quality}{size}"
+
+
+# --------------------------------------------------------------------------- #
+# Piper 음성 성별 분류 — 샘플을 합성해 기본 주파수(F0)를 재고, 이름·기본 설정 힌트와 함께 씁니다.
+#   여성 대개 165Hz 이상 · 남성 대개 85~165Hz. 경계에 걸치는 음성(kathleen·kristin·ryan 등)은
+#   이름·데이터셋·PIPER_*_DEFAULTS 힌트로 먼저 판정하고, 나머지는 F0 로 판정해 캐시에 저장합니다.
+# --------------------------------------------------------------------------- #
+GENDER_FEMALE = "여성"
+GENDER_MALE = "남성"
+GENDER_F0_FEMALE = 165.0
+GENDER_PROBE_TEXT = "This is a voice test. The weather today is sunny and warm in the morning."
+PIPER_GENDER_FILE = PIPER_VOICE_DIR / "voice_gender.json"
+_PIPER_GENDERS: dict[str, dict] | None = None
+
+
+def _load_gender_cache() -> dict[str, dict]:
+    """assets/tts/voice_gender.json — 측정 결과(음성 → {f0, gender})를 저장해 둡니다."""
+    global _PIPER_GENDERS
+    if _PIPER_GENDERS is None:
+        try:
+            data = json.loads(PIPER_GENDER_FILE.read_text(encoding="utf-8"))
+            _PIPER_GENDERS = {str(k): dict(v) for k, v in data.items()} if isinstance(data, dict) else {}
+        except (OSError, ValueError):
+            _PIPER_GENDERS = {}
+    return _PIPER_GENDERS
+
+
+def save_gender_cache() -> None:
+    """현재 성별 캐시를 파일로 저장합니다."""
+    try:
+        PIPER_GENDER_FILE.parent.mkdir(parents=True, exist_ok=True)
+        PIPER_GENDER_FILE.write_text(
+            json.dumps(_load_gender_cache(), ensure_ascii=False, indent=1), encoding="utf-8")
+    except OSError as exc:
+        warn(f"성별 캐시 저장 실패: {exc}")
+
+
+def piper_gender_hint(name: str) -> str:
+    """이름·기본 설정 목록에서 얻는 성별 힌트 (모르면 빈 문자열)."""
+    low = str(name or "").strip().lower()
+    if not low:
+        return ""
+    if "female" in low:      # 'male' 은 female 에도 포함되므로 먼저 본다
+        return GENDER_FEMALE
+    if "male" in low:
+        return GENDER_MALE
+    for prefix in PIPER_FEMALE_DEFAULTS:
+        if low.startswith(prefix.lower()):
+            return GENDER_FEMALE
+    for prefix in PIPER_MALE_DEFAULTS:
+        if low.startswith(prefix.lower()):
+            return GENDER_MALE
+    return ""
+
+
+def piper_voice_gender(name: str) -> str:
+    """Piper 음성의 성별 — '여성' / '남성' / 판정 못하면 빈 문자열.
+
+    이름 힌트 → 측정 캐시(F0) 순으로 판정합니다. (측정 없이도 힌트 음성은 즉시 구분됩니다.)
+    """
+    text = str(name or "").strip()
+    if not text:
+        return ""
+    return piper_gender_hint(text) or str(_load_gender_cache().get(text, {}).get("gender") or "")
+
+
+def measure_piper_gender(voice: str) -> dict:
+    """음성으로 샘플 문장을 합성해 F0 를 재고 성별을 판정합니다 (실패하면 빈 dict)."""
+    try:
+        import wave as _wave
+        import numpy as np
+        from make_shorts import tts_speak   # 런타임 import (make_shorts → publish 순환 방지)
+    except Exception as exc:
+        warn(f"성별 측정 준비 실패: {exc}")
+        return {}
+    tmp = PIPER_VOICE_DIR / "_gender_sample.wav"
+    try:
+        tmp.parent.mkdir(parents=True, exist_ok=True)
+        tts_speak(GENDER_PROBE_TEXT, voice, tmp, "auto")
+        with _wave.open(str(tmp)) as w:
+            sr, channels = w.getframerate(), w.getnchannels()
+            audio = np.frombuffer(w.readframes(w.getnframes()), dtype=np.int16).astype(np.float32)
+        if channels > 1:
+            audio = audio.reshape(-1, channels).mean(axis=1)
+        peak = float(np.max(np.abs(audio))) or 1.0
+        audio = audio / peak
+        win, hop = int(sr * 0.046), int(sr * 0.02)
+        lo, hi = int(sr / 400), int(sr / 70)          # 70~400Hz 범위에서 피크 찾기
+        vals: list[float] = []
+        for start in range(0, max(1, len(audio) - win), hop):
+            frame = audio[start:start + win]
+            if frame.size < 64 or float(np.sqrt(np.mean(frame ** 2))) < 0.01:
+                continue                              # 너무 짧거나 무음인 프레임 제외
+            fr = frame - float(frame.mean())
+            n = 1 << (len(fr) - 1).bit_length()
+            ac = np.fft.irfft(np.fft.rfft(fr, n) * np.conj(np.fft.rfft(fr, n)), n)[:len(fr)]
+            if ac[0] <= 0:
+                continue
+            seg = ac[lo:hi]
+            if seg.size == 0:
+                continue
+            k = int(np.argmax(seg)) + lo
+            if ac[k] / ac[0] < 0.35:                  # 상관성이 약한 프레임은 버림
+                continue
+            vals.append(float(sr / k))
+    except Exception as exc:
+        warn(f"성별 측정 실패({voice}): {exc}")
+        return {}
+    finally:
+        tmp.unlink(missing_ok=True)
+    if not vals:
+        warn(f"성별 측정 실패({voice}): 유효한 음성 구간을 찾지 못했습니다.")
+        return {}
+    vals.sort()
+    mid = vals[len(vals) // 4: 3 * len(vals) // 4] or vals
+    f0 = float(statistics.median(mid))
+    gender = piper_gender_hint(voice) or (
+        GENDER_FEMALE if f0 >= GENDER_F0_FEMALE else GENDER_MALE)
+    return {"f0": round(f0, 1), "gender": gender}
+
+
+def piper_model_card_gender(voice: str) -> str:
+    """Piper 공식 MODEL_CARD(HuggingFace)에서 성별을 확인합니다.
+
+    이름 힌트가 없는 음성은 F0(경계에 걸치는 음성은 오분류) 대신 공식 설명을 우선합니다.
+    네트워크 실패·다중 화자(男女 병기) 문구면 빈 문자열을 돌려줘 F0 측정으로 넘어갑니다.
+    """
+    name = str(voice or "").strip()
+    if "_" not in name or "-" not in name:
+        return ""
+    cfg_path = PIPER_VOICE_DIR / f"{name}.onnx.json"
+    try:
+        cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
+        dataset = str(cfg.get("dataset") or "")
+        quality = str((cfg.get("audio") or {}).get("quality") or "")
+    except (OSError, ValueError):
+        return ""
+    if not dataset or not quality:
+        return ""
+    top, lang = name.split("_", 1)[0], name.split("-")[0]
+    url = (f"https://huggingface.co/rhasspy/piper-voices/raw/main/"
+           f"{top}/{lang}/{dataset}/{quality}/MODEL_CARD")
+    try:
+        import urllib.request
+        with urllib.request.urlopen(url, timeout=10) as resp:
+            text = resp.read(4000).decode("utf-8", errors="replace")
+    except Exception:
+        return ""
+    low = text.lower()
+    female = low.count("female")
+    male = low.count("male") - female       # 'male' 은 'female' 에도 포함됩니다
+    if female and not male:
+        return GENDER_FEMALE
+    if male and not female:
+        return GENDER_MALE
+    return ""                               # 병기/기재 없음 → F0 측정으로
+
+
+def refresh_gender_cache(voices: list[str] | None = None, force: bool = False) -> dict:
+    """내려받은 음성의 성별을 측정해 캐시에 저장합니다 (이미 판정된 건 건너뜀)."""
+    voices = list(voices if voices is not None else list_piper_voices())
+    if not voices:
+        warn("내려받은 Piper 음성이 없습니다.")
+        return _load_gender_cache()
+    cache = _load_gender_cache()
+    todo = [v for v in voices
+            if force or (not (cache.get(v) or {}).get("measured") and not piper_gender_hint(v))]
+    if not todo:
+        return cache
+    log(f"성별 분류 시작 — {len(todo)}개 음성 (공식 MODEL_CARD 확인 → 없으면 F0 측정)…")
+    for i, voice in enumerate(todo, 1):
+        card = piper_model_card_gender(voice)
+        info = {"gender": card, "source": "model-card"} if card else measure_piper_gender(voice)
+        if not info:
+            continue
+        if not info.get("source"):
+            info["source"] = "f0"
+        info["measured"] = True
+        cache[voice] = info
+        f0 = f" · 평균 F0 {info['f0']}Hz" if info.get("f0") else ""
+        log(f"  [{i}/{len(todo)}] {voice} → {info['gender']}{f0} ({info['source']})")
+    save_gender_cache()
+    ok(f"성별 캐시 저장: {PIPER_GENDER_FILE.name} ({len(cache)}개)")
+    return cache
+
+
+def gender_counts(voices: list[str]) -> tuple[int, int, int]:
+    """(여성 수, 남성 수, 미판정 수) — 측정하지 않아도 이름 힌트는 즉시 반영됩니다."""
+    female = sum(1 for v in voices if piper_voice_gender(v) == GENDER_FEMALE)
+    male = sum(1 for v in voices if piper_voice_gender(v) == GENDER_MALE)
+    return female, male, max(0, len(voices) - female - male)
+
+
+def show_voice_gender_table() -> None:
+    """내려받은 음성의 성별 표 — 필요하면 (재)측정합니다."""
+    voices = list_piper_voices()
+    if not voices:
+        warn("내려받은 Piper 음성이 없습니다.")
+        return
+    refresh_gender_cache(voices)
+    log(f"\n🎭 Piper 음성 성별 분류 (전체 {len(voices)}개)")
+    for voice in voices:
+        entry = _load_gender_cache().get(voice) or {}
+        f0 = entry.get("f0")
+        source = entry.get("source")
+        extra = "".join(x for x in (f" · F0 {f0}Hz" if f0 else "",
+                                     f" · {source}" if source else "") if x)
+        log(f"  {piper_voice_gender(voice) or '미판정':<4} {voice:<40} "
+            f"{piper_voice_label(voice)}{extra}")
+    female, male, unknown = gender_counts(voices)
+    log(f"\n  여성 {female} · 남성 {male} · 미판정 {unknown}")
 
 
 def _looks_like_windows_voice(name: str) -> bool:
@@ -3108,8 +3322,11 @@ TTS_TEST_TEXT = "Come across means to meet unexpectedly. Please expedite the rep
 def show_piper_voice_catalog() -> bool:
     """내려받을 수 있는 영어 Piper 음성 목록을 보여 줍니다 (네트워크 필요)."""
     try:
+        # 목록에 섞인 비ASCII 음성 이름이 cp949 콘솔에서 UnicodeEncodeError 로 깨지지 않게 UTF-8 로 읽습니다.
         r = subprocess.run([sys.executable, "-m", "piper.download_voices"],
-                           capture_output=True, text=True, timeout=120)
+                           capture_output=True, text=True, timeout=120,
+                           encoding="utf-8", errors="replace",
+                           env={**os.environ, "PYTHONIOENCODING": "utf-8"})
     except (OSError, subprocess.SubprocessError) as exc:
         fail(f"음성 목록 조회 실패: {exc}")
         return False
@@ -3129,7 +3346,9 @@ def run_piper_download(name: str) -> bool:
         PIPER_VOICE_DIR.mkdir(parents=True, exist_ok=True)
         r = subprocess.run([sys.executable, "-m", "piper.download_voices", name,
                             "--download-dir", str(PIPER_VOICE_DIR)],
-                           capture_output=True, text=True, timeout=600)
+                           capture_output=True, text=True, timeout=600,
+                           encoding="utf-8", errors="replace",
+                           env={**os.environ, "PYTHONIOENCODING": "utf-8"})
     except (OSError, subprocess.SubprocessError) as exc:
         fail(f"Piper 음성 내려받기 실패: {exc}")
         return False
@@ -3145,6 +3364,92 @@ def run_piper_download(name: str) -> bool:
     return True
 
 
+def run_voice_preview(voice: str, text: str = "") -> bool:
+    """음성 하나로 짧은 영어 문장을 합성해 곧바로 재생합니다 (미리 듣기).
+
+    내려받은 Piper 음성이면 Piper 로, Windows 내장 음성이면 SAPI 로 합성합니다.
+    """
+    voice = str(voice or "").strip()
+    if not voice:
+        return False
+    text = (text or TTS_TEST_TEXT).strip() or TTS_TEST_TEXT
+    engine = "piper" if piper_voice_path(voice) else "windows"
+    try:
+        from make_shorts import tts_speak  # 런타임 import (make_shorts → publish 순환 import 방지)
+    except Exception as exc:
+        fail(f"쇼츠 생성기를 불러오지 못했습니다: {exc}")
+        return False
+    out = PIPER_VOICE_DIR / "tts_preview.wav"
+    try:
+        out.parent.mkdir(parents=True, exist_ok=True)
+        tts_speak(text, voice, out, engine)
+    except Exception as exc:
+        fail(f"미리 듣기 실패({voice} · {engine}): {exc}")
+        return False
+    ok(f"🎧 미리 듣기: {voice_label(voice, engine)}")
+    try:
+        import winsound
+        winsound.PlaySound(str(out), winsound.SND_FILENAME)
+    except Exception:
+        open_path(out)   # 재생이 안 되면 기본 앱으로 엽니다
+    return True
+
+
+def preview_voice_menu() -> None:
+    """내려받은 Piper 음성을 골라 샘플 문장으로 바로 들어봅니다 (메뉴 29 · 내려받기 공용)."""
+    voices = list_piper_voices()
+    if not voices:
+        warn("내려받은 Piper 음성이 없습니다 — 먼저 음성을 내려받아 주세요.")
+        return
+    log("\n🎧 미리 듣기 — 내려받은 음성을 골라 샘플을 들어봅니다 (돌아가려면 Enter)")
+    log("  필터: f(여성만) · m(남성만) · all(전체) — 성별은 1회 측정 후 저장됩니다")
+    text = ask_menu("샘플 문장 (영어, Enter: 기본 예문)", TTS_TEST_TEXT) or TTS_TEST_TEXT
+    shown = list(voices)
+
+    def show_list() -> None:
+        log(f"\n  대상 {len(shown)}개 / 전체 {len(voices)}개")
+        for i, voice in enumerate(shown, 1):
+            log(f"  {i:2d}. {voice} — {piper_voice_label(voice)}")
+
+    show_list()
+    while True:
+        raw = ask_menu("\n미리 듣기 — 번호/음성 이름 (필터 f·m·all)", "").strip()
+        if not raw:
+            return
+        low = raw.lower()
+        if low in ("f", "female", "여", "여성", "m", "male", "남", "남성"):
+            want = GENDER_FEMALE if low in ("f", "female", "여", "여성") else GENDER_MALE
+            refresh_gender_cache()   # 아직 측정하지 않은 음성이 있으면 지금 한 번에 측정합니다
+            filtered = [v for v in voices if piper_voice_gender(v) == want]
+            if not filtered:
+                warn(f"{want} 음성이 없습니다.")
+            else:
+                shown = filtered
+            show_list()
+            continue
+        if low in ("all", "전체", "a", "*"):
+            shown = list(voices)
+            show_list()
+            continue
+        voice: str | None = None
+        if raw.isdigit():
+            idx = int(raw)
+            voice = shown[idx - 1] if 1 <= idx <= len(shown) else None
+        else:
+            low = raw.lower()
+            hits = [v for v in shown if v.lower() == low] or \
+                   [v for v in shown if v.lower().startswith(low)] or \
+                   [v for v in shown if low in v.lower()]
+            if len(hits) > 1:
+                warn("여러 음성이 맞습니다: " + ", ".join(hits[:5]) + (" …" if len(hits) > 5 else ""))
+                continue
+            voice = hits[0] if hits else None
+        if voice is None:
+            warn("내려받은 음성 중에서 찾지 못했습니다 — 목록의 번호나 이름을 확인해 주세요.")
+            continue
+        run_voice_preview(voice, text)
+
+
 def download_piper_voice_menu() -> bool:
     """Piper 음성을 하나 내려받습니다. 성공하면 True."""
     if not piper_available():
@@ -3153,13 +3458,18 @@ def download_piper_voice_menu() -> bool:
     log("\nPiper 음성 내려받기 — promo/assets/tts 에 저장됩니다 (한 음성당 약 20~65MB, 네트워크 필요)")
     log("  예: en_US-amy-medium · en_US-ryan-medium · en_GB-southern_english_female-low")
     while True:
-        name = ask_menu("음성 이름 (list: 영어 목록, Enter: 건너뛰기)", "").strip()
+        name = ask_menu("음성 이름 (list: 영어 목록, preview: 미리 듣기, Enter: 건너뛰기)", "").strip()
         if not name:
             return False
         if name.lower() in ("list", "목록", "l"):
             show_piper_voice_catalog()
             continue
+        if name.lower() in ("preview", "미리듣기", "미리 듣기"):
+            preview_voice_menu()
+            continue
         if run_piper_download(name):
+            if ask_yes_no("방금 내려받은 음성으로 미리 들어볼까요?", True):
+                run_voice_preview(name)
             return True
         if not ask_yes_no("다른 이름으로 다시 내려받을까요?", False):
             return False
@@ -3219,6 +3529,9 @@ def tts_settings_flow(cfg: dict, *, full: bool = False) -> dict:
     if full and promo.get("default_tts"):
         if ask_yes_no("선택한 목소리로 테스트 음성을 들어볼까요?", True):
             run_tts_test(engine, str(promo.get("default_voice", "") or ""))
+        have = list_piper_voices()
+        if have and ask_yes_no(f"내려받은 다른 음성으로 미리 듣기({len(have)}개)?", False):
+            preview_voice_menu()
     return cfg
 
 
@@ -3237,6 +3550,11 @@ def tts_voice_menu(cfg: dict) -> dict:
         f"{(' + ' + voice_label(str(promo.get('default_voice2', '') or ''), current_engine)) if promo.get('default_voice2') else ''}")
     log(f"  설치 상태: piper-tts {'설치됨' if piper_available() else '미설치'} · "
         f"내려받은 로컬 음성 {len(list_piper_voices())}개 · Windows 내장 음성 {len(list_windows_voices())}개")
+    if list_piper_voices():
+        female, male, unknown = gender_counts(list_piper_voices())
+        log(f"  성별 분류: 여성 {female} · 남성 {male}"
+            + (f" · 미판정 {unknown}" if unknown else "")
+            + " (--voice-gender 로 전체 측정·표시)")
     tts_settings_flow(cfg, full=True)
     save_config(cfg)
     ok(f"TTS 설정을 저장했습니다: {CONFIG_FILE}")
@@ -3316,6 +3634,155 @@ def open_path(path: Path) -> None:
         warn(f"자동으로 열지 못했습니다: {exc}")
 
 
+# --------------------------------------------------------------------------- #
+# 원클릭 메뉴 — 표시·선택 도우미 (메뉴 29개를 그룹/키워드/복수 선택으로 다룸)
+# --------------------------------------------------------------------------- #
+# (번호, 제목, 검색 별칭) — 목록 출력·키워드 검색·오입력 제안이 여기서 한 번에 나옵니다.
+MENU_ITEMS: list[tuple[str, str, tuple[str, ...]]] = [
+    ("1",  "쇼츠 생성",                    ("단어", "유닛", "unit", "생성", "make")),
+    ("2",  "기존 쇼츠 게시",               ("게시", "업로드", "upload", "publish", "youtube", "인스타")),
+    ("3",  "쇼츠 생성 후 게시",             ("생성+게시", "원스톱", "generate")),
+    ("4",  "계정·API 설정 상태 확인",       ("점검", "상태", "check", "설정확인")),
+    ("5",  "예약 게시 등록",               ("예약", "schedule", "등록")),
+    ("6",  "예약 목록 보기·취소",           ("예약", "취소", "schedule", "목록")),
+    ("7",  "예약 게시 실행(지금 확인)",     ("예약", "실행", "due", "run")),
+    ("8",  "게시 이력 CSV 보기",            ("이력", "history", "csv")),
+    ("9",  "설정 편집",                    ("config", "설정", "edit")),
+    ("10", "의존성·폴더 열기",              ("폴더", "열기", "open", "folder")),
+    ("11", "Windows 작업 스케줄러 예약 실행 등록/해제", ("작업스케줄러", "task", "예약", "스케줄")),
+    ("12", "여러 영상 일괄 게시",           ("일괄", "배치", "batch")),
+    ("13", "게시 이력 HTML 리포트",         ("리포트", "report", "이력")),
+    ("14", "게시 성과 수집·보고서",         ("성과", "조회수", "통계", "stats", "인사이트")),
+    ("15", "배포 전 검증 — 영상 재생·점검 후 게시", ("검증", "verify", "미리보기")),
+    ("16", "중복 게시 방지 기록 보기",       ("중복", "기록", "posted", "목록")),
+    ("17", "중복 게시 방지 기록 초기화",     ("중복", "초기화", "reset")),
+    ("18", "YouTube 설정·로그인",           ("youtube", "구글", "oauth", "로그인", "설정")),
+    ("19", "수동 게시 도우미",              ("수동", "캡션", "manual", "폴백")),
+    ("20", "숙어 쇼츠 생성",                ("숙어", "idiom", "생성")),
+    ("21", "숙어 쇼츠 생성 후 게시",         ("숙어", "idiom", "생성+게시")),
+    ("22", "빈도 어휘 쇼츠 생성",           ("빈도", "frequency", "어휘", "생성")),
+    ("23", "빈도 어휘 쇼츠 생성 후 게시",    ("빈도", "frequency", "생성+게시")),
+    ("24", "동의어 치환 퀴즈 생성",         ("퀴즈", "퀴즈", "paraphrase", "동의어", "생성")),
+    ("25", "동의어 치환 퀴즈 생성 후 게시",  ("퀴즈", "paraphrase", "생성+게시")),
+    ("26", "남은 콘텐츠 수량 보기",         ("잔여", "수량", "remaining", "남은")),
+    ("27", "콘텐츠 자동 준비 — N일치 생성 + 예약", ("자동", "auto", "예약", "준비")),
+    ("28", "게시된 영상 YouTube 설명 갱신",  ("설명", "제목", "refresh", "youtube")),
+    ("29", "TTS 엔진·목소리 설정 (내려받기·미리 듣기)", ("tts", "음성", "목소리", "piper", "미리듣기")),
+]
+MENU_TITLES: dict[str, str] = {num: title for num, title, _alias in MENU_ITEMS}
+# 번호 순서는 그대로, 표시만 그룹으로 묶어 29개 항목을 찾기 쉽게 합니다.
+MENU_GROUPS: list[tuple[str, list[str]]] = [
+    ("🎬 쇼츠 만들기",          ["1", "20", "22", "24"]),
+    ("🚀 만들고 바로 게시",      ["3", "21", "23", "25"]),
+    ("📤 게시·이력·성과",       ["2", "12", "15", "19", "16", "17", "13", "14", "8"]),
+    ("🗓 예약·자동 준비",        ["5", "6", "7", "27"]),
+    ("⚙️ 설정·점검·도구",        ["4", "9", "10", "11", "18", "26", "28", "29"]),
+]
+QUIT_WORDS = {"0", "q", "quit", "exit", "n", "no", "종료", "나가기"}
+HELP_WORDS = {"?", "h", "help", "도움", "도움말"}
+
+
+def print_interactive_menu() -> None:
+    """원클릭 메뉴를 그룹과 번호 함께 보여 줍니다."""
+    log("\n" + "=" * 62)
+    log("🎬 toeic.monster 홍보 원클릭 센터")
+    log("=" * 62)
+    for group, numbers in MENU_GROUPS:
+        log(f"  {group}")
+        for num in numbers:
+            log(f"   {num:>2}. {MENU_TITLES.get(num, '')}")
+    log("    0. 종료")
+
+
+def show_menu_summary(cfg: dict, unit: int, words: int, theme: str, style: str,
+                       tts: bool, voice: str) -> None:
+    """현재 기본값을 메뉴 위쪽에 한 줄로 요약해 보여 줍니다."""
+    engine = tts_engine_of(cfg)
+    tts_part = f"TTS {'켜짐' if tts else '꺼짐'}"
+    if tts:
+        tts_part += f" · {voice_label(voice, engine)}"
+    log(f"  현재 기본값: UNIT {unit} · {words}개 · {theme}/{style} · {tts_part}")
+
+
+def show_menu_help(default: str) -> None:
+    """? 를 눌렀을 때 보여 주는 사용법."""
+    log("\n사용법")
+    log(f"  12          — 번호로 실행 (Enter 는 기본값 [{default}])")
+    log("  예약 · tts   — 키워드 검색 (여러 개면 목록에서 번호로 선택)")
+    log("  8,13,16     — 여러 메뉴를 쉼표로 이어서 한 번에 실행")
+    log("  q 또는 0    — 종료")
+    log("  게시·성과·검증 같은 한 단어로도 이동할 수 있습니다.")
+
+
+def search_menu(query: str) -> list[str]:
+    """제목·별칭에서 키워드를 찾아 해당 메뉴 번호 목록을 돌려줍니다(순서 유지)."""
+    q = query.strip().lower()
+    if not q:
+        return []
+    hits: list[str] = []
+    for num, title, aliases in MENU_ITEMS:
+        hay = f"{title} {' '.join(aliases)}".lower()
+        if q in hay:
+            hits.append(num)
+    return hits
+
+
+def suggest_menu(query: str) -> None:
+    """키워드가 안 맞으면 비슷한 메뉴를 최대 3개 제안합니다."""
+    q = query.strip().lower()
+    pool = {f"{num} {title} {' '.join(aliases)}": num
+            for num, title, aliases in MENU_ITEMS}
+    close = difflib.get_close_matches(q, list(pool), n=3, cutoff=0.5)
+    if not close:
+        close = difflib.get_close_matches(q, list(pool), n=3, cutoff=0.3)
+    if close:
+        log("비슷한 메뉴: " + " · ".join(f"{pool[key]} {MENU_TITLES[pool[key]]}" for key in close))
+    log("? 를 입력하면 전체 목록과 사용법이 나옵니다.")
+
+
+def parse_menu_input(raw: str, default: str) -> tuple[list[str], bool, bool]:
+    """메뉴 입력(숫자·키워드·복수)을 실행할 번호 목록으로 바꿉니다.
+
+    반환값: (실행할 번호 목록, 종료 여부, 도움말 여부). 안내 문구는 여기서 바로 출력합니다.
+    """
+    text = str(raw or "").strip() or str(default or "").strip()
+    low = text.lower()
+    if low in QUIT_WORDS:
+        return [], True, False
+    if low in HELP_WORDS:
+        return [], False, True
+    picked: list[str] = []
+    for token in re.split(r"[,\s]+", text):
+        if not token:
+            continue
+        if token.isdigit():
+            if token not in MENU_TITLES:
+                warn(f"{token} 는 없는 메뉴 번호입니다 — ? 를 입력하면 목록이 나옵니다.")
+                return [], False, False
+            if token not in picked:
+                picked.append(token)
+            continue
+        hits = search_menu(token)
+        if len(hits) == 1:
+            if hits[0] not in picked:
+                picked.append(hits[0])
+        elif len(hits) > 1:
+            log(f"'{token}' 와 관련된 메뉴 {len(hits)}개")
+            for num in hits:
+                log(f"   {num:>2}. {MENU_TITLES[num]}")
+            choice = ask_menu("번호로 선택 (Enter: 취소)", "").strip()
+            if choice.isdigit() and choice in hits and choice not in picked:
+                picked.append(choice)
+            else:
+                log("취소했습니다.")
+                return [], False, False
+        else:
+            warn(f"'{token}' 와(과) 맞는 메뉴가 없습니다.")
+            suggest_menu(token)
+            return [], False, False
+    return picked, False, False
+
+
 def interactive_menu() -> None:
     """인자 없이 실행했을 때 사용하는 안전한 원클릭 메뉴입니다."""
     try:
@@ -3352,47 +3819,30 @@ def interactive_menu() -> None:
     default_voice2 = str(promo_cfg.get("default_voice2", DEFAULT_VOICE2) or "")
     confirm_real_upload = bool(promo_cfg.get("confirm_real_upload", True))
     menu_default = "2"
+    pending: list[str] = []   # 여러 메뉴를 쉼표로 넣으면 남은 항목이 여기에 쌓입니다
     while True:
-        log("\n" + "=" * 62)
-        log("🎬 toeic.monster 홍보 원클릭 센터")
-        log("=" * 62)
-        log("  1. 쇼츠 생성")
-        log("  2. 기존 쇼츠 게시")
-        log("  3. 쇼츠 생성 후 게시")
-        log("  4. 계정·API 설정 상태 확인")
-        log("  5. 예약 게시 등록")
-        log("  6. 예약 목록 보기·취소")
-        log("  7. 예약 게시 실행(지금 확인)")
-        log("  8. 게시 이력 CSV 보기")
-        log("  9. 설정 편집")
-        log(" 10. 의존성·폴더 열기")
-        log(" 11. Windows 작업 스케줄러 예약 실행 등록/해제")
-        log(" 12. 여러 영상 일괄 게시")
-        log(" 13. 게시 이력 HTML 리포트")
-        log(" 14. 게시 성과 수집·보고서")
-        log(" 15. 배포 전 검증 — 영상 재생·점검 후 게시")
-        log(" 16. 중복 게시 방지 기록 보기")
-        log(" 17. 중복 게시 방지 기록 초기화")
-        log(" 18. YouTube 설정·로그인 (상태 확인 후 다음 단계만 진행)")
-        log(" 19. 수동 게시 도우미 (업로드 페이지 열기 + 캡션 복사)")
-        log(" 20. 숙어 쇼츠 생성")
-        log(" 21. 숙어 쇼츠 생성 후 게시")
-        log(" 22. 빈도 어휘 쇼츠 생성")
-        log(" 23. 빈도 어휘 쇼츠 생성 후 게시")
-        log(" 24. 동의어 치환 퀴즈 쇼츠 생성")
-        log(" 25. 동의어 치환 퀴즈 쇼츠 생성 후 게시")
-        log(" 26. 남은 콘텐츠 수량 보기")
-        log(" 27. 콘텐츠 자동 준비 — N일치 생성 + 예약 게시 등록")
-        log(" 28. 게시된 영상 YouTube 설명 갱신 (새 형식 반영)")
-        log(" 29. TTS 엔진·목소리 설정 (로컬 음성 내려받기·테스트 재생)")
-        log("  0. 종료")
-        action = ask_menu("메뉴", menu_default)
-        if action == "0":
-            log("종료합니다.")
-            return
-        if action == "?":
-            log("번호를 입력하거나 Enter로 기본값을 선택하세요. 실제 게시 전에는 확인 질문이 표시됩니다.")
-            continue
+        print_interactive_menu()
+        show_menu_summary(cfg, default_unit, default_words, default_theme, default_style,
+                          default_tts, default_voice)
+        log("  ? 도움말 · q 종료 · 키워드 검색(예: 예약, tts) · 복수 선택(예: 8,13)")
+        if pending:
+            action = pending.pop(0)
+            ok(f"이어서 실행 {action}. {MENU_TITLES.get(action, '')}")
+        else:
+            raw = ask_menu("메뉴", menu_default)
+            resolved, quit_now, help_now = parse_menu_input(raw, menu_default)
+            if quit_now:
+                log("종료합니다.")
+                return
+            if help_now:
+                show_menu_help(menu_default)
+                continue
+            if not resolved:
+                continue   # 검색·오류 안내는 parse_menu_input 에서 이미 출력했습니다
+            if len(resolved) > 1:
+                log("실행 순서: " + " → ".join(f"{n}. {MENU_TITLES.get(n, '')}" for n in resolved))
+            action = resolved[0]
+            pending = resolved[1:]
         if action == "4":
             show_config_status(cfg)
             continue
@@ -3729,6 +4179,24 @@ def interactive_menu() -> None:
 # --------------------------------------------------------------------------- #
 # main
 # --------------------------------------------------------------------------- #
+def expand_bare_flags(tokens: list[str], parser: argparse.ArgumentParser) -> list[str]:
+    """`publish.py check` 처럼 하이픈 없는 한 단어를 `--check` 로 바꿔 줍니다.
+
+    BAT·셸에서 편하게 칠 수 있게 하기 위한 것으로, 첫 자리부터 차례로 붙어 있고
+    실제로 등록된 옵션일 때만 바꾸며(예: `reset-posted idioms` → 값은 그대로),
+    `-` 로 시작하는 토큰이 나오면 끝냅니다.
+    """
+    out: list[str] = []
+    expanding = True
+    for tok in tokens:
+        if expanding and tok and not tok.startswith("-") and f"--{tok}" in parser._option_string_actions:
+            out.append(f"--{tok}")
+            continue
+        expanding = False
+        out.append(tok)
+    return out
+
+
 def main() -> None:
     global _yt_privacy_override
     ap = argparse.ArgumentParser(
@@ -3771,6 +4239,8 @@ def main() -> None:
                     help="사용한 단어·게시한 영상 기록 출력 (중복 방지)")
     ap.add_argument("--list-remaining", action="store_true",
                     help="종류별 남은 콘텐츠 수량만 출력 (단어·숙어·빈도·동의어 치환)")
+    ap.add_argument("--voice-gender", action="store_true",
+                    help="내려받은 Piper 음성의 성별(여성/남성)을 측정해 표시 — 메뉴 29·미리듣기 필터(f/m)에서도 씁니다")
     ap.add_argument("--reset-posted", nargs="?", const="all", metavar="UNIT|idioms|all",
                     help="중복 방지 기록 초기화 (기본 all, UNIT 번호·idioms·frequency·paraphrase 지정 가능)")
     ap.add_argument("--init-config", action="store_true", help="config.example.json에서 config.json 생성")
@@ -3806,9 +4276,12 @@ def main() -> None:
     ap.add_argument("--youtube-check", action="store_true", help="YouTube 설정 상태만 점검")
     ap.add_argument("--manual", action="store_true",
                     help="자동 업로드 대신 수동 게시 도우미만 실행 (업로드 페이지 열기 + 캡션 복사)")
-    args = ap.parse_args()
+    args = ap.parse_args(expand_bare_flags(sys.argv[1:], ap))
     if args.init_config:
         init_config()
+        return
+    if args.voice_gender:
+        show_voice_gender_table()
         return
     if (args.menu or len(sys.argv) == 1) and not args.non_interactive:
         interactive_menu()

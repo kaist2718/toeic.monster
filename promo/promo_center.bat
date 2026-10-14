@@ -2,6 +2,12 @@
 setlocal EnableExtensions
 pushd "%~dp0"
 
+rem --- usage: promo_center.bat help --------------------------------------
+if /i "%~1"=="help"   goto :usage
+if /i "%~1"=="-h"     goto :usage
+if /i "%~1"=="--help" goto :usage
+if     "%~1"=="/?"    goto :usage
+
 set "PYTHON="
 where py >nul 2>&1
 if not errorlevel 1 set "PYTHON=py -3"
@@ -18,6 +24,7 @@ if not defined PYTHON (
   exit /b 1
 )
 
+rem --- a leading bare word becomes a flag inside publish.py (check = --check)
 if "%~1"=="" (
   %PYTHON% publish.py --menu
 ) else (
@@ -29,4 +36,26 @@ echo.
 if not "%EXIT_CODE%"=="0" echo [ERROR] The task failed. Check the log above.
 pause
 popd
-exit /b %EXIT_CODE%
+exit /b %EXIT_CODE%
+
+:usage
+echo.
+echo  toeic.monster promo center - one click launcher
+echo  =================================================================
+echo    promo_center.bat                     interactive menu (default)
+echo    promo_center.bat menu                open the same menu
+echo    promo_center.bat check               config / dependencies / OAuth check
+echo    promo_center.bat verify              pre-publish check (play + metadata)
+echo    promo_center.bat report              publish history HTML report
+echo    promo_center.bat list-remaining      remaining content counts
+echo    promo_center.bat list-posted         duplicate-guard records
+echo    promo_center.bat history             publish history
+echo    promo_center.bat --video ^<mp4^> --unit 1 --dry-run
+echo    promo_center.bat --auto-plan 5 --plan-start "2026-10-01 19:00"
+echo.
+echo    * A leading bare word is expanded as a flag:  check means --check
+echo    * It runs promo/publish.py under the hood.
+echo  =================================================================
+echo.
+popd
+exit /b 0
