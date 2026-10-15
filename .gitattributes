@@ -11,3 +11,6 @@
 *.ico binary
 *.woff binary
 *.woff2 binary
+# 폰트 바이너리도 개행 변환 없이 그대로 둡니다 (쇼츠 기본 폰트 마루부리).
+*.otf binary
+*.ttf binary

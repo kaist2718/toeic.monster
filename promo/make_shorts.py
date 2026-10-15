@@ -45,6 +45,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import urllib.request
 import wave
 from pathlib import Path
 
@@ -106,9 +107,19 @@ ZOOM = 0.06          # 슬라이드 시작→끝 6% 줌인
 FADE_FRAMES = 12     # 크로스페이드 프레임 수 (0.4초)
 
 # ---------------------------------------------------------------- fonts ----
-# 한국어·IPA를 모두 포함하는 폰트를 우선 사용합니다. 시스템에 한글 폰트가
-# 없을 때 Pillow 기본 폰트로 내려가면 한글이 □로 렌더링되므로, 후보를 넉넉히 둡니다.
+# 기본 폰트는 **네이버 마루부리(Maru Buri)** 입니다. 프로젝트에 함께 넣어 둔
+# promo/fonts/ 파일을 가장 먼저 쓰고, 없으면 내려받은 뒤(ensure_maruburi),
+# 그래도 없으면 시스템 한글 폰트 후보로 내려갑니다. 시스템에 한글 폰트가
+# 없을 때 Pillow 기본 폰트로 내려가면 한글이 □로 렌더링되므로 후보를 넉넉히 둡니다.
+FONT_DIR = PROMO / "fonts"
+MARUBURI_FILES = ("MaruBuri-Regular.otf", "MaruBuri-Bold.otf")
+# 네이버 마루 부리는 오픈 라이선스(재배포 가능) — fonts-archive 미러(jsDelivr CDN)에서 OTF 를 받습니다.
+MARUBURI_CDN = "https://cdn.jsdelivr.net/gh/fonts-archive/MaruBuri/"
+
 FONT_CANDIDATES_BOLD = [
+    str(FONT_DIR / "MaruBuri-Bold.otf"),                      # 네이버 마루부리 Bold (기본)
+    "C:/Windows/Fonts/MaruBuri-Bold.otf",                     # 설치된 마루부리
+    "/Library/Fonts/MaruBuri-Bold.otf",                       # macOS 설치본
     "C:/Windows/Fonts/malgunbd.ttf",                         # Windows 맑은 고딕 Bold
     "C:/Windows/Fonts/NotoSansKR-Bold.otf",
     "/System/Library/Fonts/AppleSDGothicNeo-Bold.ttf",        # macOS
@@ -119,6 +130,9 @@ FONT_CANDIDATES_BOLD = [
     "/usr/share/fonts/truetype/noto/NotoSansCJK-Bold.ttc",
 ]
 FONT_CANDIDATES_REGULAR = [
+    str(FONT_DIR / "MaruBuri-Regular.otf"),                    # 네이버 마루부리 Regular (기본)
+    "C:/Windows/Fonts/MaruBuri-Regular.otf",                   # 설치된 마루부리
+    "/Library/Fonts/MaruBuri-Regular.otf",                     # macOS 설치본
     "C:/Windows/Fonts/malgun.ttf",                           # Windows 맑은 고딕
     "C:/Windows/Fonts/NotoSansKR-Regular.otf",
     "/System/Library/Fonts/AppleSDGothicNeo-Regular.ttf",    # macOS
@@ -194,6 +208,37 @@ def find_font(candidates: list[str]) -> str | None:
     return None
 
 
+def ensure_maruburi() -> None:
+    """기본 폰트 마루부리가 프로젝트에 없으면 한 번 내려받아 둡니다.
+
+    네트워크가 없거나 받지 못해도 영상 생성은 멈추지 않고, 그때 시스템 한글
+    폰트 후보(맑은 고딕 등)로 내려가며 경고만 남깁니다.
+    """
+    missing = [n for n in MARUBURI_FILES if not (FONT_DIR / n).exists()]
+    if not missing:
+        return
+    FONT_DIR.mkdir(parents=True, exist_ok=True)
+    for name in missing:
+        target = FONT_DIR / name
+        try:
+            with urllib.request.urlopen(MARUBURI_CDN + name, timeout=15) as src, \
+                    open(target, "wb") as dst:
+                shutil.copyfileobj(src, dst)
+        except Exception as exc:  # 실패한 파일은 남기지 않고 폴백합니다
+            target.unlink(missing_ok=True)
+            warn(f"마루부리 폰트 내려받기 실패 — 시스템 한글 폰트로 렌더링합니다 ({exc})")
+            return
+        log(f"마루부리 폰트 내려받음: {target}")
+
+
+def default_font_label() -> str:
+    """지금 실제로 쓰는 기본 폰트 이름을 알려 줍니다 (로그용)."""
+    p = find_font(FONT_CANDIDATES_BOLD)
+    if not p:
+        return "없음"
+    return "네이버 마루부리 (MaruBuri)" if "maruburi" in p.lower() else f"{Path(p).name}"
+
+
 def load_font(path: str | None, size: int, bold: bool = True):
     """한글/IPA 지원 폰트를 로드합니다.
 
@@ -211,8 +256,9 @@ def load_font(path: str | None, size: int, bold: bool = True):
         except OSError as exc:
             raise RuntimeError(f"폰트를 열 수 없습니다: {p} ({exc})") from exc
     raise RuntimeError(
-        "한글 폰트를 찾지 못했습니다. --font로 CJK 폰트(.ttf/.ttc/.otf)를 "
-        "지정하거나 Windows 맑은 고딕/나눔고딕을 설치하세요."
+        "기본 폰트 마루부리(네이버)를 찾지 못했습니다 — promo/fonts/MaruBuri-*.otf 를 "
+        "넣거나(또는 인터넷에서 자동 내려받게 해제하거나) --font로 CJK 폰트"
+        "(.ttf/.ttc/.otf)를 지정하거나 Windows 맑은 고딕/나눔고딕을 설치하세요."
     )
 
 
@@ -317,8 +363,8 @@ def load_fallback_font(size: int):
     return font
 
 
-def draw_text_rich(draw, text: str, font, fill, *, y: float, x: float | None = None) -> None:
-    """주 폰트에 없는 글리프는 폴백 폰트로 대체해 그립니다. x=None이면 가운데 정렬."""
+def split_runs(text: str, font) -> list[tuple[str, object]]:
+    """주 폰트에 없는 글리프는 폴백 폰트로 바꾼 (글자, 폰트) 런 목록을 만듭니다."""
     fallback = load_fallback_font(font.size)
     runs: list[tuple[str, object]] = []
     cur_chars: list[str] = []
@@ -334,9 +380,19 @@ def draw_text_rich(draw, text: str, font, fill, *, y: float, x: float | None = N
         cur_chars.append(ch)
     if cur_chars:
         runs.append(("".join(cur_chars), cur_font))
+    return runs
+
+
+def rich_width(draw, text: str, font) -> float:
+    """draw_text_rich 이 실제로 그리는 폭 — 폴백으로 바뀐 글리프까지 반영합니다."""
+    return sum(text_width(draw, t, f) for t, f in split_runs(text, font))
+
+
+def draw_text_rich(draw, text: str, font, fill, *, y: float, x: float | None = None) -> None:
+    """주 폰트에 없는 글리프는 폴백 폰트로 대체해 그립니다. x=None이면 가운데 정렬."""
+    runs = split_runs(text, font)
     if x is None:
-        total = sum(text_width(draw, t, f) for t, f in runs)
-        x = (W - total) / 2
+        x = (W - sum(text_width(draw, t, f) for t, f in runs)) / 2
     for t, f in runs:
         draw.text((x, y), t, font=f, fill=fill)
         x += text_width(draw, t, f)
@@ -387,7 +443,9 @@ def text_width(draw, text: str, font) -> float:
 
 
 def draw_pill(draw, cx, y, text, font, fg, bg, pad_x=28, pad_y=14, radius=None) -> int:
-    w = text_width(draw, text, font)
+    # pill 폭은 폴백 글리프까지 반영한 실제 그림 폭(rich_width)으로 잡아야
+    # 폰트 섞어 그리기(draw_text_rich) 때 글자가 알약 안에서 한쪽으로 쏠리지 않습니다.
+    w = rich_width(draw, text, font)
     tw = int(w + pad_x * 2)
     try:
         bbox = draw.textbbox((0, 0), text, font=font)
@@ -1391,7 +1449,8 @@ def main() -> None:
     ap.add_argument("--out", help="출력 mp4 경로 (기본: assets/shorts/unitNN_shorts.mp4)")
     ap.add_argument("--bg", default="blue", choices=sorted(THEMES), help="배경 테마")
     ap.add_argument("--style", default="classic", choices=STYLE_NAMES, help="카드 스타일: classic/modern/minimal")
-    ap.add_argument("--font", help="한국어 폰트 ttf/ttc 경로 (기본: 시스템 자동 탐색)")
+    ap.add_argument("--font", help="한국어 폰트 ttf/ttc 경로 (기본: 네이버 마루부리 — "
+                                    "promo/fonts/MaruBuri-*.otf, 없으면 자동 내려받음)")
     ap.add_argument("--seed", type=int, help="단어 선택 시드 (재현용)")
     ap.add_argument("--index", type=int, help="특정 단어 인덱스만 사용 (0부터, 테스트용)")
     ap.add_argument("--allow-repeat", action="store_true",
@@ -1421,6 +1480,11 @@ def main() -> None:
 
     if not _PIL_OK:
         sys.exit("Pillow 미설치 — pip install -r requirements.txt")
+
+    # 기본 폰트: 네이버 마루부리 — 파일이 없으면 받고, --font 를 주면 그 폰트를 씁니다.
+    if not args.font:
+        ensure_maruburi()
+        log(f"기본 폰트: {default_font_label()}")
 
     # TTS 엔진·목소리 — auto 는 내려받은 로컬(Piper) 음성이 있으면 로컬, 없으면 Windows 내장입니다.
     engine_req = normalize_tts_engine(args.engine)

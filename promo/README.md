@@ -338,7 +338,7 @@ python make_shorts.py --paraphrase --words 3
 python make_shorts.py --paraphrase --index 0 --bg wine --style modern
 ```
 
-`9:16 / 1080×1920 / 30fps` 영상을 만들며, 한글·IPA 폰트를 자동 탐색합니다. 생성 전 `--dry-run`으로 계획을 확인할 수 있습니다.
+`9:16 / 1080×1920 / 30fps` 영상을 만들며, **기본 폰트는 네이버 마루부리(Maru Buri)** 입니다 — `promo/fonts/MaruBuri-Regular.otf` · `MaruBuri-Bold.otf` 를 쓰고, 파일이 없으면 배포처에서 한 번 내려받은 뒤 씁니다(내려받지 못하면 맑은 고딕 등 시스템 한글 폰트로 내려가며 경고를 남깁니다). 마루부리에 없는 IPA 기호는 기존 폴백 폰트(Arial 등)로 그려 □가 생기지 않습니다. `--font` 로 다른 폰트를 지정할 수 있고, 생성 전 `--dry-run`으로 계획을 확인할 수 있습니다.
 
 생성이 끝나면 영상 옆에 같은 이름의 메타 파일(`unit01_shorts.json`)을 남깁니다. **게시 제목·설명은 이 파일을 읽어 만들어집니다** — 영상에 실제로 들어간 항목이라 제목이 내용과 어긋나지 않습니다. 메타가 없는 영상(예전 산출물)은 기존처럼 `--unit` / `--idioms` 로 남은 목록에서 하나를 골라 씁니다(`promo/assets/` 는 git 에 올라가지 않습니다).
 
@@ -365,7 +365,7 @@ python make_shorts.py --paraphrase --index 0 --bg wine --style modern
   영어 음성 38개(미국 27 + 영국 11, low/medium/high)는 모두 `promo/assets/tts/` 에 내려받아 두었습니다 — 약 2.5GB 이며 목록은 `list`, 확인은 **미리 듣기**로 하면 됩니다. 다른 언어 음성까지 내려받으려면 목록에서 이름을 골라 같은 명령을 실행하세요.
 - **Windows 영어 음성 설치** (엔진을 `windows` 로 쓸 때): Windows 11의 `설정 → 시간 및 언어 → 언어 및 지역 → 언어 추가`에서 `English (United States)` 또는 `English (United Kingdom)`을 추가하고, 각 언어의 **언어 옵션**에서 음성/Text-to-speech 기능을 설치할 수 있습니다. 언어 팩은 표시 언어를 바꾸지 않고 추가할 수 있습니다. 음성 엔진의 설치 상태에 따라 SAPI에 나타나기까지 재부팅이나 로그아웃이 필요할 수 있습니다.
 - **무음 방지**: TTS·음악이 실패하거나 없어도 부드러운 앰비언트 사운드가 들어갑니다. `--no-ambient`로 끌 수 있습니다.
-- **네모(□) 방지**: fontTools cmap으로 글리프 존재를 확인해, 한글 폰트에 없는 IPA 기호 등은 자동으로 IPA 커버 폰트(Arial 등)로 대체합니다.
+- **네모(□) 방지**: fontTools cmap으로 글리프 존재를 확인해, 한글 폰트(기본 마루부리)에 없는 IPA 기호 등은 자동으로 IPA 커버 폰트(Arial 등)로 대체합니다. 발음기호 알약(pill)의 폭·가운데 정렬도 폴백 글리프까지 계산해 그리므로 글자가 한쪽으로 쏠리지 않습니다.
 - **인트로·아웃로 기본 포함**: 첫 장에 「TOEIC 필수 어휘」 같은 브랜드 훅(기본 2.5초), 마지막 장에 사이트 유입 CTA 카드(기본 3초)가 자동으로 들어갑니다. `--no-intro`/`--no-outro` 로 끄거나 `--intro-sec`/`--outro-sec` 으로 길이를 바꿀 수 있습니다. 예상 길이가 Shorts 60초를 넘을 것 같으면 생성기가 미리 경고합니다.
 
 | 옵션 | 설명 |
@@ -375,6 +375,7 @@ python make_shorts.py --paraphrase --index 0 --bg wine --style modern
 | `--paraphrase` | 유닛 단어 대신 동의어 치환 퀴즈 200문제로 만들기 (`--unit` 생략 가능, 문제·정답 2장) |
 | `--bg` | 배경 테마: blue / purple / green / orange / pink / navy / midnight / sunset / mint / wine |
 | `--style` | 카드 스타일: `classic`(기본) / `modern`(글래스 카드) / `minimal`(심플) |
+| `--font` | 한글 폰트 ttf/ttc/otf 경로 (기본: 네이버 마루부리 — `promo/fonts/MaruBuri-*.otf`) |
 | `--music` | 배경음악 mp3/wav 경로 (선택) |
 | `--music-volume` | 배경음악 볼륨 0~1 (기본 0.15) |
 | `--tts` / `--no-tts` | 영어 TTS 켜기(기본) / 끄기 |
