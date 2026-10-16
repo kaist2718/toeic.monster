@@ -3,6 +3,10 @@
 `toeic.monster` 홍보용 쇼츠(YouTube Shorts / Instagram Reels / TikTok)를 생성하고
 **Windows 원클릭 BAT 또는 터미널 메뉴로 안전하게 게시**하는 도구입니다.
 
+> **지원 환경**: 원클릭 BAT(`promo_center.bat`)·Windows 작업 스케줄러 등록(메뉴 25)·Windows 내장 TTS는
+> **Windows 전용**입니다. macOS/Linux 에서는 터미널 메뉴(`python publish.py`)와 Piper TTS를 쓰되,
+> 예약 게시는 cron 같은 OS 예약 도구로 `python publish.py --run-due` 를 호출하면 됩니다.
+
 ```
 promo/
 ├── promo_center.bat       # Windows 원클릭 메뉴 런처
@@ -286,7 +290,11 @@ Windows 작업 스케줄러에서 `promo_center.bat --run-due --dry-run` 또는 
   - `instagram.verification_code`: 고정 코드(테스트용)
   - `instagram.totp_secret`: 앱 인증(TOTP) 비밀키 → `pip install pyotp` 필요
 - **프록시**: `instagram.proxy` (예: `http://user:pass@host:port`)
-- 비공식 라이브러리라 로그인 챌린지·차단이 생길 수 있습니다. **하루 1~2개, 낮은 빈도**로 운영하고, 막히면 계정을 쉬게 한 뒤 수동 폴백을 사용하세요.
+- ⚠️ **약관·계정 위험**: 비공식 라이브러리(`instagrapi`)의 자동 로그인·업로드는 Instagram 약관 위반
+  소지가 있어 **계정 정지·제재**를 당할 수 있습니다(공식 API 아님). 감수할 수 있는 계정으로만 쓰고,
+  로그인 챌린지·차단이 생기면 **하루 1~2개, 낮은 빈도**로 운영하며 계정을 쉬게 한 뒤 수동 폴백을 사용하세요.
+- ⚠️ **비밀번호 보관**: `password`·`totp_secret`은 `config.json`(git 제외)에 **평문**으로 저장됩니다.
+  이 계정 전용 비밀번호를 쓰고(다른 사이트와 재사용 금지), 공용 PC 에는 저장하지 마세요.
 
 ### 🎵 TikTok (선택 — 불안정)
 

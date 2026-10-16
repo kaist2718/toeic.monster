@@ -3488,9 +3488,6 @@
   if (shadowingNext) shadowingNext.addEventListener("click", function () { shadowingIdx = (shadowingIdx + 1) % SHADOWING_SENTENCES.length; shadowingVisible = false; renderShadowing(); });
 
   var ddayInput = document.getElementById("examDateInput");
-  function localDateKey(date) {
-    return date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0") + "-" + String(date.getDate()).padStart(2, "0");
-  }
   function renderDday() {
     var result = document.getElementById("ddayResult");
     if (!result) return;
@@ -4234,13 +4231,6 @@
       numQuiz.render();
     }
   ];
-
-  /** 한 묶음을 그립니다(다른 곳에서 "확장 홈을 다 그려야 할 때" 쓰는 경로). */
-  function renderExtendedHome() {
-    EXTENDED_STEPS.forEach(function (step) {
-      try { step(); } catch (e) {}
-    });
-  }
 
   /** 한가한 틈에 한 묶음씩 — 한 번에 쓰는 시간을 묶음 하나로 제한합니다. */
   function renderExtendedSlices() {
@@ -5471,17 +5461,6 @@
       var diff = dayDiff(d, t);
       return SRS_INTERVALS.indexOf(diff) !== -1;
     });
-  }
-  function srsNextDate(d) {
-    var p = d.split("-").map(Number);
-    var dt = new Date(p[0], p[1] - 1, p[2]);
-    for (var i = 0; i < SRS_INTERVALS.length; i++) {
-      var n = new Date(dt);
-      n.setDate(n.getDate() + SRS_INTERVALS[i]);
-      var key = n.getFullYear() + "-" + (n.getMonth() + 1) + "-" + n.getDate();
-      if (dayDiff(key, todayKey()) <= 0) return key;
-    }
-    return null;
   }
   function enterSrs() {
     isSrsMode = true;

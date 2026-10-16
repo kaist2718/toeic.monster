@@ -41,7 +41,7 @@ units/ grammar/ conversation/ guides/   생성된 정적 페이지 (build-pages.
                       · 혼동 어휘 20쌍(confusion.html) · 숙어(idioms.html)
 data/               단어·문법·회화 데이터 (unit01.js …) + 홈 앱 학습 데이터(app-data.js)
 assets/             앱 스크립트(app.js) · 앱 스타일(app.css) · 정적 페이지 공용 스타일(site.css) · 발음(speak.js)
-                    · 방문 분석 로더(analytics.js — Counter.dev, 사이트 ID는 이 파일 한 곳)
+                    · 방문 분석 로더(analytics.js — 자체 호스팅 분석기, 서버 주소·도메인은 이 파일 한 곳)
                     · 본문 서체 서브셋(fonts/ — `python tools/make-font-subset.py` 로 만듭니다)
                     — 홈 앱의 원본은 index.html · data/app-data.js · assets/app.js 세 파일이고,
                       도구는 셋을 이어 붙여 읽습니다(`tools/app-source.mjs` · docs/app-split-plan.md 2단계).
@@ -86,20 +86,30 @@ docs/               기획·점검 기록 (사이트 배포 대상 아님)
   이 목록에 없던 동안 `about.html` 은 라이브에서 404 였고(푸터·sitemap 이 가리키는 채로) `npm run stage` 가 매번 실패했습니다.
   새 페이지를 만들면 이 목록에 넣고 `npm run stage` 로 확인하세요.
 
-## 방문 분석 (Counter.dev)
+## 방문 분석 (자체 호스팅 · visitor-analytics)
 
 방문자 수·유입 경로·국가를 보려면 **`assets/analytics.js`** 가 있습니다.
 홈·정적 페이지 126개·404 가 **이 파일 하나**를 함께 받아 씁니다(생성기는 `tools/build-pages.mjs`).
-[Counter.dev](https://counter.dev) 는 **무료·오픈소스**(AGPL-v3)이고 **쿠키를 쓰지 않아**
-EEA·영국 방문자에게도 동의 배너가 필요 없습니다.
+이 파일은 **로더**이고, 실제 수집 코드는 아래 `TRACKER` 가 가리키는 **자체 호스팅 분석 서버**에서
+한 번 더 내려받습니다. 대시보드: https://visitor-analytics-a5bp.onrender.com
+(이전에는 Umami Cloud → Counter.dev 를 썼습니다.)
 
-**켜는 법**: counter.dev 대시보드에서 `toeic.monster` 사이트를 만들고 **Settings → tracking script** 의
-**사이트 ID(UUID)** 를 `assets/analytics.js` 의 `var ID = '';` 에 붙여 넣고 `npm run build` 뒤 배포합니다.
-**비워 두면 어떤 요청도 나가지 않습니다**(스크립트를 내려받지도 않습니다).
+**설정은 파일 안의 두 값에서만** 정합니다.
 
-**이전에는 Umami Cloud** 를 썼습니다. Umami 의 **커스텀 이벤트**(`quiz_start` 등)는 Counter.dev 에
-없는 기능이라 지금은 `assets/app.js` 의 `track()` 이 비어 있습니다(호출은 이름만 남겨 둠).
-이벤트를 지원하는 도구로 옮기면 그 함수 하나만 되살리면 됩니다.
+- `TRACKER` — 수집 스크립트 주소(자체 호스팅 분석 서버).
+  비워 두거나 http(s) 주소가 아니면 **어떤 요청도 나가지 않습니다**(스크립트를 내려받지도 않습니다).
+- `DOMAIN` — 이 사이트의 도메인. 서버가 이 값으로 사이트별 통계를 나눕니다(www 는 자동으로 합쳐집니다).
+
+**개인정보**: **쿠키를 쓰지 않습니다**(sessionStorage 만 사용) — EEA·영국 방문자에게도 동의 배너가 필요 없습니다.
+IP 주소는 서버에서 원본을 저장하지 않고 매일 바뀌는 salt 로 만든 해시(순방문자 식별용)로만 씁니다.
+브라우저의 추적 금지(Do Not Track)가 켜져 있거나 `file://` 로 열었을 때는 조용히 꺼집니다.
+
+**무료 티어 특성**: 분석 서버가 잠들어 있으면 깨어나는 동안 첫 수집이 놓칠 수 있습니다(cold start).
+수집에 실패해도 사이트 동작에는 영향이 없습니다(전송 실패는 무시합니다).
+
+**커스텀 이벤트**: 예전 Umami 의 커스텀 이벤트(`quiz_start` 등)는 지금 수집기가 지원하지 않아
+`assets/app.js` 의 `track()` 이 비어 있습니다(호출은 이름만 남겨 둠).
+이벤트를 지원하는 서버로 확장하면 그 함수 하나만 되살리면 됩니다.
 
 ## 배포
 
@@ -113,7 +123,9 @@ EEA·영국 방문자에게도 동의 배너가 필요 없습니다.
 
 앱 스타일(`assets/app.css` · 1단계)과 앱 스크립트·데이터(`assets/app.js`·`data/app-data.js` · 2단계)는
 원본부터 파일이라, 배포본(`tools/stage-site.mjs`)은 주석·태그 사이 공백을 걷고 남은 큰 인라인 블록이
-있으면 같은 방식으로 빼냅니다. 원본 `index.html` 은 628KB → **222KB**(앱 코드 277KB · 앱 데이터 86KB 는
+있으면 같은 방식으로 빼냅니다. JS·CSS 파일은 **주석만 지워** 배포본을 가볍게 합니다
+(2026-10-17 추가 · −73KB raw — 압축 결과는 문법 검사에 실패하면 원본 유지).
+저장소 원본의 주석은 도구·테스트가 블록 마커로 쓰므로 그대로 둡니다. 원본 `index.html` 은 628KB → **222KB**(앱 코드 277KB · 앱 데이터 86KB 는
 각각 `assets/app.js`·`data/app-data.js`)이고, 남은 분량의 대부분은 검색·JS 없이 읽히는 **프리렌더 본문**입니다.
 본문 서체도 CDN 조각(574KB) 대신 사이트 글자만 담은 서브셋(`assets/fonts/`, 195KB)을 씁니다 —
 `python tools/make-font-subset.py` 로 다시 만듭니다.

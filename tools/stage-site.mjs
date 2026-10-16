@@ -9,8 +9,9 @@
  *   **공개 목록에 있는 파일만** _site 로 복사하고, 빠진 것이 없는지 검증합니다.
  *
  * 무엇을 하는가:
- *   0) 담으면서 배포본을 다듬습니다 — 주석과 태그 사이 공백을 걷고, 남아 있는 큰 인라인
- *      <style>·<script> 가 있으면 assets/*.css·*.js 로 빼냅니다.
+ *   0) 담으면서 배포본을 다듬습니다 — HTML 의 주석과 태그 사이 공백을 걷고, 남아 있는 큰 인라인
+ *      <style>·<script> 가 있으면 assets/*.css·*.js 로 빼냅니다. JS·CSS 파일의 주석도 지웁니다
+ *      (저장소 원본은 그대로 — 도구·테스트가 주석 마커로 코드 블록을 찾습니다).
  *      앱 스타일(assets/app.css · docs/app-split-plan.md 1단계)과 앱 스크립트(assets/app.js ·
  *      2단계)는 2026-09-18 부터 저장소 원본이 파일이라 배포본에서 따로 빼내지 않습니다.
  *      저장소의 원본은 그대로 두고 _site 에만 적용합니다.
@@ -32,6 +33,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import vm from "node:vm";
 import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -221,6 +223,134 @@ for (const page of stagedHtml) {
 }
 
 /* ------------------------------------------------------------------ */
+/* 1-3. 배포본 JS·CSS 압축 — 주석 제거 (원본은 그대로)                   */
+/* ------------------------------------------------------------------ */
+
+// 저장소 원본의 주석은 남겨야 합니다 — 도구·테스트가 주석 마커
+// (`// ---------- 회화 문제 풀이 …`)로 코드 블록을 찾습니다. 그래서 _site 만 줄입니다.
+// 실측(2026-10-17): app.js 340KB → 297KB(gzip 91.5 → 73.3KB) · app.css 92KB → 79KB.
+
+const REGEX_AFTER_WORDS = new Set(["return", "typeof", "instanceof", "in", "of", "new", "delete", "void", "do", "else", "case", "yield", "await"]);
+const REGEX_AFTER_CHARS = new Set(["(", ",", "=", ":", "[", "!", "&", "|", "?", "{", "}", ";", "+", "-", "*", "%", "~", "^", "<", ">"]);
+
+/**
+ * 주석만 지웁니다(문자열·템플릿·정규식 literal 안은 건드리지 않음).
+ * 주석 안의 줄바꿈은 남깁니다 — 줄 간 자동 세미콜론 삽입(ASI) 이 바뀌지 않게.
+ * 한 줄짜리 주석이 토큰 사이에 끼어 있으면 공백 하나로 대체해 토큰이 붙지 않게 합니다.
+ */
+function stripComments(code, isJs) {
+  let out = "";
+  let i = 0;
+  const n = code.length;
+  let prevSig = ""; // 마지막 비공백 문자 — `/` 가 정규식인지 나누기인지 가를 때 씁니다
+  let prevWord = ""; // 마지막 식별자 — return /re/ 처럼 키워드 뒤의 정규식을 위해
+
+  const copyString = (quote) => {
+    let j = i + 1;
+    while (j < n) {
+      if (code[j] === "\\") { j += 2; continue; }
+      if (code[j] === quote) { j++; break; }
+      if (!isJs && code[j] === "\n") break; // CSS 문자열은 줄을 넘지 못합니다
+      j++;
+    }
+    out += code.slice(i, j);
+    prevSig = quote;
+    prevWord = "";
+    i = j;
+  };
+
+  while (i < n) {
+    const c = code[i];
+    if (c === '"' || c === "'" || (isJs && c === "`")) {
+      copyString(c);
+      continue;
+    }
+    if (c === "/" && code[i + 1] === "*") {
+      let j = i + 2;
+      while (j < n && !(code[j] === "*" && code[j + 1] === "/")) {
+        if (code[j] === "\n") out += "\n";
+        j++;
+      }
+      i = j + 2;
+      if (!out.endsWith("\n") && i < n && code[i] !== "\n" && !/\s$/.test(out)) out += " ";
+      continue;
+    }
+    if (isJs && c === "/" && code[i + 1] === "/") {
+      let j = i + 2;
+      while (j < n && code[j] !== "\n") j++;
+      i = j; // 줄바꿈은 남깁니다
+      continue;
+    }
+    if (isJs && c === "/") {
+      const regexOk = prevSig === "" || REGEX_AFTER_CHARS.has(prevSig) || REGEX_AFTER_WORDS.has(prevWord);
+      if (regexOk) {
+        // 정규식 literal — 이스케이프·문자 클래스([...] 안의 /)를 피해 끝 슬래시까지 통째로 복사
+        let j = i + 1;
+        let inClass = false;
+        while (j < n) {
+          const d = code[j];
+          if (d === "\\") { j += 2; continue; }
+          if (d === "[") inClass = true;
+          else if (d === "]") inClass = false;
+          else if (d === "/" && !inClass) { j++; break; }
+          else if (d === "\n") break; // 정규식은 줄을 넘지 못합니다 — 안전 장치
+          j++;
+        }
+        out += code.slice(i, j);
+        prevSig = "/";
+        prevWord = "";
+        i = j;
+        continue;
+      }
+      out += c;
+      prevSig = "/";
+      prevWord = "";
+      i++;
+      continue;
+    }
+    out += c;
+    if (!/\s/.test(c)) {
+      prevSig = c;
+      prevWord = /[\w$]/.test(c) ? prevWord + c : "";
+    }
+    i++;
+  }
+  return out;
+}
+
+const stagedCode = [];
+(function collectCode(dir, prefix) {
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    const rel = prefix ? `${prefix}/${e.name}` : e.name;
+    if (e.isDirectory()) collectCode(path.join(dir, e.name), rel);
+    else if (e.name.endsWith(".js") || e.name.endsWith(".css")) stagedCode.push(rel);
+  }
+})(OUT, "");
+
+let codeBefore = 0;
+let codeAfter = 0;
+const codeSkipped = [];
+for (const rel of stagedCode) {
+  const full = path.join(OUT, rel);
+  const src = fs.readFileSync(full, "utf8");
+  const isJs = rel.endsWith(".js");
+  const min = stripComments(src, isJs);
+  if (isJs) {
+    // 압축 결과가 문법 오류면(정규식·템플릿 오판 등) 원본을 그대로 둡니다 — 배포가 깨지는 것보다 낫습니다.
+    try {
+      new vm.Script(min, { filename: rel });
+    } catch {
+      codeSkipped.push(rel);
+      continue;
+    }
+  }
+  fs.writeFileSync(full, min, "utf8");
+  codeBefore += Buffer.byteLength(src, "utf8");
+  codeAfter += Buffer.byteLength(min, "utf8");
+  byteCount += Buffer.byteLength(min, "utf8") - Buffer.byteLength(src, "utf8");
+}
+
+/* ------------------------------------------------------------------ */
 /* 2. 검증                                                             */
 /* ------------------------------------------------------------------ */
 
@@ -298,6 +428,11 @@ console.log(`   · 파일 ${fileCount}개 · ${(byteCount / 1024 / 1024).toFixed
 console.log(`   · 공개 파일 ${PUBLIC_FILES.length}개 · 공개 폴더 ${PUBLIC_DIRS.join(", ")}`);
 console.log(`   · 제외: ${NEVER_PUBLIC.join(", ")}`);
 if (splitFiles.length) console.log(`   · 인라인 블록 분리: ${splitFiles.join(" · ")}`);
+console.log(
+  `   · JS·CSS 주석 제거: ${stagedCode.length}개 파일 ${(codeBefore / 1024).toFixed(1)}KB → ` +
+    `${(codeAfter / 1024).toFixed(1)}KB (${((codeAfter - codeBefore) / 1024).toFixed(1)}KB)` +
+    (codeSkipped.length ? ` — 문법 검사 실패로 원본 유지: ${codeSkipped.join(", ")}` : ""),
+);
 console.log(
   `   · HTML 최소화: ${stagedHtml.length}개 ${(rawHtml / 1024).toFixed(1)}KB → ` +
     `${(slimHtml / 1024).toFixed(1)}KB (${((slimHtml - rawHtml) / 1024).toFixed(1)}KB, ` +
