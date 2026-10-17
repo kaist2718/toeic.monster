@@ -34,16 +34,21 @@ promo/
 4. `promo/promo_center.bat`을 실행합니다.
 5. 메뉴에서 `5. 쇼츠 생성 후 게시`를 선택합니다.
 
-`promo_center.bat`은 `py -3`을 우선 사용하고, 없으면 `python`을 사용합니다. BAT에 경로를 고정하지 않아 다른 Windows PC에서도 실행하기 쉽습니다.
+`promo_center.bat`은 `py -3`을 우선 사용하고, 없으면 `python`을 사용합니다. BAT에 경로를 고정하지 않아 다른 Windows PC에서도 실행하기 쉽고, Python 3.8 이상이 아니면 설치 안내를 보여 줍니다. **처음 설치는 `promo_center.bat setup` 한 번이면 끝납니다**(의존성 설치 + 설정 생성 + 점검).
 
-`promo_center.bat help` 로 자주 쓰는 명령(`check`·`verify`·`report`·`list-remaining` 등)을 볼 수 있고, **하이픈 없는 첫 단어는 자동으로 `--` 플래그가 됩니다** — `promo_center.bat check` 는 `publish.py --check` 와 같습니다. **첫 단어가 번호면 그 메뉴가 바로 실행**됩니다:
+`promo_center.bat help` 로 자주 쓰는 명령(`check`·`verify`·`report`·`list-remaining` 등)을 볼 수 있고, **하이픈 없는 첫 단어는 자동으로 `--` 플래그가 됩니다** — `promo_center.bat check` 는 `publish.py --check` 와 같습니다. 값 없는 플래그 뒤에서도 같은 규칙이 이어져 `promo_center.bat --no-pause menu-list` 처럼 써도 됩니다. **첫 단어가 번호면 그 메뉴가 바로 실행**됩니다:
 
 ```bash
 promo_center.bat            # 원클릭 메뉴 열기 (기본)
+promo_center.bat setup      # 처음 설치 - 의존성 설치 + 설정 점검
 promo_center.bat 5          # 메뉴 5 한 번 실행
 promo_center.bat 1-4        # 메뉴 1~4 를 순서대로 실행 (15,16 처럼 여러 개도 가능)
 promo_center.bat menu-list  # 번호 순(1~29) 메뉴 목록만 보여 주기
+promo_center.bat --no-pause check   # "아무 키나 누르세요" 없이 점검만 하고 종료
 ```
+
+- **자동 실행(스크립트·작업 스케줄러)용**: `--run-due` 또는 `--no-pause` 를 주거나 환경변수 `PROMO_NO_PAUSE=1` 을 두면 마지막 `pause` 가 생략되어 창이 입력 대기로 멈추지 않습니다. 메뉴 25번이 등록하는 작업 스케줄러는 이 옵션을 포함해 등록됩니다.
+- **배치·파이프 입력**에서 메뉴 입력이 끝나면(EOF) 같은 메뉴를 무한 반복하지 않고 종료합니다.
 
 ## 2. 터미널 메뉴
 
@@ -58,8 +63,8 @@ promo_center.bat
 
 🎬 **쇼츠 만들기**
 
-1. **쇼츠 생성** — UNIT·항목 수·테마·스타일·TTS·배경음악 선택
-2. **숙어 쇼츠 생성** — 숙어 126선(`data/idioms.js`)으로 생성 (항목 수·테마·스타일·TTS 동일)
+1. **쇼츠 생성** — UNIT·항목 수·테마·패턴·스타일·TTS·배경음악을 **번호로 선택**
+2. **숙어 쇼츠 생성** — 숙어 126선(`data/idioms.js`)으로 생성 (항목 수·테마·패턴·스타일·TTS 동일)
 3. **빈도 어휘 쇼츠 생성** — 빈도순 기출 어휘 200선(`data/extra.js` frequency)으로 생성
 4. **동의어 치환 퀴즈 생성** — 동의어 치환 200문제(`data/extra.js` paraphrase)로 문제→정답 퀴즈 생성
 
@@ -236,7 +241,7 @@ python publish.py --cancel-schedule 예약ID
 python publish.py --history
 ```
 
-Windows 작업 스케줄러에서 `promo_center.bat --run-due --dry-run` 또는 실제 운영용 `promo_center.bat --run-due`를 5~15분 간격으로 실행할 수 있습니다. 실제 게시 예약은 먼저 dry-run으로 확인하세요.
+Windows 작업 스케줄러에서 `promo_center.bat --run-due --dry-run` 또는 실제 운영용 `promo_center.bat --run-due`를 5~15분 간격으로 실행할 수 있습니다. 실제 게시 예약은 먼저 dry-run으로 확인하세요. `--run-due` 는 자동으로 `pause` 를 건너뛰어 창이 멈추지 않고, **메뉴 25번**으로 등록하면 `--no-pause` 가 포함된 상태로 자동 등록됩니다.
 
 ## 6. 플랫폼별 설정
 
@@ -325,6 +330,11 @@ python make_shorts.py --unit 3 --words 7 --tts
 python make_shorts.py --unit 5 --bg sunset --style modern --seed 42
 python make_shorts.py --unit 2 --index 0 --slide-sec 4 --dry-run
 
+# 배경 테마·패턴 — 이름 대신 번호로도 선택 가능 (--list-bg 로 번호 목록 확인)
+python make_shorts.py --list-bg                    # 테마 22종 · 패턴 15종 · 스타일 번호 목록
+python make_shorts.py --unit 1 --bg 21 --pattern 11   # 21=neon 테마 + 11=bokeh 패턴
+python make_shorts.py --unit 1 --pattern confetti     # 패턴만 바꾸기 (테마는 기본 blue)
+
 # 배경음악 추가 (볼륨 0.2, TTS와 함께 쓰면 음성 위에 깔림)
 python make_shorts.py --unit 1 --music assets/music/calm.mp3 --music-volume 0.2
 
@@ -376,14 +386,17 @@ python make_shorts.py --paraphrase --index 0 --bg wine --style modern
 - **무음 방지**: TTS·음악이 실패하거나 없어도 부드러운 앰비언트 사운드가 들어갑니다. `--no-ambient`로 끌 수 있습니다.
 - **네모(□) 방지**: fontTools cmap으로 글리프 존재를 확인해, 한글 폰트(기본 마루부리)에 없는 IPA 기호 등은 자동으로 IPA 커버 폰트(Arial 등)로 대체합니다. 발음기호 알약(pill)의 폭·가운데 정렬도 폴백 글리프까지 계산해 그리므로 글자가 한쪽으로 쏠리지 않습니다.
 - **인트로·아웃로 기본 포함**: 첫 장에 「TOEIC 필수 어휘」 같은 브랜드 훅(기본 2.5초), 마지막 장에 사이트 유입 CTA 카드(기본 3초)가 자동으로 들어갑니다. `--no-intro`/`--no-outro` 로 끄거나 `--intro-sec`/`--outro-sec` 으로 길이를 바꿀 수 있습니다. 예상 길이가 Shorts 60초를 넘을 것 같으면 생성기가 미리 경고합니다.
+- **배경 테마·패턴 (번호 선택)**: 배경은 **테마(색 그라데이션 22종) × 패턴(무늬 15종)** 으로 조합합니다. 생성 메뉴(1~8)·기본 설정(23번)에서는 **번호를 눌러 선택**하고(예: `21` = neon, `11` = bokeh), `make_shorts.py` 에서는 `--bg 21 --pattern 11` 처럼 번호 또는 이름을 씁니다. `--list-bg` 로 전체 번호 목록을 확인할 수 있습니다. 패턴은 `circles`(은은한 원)·`rings`·`dots`·`grid`·`mesh`·`diagonal`·`stripes`·`waves`·`bokeh`·`glow`·`triangles`·`stars`·`confetti` 가 있고, `auto` 는 카드 스타일 기본값(classic 은 circles, 나머지는 없음), `none` 은 깔끔한 그라데이션만 씁니다. 랜덤 무늬(bokeh·stars 등)는 항상 같은 모양이 나옵니다. 기본값은 `config.json` 의 `promo.default_theme`·`default_pattern`·`default_style` 에 저장되고, 생성 메뉴에서 다르게 고르면 「다음부터 기본값으로 저장할까요?」로 갱신할 수 있습니다.
 
 | 옵션 | 설명 |
 |---|---|
 | `--idioms` | 유닛 단어 대신 숙어 126선으로 만들기 (`--unit` 생략 가능) |
 | `--frequency` | 유닛 단어 대신 빈도순 기출 어휘 200선으로 만들기 (`--unit` 생략 가능) |
 | `--paraphrase` | 유닛 단어 대신 동의어 치환 퀴즈 200문제로 만들기 (`--unit` 생략 가능, 문제·정답 2장) |
-| `--bg` | 배경 테마: blue / purple / green / orange / pink / navy / midnight / sunset / mint / wine |
-| `--style` | 카드 스타일: `classic`(기본) / `modern`(글래스 카드) / `minimal`(심플) |
+| `--bg` | 배경 테마 — **이름 또는 번호** 22종 (blue·purple·green·orange·pink·navy·midnight·sunset·mint·wine·teal·sky·forest·lavender·gold·coral·steel·plum·ocean·coffee·neon·graphite) |
+| `--pattern` | 배경 패턴 — **이름 또는 번호** 15종 (`auto`(기본, 스타일 기본값) / `none` / `circles` / `rings` / `dots` / `grid` / `mesh` / `diagonal` / `stripes` / `waves` / `bokeh` / `glow` / `triangles` / `stars` / `confetti`) |
+| `--list-bg` | 배경 테마·패턴·스타일의 **번호 목록**을 출력하고 종료 |
+| `--style` | 카드 스타일 — **이름 또는 번호**: `classic`(기본) / `modern`(글래스 카드) / `minimal`(심플) |
 | `--font` | 한글 폰트 ttf/ttc/otf 경로 (기본: 네이버 마루부리 — `promo/fonts/MaruBuri-*.otf`) |
 | `--music` | 배경음악 mp3/wav 경로 (선택) |
 | `--music-volume` | 배경음악 볼륨 0~1 (기본 0.15) |

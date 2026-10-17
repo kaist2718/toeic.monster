@@ -11,6 +11,8 @@ Ken Burns 줌 효과와 슬라이드 간 크로스페이드, 선택적으로 영
   python make_shorts.py --unit 1                     # UNIT 1 단어 5개 랜덤 → assets/shorts/unit01_shorts.mp4
   python make_shorts.py --unit 3 --words 7 --tts     # 7개 + 영어 음성(Windows 내장 TTS)
   python make_shorts.py --unit 5 --seed 42 --bg purple
+  python make_shorts.py --unit 5 --bg 12 --pattern 11  # 배경 테마·패턴을 번호로 선택
+  python make_shorts.py --list-bg                      # 배경 테마·패턴 번호 목록
   python make_shorts.py --unit 2 --words 3 --dry-run # 계획만 출력
   python make_shorts.py --unit 1 --allow-repeat      # 이미 쓴 단어도 다시 사용
   python make_shorts.py --unit 1 --single-voice      # 여성 목소리 하나만
@@ -27,6 +29,9 @@ Ken Burns 줌 효과와 슬라이드 간 크로스페이드, 선택적으로 영
   windows: Windows 내장 TTS(SAPI) — 인터넷·패키지 불필요
 메뉴 29(원클릭 센터)에서 엔진·목소리 선택, 음성 내려받기, 테스트 재생을 할 수 있습니다.
 
+배경: --bg 로 테마(색 그라데이션 22종), --pattern 로 배경 패턴(15종)을 고릅니다. 둘 다 이름 또는
+번호(--list-bg 목록의 번호)를 받습니다. 기본 pattern 은 auto — 스타일 기본값을 그대로 씁니다.
+
 중복 방지: 이미 쓴 단어는 다음 생성에서 자동으로 제외되고 promo/posted.json 에 기록됩니다.
 
 필요 패키지: Pillow, imageio-ffmpeg (pip install -r requirements.txt)
@@ -39,6 +44,7 @@ from __future__ import annotations
 import argparse
 import base64
 import json
+import math
 import random
 import re
 import shutil
@@ -151,6 +157,7 @@ EMOJI_FONT_CANDIDATES = [
 ]
 
 # ---------------------------------------------------------------- themes ----
+# 배경 테마 — (위쪽 색, 아래쪽 색) 세로 그라데이션. 순서가 곧 번호입니다(--list-bg · 메뉴 번호).
 THEMES = {
     "blue":     ((30, 58, 138), (49, 46, 129)),     # indigo
     "purple":   ((76, 29, 149), (131, 24, 67)),     # violet→rose
@@ -162,6 +169,43 @@ THEMES = {
     "sunset":   ((124, 45, 18), (76, 29, 149)),     # amber→violet
     "mint":     ((4, 47, 46), (6, 78, 59)),         # dark teal
     "wine":     ((76, 5, 25), (45, 9, 36)),         # deep red
+    "teal":     ((13, 148, 136), (4, 72, 72)),      # teal ocean
+    "sky":      ((12, 100, 148), (18, 52, 99)),     # sky blue
+    "forest":   ((20, 83, 45), (5, 46, 32)),        # forest green
+    "lavender": ((109, 40, 170), (60, 20, 120)),    # lavender
+    "gold":     ((120, 53, 15), (87, 34, 8)),       # gold amber
+    "coral":    ((168, 22, 62), (104, 12, 42)),     # coral rose
+    "steel":    ((48, 63, 84), (25, 33, 48)),       # steel blue
+    "plum":     ((88, 28, 100), (50, 15, 62)),      # plum
+    "ocean":    ((12, 74, 110), (10, 36, 66)),      # deep ocean
+    "coffee":   ((87, 52, 30), (52, 30, 17)),       # coffee brown
+    "neon":     ((64, 12, 110), (20, 8, 60)),       # neon violet
+    "graphite": ((40, 44, 52), (22, 25, 31)),       # graphite
+}
+# 테마 이름 → 메뉴에 보여 줄 한 줄 설명.
+THEME_LABELS = {
+    "blue":     "인디고 블루",
+    "purple":   "바이올렛→로즈",
+    "green":    "에메랄드→틸",
+    "orange":   "앰버 오렌지",
+    "pink":     "딥 로즈",
+    "navy":     "네이비 슬레이트",
+    "midnight": "미드나잇 스페이스",
+    "sunset":   "선셋 앰버→바이올렛",
+    "mint":     "다크 틸",
+    "wine":     "와인 레드",
+    "teal":     "틸 오션",
+    "sky":      "스카이 블루",
+    "forest":   "포레스트 그린",
+    "lavender": "라벤더 바이올렛",
+    "gold":     "골드 앰버",
+    "coral":    "코랄 로즈",
+    "steel":    "스틸 블루",
+    "plum":     "플럼 퍼플",
+    "ocean":    "딥 오션",
+    "coffee":   "커피 브라운",
+    "neon":     "네온 바이올렛",
+    "graphite": "그래파이트",
 }
 ACCENT = {
     "blue":     (147, 197, 253),
@@ -174,7 +218,80 @@ ACCENT = {
     "sunset":   (253, 186, 116),
     "mint":     (110, 231, 183),
     "wine":     (251, 113, 133),
+    "teal":     (153, 246, 228),
+    "sky":      (165, 243, 252),
+    "forest":   (134, 239, 172),
+    "lavender": (221, 214, 254),
+    "gold":     (253, 230, 138),
+    "coral":    (254, 205, 202),
+    "steel":    (186, 206, 232),
+    "plum":     (233, 196, 255),
+    "ocean":    (143, 222, 255),
+    "coffee":   (227, 190, 160),
+    "neon":     (192, 132, 252),
+    "graphite": (203, 213, 225),
 }
+
+# 배경 패턴 이름 — 순서가 곧 번호입니다(--list-bg · 메뉴 번호).
+PATTERN_NAMES = (
+    "auto", "none", "circles", "rings", "dots", "grid", "mesh",
+    "diagonal", "stripes", "waves", "bokeh", "glow", "triangles", "stars", "confetti",
+)
+PATTERN_LABELS = {
+    "auto":      "자동 — 카드 스타일 기본값",
+    "none":      "무늬 없음 (깔끔한 그라데이션)",
+    "circles":   "은은한 원",
+    "rings":     "동심원 링",
+    "dots":      "점 패턴(아래로 진해짐)",
+    "grid":      "격자",
+    "mesh":      "점 격자",
+    "diagonal":  "사선 줄무늬",
+    "stripes":   "세로 줄무늬",
+    "waves":     "물결",
+    "bokeh":     "빛 번짐(보케)",
+    "glow":      "방사 광원",
+    "triangles": "삼각형",
+    "stars":     "별빛",
+    "confetti":  "색종이",
+}
+
+
+def resolve_theme(value) -> str:
+    """테마 이름 또는 번호(1부터)를 테마 이름으로 바꿉니다. 모르면 빈 문자열."""
+    text = str(value or "").strip().lower()
+    if text.isdigit():
+        names = list(THEMES)
+        idx = int(text)
+        return names[idx - 1] if 1 <= idx <= len(names) else ""
+    return text if text in THEMES else ""
+
+
+def resolve_pattern(value) -> str:
+    """패턴 이름 또는 번호(1부터)를 패턴 이름으로 바꿉니다. 모르면 빈 문자열."""
+    text = str(value or "").strip().lower()
+    if text.isdigit():
+        idx = int(text)
+        return PATTERN_NAMES[idx - 1] if 1 <= idx <= len(PATTERN_NAMES) else ""
+    return text if text in PATTERN_LABELS else ""
+
+
+def resolve_style(value) -> str:
+    """카드 스타일 이름 또는 번호(1부터)를 스타일 이름으로 바꿉니다. 모르면 빈 문자열."""
+    text = str(value or "").strip().lower()
+    if text.isdigit():
+        idx = int(text)
+        return STYLE_NAMES[idx - 1] if 1 <= idx <= len(STYLE_NAMES) else ""
+    return text if text in STYLE_NAMES else ""
+
+
+def theme_choices() -> list[tuple[str, str]]:
+    """메뉴용 (테마 이름, 설명) 목록 — 번호는 이 순서."""
+    return [(name, THEME_LABELS.get(name, name)) for name in THEMES]
+
+
+def pattern_choices() -> list[tuple[str, str]]:
+    """메뉴용 (패턴 이름, 설명) 목록 — 번호는 이 순서."""
+    return [(name, PATTERN_LABELS.get(name, name)) for name in PATTERN_NAMES]
 
 # ---------------------------------------------------------------- styles ----
 STYLE_NAMES = ("classic", "modern", "minimal")
@@ -473,8 +590,17 @@ def draw_dots(draw, total: int, current: int):
             draw.ellipse([cx - dot_r, y - dot_r, cx + dot_r, y + dot_r], fill=(255, 255, 255, 90) if hasattr(draw, "ellipse") else (180, 190, 220))
 
 
-def draw_deco(draw):
-    """배경 장식 원 (은은한 톤)."""
+# ------------------------------------------------------ background patterns ----
+# 배경 패턴 그리기 — 그라데이션 위에 은은한 흰색/액센트 무늬를 얹습니다.
+# --pattern 으로 고르며, 이름 또는 번호(PATTERN_NAMES 순서)를 받습니다.
+# 랜덤이 들어가는 패턴은 이름으로 시드를 잡아 항상 같은 모양이 나옵니다.
+
+def _pat_none(draw, accent=None):
+    """무늬 없음 — 그라데이션만."""
+
+
+def _pat_circles(draw, accent=None):
+    """배경 장식 원 (은은한 톤) — 기존 기본값."""
     deco = (255, 255, 255, 26)
     draw.ellipse([-160, 320, 420, 900], outline=deco, width=3)
     draw.ellipse([760, 130, 1290, 660], outline=deco, width=3)
@@ -482,17 +608,167 @@ def draw_deco(draw):
     draw.ellipse([880, 1500, 1300, 1920], outline=deco, width=3)
 
 
+def _pat_rings(draw, accent=None):
+    """모서리에서 퍼지는 동심원 링."""
+    deco = (255, 255, 255, 22)
+    for cx, cy in ((160, 480), (940, 1420), (820, 320)):
+        for r in (120, 210, 300, 390, 480):
+            draw.ellipse([cx - r, cy - r, cx + r, cy + r], outline=deco, width=3)
+
+
+def _pat_dots(draw, accent=None):
+    """점 패턴 — 아래로 갈수록 점이 커지고 진해집니다."""
+    step = 96
+    for y in range(60, H, step):
+        for x in range(60, W, step):
+            t = y / H
+            r = 5 + t * 7
+            draw.ellipse([x - r, y - r, x + r, y + r], fill=(255, 255, 255, int(12 + 26 * t)))
+
+
+def _pat_grid(draw, accent=None):
+    """격자."""
+    line = (255, 255, 255, 15)
+    for x in range(0, W + 1, 120):
+        draw.line([x, 0, x, H], fill=line, width=2)
+    for y in range(0, H + 1, 120):
+        draw.line([0, y, W, y], fill=line, width=2)
+
+
+def _pat_mesh(draw, accent=None):
+    """점 격자 — 격자 교차점에 점."""
+    _pat_grid(draw)
+    for y in range(0, H + 1, 120):
+        for x in range(0, W + 1, 120):
+            draw.ellipse([x - 5, y - 5, x + 5, y + 5], fill=(255, 255, 255, 30))
+
+
+def _pat_diagonal(draw, accent=None):
+    """사선 줄무늬."""
+    line = (255, 255, 255, 13)
+    for k in range(-H, W + H, 150):
+        draw.line([k, 0, k + H, H], fill=line, width=6)
+
+
+def _pat_stripes(draw, accent=None):
+    """세로 줄무늬."""
+    for x in range(0, W, 230):
+        draw.rectangle([x, 0, x + 115, H], fill=(255, 255, 255, 9))
+
+
+def _pat_waves(draw, accent=None):
+    """물결."""
+    line = (255, 255, 255, 20)
+    for base in (330, 760, 1180, 1600):
+        pts = [(x, base + math.sin(x / 220.0 + base) * 60) for x in range(0, W + 1, 20)]
+        draw.line(pts, fill=line, width=4)
+
+
+def _pat_bokeh(draw, accent=None):
+    """빛 번짐(보케) — 크기가 다른 반투명 원."""
+    rng = random.Random("bokeh-v1")
+    for _ in range(18):
+        x, y = rng.randint(0, W), rng.randint(0, H)
+        r = rng.randint(50, 190)
+        draw.ellipse([x - r, y - r, x + r, y + r], fill=(255, 255, 255, rng.randint(8, 22)))
+
+
+def _pat_glow(draw, accent=None):
+    """방사 광원 — 위아래에서 은은하게 빛납니다."""
+    for cx, cy in ((W // 2, 240), (W // 2, 1800)):
+        for r, a in ((620, 5), (470, 6), (340, 7), (220, 9), (120, 11)):
+            draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(255, 255, 255, a))
+
+
+def _pat_triangles(draw, accent=None):
+    """흩뿌린 삼각형."""
+    rng = random.Random("triangles-v1")
+    for _ in range(14):
+        x, y = rng.randint(-80, W), rng.randint(0, H)
+        s = rng.randint(70, 180)
+        draw.polygon([(x, y - s), (x + s * 0.87, y + s * 0.5), (x - s * 0.87, y + s * 0.5)],
+                     outline=(255, 255, 255, 26))
+
+
+def _pat_stars(draw, accent=None):
+    """별빛 — 십자 반짝임과 작은 점."""
+    rng = random.Random("stars-v1")
+    for _ in range(26):
+        x, y = rng.randint(0, W), rng.randint(0, H)
+        s = rng.randint(8, 26)
+        a = rng.randint(30, 70)
+        draw.line([x - s, y, x + s, y], fill=(255, 255, 255, a), width=2)
+        draw.line([x, y - s, x, y + s], fill=(255, 255, 255, a), width=2)
+    for _ in range(30):
+        x, y = rng.randint(0, W), rng.randint(0, H)
+        r = rng.randint(2, 5)
+        draw.ellipse([x - r, y - r, x + r, y + r], fill=(255, 255, 255, 46))
+
+
+def _pat_confetti(draw, accent=None):
+    """색종이 — 액센트 색을 섞어 흩뿌립니다."""
+    rng = random.Random("confetti-v1")
+    acc = tuple(accent) if accent else (255, 255, 255)
+    colors = [(255, 255, 255, 30), acc + (34,), acc + (24,)]
+    for _ in range(36):
+        x, y = rng.randint(0, W), rng.randint(0, H)
+        w, h = rng.randint(14, 40), rng.randint(10, 26)
+        color = rng.choice(colors)
+        if rng.random() < 0.5:
+            draw.rectangle([x, y, x + w, y + h], fill=color)
+        else:
+            draw.line([x, y, x + w, y + h], fill=color, width=4)
+
+
+PATTERN_FUNCS = {
+    "none": _pat_none,
+    "circles": _pat_circles,
+    "rings": _pat_rings,
+    "dots": _pat_dots,
+    "grid": _pat_grid,
+    "mesh": _pat_mesh,
+    "diagonal": _pat_diagonal,
+    "stripes": _pat_stripes,
+    "waves": _pat_waves,
+    "bokeh": _pat_bokeh,
+    "glow": _pat_glow,
+    "triangles": _pat_triangles,
+    "stars": _pat_stars,
+    "confetti": _pat_confetti,
+}
+
+
+def draw_pattern(draw, name: str, accent=None) -> None:
+    """이름에 맞는 배경 패턴을 그립니다. 모르는 이름은 무늬 없음으로 처리합니다."""
+    fn = PATTERN_FUNCS.get(str(name or "").lower())
+    if fn is not None:
+        fn(draw, accent)
+
+
+def draw_deco(draw):
+    """예전 이름 — 은은한 원 패턴 (호환용)."""
+    _pat_circles(draw)
+
+
+def pattern_for_style(pattern: str, style_deco: bool) -> str:
+    """auto 는 스타일 기본값으로 바꿉니다 — classic 은 circles, 나머지는 없음."""
+    p = str(pattern or "auto").lower()
+    if p == "auto":
+        return "circles" if style_deco else "none"
+    return p
+
+
 # ---------------------------------------------------------------- slide ----
 def render_slide(idx: int, total: int, unit_no: int, unit_info: dict, wd: list,
-                 theme: str, font_path: str | None, style: str = "classic") -> Image.Image:
+                 theme: str, font_path: str | None, style: str = "classic",
+                 pattern: str = "auto") -> Image.Image:
     global ACCENT_THEME
     ACCENT_THEME = ACCENT[theme]
     ly = LAYOUT.get(style, LAYOUT["classic"])
     top, bottom = THEMES[theme]
     img = vertical_gradient((W, H), top, bottom)
     draw = ImageDraw.Draw(img, "RGBA")
-    if ly["deco"]:
-        draw_deco(draw)
+    draw_pattern(draw, pattern_for_style(pattern, ly["deco"]), ACCENT_THEME)
 
     word, ipa, kor_pron, meaning, en_ex, kr_tr = wd[0], wd[1], wd[2], wd[3], wd[4], wd[5]
 
@@ -609,14 +885,14 @@ def _fit_font(draw, text: str, font_path: str | None, size: int, max_w: int, min
 
 
 def render_intro_slide(subtitle: str, theme: str, font_path: str | None,
-                       kind: str = "unit") -> Image.Image:
+                       kind: str = "unit", pattern: str = "auto") -> Image.Image:
     """인트로 슬라이드 — 첫 1초 안에 '무엇을 배우는지' 알려 주는 브랜드 훅."""
     global ACCENT_THEME
     ACCENT_THEME = ACCENT[theme]
     top, bottom = THEMES[theme]
     img = vertical_gradient((W, H), top, bottom)
     draw = ImageDraw.Draw(img, "RGBA")
-    draw_deco(draw)
+    draw_pattern(draw, pattern_for_style(pattern, True), ACCENT_THEME)
 
     head, tail = KIND_HOOKS.get(kind, KIND_HOOKS["unit"])
 
@@ -638,14 +914,15 @@ def render_intro_slide(subtitle: str, theme: str, font_path: str | None,
     return img
 
 
-def render_outro_slide(theme: str, font_path: str | None) -> Image.Image:
+def render_outro_slide(theme: str, font_path: str | None,
+                       pattern: str = "auto") -> Image.Image:
     """아웃로 슬라이드 — 사이트 유입 CTA(구독·팔로우·사이트 방문)."""
     global ACCENT_THEME
     ACCENT_THEME = ACCENT[theme]
     top, bottom = THEMES[theme]
     img = vertical_gradient((W, H), top, bottom)
     draw = ImageDraw.Draw(img, "RGBA")
-    draw_deco(draw)
+    draw_pattern(draw, pattern_for_style(pattern, True), ACCENT_THEME)
 
     chip_font = load_font(font_path, 42, bold=True)
     draw_pill(draw, W // 2, 330, "오늘의 학습 완료!", chip_font, (255, 255, 255), (0, 0, 0, 70))
@@ -695,7 +972,8 @@ def wrap_words(text: str, font, max_width: int, draw) -> list[str]:
 
 
 def render_idiom_slide(idx: int, total: int, rank: int, wd: list,
-                       theme: str, font_path: str | None, style: str = "classic") -> Image.Image:
+                       theme: str, font_path: str | None, style: str = "classic",
+                       pattern: str = "auto") -> Image.Image:
     """숙어 카드 슬라이드 — 표현·뜻·예문·해석만 담습니다.
 
     단어 카드(render_slide)와 그리는 내용이 달라 함수를 나누었고, 일부러 서로를 건드리지 않게
@@ -708,8 +986,7 @@ def render_idiom_slide(idx: int, total: int, rank: int, wd: list,
     top, bottom = THEMES[theme]
     img = vertical_gradient((W, H), top, bottom)
     draw = ImageDraw.Draw(img, "RGBA")
-    if deco["deco"]:
-        draw_deco(draw)
+    draw_pattern(draw, pattern_for_style(pattern, deco["deco"]), ACCENT_THEME)
 
     phrase, meaning, en_ex, kr_tr = wd[0], wd[3], wd[4], wd[5]
 
@@ -794,7 +1071,8 @@ def render_idiom_slide(idx: int, total: int, rank: int, wd: list,
 
 
 def render_freq_slide(idx: int, total: int, rank: int, wd: list,
-                      theme: str, font_path: str | None, style: str = "classic") -> Image.Image:
+                      theme: str, font_path: str | None, style: str = "classic",
+                      pattern: str = "auto") -> Image.Image:
     """빈도순 기출 어휘 카드 — 단어 카드와 같은 내용(단어·IPA·한글발음·뜻·예문·해석),
     상단 칩만 "TOEIC 빈출 어휘" + 목록 순번입니다.
 
@@ -807,8 +1085,7 @@ def render_freq_slide(idx: int, total: int, rank: int, wd: list,
     top, bottom = THEMES[theme]
     img = vertical_gradient((W, H), top, bottom)
     draw = ImageDraw.Draw(img, "RGBA")
-    if ly["deco"]:
-        draw_deco(draw)
+    draw_pattern(draw, pattern_for_style(pattern, ly["deco"]), ACCENT_THEME)
 
     word, ipa, kor_pron, meaning, en_ex, kr_tr = wd[0], wd[1], wd[2], wd[3], wd[4], wd[5]
 
@@ -989,7 +1266,8 @@ def draw_quiz_lines(draw, lines: list[str], target: str, font, y: float,
 
 
 def render_quiz_question(idx: int, total: int, rank: int, q: dict,
-                         theme: str, font_path: str | None, style: str = "classic") -> Image.Image:
+                         theme: str, font_path: str | None, style: str = "classic",
+                         pattern: str = "auto") -> Image.Image:
     """동의어 치환 문제 슬라이드 — 문장 속 표적 표현을 강조하고 보기 4개를 붙입니다."""
     global ACCENT_THEME
     ACCENT_THEME = ACCENT[theme]
@@ -997,8 +1275,7 @@ def render_quiz_question(idx: int, total: int, rank: int, q: dict,
     top, bottom = THEMES[theme]
     img = vertical_gradient((W, H), top, bottom)
     draw = ImageDraw.Draw(img, "RGBA")
-    if ly["deco"]:
-        draw_deco(draw)
+    draw_pattern(draw, pattern_for_style(pattern, ly["deco"]), ACCENT_THEME)
     draw_quiz_chip(draw, font_path, "TOEIC 동의어 치환 퀴즈", str(rank))
 
     # ── 발문(한국어) ──
@@ -1037,7 +1314,8 @@ def render_quiz_question(idx: int, total: int, rank: int, q: dict,
 
 
 def render_quiz_answer(idx: int, total: int, rank: int, q: dict,
-                       theme: str, font_path: str | None, style: str = "classic") -> Image.Image:
+                       theme: str, font_path: str | None, style: str = "classic",
+                       pattern: str = "auto") -> Image.Image:
     """정답·해설 슬라이드 — 정답 표현과 왜 그런지를 보여 줍니다."""
     global ACCENT_THEME
     ACCENT_THEME = ACCENT[theme]
@@ -1045,8 +1323,7 @@ def render_quiz_answer(idx: int, total: int, rank: int, q: dict,
     top, bottom = THEMES[theme]
     img = vertical_gradient((W, H), top, bottom)
     draw = ImageDraw.Draw(img, "RGBA")
-    if ly["deco"]:
-        draw_deco(draw)
+    draw_pattern(draw, pattern_for_style(pattern, ly["deco"]), ACCENT_THEME)
     letters = "ABCD"
     letter = letters[q["opts"].index(q["a"])] if q["a"] in q["opts"][:4] else ""
     draw_quiz_chip(draw, font_path, "정답" + (f" · {letter}" if letter else ""), str(rank))
@@ -1447,8 +1724,14 @@ def main() -> None:
     ap.add_argument("--word-gap", type=float, default=WORD_GAP,
                     help=f"단어와 예문 사이 무음 초 (기본 {WORD_GAP:g}, 0 이면 붙여 읽음)")
     ap.add_argument("--out", help="출력 mp4 경로 (기본: assets/shorts/unitNN_shorts.mp4)")
-    ap.add_argument("--bg", default="blue", choices=sorted(THEMES), help="배경 테마")
-    ap.add_argument("--style", default="classic", choices=STYLE_NAMES, help="카드 스타일: classic/modern/minimal")
+    ap.add_argument("--bg", default="blue",
+                    help="배경 테마 — 이름 또는 번호 (기본 blue, 목록은 --list-bg)")
+    ap.add_argument("--pattern", default="auto",
+                    help="배경 패턴 — 이름 또는 번호 (기본 auto — 카드 스타일 기본값, 목록은 --list-bg)")
+    ap.add_argument("--style", default="classic",
+                    help="카드 스타일 — 이름 또는 번호 (1=classic 2=modern 3=minimal)")
+    ap.add_argument("--list-bg", action="store_true",
+                    help="배경 테마·패턴·스타일 번호 목록을 출력하고 종료")
     ap.add_argument("--font", help="한국어 폰트 ttf/ttc 경로 (기본: 네이버 마루부리 — "
                                     "promo/fonts/MaruBuri-*.otf, 없으면 자동 내려받음)")
     ap.add_argument("--seed", type=int, help="단어 선택 시드 (재현용)")
@@ -1478,8 +1761,35 @@ def main() -> None:
     ap.add_argument("--dry-run", action="store_true", help="계획만 출력하고 종료")
     args = ap.parse_args()
 
+    if args.list_bg:
+        log("\n🎨 배경 테마 (--bg 에 번호 또는 이름)")
+        for i, (name, label) in enumerate(theme_choices(), 1):
+            log(f"  {i:2d}. {name:<10} — {label}")
+        log("\n🎨 배경 패턴 (--pattern 에 번호 또는 이름)")
+        for i, (name, label) in enumerate(pattern_choices(), 1):
+            log(f"  {i:2d}. {name:<10} — {label}")
+        log("\n🎨 카드 스타일 (--style 에 번호 또는 이름)")
+        for i, name in enumerate(STYLE_NAMES, 1):
+            label = {"classic": "기본 카드 레이아웃", "modern": "글래스 카드 + 액센트 바",
+                     "minimal": "깔끔한 미니멀"}.get(name, name)
+            log(f"  {i:2d}. {name:<10} — {label}")
+        return
+
+    theme = resolve_theme(args.bg)
+    if not theme:
+        sys.exit(f"지원하지 않는 배경 테마입니다: {args.bg!r} — --list-bg 로 목록을 확인하세요.")
+    args.bg = theme
+    pattern = resolve_pattern(args.pattern)
+    if not pattern:
+        sys.exit(f"지원하지 않는 배경 패턴입니다: {args.pattern!r} — --list-bg 로 목록을 확인하세요.")
+    args.pattern = pattern
+    style = resolve_style(args.style)
+    if not style:
+        sys.exit(f"지원하지 않는 카드 스타일입니다: {args.style!r} — 1=classic 2=modern 3=minimal")
+    args.style = style
+
     if not _PIL_OK:
-        sys.exit("Pillow 미설치 — pip install -r requirements.txt")
+        sys.exit("Pillow 미설치 — promo_center.bat setup (또는 pip install -r requirements.txt) 을 먼저 실행하세요")
 
     # 기본 폰트: 네이버 마루부리 — 파일이 없으면 받고, --font 를 주면 그 폰트를 씁니다.
     if not args.font:
@@ -1656,7 +1966,8 @@ def main() -> None:
         warn(f"예상 길이가 약 {est:.0f}초로 Shorts 60초를 넘을 수 있습니다 — "
              "--words 축소 · --single-voice · --no-intro/--no-outro 를 검토하세요.")
     log(f"출력  : {out} ({W}x{H}, 9:16 세로)")
-    log(f"스타일: {args.style}")
+    log(f"배경  : 테마 {args.bg} ({THEME_LABELS.get(args.bg, '')}) · 패턴 {args.pattern}"
+        f" ({PATTERN_LABELS.get(args.pattern, '')}) · 스타일 {args.style}")
     if args.tts:
         engine_label = ("로컬 Piper TTS · 오프라인(인터넷 불필요)" if engine == "piper"
                         else "Windows 내장 TTS(SAPI) · 네트워크 불필요")
@@ -1689,25 +2000,31 @@ def main() -> None:
                 else:
                     first_term = str(picked[0][0])
                     intro_sub = f"{first_term} 외 {len(picked) - 1}개" if len(picked) > 1 else first_term
-                plan.append((render_intro_slide(intro_sub, args.bg, args.font, kind), None, intro_sec))
+                plan.append((render_intro_slide(intro_sub, args.bg, args.font, kind, args.pattern),
+                             None, intro_sec))
             if args.paraphrase:
                 for i, w in enumerate(picked):
                     q = w[8]
-                    plan.append((render_quiz_question(i * 2, slide_count, w[7], q, args.bg, args.font, args.style),
+                    plan.append((render_quiz_question(i * 2, slide_count, w[7], q, args.bg, args.font,
+                                                     args.style, args.pattern),
                                  (q["target"], q["sentence"]), args.slide_sec))
-                    plan.append((render_quiz_answer(i * 2 + 1, slide_count, w[7], q, args.bg, args.font, args.style),
+                    plan.append((render_quiz_answer(i * 2 + 1, slide_count, w[7], q, args.bg, args.font,
+                                                   args.style, args.pattern),
                                  (q["a"], ""), args.slide_sec))
             elif args.idioms:
-                plan += [(render_idiom_slide(i, len(picked), w[7], w, args.bg, args.font, args.style),
+                plan += [(render_idiom_slide(i, len(picked), w[7], w, args.bg, args.font, args.style,
+                                             args.pattern),
                           (w[0], w[4]), args.slide_sec) for i, w in enumerate(picked)]
             elif args.frequency:
-                plan += [(render_freq_slide(i, len(picked), w[7], w, args.bg, args.font, args.style),
+                plan += [(render_freq_slide(i, len(picked), w[7], w, args.bg, args.font, args.style,
+                                            args.pattern),
                           (w[0], w[4]), args.slide_sec) for i, w in enumerate(picked)]
             else:
-                plan += [(render_slide(i, len(picked), unit_no, unit_info, w, args.bg, args.font, args.style),
+                plan += [(render_slide(i, len(picked), unit_no, unit_info, w, args.bg, args.font, args.style,
+                                       args.pattern),
                           (w[0], w[4]), args.slide_sec) for i, w in enumerate(picked)]
             if outro_sec:
-                plan.append((render_outro_slide(args.bg, args.font), None, outro_sec))
+                plan.append((render_outro_slide(args.bg, args.font, args.pattern), None, outro_sec))
         except RuntimeError as exc:
             fail(str(exc))
             sys.exit(2)

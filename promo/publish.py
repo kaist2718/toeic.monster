@@ -1947,12 +1947,18 @@ def upload_tiktok(video: Path, meta: dict, cfg: dict, dry_run: bool) -> str | No
 # --------------------------------------------------------------------------- #
 # 터미널 원클릭 메뉴
 # --------------------------------------------------------------------------- #
+# 마지막 입력이 EOF(파이프 끝) 였는지 — 메뉴 루프가 무한 반복되지 않게 하는 플래그입니다.
+_INPUT_EOF = False
+
+
 def ask_menu(prompt: str, default: str | None = None) -> str:
+    global _INPUT_EOF
     suffix = f" [{default}]" if default is not None else ""
     try:
         value = input(f"{prompt}{suffix}: ").strip()
     except EOFError:
         # 비대화형 실행(작업 스케줄러·파이프 입력)에서는 기본값으로 진행합니다.
+        _INPUT_EOF = True
         log(f"{prompt}: 입력 없음 — 기본값 {default if default is not None else '없음'} 사용")
         return default or ""
     return value if value else (default or "")
@@ -1983,19 +1989,68 @@ def ask_int(prompt: str, default: int, minimum: int, maximum: int) -> int:
         warn(f"{minimum}~{maximum} 범위로 입력해 주세요.")
 
 
+def choose_option(prompt: str, options: list[tuple[str, str]], default: str = "") -> str:
+    """번호로 항목을 고르는 번호 선택 도우미 — 번호·이름 둘 다 받고 Enter 는 기본값.
+
+    테마·패턴·스타일·공개 범위·하위 메뉴 등 모든 선택 자리에서 씁니다.
+    """
+    values = [value for value, _label in options]
+    labels = dict(options)
+    if default not in values:
+        default = values[0] if values else ""
+    shown = f"{default} — {labels.get(default, '')}" if default else "—"
+    log(f"\n{prompt} (Enter: {shown})")
+    for i, (value, label) in enumerate(options, 1):
+        mark = "  ← 현재" if value == default else ""
+        log(f"  {i:2d}. {value:<10} — {label}{mark}")
+    while True:
+        raw = ask_menu("번호 선택", "").strip().lower()
+        if not raw:
+            return default
+        if raw.isdigit():
+            idx = int(raw)
+            if 1 <= idx <= len(values):
+                return values[idx - 1]
+            warn(f"1~{len(values)} 사이 번호를 입력해 주세요.")
+            continue
+        if raw in values:
+            return raw
+        hits = [v for v in values if raw in v]
+        if len(hits) == 1:
+            return hits[0]
+        warn(f"번호(1~{len(values)}) 또는 항목 이름을 입력해 주세요.")
+
+
+def choose_theme(default: str = "blue") -> str:
+    """배경 테마를 번호로 고릅니다."""
+    return choose_option("배경 테마", make_theme_choices(), default.lower())
+
+
+def choose_pattern(default: str = "auto") -> str:
+    """배경 패턴을 번호로 고릅니다."""
+    return choose_option("배경 패턴", make_pattern_choices(), default.lower())
+
+
+def choose_style(default: str = "classic") -> str:
+    """카드 스타일을 번호로 고릅니다."""
+    styles = make_short_choices()[1]
+    return choose_option("카드 스타일",
+                         [(s, STYLE_HINTS.get(s, s)) for s in styles], default.lower())
+
+
+def choose_privacy(default: str = "unlisted") -> str:
+    """YouTube 공개 범위를 번호로 고릅니다."""
+    value = choose_option("YouTube 공개 범위", PRIVACY_CHOICES, default.lower())
+    return value if value in ("public", "unlisted", "private") else "unlisted"
+
+
 def ask_tts_engine(default: str = DEFAULT_TTS_ENGINE) -> str:
-    """쇼츠 낭독에 쓸 TTS 엔진을 고릅니다 (auto / piper / windows)."""
+    """쇼츠 낭독에 쓸 TTS 엔진을 번호로 고릅니다 (auto / piper / windows)."""
     current = normalize_tts_engine(default)
-    log("\n쇼츠 낭독 TTS 엔진")
-    for key, label in TTS_ENGINES:
-        mark = " ← 현재" if key == current else ""
-        log(f"  {key:<8} — {label}{mark}")
     log(f"  (설치 상태: piper-tts {'설치됨' if piper_available() else '미설치'} · "
         f"내려받은 로컬 음성 {len(list_piper_voices())}개 · Windows 내장 음성 {len(list_windows_voices())}개)")
-    raw = ask_menu("엔진(auto/piper/windows)", current).strip().lower()
-    if raw and raw not in ("auto", "piper", "windows", "sapi", "win"):
-        warn(f"알 수 없는 엔진 '{raw}' — 자동(auto)으로 처리합니다.")
-    return normalize_tts_engine(raw)
+    picked = choose_option("쇼츠 낭독 TTS 엔진", list(TTS_ENGINES), current)
+    return normalize_tts_engine(picked)
 
 
 def _voice_for_engine(engine: str, current: str, male: bool = False) -> str:
@@ -2051,18 +2106,30 @@ def choose_unit(default: int = 1) -> int:
 
 
 def choose_platforms_menu(cfg: dict, default: str = "") -> str:
+    """게시 플랫폼을 번호로 복수 선택합니다 (예: 1,3 — 이름 yt,ig 도 그대로 씁니다)."""
     enabled = resolve_platforms(cfg, "auto")
-    labels = {"yt": "YouTube Shorts", "ig": "Instagram Reels", "tt": "TikTok"}
-    log("\n게시 플랫폼(쉼표로 복수 선택)")
-    for short in ("yt", "ig", "tt"):
+    options = [("yt", "YouTube Shorts"), ("ig", "Instagram Reels"), ("tt", "TikTok (선택 기능)")]
+    default = (default or ",".join(enabled) or "yt").strip()
+    log("\n게시 플랫폼 — 번호를 쉼표로 복수 선택 (예: 1,3 · 이름 yt,ig 도 가능)")
+    for i, (short, label) in enumerate(options, 1):
         state = "활성" if short in enabled else "비활성/설정 필요"
-        log(f"  {short} = {labels[short]} ({state})")
-    value = ask_menu("선택", default or (",".join(enabled) or "yt"))
-    chosen = [p.strip().lower() for p in value.split(",") if p.strip()]
-    invalid = [p for p in chosen if p not in labels]
-    if invalid:
-        warn(f"알 수 없는 플랫폼을 제외합니다: {', '.join(invalid)}")
-    chosen = [p for p in chosen if p in labels]
+        mark = "  ← 현재" if short in default.split(",") else ""
+        log(f"  {i}. {short} — {label} ({state}){mark}")
+    value = ask_menu("선택", default)
+    names = [short for short, _ in options]
+    chosen: list[str] = []
+    for token in re.split(r"[,\s]+", str(value).strip().lower()):
+        if not token:
+            continue
+        if token.isdigit() and 1 <= int(token) <= len(options):
+            picked = options[int(token) - 1][0]
+        elif token in names:
+            picked = token
+        else:
+            warn(f"알 수 없는 플랫폼을 제외합니다: {token}")
+            continue
+        if picked not in chosen:
+            chosen.append(picked)
     return ",".join(chosen) or "yt"
 
 
@@ -2174,12 +2241,13 @@ def next_unit_with_remaining() -> int | None:
 
 
 def build_shorts_command(cfg: dict, kind: str, words: int) -> list[str] | None:
-    """make_shorts.py 실행 명령 — config 의 기본값(테마·스타일·목소리)을 그대로 씁니다."""
+    """make_shorts.py 실행 명령 — config 의 기본값(테마·패턴·스타일·목소리)을 그대로 씁니다."""
     promo = cfg.get("promo", {})
     theme = str(promo.get("default_theme", "blue")).lower()
     style = str(promo.get("default_style", "classic")).lower()
+    pattern = str(promo.get("default_pattern", "auto")).lower() or "auto"
     command = [sys.executable, str(PROMO / "make_shorts.py"),
-               "--words", str(words), "--bg", theme, "--style", style]
+               "--words", str(words), "--bg", theme, "--style", style, "--pattern", pattern]
     if kind == "idioms":
         command.append("--idioms")
     elif kind == "frequency":
@@ -2303,13 +2371,14 @@ def auto_plan_menu(cfg: dict) -> None:
     except (TypeError, ValueError):
         default_words = 5
     count = ask_int("준비할 영상 수(1~10)", 3, 1, 10)
-    kind = ask_menu("종류 (auto/unit/idioms/frequency/paraphrase)", "auto").lower()
-    if kind not in ("auto",) + AUTO_KINDS:
-        warn("알 수 없는 종류라 자동으로 진행합니다.")
-        kind = "auto"
+    kind = choose_option("콘텐츠 종류",
+                         [("auto", "자동 — 남은 콘텐츠 많은 순으로 섞기"),
+                          ("unit", "UNIT 단어"), ("idioms", "숙어 126선"),
+                          ("frequency", "빈도순 기출 어휘"), ("paraphrase", "동의어 치환 퀴즈")],
+                         "auto")
     words = ask_int("영상에 넣을 항목 수(1~10)", default_words, 1, 10)
-    mode = ask_menu("예약 게시 등록(s) / 생성만(g)", "s").lower()
-    if mode in ("g", "생성", "생성만"):
+    mode = choose_option("진행 방식", [("s", "예약 게시 등록"), ("g", "생성만")], "s")
+    if mode == "g":
         run_auto_plan(cfg, count, kind, words=words)
         return
     default_start = (datetime.now().astimezone() + timedelta(days=1)).strftime("%Y-%m-%d") + " 19:00"
@@ -2319,9 +2388,7 @@ def auto_plan_menu(cfg: dict) -> None:
     default_privacy = str(promo.get("default_privacy", "unlisted")).lower()
     if default_privacy not in ("public", "unlisted", "private"):
         default_privacy = "unlisted"
-    privacy = ask_menu("YouTube 공개 범위(public/unlisted/private)", default_privacy)
-    if privacy not in ("public", "unlisted", "private"):
-        privacy = "unlisted"
+    privacy = choose_privacy(default_privacy)
     run_auto_plan(cfg, count, kind, start_at=start, interval_days=interval,
                   words=words, platforms=platforms, privacy=privacy)
 
@@ -2401,10 +2468,7 @@ def verify_video_menu(cfg: dict) -> None:
         log("검증만 하고 종료합니다.")
         return
     platforms = choose_platforms_menu(cfg)
-    privacy = ask_menu("YouTube 공개 범위(public/unlisted/private)",
-                       str(cfg.get("promo", {}).get("default_privacy", "unlisted")))
-    if privacy not in ("public", "unlisted", "private"):
-        privacy = "unlisted"
+    privacy = choose_privacy(str(cfg.get("promo", {}).get("default_privacy", "unlisted")))
     dry_run = ask_yes_no("먼저 dry-run으로 확인할까요?", True)
     if not dry_run:
         log("⚠️ 실제 게시를 진행합니다. 각 플랫폼에 콘텐츠가 업로드됩니다.")
@@ -2836,11 +2900,12 @@ def install_scheduled_task(interval_min: int = 10, dry_run_only: bool = True) ->
     if not bat.exists():
         fail(f"{bat} 을 찾을 수 없습니다.")
         return
-    task_args = "--run-due --dry-run" if dry_run_only else "--run-due"
+    # --no-pause: BAT 가 마지막 "아무 키나 누르세요" 를 건너뛰어 자동 실행이 멈추지 않습니다.
+    task_args = "--run-due --dry-run --no-pause" if dry_run_only else "--run-due --no-pause"
     tr = f'"{bat}" {task_args}'
     r = subprocess.run(["schtasks", "/Create", "/TN", SCHED_TASK_NAME, "/TR", tr,
                         "/SC", "MINUTE", "/MO", str(interval_min), "/F"],
-                       capture_output=True, text=True)
+                       capture_output=True, text=True, errors="replace")
     if r.returncode == 0:
         ok(f"작업 스케줄러 등록 완료: {SCHED_TASK_NAME} (매 {interval_min}분, {task_args})")
         log("도래한 예약을 자동으로 확인하지만 기본이 dry-run이라 실제 게시는 직접 확인 후 진행됩니다.")
@@ -2850,7 +2915,7 @@ def install_scheduled_task(interval_min: int = 10, dry_run_only: bool = True) ->
 
 def remove_scheduled_task() -> None:
     r = subprocess.run(["schtasks", "/Delete", "/TN", SCHED_TASK_NAME, "/F"],
-                       capture_output=True, text=True)
+                       capture_output=True, text=True, errors="replace")
     if r.returncode == 0:
         ok(f"작업 스케줄러 제거 완료: {SCHED_TASK_NAME}")
     else:
@@ -3305,12 +3370,49 @@ def voice_label(name: str, engine: str = "auto") -> str:
 
 
 def make_short_choices() -> tuple[list[str], list[str]]:
+    """배경 테마·카드 스타일 이름 목록 — 번호 선택을 위해 make_shorts 의 순서를 그대로 씁니다."""
     try:
         from make_shorts import THEMES, STYLE_NAMES  # type: ignore[import-not-found]
-        return sorted(THEMES), list(STYLE_NAMES)
+        return list(THEMES), list(STYLE_NAMES)
     except Exception:
-        return (["blue", "purple", "green", "orange", "pink", "navy"],
+        return (["blue", "purple", "green", "orange", "pink", "navy", "midnight", "sunset",
+                 "mint", "wine", "teal", "sky", "forest", "lavender", "gold", "coral",
+                 "steel", "plum", "ocean", "coffee", "neon", "graphite"],
                 ["classic", "modern", "minimal"])
+
+
+def make_theme_choices() -> list[tuple[str, str]]:
+    """배경 테마 (이름, 설명) 목록 — 메뉴 번호는 이 순서 (make_shorts --list-bg 와 동일)."""
+    try:
+        from make_shorts import theme_choices  # type: ignore[import-not-found]
+        return theme_choices()
+    except Exception:
+        return [(name, name) for name in make_short_choices()[0]]
+
+
+def make_pattern_choices() -> list[tuple[str, str]]:
+    """배경 패턴 (이름, 설명) 목록 — 메뉴 번호는 이 순서 (make_shorts --list-bg 와 동일)."""
+    try:
+        from make_shorts import pattern_choices  # type: ignore[import-not-found]
+        return pattern_choices()
+    except Exception:
+        return [("auto", "자동 — 카드 스타일 기본값"), ("none", "무늬 없음"), ("circles", "은은한 원"),
+                ("rings", "동심원 링"), ("dots", "점 패턴"), ("grid", "격자"), ("mesh", "점 격자"),
+                ("diagonal", "사선 줄무늬"), ("stripes", "세로 줄무늬"), ("waves", "물결"),
+                ("bokeh", "빛 번짐(보케)"), ("glow", "방사 광원"), ("triangles", "삼각형"),
+                ("stars", "별빛"), ("confetti", "색종이")]
+
+
+STYLE_HINTS = {
+    "classic": "기본 카드 레이아웃",
+    "modern": "글래스 카드 + 좌측 액센트 바",
+    "minimal": "깔끔한 미니멀 (상단 제목 텍스트)",
+}
+PRIVACY_CHOICES: list[tuple[str, str]] = [
+    ("public", "전체 공개 — 검색·추천 노출"),
+    ("unlisted", "링크 공개 — 검색에는 안 나옴 (권장)"),
+    ("private", "비공개 — 나만 보기"),
+]
 
 
 # --------------------------------------------------------------------------- #
@@ -3592,10 +3694,13 @@ def configure_menu(cfg: dict) -> dict:
     promo["default_unit"] = ask_int("기본 UNIT(1~30)", int(promo.get("default_unit", 1) or 1), 1, 30)
     promo["default_words"] = ask_int("기본 영상 단어 수(1~10)", int(promo.get("default_words", 5) or 5), 1, 10)
     themes, styles = make_short_choices()
-    promo["default_theme"] = ask_menu(f"기본 배경 테마({'/'.join(themes)})", str(promo.get("default_theme", "blue"))).lower()
+    promo["default_theme"] = choose_theme(str(promo.get("default_theme", "blue")))
     if promo["default_theme"] not in themes:
         promo["default_theme"] = "blue"
-    promo["default_style"] = ask_menu(f"기본 카드 스타일({'/'.join(styles)})", str(promo.get("default_style", "classic"))).lower()
+    promo["default_pattern"] = choose_pattern(str(promo.get("default_pattern", "auto")))
+    if promo["default_pattern"] not in [name for name, _ in make_pattern_choices()]:
+        promo["default_pattern"] = "auto"
+    promo["default_style"] = choose_style(str(promo.get("default_style", "classic")))
     if promo["default_style"] not in styles:
         promo["default_style"] = "classic"
     # Enter 를 눌렀을 때 바로 실행할 기본 메뉴 번호 (원클릭 센터 1~29)
@@ -3612,9 +3717,7 @@ def configure_menu(cfg: dict) -> dict:
     promo["confirm_real_upload"] = ask_yes_no("실제 게시 전 확인 질문 사용", bool(promo.get("confirm_real_upload", True)))
     yt = cfg.setdefault("youtube", {})
     yt["enabled"] = ask_yes_no("YouTube 사용", bool(yt.get("enabled", True)))
-    yt["privacy"] = ask_menu("YouTube 공개 범위(public/unlisted/private)", str(yt.get("privacy", "public"))).lower()
-    if yt["privacy"] not in ("public", "unlisted", "private"):
-        yt["privacy"] = "unlisted"
+    yt["privacy"] = choose_privacy(str(yt.get("privacy", "public")))
     ig = cfg.setdefault("instagram", {})
     ig["enabled"] = ask_yes_no("Instagram 사용", bool(ig.get("enabled", True)))
     ig["username"] = ask_menu("Instagram username", str(ig.get("username", "")))
@@ -3740,13 +3843,13 @@ def print_interactive_menu() -> None:
 
 
 def show_menu_summary(cfg: dict, unit: int, words: int, theme: str, style: str,
-                       tts: bool, voice: str) -> None:
+                       pattern: str, tts: bool, voice: str) -> None:
     """현재 기본값을 메뉴 위쪽에 한 줄로 요약해 보여 줍니다."""
     engine = tts_engine_of(cfg)
     tts_part = f"TTS {'켜짐' if tts else '꺼짐'}"
     if tts:
         tts_part += f" · {voice_label(voice, engine)}"
-    log(f"  현재 기본값: UNIT {unit} · {words}개 · {theme}/{style} · {tts_part}")
+    log(f"  현재 기본값: UNIT {unit} · {words}개 · {theme}/{pattern}/{style} · {tts_part}")
 
 
 def show_menu_help(default: str) -> None:
@@ -3882,6 +3985,7 @@ def interactive_menu(initial: str | None = None) -> None:
 
     initial 을 주면 첫 입력으로 그대로 씁니다(--menu-run · BAT 의 `promo_center.bat 1-4`).
     """
+    global _INPUT_EOF
     try:
         if not CONFIG_FILE.exists():
             init_config()
@@ -3907,6 +4011,10 @@ def interactive_menu(initial: str | None = None) -> None:
     default_style = str(promo_cfg.get("default_style", "classic")).lower()
     if default_style not in _styles:
         default_style = "classic"
+    default_pattern = str(promo_cfg.get("default_pattern", "auto")).lower()
+    _patterns = [name for name, _label in make_pattern_choices()]
+    if default_pattern not in _patterns:
+        default_pattern = "auto"
     default_privacy = str(promo_cfg.get("default_privacy", cfg.get("youtube", {}).get("privacy", "unlisted"))).lower()
     if default_privacy not in ("public", "unlisted", "private"):
         default_privacy = "unlisted"
@@ -3923,7 +4031,7 @@ def interactive_menu(initial: str | None = None) -> None:
     while True:
         print_interactive_menu()
         show_menu_summary(cfg, default_unit, default_words, default_theme, default_style,
-                          default_tts, default_voice)
+                          default_pattern, default_tts, default_voice)
         log(f"  ▶ Enter = {menu_default}. {short_menu_label(menu_default)}")
         log("  입력: 5(번호) · 예약/tts(검색) · 15,16(여러 개) · 1-4(범위) · r(반복) · ?(도움말) · q(종료)")
         if pending:
@@ -3937,7 +4045,12 @@ def interactive_menu(initial: str | None = None) -> None:
                 initial = None
                 log(f"명령줄에서 받아 실행합니다: {raw}")
             else:
+                _INPUT_EOF = False
                 raw = ask_menu("메뉴", menu_default)
+                if _INPUT_EOF:
+                    # 파이프 입력이 끝났는데 기본값으로 같은 메뉴를 반복하면 자동 실행이 무한 루프에 빠집니다.
+                    log("표준 입력이 끝나 메뉴를 종료합니다 (자동 실행에는 --run-due 등 옵션을 쓰세요).")
+                    return
             if str(raw or "").strip().lower() in REPEAT_WORDS:
                 if not last_sequence:
                     warn("반복할 이전 실행이 없습니다 — 번호나 키워드로 메뉴를 입력하세요.")
@@ -3994,6 +4107,10 @@ def interactive_menu(initial: str | None = None) -> None:
             default_style = str(promo_cfg.get("default_style", "classic")).lower()
             if default_style not in _styles:
                 default_style = "classic"
+            default_pattern = str(promo_cfg.get("default_pattern", "auto")).lower()
+            _patterns = [name for name, _label in make_pattern_choices()]
+            if default_pattern not in _patterns:
+                default_pattern = "auto"
             default_privacy = str(promo_cfg.get("default_privacy", cfg.get("youtube", {}).get("privacy", "unlisted"))).lower()
             if default_privacy not in ("public", "unlisted", "private"):
                 default_privacy = "unlisted"
@@ -4003,12 +4120,11 @@ def interactive_menu(initial: str | None = None) -> None:
             confirm_real_upload = bool(promo_cfg.get("confirm_real_upload", True))
             continue
         if action == "24":
-            log("\n폴더·파일 열기")
-            log("  1. 쇼츠 폴더")
-            log("  2. 비밀키 폴더")
-            log("  3. config.json")
-            log("  4. 예약·이력 폴더")
-            target = ask_menu("선택", "1")
+            target = choose_option("폴더·파일 열기",
+                                   [("1", "쇼츠 폴더 (assets/shorts)"),
+                                    ("2", "비밀키 폴더 (.secrets)"),
+                                    ("3", "config.json"),
+                                    ("4", "예약·이력 폴더 (promo)")], "1")
             paths = {"1": SHORTS_DIR, "2": SECRETS_DIR, "3": CONFIG_FILE, "4": PROMO}
             path = paths.get(target)
             if path:
@@ -4043,8 +4159,10 @@ def interactive_menu(initial: str | None = None) -> None:
             show_history_menu()
             continue
         if action == "25":
-            sub = ask_menu("등록(r) / 해제(d)", "r").lower()
-            if sub in ("r", "등록", "y", "예"):
+            sub = choose_option("작업 스케줄러",
+                                [("r", "등록 — 주기적으로 예약 게시 자동 확인"),
+                                 ("d", "해제 — 등록된 자동 확인 삭제")], "r")
+            if sub == "r":
                 interval = ask_int("확인 주기(분)", 10, 1, 60)
                 dry = ask_yes_no("dry-run 모드로 등록(안전, 권장)", True)
                 install_scheduled_task(interval_min=interval, dry_run_only=dry)
@@ -4058,10 +4176,13 @@ def interactive_menu(initial: str | None = None) -> None:
             write_history_report()
             continue
         if action == "17":
-            sub = ask_menu("성과 수집(c) / 보고서(r) / 인사이트(i)", "c").lower()
-            if sub in ("c", "수집", "수"):
+            sub = choose_option("성과 메뉴",
+                                [("c", "성과 수집 (YouTube/Instagram 조회수)"),
+                                 ("r", "성과 보고서 (HTML)"),
+                                 ("i", "인사이트 — 좋은 시간대·추천 콘텐츠")], "c")
+            if sub == "c":
                 collect_performance(cfg)
-            elif sub in ("i", "인사이트", "분석"):
+            elif sub == "i":
                 show_performance_insights()
             else:
                 write_performance_report()
@@ -4104,8 +4225,17 @@ def interactive_menu(initial: str | None = None) -> None:
             default_voice2 = str(promo_cfg.get("default_voice2", DEFAULT_VOICE2) or "")
             continue
         if action == "14":
-            target = ask_menu("초기화 대상 (all · UNIT 번호 · idioms · frequency · paraphrase)", "all")
-            if ask_yes_no("중복 방지 기록을 초기화할까요?", False):
+            pick = choose_option("초기화 대상",
+                                 [("all", "전체 (모든 중복 방지 기록)"),
+                                  ("unit", "특정 UNIT 번호만"),
+                                  ("idioms", "숙어 기록"),
+                                  ("frequency", "빈도 어휘 기록"),
+                                  ("paraphrase", "동의어 치환 기록")], "all")
+            if pick == "unit":
+                target = str(ask_int("초기화할 UNIT 번호(1~30)", default_unit, 1, 30))
+            else:
+                target = pick
+            if ask_yes_no(f"중복 방지 기록({target})을 초기화할까요?", False):
                 reset_posted(target)
             continue
         if action == "26":
@@ -4142,9 +4272,7 @@ def interactive_menu(initial: str | None = None) -> None:
             if video is None:
                 continue
             platforms = choose_platforms_menu(cfg)
-            privacy = ask_menu("YouTube 공개 범위(public/unlisted/private)", default_privacy)
-            if privacy not in ("public", "unlisted", "private"):
-                privacy = "unlisted"
+            privacy = choose_privacy(default_privacy)
             scheduled_at = ask_menu("예약 일시(YYYY-MM-DD HH:MM)")
             try:
                 item = create_schedule(video=video, unit=unit, platforms=platforms,
@@ -4167,17 +4295,21 @@ def interactive_menu(initial: str | None = None) -> None:
         # 1~8 은 쇼츠를 만드는 흐름(1~4 는 생성만, 5~8 은 생성 후 게시)입니다.
         if action in ("1", "2", "3", "4", "5", "6", "7", "8"):
             words = str(ask_int("영상에 넣을 항목 수(1~10)", default_words, 1, 10))
-            themes, styles = make_short_choices()
-            theme = ask_menu(f"배경 테마({'/'.join(themes)})", default_theme).lower()
-            while theme not in themes:
-                warn(f"지원하는 테마: {', '.join(themes)}")
-                theme = ask_menu("배경 테마", default_theme).lower()
-            style = ask_menu(f"카드 스타일({'/'.join(styles)})", default_style).lower()
-            while style not in styles:
-                warn(f"지원하는 스타일: {', '.join(styles)}")
-                style = ask_menu("카드 스타일", default_style).lower()
+            theme = choose_theme(default_theme)
+            pattern = choose_pattern(default_pattern)
+            style = choose_style(default_style)
+            # 선택한 배경 설정을 다음 기본값으로 저장할지 묻습니다(메뉴 23 과 같은 자리에 저장).
+            if ((theme, pattern, style) != (default_theme, default_pattern, default_style)
+                    and ask_yes_no("선택한 배경 테마·패턴·스타일을 다음부터 기본값으로 저장할까요?", False)):
+                bg_now = cfg.setdefault("promo", {})
+                bg_now["default_theme"] = theme
+                bg_now["default_pattern"] = pattern
+                bg_now["default_style"] = style
+                save_config(cfg)
+                default_theme, default_pattern, default_style = theme, pattern, style
+                ok(f"배경 기본값을 저장했습니다: {CONFIG_FILE.name} · 테마 {theme} · 패턴 {pattern} · 스타일 {style}")
             command = [sys.executable, str(PROMO / "make_shorts.py"),
-                       "--words", words, "--bg", theme, "--style", style]
+                       "--words", words, "--bg", theme, "--style", style, "--pattern", pattern]
             if kind == "idioms":
                 command.append("--idioms")
             elif kind == "frequency":
@@ -4267,9 +4399,7 @@ def interactive_menu(initial: str | None = None) -> None:
                         unit = default_unit
 
         platforms = choose_platforms_menu(cfg)
-        privacy = ask_menu("YouTube 공개 범위(public/unlisted/private)", default_privacy)
-        if privacy not in ("public", "unlisted", "private"):
-            privacy = "unlisted"
+        privacy = choose_privacy(default_privacy)
         dry_run = ask_yes_no("먼저 미리보기(dry-run)로 확인할까요?", True)
         command = [sys.executable, str(PROMO / "publish.py"), "--non-interactive", "--video", str(video),
                    "--platforms", platforms, "--youtube-privacy", privacy]
@@ -4313,17 +4443,27 @@ def expand_bare_flags(tokens: list[str], parser: argparse.ArgumentParser) -> lis
     `promo_center.bat 1-4` 만 쳐도 쇼츠 4종을 차례로 만듭니다.
     """
     out: list[str] = []
-    expanding = True
+    expanding = True   # 지금까지 나온 토큰이 '값 없는 플래그'뿐이면 다음 단어도 플래그일 수 있습니다
     for tok in tokens:
-        if expanding and not out and tok and MENU_CLI_RE.match(tok):
-            out.extend(["--menu-run", tok])
-            expanding = False
+        if not expanding:
+            out.append(tok)
             continue
-        if expanding and tok and not tok.startswith("-") and f"--{tok}" in parser._option_string_actions:
+        if not tok or tok.startswith("-"):
+            action = parser._option_string_actions.get(tok)
+            out.append(tok)
+            # 값을 받는 옵션(--video 등)이면 그 다음 토큰은 값이므로 확장을 멈춥니다.
+            # 값 없는 플래그(--no-pause · --dry-run 등) 다음은 계속 확장합니다.
+            if action is None or getattr(action, "nargs", 0) != 0:
+                expanding = False
+            continue
+        if MENU_CLI_RE.match(tok) and "--menu-run" not in out:
+            out.extend(["--menu-run", tok])
+            continue
+        if f"--{tok}" in parser._option_string_actions:
             out.append(f"--{tok}")
             continue
-        expanding = False
         out.append(tok)
+        expanding = False   # 알 수 없는 단어(위치 인자 값 등)가 나오면 그 뒤는 손대지 않습니다
     return out
 
 
@@ -4357,6 +4497,9 @@ def main() -> None:
     ap.add_argument("--menu-list", action="store_true",
                     help="번호 순(1~29)으로 원클릭 메뉴 목록만 출력하고 종료")
     ap.add_argument("--non-interactive", action="store_true", help=argparse.SUPPRESS)
+    ap.add_argument("--no-pause", "--nopause", action="store_true", help=argparse.SUPPRESS)
+    # ↑ BAT 전달용 안전 플래그: publish.py 는 무시하고, promo_center.bat 가 마지막
+    #   "아무 키나 누르세요" 를 생략하는 데 씁니다 (--run-due 자동 실행 대응).
     ap.add_argument("--schedule", action="store_true", help="지정한 게시 정보를 예약으로 저장")
     ap.add_argument("--schedule-time", help="예약 시각: YYYY-MM-DD HH:MM 또는 ISO 형식")
     ap.add_argument("--run-due", action="store_true", help="현재 시각까지 도래한 예약 게시 실행")

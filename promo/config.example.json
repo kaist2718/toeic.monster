@@ -7,6 +7,7 @@
     "default_unit": 1,
     "default_words": 5,
     "default_theme": "blue",
+    "default_pattern": "auto",
     "default_style": "classic",
     "default_menu": "9",
     "tts_engine": "auto",
