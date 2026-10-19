@@ -133,7 +133,7 @@
 | `load_frequency()` | `extra.js` 의 `frequency: [` 블록을 중괄호 매칭으로 떼어 파싱(`make_workbook.extract_block` 과 동일 방식), 행을 **단어 카드 순서 튜플**로 정규화 |
 | `FREQUENCY_BUCKET = "frequency"` | `posted.json` 의 `words` 키. `IDIOM_BUCKET` 과 같은 자리 |
 | `build_meta()` 분기 | 사이드카가 없을 때 `--frequency` 면 남은 항목에서 골라 제목·설명 생성. 제목 `"available | TOEIC 빈출 어휘 | toeic.monster"` |
-| 메뉴·CLI | `--frequency`, 메뉴 22(빈도 쇼츠 생성)·23(생성 후 게시) |
+| 메뉴·CLI | `--frequency`, 메뉴 3(빈도 쇼츠 생성)·7(생성 후 게시) |
 
 ### 5-2. `make_shorts.py`
 
@@ -172,12 +172,12 @@
 | 2 | ✅ 완료 — `tools/frequency-coverage.mjs` (재사용 후보 **89/137 = 65%**) | 커버리지 리포트 | 0.5일 |
 | 3 | ✅ 완료 — `tools/frequency-content.json` 137개 작성 → `extra.js` **전부 8필드(200/200)** | 콘텐츠 | 2~3일 |
 | 4 | ✅ 완료 — `audit-content` all-or-nothing·예문 검증, `audit-text` 필드 검사 | 감사 통과 | 0.5일 |
-| 5 | ✅ 완료 — promo `--frequency` (publish·make_shorts·메뉴 22/23·README) | 생성·게시 동작 | 0.5~1일 |
+| 5 | ✅ 완료 — promo `--frequency` (publish·make_shorts·메뉴 3/7·README) | 생성·게시 동작 | 0.5~1일 |
 | 6 | ✅ 완료 — 빈도 페이지(`units/frequency.html`)에 발음기호·한글 발음·예문·해석 노출 | 사이트 반영 | 0.5일 |
-| 7 | ✅ 완료 — 다음 포맷: 동의어 치환 **퀴즈 숏폼**(`--paraphrase`, 메뉴 24/25) | 퀴즈 200문제 | 1일 |
+| 7 | ✅ 완료 — 다음 포맷: 동의어 치환 **퀴즈 숏폼**(`--paraphrase`, 메뉴 4/8) | 퀴즈 200문제 | 1일 |
 
 > **진행 상황(1~7단계 완료)**: 빈도 200선이 전부 8필드가 되었고, `npm run check` 로 감사·테스트를
-> 통과했습니다. promo 는 `make_shorts.py --frequency` 와 `publish.py --frequency` (메뉴 22·23)로
+> 통과했습니다. promo 는 `make_shorts.py --frequency` 와 `publish.py --frequency` (메뉴 3·7)로
 > 생성·게시가 모두 동작합니다(사이드카 `kind: "frequency"`).
 >
 > 이어서 **6단계(사이트 노출)** 와 **7단계(퀴즈 포맷)** 까지 마쳤습니다.
@@ -186,10 +186,10 @@
 >   그립니다(발음기호·한글 발음·품사 칩·뜻·예문·예문 한글 발음·해석). 보강 전 3필드 행도 예전처럼
 >   그릴 수 있어 데이터가 되돌아가도 페이지가 깨지지 않습니다.
 > - **7단계**: `make_shorts.py --paraphrase` 가 한 문제를 **문제 슬라이드 → 정답 슬라이드** 두 장으로
->   만듭니다(보기 A~D, 표적 표현 강조 + 밑줄, 정답·해설). `publish.py --paraphrase` 와 메뉴 24·25,
+>   만듭니다(보기 A~D, 표적 표현 강조 + 밑줄, 정답·해설). `publish.py --paraphrase` 와 메뉴 4·8,
 >   사이드카 `kind: "paraphrase"`(보기·발문 포함)로 제목·설명까지 자동 생성됩니다.
 > - **남은 콘텐츠 표시**: 생성·게시가 끝날 때(그리고 `--dry-run` 종료 시) 종류별 사용/전체/남음 표를
->   출력합니다. `publish.py --list-remaining`(메뉴 26)으로 수량만 볼 수도 있습니다.
+>   출력합니다. `publish.py --list-remaining`(메뉴 27)으로 수량만 볼 수도 있습니다.
 
 **합계 약 5~7일**(1인). 1~3단계가 대부분 콘텐츠 작업이고, 코드는 4~5단계에 몰려 있다.
 

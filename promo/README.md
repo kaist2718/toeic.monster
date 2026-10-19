@@ -43,7 +43,7 @@ promo_center.bat            # 원클릭 메뉴 열기 (기본)
 promo_center.bat setup      # 처음 설치 - 의존성 설치 + 설정 점검
 promo_center.bat 5          # 메뉴 5 한 번 실행
 promo_center.bat 1-4        # 메뉴 1~4 를 순서대로 실행 (15,16 처럼 여러 개도 가능)
-promo_center.bat menu-list  # 번호 순(1~29) 메뉴 목록만 보여 주기
+promo_center.bat menu-list  # 번호 순(1~31) 메뉴 목록만 보여 주기
 promo_center.bat --no-pause check   # "아무 키나 누르세요" 없이 점검만 하고 종료
 ```
 
@@ -59,7 +59,7 @@ python publish.py
 promo_center.bat
 ```
 
-메뉴 기능 — **번호가 위에서 아래로 1 → 29 로 그대로 이어집니다** (같은 그룹 안에서 흐름대로):
+메뉴 기능 — **번호가 위에서 아래로 1 → 31 로 그대로 이어집니다** (같은 그룹 안에서 흐름대로):
 
 🎬 **쇼츠 만들기**
 
@@ -67,6 +67,28 @@ promo_center.bat
 2. **숙어 쇼츠 생성** — 숙어 126선(`data/idioms.js`)으로 생성 (항목 수·테마·패턴·스타일·TTS 동일)
 3. **빈도 어휘 쇼츠 생성** — 빈도순 기출 어휘 200선(`data/extra.js` frequency)으로 생성
 4. **동의어 치환 퀴즈 생성** — 동의어 치환 200문제(`data/extra.js` paraphrase)로 문제→정답 퀴즈 생성
+
+🆕 **새 포맷 만들기** (혼동 어휘·문법·듣기 등 11종)
+
+30. **새 포맷 쇼츠 생성** — 아래 표의 11종 중에서 종류를 선택해 생성
+31. **새 포맷 쇼츠 생성 후 게시** — 같은 흐름으로 게시까지 진행
+
+| 종류(`--kind`) | 내용 | 데이터 | 구성 |
+| --- | --- | --- | --- |
+| `confusables` | 혼동 어휘 퀴즈 — affect/effect처럼 헷갈리는 단어 빈칸 채우기 | `data/app-data.js` CONFUSABLES | 문제→정답 2장 |
+| `grammar` | 문법 빈칸 3초 퀴즈 + 문법 팁 뒤집기 | `data/grammar-*.js` 연습 문제 + GRAMMAR_TIPS | 문제→정답 2장 |
+| `numbers` | 숫자 듣기 — 가격·날짜·전화번호를 귀로 구분 | `data/extra.js` numbers | 문제→정답 2장(청취) |
+| `traps` | Part 2 함정 응답 — yes/no로 답하면 틀리는 이유 | `data/extra.js` traps | 문제→정답 2장 |
+| `minimal` | 최소대립쌍 발음 비교 — ship/sheep 소리 차이 | `data/app-data.js` MINIMAL_PAIRS | 문제→정답 2장 |
+| `dictation` | 받아쓰기 챌린지 — 듣고 문장을 그대로 쓰기 | `data/extra.js` dictation | 문제→정답 2장(청취) |
+| `bizmail` | 비즈니스 이메일 한 줄 — 상황별 정중한 표현 | `data/app-data.js` BIZ_TEMPLATES | 문제→정답 2장 |
+| `drill` | 전치사·연결어 드릴 | `data/extra.js` transitions + prepositions | 문제→정답 2장 |
+| `strategy` | 전략 리스트형 — 공략을 한 장짜리 카드로 | `data/extra.js` guides | 카드 1장 |
+| `wordparts` | 어원 스토리 카드 — bene(좋은) + fit → benefit | `data/app-data.js` MNEMONICS + WORD_PARTS | 문제→정답 2장 |
+| `sprint` | 30일 스프린트 DAY 시리즈 — 연재형으로 재방문 유도 | `data/extra.js` sprint | 카드 1장 |
+
+모든 종류는 **사이트가 이미 쓰는 데이터를 그대로** 읽습니다(콘텐츠 복제 없음 — 사이트를 고치면 쇼츠도 따라갑니다).
+중복 방지는 종류별 버킷(`posted.json`)으로 자동 관리되고, 제목·설명·해시태그는 영상 옆 메타에서 자동 생성됩니다.
 
 🚀 **만들고 바로 게시**
 
@@ -109,7 +131,7 @@ promo_center.bat
 
 메뉴 입력에서 Enter를 누르면 **방금 실행한 메뉴**(실행 전에는 설정의 기본 메뉴)가 다시 실행됩니다. 기본 게시 방식은 dry-run이며, 실제 업로드는 별도의 확인 질문을 거칩니다.
 
-메뉴는 🎬 쇼츠 만들기 · 🚀 만들고 바로 게시 · 📤 게시·이력·성과 · 🗓 예약·자동 준비 · ⚙ 설정·점검·도구 **다섯 그룹**으로 묶여 표시되고, 번호는 표시되는 순서(1 → 29)와 같습니다. 입력은 여러 형태로 쓸 수 있습니다.
+메뉴는 🎬 쇼츠 만들기 · 🚀 만들고 바로 게시 · 🆕 새 포맷 만들기 · 📤 게시·이력·성과 · 🗓 예약·자동 준비 · ⚙ 설정·점검·도구 **여섯 그룹**으로 묶여 표시되고, 번호는 표시되는 순서(1 → 31)와 같습니다. 입력은 여러 형태로 쓸 수 있습니다.
 
 - `10` — 번호로 실행 (Enter 는 마지막 실행한 메뉴 반복)
 - `예약` · `tts` · `숙어 생성` — **키워드 검색**. 여러 항목이 맞으면 목록을 보여 주고 번호를 고릅니다
@@ -145,6 +167,9 @@ python publish.py --video assets/shorts/frequency_available_shorts.mp4 --frequen
 
 # 동의어 치환 퀴즈 영상 게시 — 제목·설명을 data/extra.js paraphrase 기준으로 생성
 python publish.py --video assets/shorts/quiz_expedite_shorts.mp4 --paraphrase --dry-run
+
+# 새 포맷 영상 게시 — 제목·설명을 해당 종류 데이터 기준으로 생성 (종류 표는 2번 메뉴)
+python publish.py --video assets/shorts/minimal_hat-hot_shorts.mp4 --kind minimal --dry-run
 
 python publish.py --video assets/shorts/idioms_come-across_shorts.mp4 --idioms --platforms yt --youtube-privacy unlisted
 
@@ -354,6 +379,12 @@ python make_shorts.py --frequency --index 0 --bg navy --style modern
 # 동의어 치환 퀴즈(data/extra.js paraphrase) — 유닛 대신 --paraphrase (한 문제 = 문제·정답 2장)
 python make_shorts.py --paraphrase --words 3
 python make_shorts.py --paraphrase --index 0 --bg wine --style modern
+
+# 새 포맷 11종 — --kind 로 종류 지정 (종류 표는 2번 메뉴)
+python make_shorts.py --kind confusables --words 4     # 혼동 어휘 빈칸 퀴즈
+python make_shorts.py --kind numbers --words 3          # 숫자 듣기 (청취형 — 음성이 핵심)
+python make_shorts.py --kind strategy --words 5 --bg mint   # 전략 카드 1장짜리
+python make_shorts.py --kind sprint --words 7           # 30일 스프린트 DAY 연재
 ```
 
 `9:16 / 1080×1920 / 30fps` 영상을 만들며, **기본 폰트는 네이버 마루부리(Maru Buri)** 입니다 — `promo/fonts/MaruBuri-Regular.otf` · `MaruBuri-Bold.otf` 를 쓰고, 파일이 없으면 배포처에서 한 번 내려받은 뒤 씁니다(내려받지 못하면 맑은 고딕 등 시스템 한글 폰트로 내려가며 경고를 남깁니다). 마루부리에 없는 IPA 기호는 기존 폴백 폰트(Arial 등)로 그려 □가 생기지 않습니다. `--font` 로 다른 폰트를 지정할 수 있고, 생성 전 `--dry-run`으로 계획을 확인할 수 있습니다.

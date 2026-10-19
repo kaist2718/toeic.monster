@@ -24,7 +24,7 @@ toeic.monster 홍보 자동 배포 — YouTube Shorts / Instagram Reels / TikTok
 
 중복 방지: 사용한 단어와 게시한 영상(내용 해시)을 promo/posted.json 에 기록해 다음
 게시에서 같은 단어·같은 숏폼을 자동으로 건너뜁니다. 다시 게시하려면 --allow-repeat,
-기록을 비우려면 --reset-posted(all, UNIT 번호, idioms, frequency, paraphrase)를 사용하세요.
+기록을 비우려면 --reset-posted(all, UNIT 번호, idioms, frequency, paraphrase, 새 포맷 종류 이름)를 사용하세요.
 
 남은 콘텐츠: 생성·게시가 끝날 때마다 종류별 사용·남은 수량을 표시합니다(--list-posted 는 기록만).
 
@@ -396,6 +396,612 @@ def quiz_item_from(row: dict) -> dict:
             "options": [str(o) for o in (row.get("opts") or [])]}
 
 
+# --------------------------------------------------------------------------- #
+# 새 쇼츠 포맷 11종 — 혼동 어휘·문법 빈칸·숫자 듣기·Part 2 함정·발음 비교·받아쓰기·
+# 비즈니스 이메일·전치사/연결어·전략 가이드·어원·30일 스프린트
+#
+# 데이터는 사이트가 쓰는 것과 같은 소스(data/app-data.js · data/extra.js ·
+# data/grammar-*.js)를 읽습니다. 콘텐츠가 사이트에 이미 있으므로 복제가 없고,
+# 사이트 콘텐츠를 고치면 쇼츠도 함께 따라갑니다.
+#
+# 각 항목은 아래 통일된 행(row) 모양으로 정규화됩니다. make_shorts.py 는 이 행을
+# 슬라이드로, publish.py 는 같은 행으로 제목·설명을 만듭니다.
+# --------------------------------------------------------------------------- #
+
+
+def _js_skip_ws(text: str, i: int) -> int:
+    """공백·주석(// · /* */)을 건너뜁니다."""
+    n = len(text)
+    while i < n:
+        if text[i] in " \t\r\n":
+            i += 1
+        elif text.startswith("//", i):
+            j = text.find("\n", i)
+            i = n if j < 0 else j + 1
+        elif text.startswith("/*", i):
+            j = text.find("*/", i + 2)
+            i = n if j < 0 else j + 2
+        else:
+            break
+    return i
+
+
+def js_parse_value(text: str, i: int = 0) -> tuple[object, int]:
+    """JS 리터럴(문자열·숫자·배열·객체·true/false/null) 하나를 파싱합니다.
+
+    data/*.js 처럼 사람이 손으로 쓴 JS 데이터를 npm 없이 Python 만으로 읽기 위한
+    미니 파서입니다. 함수·표현식이 나오면 ValueError — 그 데이터는 건너뜁니다.
+    """
+    i = _js_skip_ws(text, i)
+    if i >= len(text):
+        raise ValueError("끝에 도달")
+    ch = text[i]
+    if ch == '"':
+        out: list[str] = []
+        i += 1
+        while i < len(text):
+            c = text[i]
+            if c == "\\":
+                if i + 1 >= len(text):
+                    raise ValueError("이스케이프가 끝남")
+                out.append({"n": "\n", "t": "\t", "r": "\r"}.get(text[i + 1], text[i + 1]))
+                i += 2
+            elif c == '"':
+                return "".join(out), i + 1
+            else:
+                out.append(c)
+                i += 1
+        raise ValueError("문자열이 끝나지 않음")
+    if ch == "[":
+        arr: list = []
+        i += 1
+        while True:
+            i = _js_skip_ws(text, i)
+            if i < len(text) and text[i] == "]":
+                return arr, i + 1
+            val, i = js_parse_value(text, i)
+            arr.append(val)
+            i = _js_skip_ws(text, i)
+            if i < len(text) and text[i] == ",":
+                i += 1
+    if ch == "{":
+        obj: dict = {}
+        i += 1
+        while True:
+            i = _js_skip_ws(text, i)
+            if i < len(text) and text[i] == "}":
+                return obj, i + 1
+            if i < len(text) and text[i] == '"':
+                key, i = js_parse_value(text, i)
+            else:
+                m = re.match(r"[A-Za-z_$][\w$]*", text[i:])
+                if not m:
+                    raise ValueError(f"객체 키를 읽을 수 없음: {text[i:i + 20]!r}")
+                key = m.group(0)
+                i += len(key)
+            i = _js_skip_ws(text, i)
+            if i >= len(text) or text[i] != ":":
+                raise ValueError(f"객체 키 {key!r} 뒤에 : 가 없음")
+            val, i = js_parse_value(text, i + 1)
+            obj[key] = val
+            i = _js_skip_ws(text, i)
+            if i < len(text) and text[i] == ",":
+                i += 1
+    m = re.match(r"-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?", text[i:])
+    if m:
+        raw = m.group(0)
+        val = float(raw) if any(c in raw for c in ".eE") else int(raw)
+        return val, i + len(raw)
+    for word, val in (("true", True), ("false", False), ("null", None)):
+        if text.startswith(word, i):
+            return val, i + len(word)
+    raise ValueError(f"알 수 없는 값: {text[i:i + 20]!r}")
+
+
+def _js_values_after(text: str, matches) -> list:
+    """정규식 매치 위치(값 시작 직전)마다 값을 파싱해 모읍니다(실패한 것은 건너뜀)."""
+    out = []
+    for m in matches:
+        try:
+            val, _ = js_parse_value(text, m.end())
+        except (ValueError, IndexError):
+            continue
+        out.append(val)
+    return out
+
+
+def load_app_data_list(name: str) -> list | None:
+    """data/app-data.js 의 `var NAME = [ ... ]` 배열을 파싱합니다."""
+    path = ROOT / "data" / "app-data.js"
+    if not path.exists():
+        return None
+    text = path.read_text(encoding="utf-8")
+    values = _js_values_after(text, re.finditer(r"\bvar\s+" + re.escape(name) + r"\s*=\s*(?=[\[{])", text))
+    return values[0] if values else None
+
+
+def load_extra_list(key: str) -> list | None:
+    """data/extra.js 의 `key: [ ... ]` 블록을 파싱합니다(중첩 객체·주석 포함)."""
+    path = ROOT / "data" / "extra.js"
+    if not path.exists():
+        return None
+    text = path.read_text(encoding="utf-8")
+    values = _js_values_after(text, re.finditer(r"(?m)^\s*" + re.escape(key) + r":\s*(?=\[)", text))
+    return values[0] if values else None
+
+
+def load_grammar_books() -> list[dict]:
+    """data/grammar-*.js 의 교재 객체(window.GRAMMAR_BOOKS.push({...}))를 파싱합니다."""
+    books: list[dict] = []
+    for fname in ("grammar-basic.js", "grammar-intermediate.js"):
+        path = ROOT / "data" / fname
+        if not path.exists():
+            continue
+        text = path.read_text(encoding="utf-8")
+        for val in _js_values_after(text, re.finditer(r"\.push\(\s*(?=\{)", text)):
+            if isinstance(val, dict):
+                books.append(val)
+    return books
+
+
+BLANK = "＿＿＿＿"   # 사이트 문법 드릴과 같은 빈칸 표기
+
+
+def _blank_mark(sentence: str) -> str:
+    """문장에서 빈칸 표기(＿＿＿＿ / ____ 등)를 찾습니다."""
+    for mark in (BLANK, "____", "___"):
+        if mark in sentence:
+            return mark
+    return ""
+
+
+def _blank_reveal(sentence: str, answer: str) -> str:
+    """빈칸 표기를 정답으로 바꾼 문장(정답 슬라이드용)."""
+    mark = _blank_mark(sentence)
+    return sentence.replace(mark, answer) if mark else sentence
+
+
+def _blank_speak(sentence: str) -> str:
+    """낭독용 — 빈칸은 'blank' 라고 읽습니다(정답을 말로 새지 않기 위해)."""
+    mark = _blank_mark(sentence)
+    return sentence.replace(mark, "blank") if mark else sentence
+
+
+def _blank_word(sentence: str, word: str) -> str:
+    """문장 속 표제어 첫 등장을 빈칸으로 바꿉니다(표제어가 없으면 빈 문자열)."""
+    m = re.search(r"\b" + re.escape(word) + r"\b", sentence, flags=re.I)
+    if not m:
+        return ""
+    return sentence[:m.start()] + BLANK + sentence[m.end():]
+
+
+def _pick_distractors(pool: list[str], correct: str, n: int, offset: int) -> list[str]:
+    """오답 보기 n개 — 결정적(항상 같은 결과)으로 뽑습니다."""
+    out: list[str] = []
+    for k in range(len(pool) * 2):
+        cand = str(pool[(offset * 7 + k * 3 + 1) % len(pool)]).strip()
+        if cand and cand != correct and cand not in out:
+            out.append(cand)
+        if len(out) >= n:
+            break
+    return out
+
+
+def _shuffled_opts(correct: str, distractors: list[str], seed: str) -> list[str]:
+    """정답 위치를 섞은 보기 목록 — 같은 항목은 항상 같은 순서(재현 가능)."""
+    opts = [correct] + [d for d in distractors if d]
+    random.Random(seed).shuffle(opts)
+    return opts
+
+
+def _short_head(text: str, limit: int = 30) -> str:
+    text = re.sub(r"\s+", " ", str(text or "")).strip()
+    return text if len(text) <= limit else text[:limit - 1] + "…"
+
+
+def _row(**kw) -> dict:
+    """통일된 쇼츠 행 — 렌더링 필드와 사이드카(제목·설명) 필드를 한 번에 채웁니다."""
+    row = {
+        "key": "", "question": "", "sentence": "", "target": "", "note": "",
+        "opts": [], "a": "", "why": "", "tr": "", "tag": "",
+        "pair": None, "sentence_a": None, "target_a": None,
+        "speak": None, "speak_a": None,
+        "term": "", "meaning": "", "example": "", "translation": "", "ko": "",
+        "title_head": "", "sub": "", "bullets": [],
+    }
+    row.update(kw)
+    if not row["term"]:
+        row["term"] = row["key"]
+    if not row["meaning"]:
+        row["meaning"] = row["a"]
+    if not row["example"]:
+        row["example"] = row["sentence"]
+    if not row["translation"]:
+        row["translation"] = row["why"]
+    if not row["ko"]:
+        row["ko"] = row["tr"]
+    if not row["title_head"]:
+        row["title_head"] = row["term"]
+    return row
+
+
+def _load_confusables() -> list[dict]:
+    """혼동 어휘(CONFUSABLES) — 예문의 표제어를 빈칸으로 만든4지선다."""
+    data = load_app_data_list("CONFUSABLES") or []
+    words: list[str] = []
+    for d in data:
+        if isinstance(d, dict):
+            words += [w.strip() for w in str(d.get("pair", "")).split("/") if w.strip()]
+    rows: list[dict] = []
+    for i, d in enumerate(data):
+        if not isinstance(d, dict):
+            continue
+        pair = str(d.get("pair", ""))
+        sides = [w.strip() for w in pair.split("/") if w.strip()]
+        tip = str(d.get("tip", ""))
+        for si, side in enumerate(("a", "b")):
+            block = d.get(side)
+            if not isinstance(block, dict):
+                continue
+            en, ko = str(block.get("en", "")), str(block.get("ko", ""))
+            word = sides[si] if si < len(sides) else ""
+            blanked = _blank_word(en, word) if word else ""
+            if not blanked:
+                continue
+            other = sides[1 - si] if len(sides) > 1 else ""
+            dist = _pick_distractors([w for w in words if w not in (word, other)], "", 2, i + si)
+            opts = _shuffled_opts(word, ([other] if other else []) + dist, f"confusable-{i}-{si}")
+            rows.append(_row(
+                key=f"{pair} · {word}", question="빈칸에 들어갈 알맞은 말은?",
+                sentence=blanked, target=BLANK,
+                sentence_a=en, target_a=word,
+                opts=opts, a=word, why=tip, tr=ko, tag=pair,
+                pair=word, speak=("", _blank_speak(blanked)), speak_a=("", en),
+                title_head=pair))
+    return rows
+
+
+def _load_grammar_blanks() -> list[dict]:
+    """문법 빈칸 — 교재 연습 문제(빈칸 채우기) + 문법 팁(설명 → 포인트 이름)."""
+    rows: list[dict] = []
+    for book in load_grammar_books():
+        for ch in book.get("chapters") or []:
+            if not isinstance(ch, dict):
+                continue
+            tag = f"{ch.get('no', '')}과 {ch.get('title', '')}".strip()
+            for p in ch.get("practice") or []:
+                if not isinstance(p, dict):
+                    continue
+                q, a, why = str(p.get("q", "")), str(p.get("a", "")), str(p.get("why", ""))
+                opts = [str(o) for o in p.get("opts") or []]
+                if not q or not a or len(opts) < 2 or not _blank_mark(q):
+                    continue
+                rows.append(_row(
+                    key=q, question="빈칸에 들어갈 말은?",
+                    sentence=q, target=_blank_mark(q),
+                    sentence_a=_blank_reveal(q, a), target_a=a,
+                    opts=opts, a=a, why=why, tag=tag, title_head=tag,
+                    pair=a, speak=("", _blank_speak(q)), speak_a=("", _blank_reveal(q, a))))
+    tips = load_app_data_list("GRAMMAR_TIPS") or []
+    titles = [str(t[0]) for t in tips if isinstance(t, (list, tuple)) and t]
+    for i, t in enumerate(tips):
+        if not isinstance(t, (list, tuple)):
+            continue
+        title, examples, tip = (list(t) + ["", "", ""])[:3]
+        title, examples, tip = str(title), str(examples), str(tip)
+        if not title or not examples:
+            continue
+        dist = _pick_distractors([x for x in titles if x != title], "", 3, i)
+        rows.append(_row(
+            key=title, question="이 예문이 보여 주는 문법 포인트는?",
+            sentence=examples.replace(" / ", "  ·  "), target="",
+            opts=_shuffled_opts(title, dist, f"grammartip-{i}"), a=title, why=tip,
+            tag="문법 팁", title_head=title, pair=title,
+            speak=("", examples.replace(" / ", ". ")), speak_a=("", "")))
+    return rows
+
+
+def _load_numbers() -> list[dict]:
+    """숫자 듣기 — 들리는 숫자·표현을 고르는 청취 퀴즈."""
+    rows: list[dict] = []
+    for d in load_extra_list("numbers") or []:
+        if not isinstance(d, dict):
+            continue
+        audio, a = str(d.get("audio", "")), str(d.get("a", ""))
+        opts = [str(o) for o in d.get("opts") or []]
+        if not audio or not a or len(opts) < 2:
+            continue
+        rows.append(_row(
+            key=audio, question="들리는 숫자·표현은?",
+            note="🎧 두 번 들립니다 — 숫자를 귀로 확인하세요",
+            opts=opts, a=a, why=str(d.get("why", "")), tag=str(d.get("tag", "")),
+            pair=a, speak=("", audio), speak_a=("", audio), title_head=a))
+    return rows
+
+
+def _load_traps() -> list[dict]:
+    """Part 2 함정 응답 — 간접 응답·의문사·부정 의문문 등 함정 유형."""
+    rows: list[dict] = []
+    for d in load_extra_list("traps") or []:
+        if not isinstance(d, dict):
+            continue
+        audio, a = str(d.get("audio", "")), str(d.get("a", ""))
+        opts = [str(o) for o in d.get("opts") or []]
+        if not audio or not a or len(opts) < 2:
+            continue
+        tag = str(d.get("tag", ""))
+        rows.append(_row(
+            key=audio, question=f"[{tag}] 이 물음에 어떻게 답해야 할까요?",
+            sentence=audio, target="",
+            opts=opts, a=a, why=str(d.get("why", "")), tr=str(d.get("ko", "")), tag=tag,
+            pair=a, speak=("", audio), speak_a=("", audio), title_head=tag))
+    return rows
+
+
+def _load_minimal() -> list[dict]:
+    """최소대립쌍 발음 비교 — 두 단어의 소리 차이와 뜻."""
+    data = load_app_data_list("MINIMAL_PAIRS") or []
+    pool = [str(d.get(k, "")) for d in data if isinstance(d, dict) for k in ("aKo", "bKo")]
+    rows: list[dict] = []
+    for i, d in enumerate(data):
+        if not isinstance(d, dict):
+            continue
+        a, b = str(d.get("a", "")), str(d.get("b", ""))
+        a_ko, b_ko = str(d.get("aKo", "")), str(d.get("bKo", ""))
+        if not a or not b or not a_ko:
+            continue
+        dist = _pick_distractors([x for x in pool if x not in (a_ko, b_ko)], "", 2, i)
+        rows.append(_row(
+            key=f"{a} / {b}", question=f"‘{a}’의 뜻은?",
+            sentence=f"{a}    vs    {b}", target=a,
+            opts=_shuffled_opts(a_ko, ([b_ko] if b_ko else []) + dist, f"minimal-{i}"),
+            a=a_ko, why=str(d.get("tip", "")), tag="발음 비교",
+            pair=f"{a} {a_ko} ↔ {b} {b_ko}",
+            speak=("", f"{a}. {b}."), speak_a=("", f"{a}. {b}."),
+            title_head=f"{a} / {b}"))
+    return rows
+
+
+def _load_dictation() -> list[dict]:
+    """받아쓰기 챌린지 — 듣고 문장을 그대로 쓰기."""
+    rows: list[dict] = []
+    for s in load_extra_list("dictation") or []:
+        text = str(s).strip()
+        if not text:
+            continue
+        n = len(text.split())
+        rows.append(_row(
+            key=text, question="듣고 문장을 그대로 써 보세요",
+            note=f"🎧 단어 {n}개 — 띄어쓰기까지 확인",
+            opts=[], a=text, why=f"단어 {n}개 — 못 들린 부분만 반복해 귀에 익히세요.",
+            sentence_a=text, target_a="",
+            tag="받아쓰기", title_head=_short_head(text),
+            pair="", speak=("", text), speak_a=("", text)))
+    return rows
+
+
+def _load_bizmail() -> list[dict]:
+    """비즈니스 이메일 한 줄 — 상황에 맞는 정중한 표현 뒤집기 퀴즈."""
+    rows: list[dict] = []
+    for d in load_app_data_list("BIZ_TEMPLATES") or []:
+        if not isinstance(d, dict):
+            continue
+        cat, ko = str(d.get("cat", "")), str(d.get("ko", ""))
+        lines = [str(x) for x in d.get("lines") or [] if str(x).strip()]
+        if not lines:
+            continue
+        rows.append(_row(
+            key=f"{cat} — {ko}", question=f"‘{ko}’ 상황 — 정중한 영어 한 줄은?",
+            note="✍️ 이메일 첫 문장부터 시작합니다",
+            opts=[], a=lines[0], why=f"[{cat}] {ko} 상황에서 쓰는 표현입니다.",
+            sentence_a=lines[0], target_a="", tr=lines[1] if len(lines) > 1 else "",
+            tag=cat, title_head=ko, pair="",
+            speak=("", lines[0]), speak_a=("", lines[0])))
+    return rows
+
+
+def _load_drill() -> list[dict]:
+    """전치사·연결어 드릴 — 빈칸에 들어갈 전치사/접속부사 고르기."""
+    rows: list[dict] = []
+    for source, fallback_tag in (("transitions", "연결어"), ("prepositions", "전치사")):
+        for d in load_extra_list(source) or []:
+            if not isinstance(d, dict):
+                continue
+            prompt, a = str(d.get("prompt", "")), str(d.get("a", ""))
+            opts = [str(o) for o in d.get("opts") or []]
+            if not prompt or not a or len(opts) < 2 or not _blank_mark(prompt):
+                continue
+            rows.append(_row(
+                key=prompt, question=f"[{str(d.get('tag', '')) or fallback_tag}] 빈칸에 들어갈 말은?",
+                sentence=prompt, target=_blank_mark(prompt),
+                sentence_a=_blank_reveal(prompt, a), target_a=a,
+                opts=opts, a=a, why=str(d.get("why", "")),
+                tag=str(d.get("tag", "")) or fallback_tag, title_head=a,
+                pair=a, speak=("", _blank_speak(prompt)), speak_a=("", _blank_reveal(prompt, a))))
+    return rows
+
+
+def _load_strategy() -> list[dict]:
+    """전략 리스트형 — 가이드의 절을 한 장짜리 공략 카드로."""
+    rows: list[dict] = []
+    for guide in load_extra_list("guides") or []:
+        if not isinstance(guide, dict):
+            continue
+        gtitle = str(guide.get("title", ""))
+        slug = str(guide.get("slug", ""))
+        for sec in guide.get("sections") or []:
+            if not isinstance(sec, dict):
+                continue
+            h = str(sec.get("h", ""))
+            bullets = [str(x) for x in (sec.get("list") or []) if str(x).strip()][:4]
+            if not h or not bullets:
+                continue
+            rows.append(_row(
+                key=f"{slug} · {h}", term=h, meaning=gtitle,
+                example=bullets[0], translation=bullets[1] if len(bullets) > 1 else "",
+                sub=gtitle, bullets=bullets, tag="전략", title_head=h,
+                speak=(re.sub(r"^\d+\.\s*", "", h), bullets[0])))
+    return rows
+
+
+def _load_wordparts() -> list[dict]:
+    """어원 스토리 카드 — 어휘 파괴(MNEMONICS) + 접두사·어근(WORD_PARTS)."""
+    rows: list[dict] = []
+    mn = [d for d in (load_app_data_list("MNEMONICS") or []) if isinstance(d, dict)]
+    roots = [str(d.get("root", "")) for d in mn]
+    for i, d in enumerate(mn):
+        word, root = str(d.get("word", "")), str(d.get("root", ""))
+        tip, ex = str(d.get("tip", "")), str(d.get("ex", ""))
+        if not word or not root:
+            continue
+        dist = _pick_distractors([r for r in roots if r != root], "", 3, i)
+        rows.append(_row(
+            key=word, question=f"‘{word}’는 어떤 조각으로 만들어졌을까?",
+            sentence=ex, target=word if word in ex else "",
+            opts=_shuffled_opts(root, dist, f"mnemonic-{i}"), a=root, why=tip,
+            pair=f"{word} ← {root}", tag="어원", title_head=word,
+            speak=(word, ex), speak_a=(word, "")))
+    wp = [d for d in (load_app_data_list("WORD_PARTS") or []) if isinstance(d, dict)]
+    parts = [str(d.get("part", "")) for d in wp]
+    for i, d in enumerate(wp):
+        part, mean = str(d.get("part", "")), str(d.get("mean", ""))
+        words, ex = str(d.get("words", "")), str(d.get("ex", ""))
+        if not part:
+            continue
+        first_word = words.split("·")[0].strip()
+        dist = _pick_distractors([p for p in parts if p != part], "", 3, i)
+        rows.append(_row(
+            key=f"{part} ({str(d.get('type', ''))})",
+            question=f"‘{words}’에 공통으로 들어간 조각은?",
+            sentence=ex, target=first_word if first_word and first_word in ex else "",
+            opts=_shuffled_opts(part, dist, f"wordpart-{i}"), a=part,
+            why=f"{part} = {mean} · {words}", pair=f"{part} = {mean}",
+            tag="어원", title_head=part, speak=("", ex), speak_a=("", "")))
+    return rows
+
+
+def _load_sprint() -> list[dict]:
+    """30일 스프린트 DAY 카드 — 하루 학습 분량을 연재형으로."""
+    unit_info = load_unit_info()
+    rows: list[dict] = []
+    for d in load_extra_list("sprint") or []:
+        if not isinstance(d, dict):
+            continue
+        try:
+            day, unit = int(d.get("day", 0)), int(d.get("unit", 0))
+        except (TypeError, ValueError):
+            continue
+        focus = str(d.get("focus", ""))
+        info = unit_info.get(unit, {})
+        unit_label = f"UNIT {unit} {info.get('icon', '')} {info.get('title', '')}".strip()
+        rows.append(_row(
+            key=f"DAY {day}", term=f"DAY {day}", meaning=unit_label,
+            example=focus, translation=focus,
+            sub=unit_label, bullets=[focus, "오늘 학습은 홈의 「오늘의 학습」에서 바로 시작하세요"],
+            tag="스프린트", title_head=f"DAY {day}",
+            speak=(f"Day {day}", focus)))
+    return rows
+
+
+KIND_LOADERS = {
+    "confusables": _load_confusables,
+    "grammar": _load_grammar_blanks,
+    "numbers": _load_numbers,
+    "traps": _load_traps,
+    "minimal": _load_minimal,
+    "dictation": _load_dictation,
+    "bizmail": _load_bizmail,
+    "drill": _load_drill,
+    "strategy": _load_strategy,
+    "wordparts": _load_wordparts,
+    "sprint": _load_sprint,
+}
+
+
+def load_kind_rows(kind: str) -> list[dict]:
+    """새 포맷 콘텐츠를 통일된 행 모양으로 로드합니다(없으면 빈 목록)."""
+    fn = KIND_LOADERS.get(kind)
+    if fn is None:
+        return []
+    try:
+        return fn()
+    except Exception as exc:   # 데이터가 깨져도 게시 도구 전체가 죽지 않게 합니다
+        warn(f"{kind} 데이터를 읽지 못했습니다({exc}).")
+        return []
+
+
+# 새 포맷 레지스트리 — 슬라이드 칩·제목·설명·해시태그·중복 기록 키가 여기서 한 번에 나옵니다.
+# layout: quiz2 = 「문제 → 정답」 2장, list1 = 한 장짜리 카드.
+KIND_SPECS: dict[str, dict] = {
+    "confusables": {
+        "label": "혼동 어휘", "chip": "TOEIC 혼동 어휘 퀴즈", "layout": "quiz2",
+        "category": "TOEIC 혼동 어휘", "desc_label": "TOEIC 혼동 어휘 퀴즈", "unit_word": "문제",
+        "tags": ("혼동어휘", "헷갈리는영어"), "match": "혼동 어휘", "link": "/",
+        "footer": "헷갈리는 단어 쌍 20쌍을 한눈에 — 홈에서 무료로 → {link}",
+    },
+    "grammar": {
+        "label": "문법 빈칸", "chip": "TOEIC 문법 빈칸 퀴즈", "layout": "quiz2",
+        "category": "TOEIC 문법 빈칸", "desc_label": "TOEIC 문법 빈칸 퀴즈", "unit_word": "문제",
+        "tags": ("TOEIC문법", "문법퀴즈"), "match": "문법 빈칸", "link": "/",
+        "footer": "문법 교재·연습 문제 300여 개 — 홈에서 무료로 → {link}",
+    },
+    "numbers": {
+        "label": "숫자 듣기", "chip": "TOEIC 숫자 듣기 퀴즈", "layout": "quiz2",
+        "category": "TOEIC 숫자 듣기", "desc_label": "TOEIC 숫자 듣기 퀴즈", "unit_word": "문제",
+        "tags": ("TOEIC듣기", "숫자함정"), "match": "숫자 듣기", "link": "/",
+        "footer": "가격·날짜·전화번호 듣기 훈련은 홈에서 무료로 → {link}",
+    },
+    "traps": {
+        "label": "Part 2 함정", "chip": "TOEIC Part 2 함정", "layout": "quiz2",
+        "category": "TOEIC Part 2 함정", "desc_label": "TOEIC Part 2 함정 응답", "unit_word": "문제",
+        "tags": ("TOEICPart2", "LC함정"), "match": "Part 2 함정", "link": "/",
+        "footer": "Part 2 함정 유형 25개 — 홈에서 무료로 → {link}",
+    },
+    "minimal": {
+        "label": "발음 비교", "chip": "TOEIC 발음 비교", "layout": "quiz2",
+        "category": "TOEIC 발음 비교", "desc_label": "TOEIC 최소대립쌍 발음 비교", "unit_word": "문제",
+        "tags": ("영어발음", "최소대립쌍"), "match": "발음 비교", "link": "/",
+        "footer": "발음 비교 20쌍 — 홈에서 무료로 → {link}",
+    },
+    "dictation": {
+        "label": "받아쓰기", "chip": "TOEIC 받아쓰기 챌린지", "layout": "quiz2",
+        "category": "TOEIC 받아쓰기", "desc_label": "TOEIC 받아쓰기 챌린지", "unit_word": "문장",
+        "tags": ("영어받아쓰기", "TOEIC듣기"), "match": "받아쓰기", "link": "/",
+        "footer": "받아쓰기 문장 24개 — 홈에서 무료로 → {link}",
+    },
+    "bizmail": {
+        "label": "비즈니스 이메일", "chip": "비즈니스 이메일 한 줄", "layout": "quiz2",
+        "category": "비즈니스 이메일", "desc_label": "비즈니스 이메일 한 줄", "unit_word": "표현",
+        "tags": ("비즈니스영어", "영어이메일"), "match": "비즈니스 이메일", "link": "/",
+        "footer": "상황별 이메일 템플릿은 홈에서 무료로 → {link}",
+    },
+    "drill": {
+        "label": "전치사·연결어", "chip": "TOEIC 전치사·연결어", "layout": "quiz2",
+        "category": "TOEIC 전치사·연결어", "desc_label": "TOEIC 전치사·연결어 드릴", "unit_word": "문제",
+        "tags": ("TOEIC전치사", "영어연결어"), "match": "전치사·연결어", "link": "/",
+        "footer": "전치사·연결어 40문항 — 홈에서 무료로 → {link}",
+    },
+    "strategy": {
+        "label": "전략 가이드", "chip": "TOEIC 공략", "layout": "list1",
+        "category": "TOEIC 공략", "desc_label": "TOEIC 공략", "unit_word": "개",
+        "tags": ("TOEIC공략", "TOEIC팁"), "match": "TOEIC 공략", "link": "/guides/",
+        "footer": "전략·공략 가이드 전문은 사이트에서 → {link}",
+    },
+    "wordparts": {
+        "label": "어원", "chip": "TOEIC 어원 카드", "layout": "quiz2",
+        "category": "TOEIC 어원", "desc_label": "TOEIC 어원 스토리 카드", "unit_word": "개",
+        "tags": ("영어어원", "어원학습"), "match": "어원", "link": "/",
+        "footer": "접두사·어근 어휘 카드는 홈에서 무료로 → {link}",
+    },
+    "sprint": {
+        "label": "30일 스프린트", "chip": "30일 스프린트", "layout": "list1",
+        "category": "TOEIC 30일 스프린트", "desc_label": "TOEIC 30일 스프린트", "unit_word": "개",
+        "tags": ("TOEIC스프린트", "30일챌린지"), "match": "30일 스프린트", "link": "/",
+        "footer": "30일 완주 커리큘럼은 홈의 「오늘의 학습」에서 → {link}",
+    },
+}
+
+
 def load_unit_info() -> dict:
     """UNITS 메타데이터(id -> {title, level, icon}) 파싱.
 
@@ -471,6 +1077,8 @@ def posted_label(key: str) -> str:
         return "빈도 어휘"
     if key == PARAPHRASE_BUCKET:
         return "동의어 치환"
+    if key in KIND_SPECS:
+        return KIND_SPECS[key]["label"]
     return key
 
 
@@ -619,6 +1227,11 @@ def content_inventory() -> list[dict]:
     paras = load_paraphrase() or []
     rows.append({"key": PARAPHRASE_BUCKET, "label": "동의어 치환", "total": len(paras),
                  "used": len(posted.get(PARAPHRASE_BUCKET, []))})
+
+    for kind, spec in KIND_SPECS.items():
+        kind_rows = load_kind_rows(kind)
+        rows.append({"key": kind, "label": spec["label"], "total": len(kind_rows),
+                     "used": len(posted.get(kind, []))})
 
     for r in rows:
         r["remaining"] = max(0, r["total"] - r["used"])
@@ -846,16 +1459,29 @@ def quiz_title(items: list) -> str:
     return brand_title(f"{head} 외 동의어 치환 {len(items) - 1}문제", "TOEIC 동의어 치환 퀴즈")
 
 
-def quiz_desc(items: list, site_url: str) -> str:
+def quiz_desc(items: list, site_url: str, kind: str = "paraphrase") -> str:
     """퀴즈 설명 — 영상에 들어간 문제를 보기·정답·해설까지 그대로 적습니다.
 
     숏폼은 정답을 영상 안에서만 보여 주므로, 설명란에도 같은 내용을 남겨 다시 보기를 돕습니다.
+    동의어 치환과 새 포맷(혼동 어휘·문법 빈칸 등)이 같은 모양을 씁니다.
     """
+    spec = KIND_SPECS.get(kind, {})
+    label = spec.get("desc_label", "TOEIC 동의어 치환 퀴즈")
+    unit_word = spec.get("unit_word", "문제")
     rows = [it for it in items if str(it.get("term", "")).strip()]
-    lines = [f"TOEIC 동의어 치환 퀴즈 {len(rows)}문제" if len(rows) > 1 else "TOEIC 동의어 치환 퀴즈", ""]
+    lines = [f"{label} {len(rows)}{unit_word}" if len(rows) > 1 else label, ""]
     letters = "ABCD"
     for i, it in enumerate(rows, 1):
-        lines.append(f"Q{i}. {it.get('example', '')}")
+        question = str(it.get("question", "")).strip()
+        example = str(it.get("example", "")).strip()
+        if example:
+            lines.append(f"Q{i}. {example}")
+            if question:
+                lines.append(f"   {question}")
+        elif question:
+            lines.append(f"Q{i}. {question}")
+        else:
+            lines.append(f"Q{i}.")
         if it.get("ko"):
             lines.append(f"   해석: {it['ko']}")
         opts = [str(o) for o in (it.get("options") or [])]
@@ -868,8 +1494,63 @@ def quiz_desc(items: list, site_url: str) -> str:
         if it.get("translation"):
             lines.append(f"   해설: {it['translation']}")
         lines.append("")
-    lines.append(f"같은 유형 200문제 — 홈의 「동의어 치환 훈련」에서 → {site_link(site_url, '/', 'paraphrase')}")
+    if kind in KIND_SPECS:
+        link = site_link(site_url, str(spec.get("link", "/")), kind)
+        lines.append(str(spec.get("footer", "")).format(link=link))
+    else:
+        lines.append(f"같은 유형 200문제 — 홈의 「동의어 치환 훈련」에서 → {site_link(site_url, '/', 'paraphrase')}")
     return "\n".join(lines)
+
+
+def list_desc(items: list, site_url: str, kind: str) -> str:
+    """리스트형(전략 가이드·스프린트) 설명 — 카드 내용을 목록으로 풀어 적습니다."""
+    spec = KIND_SPECS.get(kind, {})
+    label = spec.get("desc_label", kind)
+    unit_word = spec.get("unit_word", "개")
+    rows = [it for it in items if str(it.get("term", "")).strip()]
+    lines = [f"{label} {len(rows)}{unit_word}" if len(rows) > 1 else label, ""]
+    for i, it in enumerate(rows, 1):
+        lines.append(f"{i}. {it.get('title_head') or it.get('term', '')}")
+        if it.get("meaning"):
+            lines.append(f"   {it['meaning']}")
+        for b in (it.get("bullets") or [])[:4]:
+            lines.append(f"   · {b}")
+        lines.append("")
+    link = site_link(site_url, str(spec.get("link", "/")), kind)
+    lines.append(str(spec.get("footer", "")).format(link=link))
+    return "\n".join(lines)
+
+
+def kind_desc(items: list, site_url: str, kind: str) -> str:
+    """새 포맷 설명 — 레이아웃에 맞춰 퀴즈형/리스트형 설명을 고릅니다."""
+    layout = KIND_SPECS.get(kind, {}).get("layout", "quiz2")
+    return list_desc(items, site_url, kind) if layout == "list1" else quiz_desc(items, site_url, kind)
+
+
+def kind_title(kind: str, items: list) -> str:
+    """새 포맷 제목 — 첫 항목의 제목 머리 + 나머지 개수."""
+    spec = KIND_SPECS.get(kind, {})
+    label = str(spec.get("category", kind))
+    unit_word = str(spec.get("unit_word", "개"))
+    rows = [it for it in items if str(it.get("term", "")).strip()]
+    if not rows:
+        return f"{label} | toeic.monster"
+    head = str(rows[0].get("title_head") or rows[0].get("term", "")).strip()
+    if len(rows) > 1:
+        head = f"{head} 외 {len(rows) - 1}{unit_word}"
+    return brand_title(head, label)
+
+
+def kind_row_item(kind: str, row: dict) -> dict:
+    """통일된 행 → 사이드카와 같은 설명용 항목."""
+    return {
+        "term": row.get("term", ""), "meaning": row.get("meaning", ""),
+        "example": row.get("example", ""), "translation": row.get("translation", ""),
+        "ko": row.get("ko", ""), "options": list(row.get("opts") or []),
+        "question": row.get("question", ""), "tag": row.get("tag", ""),
+        "title_head": row.get("title_head", ""), "sub": row.get("sub", ""),
+        "bullets": list(row.get("bullets") or []), "note": row.get("note", ""),
+    }
 
 
 def build_meta(cfg: dict, args) -> dict:
@@ -901,6 +1582,9 @@ def build_meta(cfg: dict, args) -> dict:
         elif kind == "paraphrase":
             title = title or quiz_title(items)
             desc = desc or quiz_desc(items, site_url)
+        elif kind in KIND_SPECS:
+            title = title or kind_title(kind, items)
+            desc = desc or kind_desc(items, site_url, kind)
         else:
             unit_no = saved.get("unit") if isinstance(saved.get("unit"), int) else None
             unit_info = load_unit_info().get(unit_no, {}) if unit_no else {}
@@ -991,6 +1675,23 @@ def build_meta(cfg: dict, args) -> dict:
             desc = desc or quiz_desc([one], site_url)
         elif not title:
             warn("동의어 치환 데이터를 읽지 못해 기본 제목을 사용합니다.")
+    elif str(getattr(args, "kind", "") or "") in KIND_SPECS:
+        kind = str(args.kind)
+        # 영상 메타가 없는 새 포맷 영상을 위한 폴백 — 해당 종류에서 남은 항목 중 하나를 고릅니다.
+        rows = load_kind_rows(kind) or []
+        pool = rows
+        if rows and not getattr(args, "allow_repeat", False):
+            used = posted_words_for_unit(kind)
+            remaining = [r for r in rows if normalize_word(r["term"]) not in used]
+            if remaining:
+                pool = remaining
+        if pool:
+            one = kind_row_item(kind, random.choice(pool))
+            chosen_word, word_bucket = one["term"], kind
+            title = title or kind_title(kind, [one])
+            desc = desc or kind_desc([one], site_url, kind)
+        elif not title:
+            warn(f"{KIND_SPECS[kind]['label']} 데이터를 읽지 못해 기본 제목을 사용합니다.")
 
     title = (title or cfg.get("default_title", "TOEIC 필수 어휘 | toeic.monster")).strip()[:100]
     desc = (desc or cfg.get("default_description", "")).strip()
@@ -999,7 +1700,8 @@ def build_meta(cfg: dict, args) -> dict:
     kind_tags = {"unit": ("TOEIC단어", "영단어암기"),
                  "idioms": ("TOEIC숙어", "구동사"),
                  "frequency": ("TOEIC빈출", "기출어휘"),
-                 "paraphrase": ("TOEIC퀴즈", "동의어")}
+                 "paraphrase": ("TOEIC퀴즈", "동의어"),
+                 **{k: tuple(s["tags"]) for k, s in KIND_SPECS.items()}}
     existing_tags = {h.lower() for h in hashtags.split() if h.startswith("#")}
     for tag in kind_tags.get(kind, ()):
         if f"#{tag}".lower() not in existing_tags:
@@ -2225,7 +2927,7 @@ def run_batch_menu(cfg: dict) -> None:
 
 
 # ------------------------------------------------------- 콘텐츠 자동 준비 ----
-AUTO_KINDS = ("unit", "idioms", "frequency", "paraphrase")
+AUTO_KINDS = ("unit", "idioms", "frequency", "paraphrase", *KIND_SPECS)
 
 
 def next_unit_with_remaining() -> int | None:
@@ -2254,6 +2956,8 @@ def build_shorts_command(cfg: dict, kind: str, words: int) -> list[str] | None:
         command.append("--frequency")
     elif kind == "paraphrase":
         command.append("--paraphrase")
+    elif kind in KIND_SPECS:
+        command.extend(["--kind", kind])
     else:
         unit = next_unit_with_remaining()
         if unit is None:
@@ -2374,7 +3078,8 @@ def auto_plan_menu(cfg: dict) -> None:
     kind = choose_option("콘텐츠 종류",
                          [("auto", "자동 — 남은 콘텐츠 많은 순으로 섞기"),
                           ("unit", "UNIT 단어"), ("idioms", "숙어 126선"),
-                          ("frequency", "빈도순 기출 어휘"), ("paraphrase", "동의어 치환 퀴즈")],
+                          ("frequency", "빈도순 기출 어휘"), ("paraphrase", "동의어 치환 퀴즈")]
+                         + [(k, s["label"]) for k, s in KIND_SPECS.items()],
                          "auto")
     words = ask_int("영상에 넣을 항목 수(1~10)", default_words, 1, 10)
     mode = choose_option("진행 방식", [("s", "예약 게시 등록"), ("g", "생성만")], "s")
@@ -2421,6 +3126,7 @@ def describe_saved_meta(saved: dict) -> str:
     where = ("숙어" if kind == "idioms"
              else "빈도 어휘" if kind == "frequency"
              else "동의어 치환" if kind == "paraphrase"
+             else KIND_SPECS[kind]["label"] if kind in KIND_SPECS
              else f"UNIT {saved.get('unit')}")
     return f"{where} · 항목 {len(saved.get('items') or [])}개"
 
@@ -2698,7 +3404,8 @@ def display_performance(items: list[dict]) -> None:
 
 # ------------------------------------------------------- 성과 인사이트 ----
 KIND_LABELS = {"unit": "단어", "idioms": "숙어", "frequency": "빈도 어휘",
-               "paraphrase": "동의어 치환", "other": "기타"}
+               "paraphrase": "동의어 치환",
+               **{k: s["label"] for k, s in KIND_SPECS.items()}, "other": "기타"}
 
 
 def classify_title(title: str) -> str:
@@ -2712,6 +3419,9 @@ def classify_title(title: str) -> str:
         return "frequency"
     if "필수 어휘" in t:
         return "unit"
+    for k, spec in KIND_SPECS.items():
+        if str(spec.get("match", "")) in t:
+            return k
     return "other"
 
 
@@ -3756,6 +4466,8 @@ MENU_ITEMS: list[tuple[str, str, tuple[str, ...]]] = [
     ("2",  "숙어 쇼츠 생성",                ("숙어", "idiom", "생성", "make")),
     ("3",  "빈도 어휘 쇼츠 생성",           ("빈도", "frequency", "어휘", "생성", "make")),
     ("4",  "동의어 치환 퀴즈 생성",         ("퀴즈", "paraphrase", "동의어", "생성", "quiz", "make")),
+    ("30", "새 포맷 쇼츠 생성 (혼동 어휘·문법·듣기 등)", ("새포맷", "혼동", "문법", "듣기", "받아쓰기", "발음", "어원", "스프린트", "전략", "이메일", "함정", "생성", "make")),
+    ("31", "새 포맷 쇼츠 생성 후 게시",     ("새포맷", "혼동", "문법", "듣기", "생성+게시")),
     # 🚀 만들고 바로 게시 (5~8)
     ("5",  "쇼츠 생성 후 게시",             ("생성+게시", "원스톱", "generate")),
     ("6",  "숙어 쇼츠 생성 후 게시",         ("숙어", "idiom", "생성+게시")),
@@ -3789,10 +4501,11 @@ MENU_ITEMS: list[tuple[str, str, tuple[str, ...]]] = [
 # 목록·검색·표시 순서를 항상 번호 순으로 맞춰 둡니다(번호를 고치면 여기까지 자동 정렬).
 MENU_ITEMS.sort(key=lambda item: int(item[0]))
 MENU_TITLES: dict[str, str] = {num: title for num, title, _alias in MENU_ITEMS}
-# 번호가 위에서 아래로 1 → 29 로 이어지도록 그룹을 순서대로 묶습니다.
+# 번호가 위에서 아래로 1 → 31 로 이어지도록 그룹을 순서대로 묶습니다.
 MENU_GROUPS: list[tuple[str, list[str]]] = [
     ("🎬 쇼츠 만들기",          ["1", "2", "3", "4"]),
     ("🚀 만들고 바로 게시",      ["5", "6", "7", "8"]),
+    ("🆕 새 포맷 만들기",        ["30", "31"]),
     ("📤 게시·이력·성과",       ["9", "10", "11", "12", "13", "14", "15", "16", "17"]),
     ("🗓 예약·자동 준비",        ["18", "19", "20", "21"]),
     ("⚙️ 설정·점검·도구",        ["22", "23", "24", "25", "26", "27", "28", "29"]),
@@ -4230,9 +4943,16 @@ def interactive_menu(initial: str | None = None) -> None:
                                   ("unit", "특정 UNIT 번호만"),
                                   ("idioms", "숙어 기록"),
                                   ("frequency", "빈도 어휘 기록"),
-                                  ("paraphrase", "동의어 치환 기록")], "all")
+                                  ("paraphrase", "동의어 치환 기록"),
+                                  ("kinds", "새 포맷 11종 기록")], "all")
             if pick == "unit":
                 target = str(ask_int("초기화할 UNIT 번호(1~30)", default_unit, 1, 30))
+            elif pick == "kinds":
+                if ask_yes_no("새 포맷 11종의 중복 방지 기록을 초기화할까요?", False):
+                    for k in KIND_SPECS:
+                        reset_posted(k)
+                    ok("새 포맷 기록을 초기화했습니다.")
+                continue
             else:
                 target = pick
             if ask_yes_no(f"중복 방지 기록({target})을 초기화할까요?", False):
@@ -4262,7 +4982,7 @@ def interactive_menu(initial: str | None = None) -> None:
             if meta.get("word"):
                 mark_words_posted(meta.get("word_bucket") or unit, [meta["word"]])
             continue
-        if action not in ("1", "2", "3", "4", "5", "6", "7", "8", "9", "18", "21"):
+        if action not in ("1", "2", "3", "4", "5", "6", "7", "8", "9", "18", "21", "30", "31"):
             warn("메뉴 번호를 확인해 주세요.")
             continue
 
@@ -4284,16 +5004,21 @@ def interactive_menu(initial: str | None = None) -> None:
             log("예약 시각에 이 명령을 실행해야 게시됩니다: python publish.py --run-due")
             continue
 
-        # 2·6 숙어, 3·7 빈도 어휘, 4·8 동의어 치환 퀴즈, 나머지(1·5) 단어 —
+        # 2·6 숙어, 3·7 빈도 어휘, 4·8 동의어 치환 퀴즈, 30·31 새 포맷, 나머지(1·5) 단어 —
         # 같은 흐름을 종류만 바꿔 돕습니다.
-        kind = ("idioms" if action in ("2", "6")
-                else "frequency" if action in ("3", "7")
-                else "paraphrase" if action in ("4", "8") else "unit")
+        if action in ("30", "31"):
+            kind = choose_option("새 포맷 콘텐츠 종류",
+                                 [(k, f"{s['label']} — {s['desc_label']}")
+                                  for k, s in KIND_SPECS.items()], "confusables")
+        else:
+            kind = ("idioms" if action in ("2", "6")
+                    else "frequency" if action in ("3", "7")
+                    else "paraphrase" if action in ("4", "8") else "unit")
         # 기존 영상 게시(9)는 영상 메타가 있으면 UNIT을 묻지 않으므로, 여기서는 생성(1·5)만 묻습니다.
         unit = choose_unit(default_unit) if (kind == "unit" and action in ("1", "5")) else None
         video = None
-        # 1~8 은 쇼츠를 만드는 흐름(1~4 는 생성만, 5~8 은 생성 후 게시)입니다.
-        if action in ("1", "2", "3", "4", "5", "6", "7", "8"):
+        # 1~8·30·31 은 쇼츠를 만드는 흐름(생성만 / 생성 후 게시)입니다.
+        if action in ("1", "2", "3", "4", "5", "6", "7", "8", "30", "31"):
             words = str(ask_int("영상에 넣을 항목 수(1~10)", default_words, 1, 10))
             theme = choose_theme(default_theme)
             pattern = choose_pattern(default_pattern)
@@ -4316,6 +5041,8 @@ def interactive_menu(initial: str | None = None) -> None:
                 command.append("--frequency")
             elif kind == "paraphrase":
                 command.append("--paraphrase")
+            elif kind in KIND_SPECS:
+                command.extend(["--kind", kind])
             else:
                 command.extend(["--unit", str(unit)])
             tts_on = ask_yes_no("영어 TTS를 추가할까요?", default_tts)
@@ -4375,7 +5102,7 @@ def interactive_menu(initial: str | None = None) -> None:
                 if video is None:
                     fail("생성된 영상을 찾지 못했습니다.")
                     continue
-            if action in ("1", "2", "3", "4"):
+            if action in ("1", "2", "3", "4", "30"):
                 ok(f"쇼츠 생성 완료: {video}")
                 continue
         else:
@@ -4409,6 +5136,8 @@ def interactive_menu(initial: str | None = None) -> None:
             command.append("--frequency")
         elif kind == "paraphrase":
             command.append("--paraphrase")
+        elif kind in KIND_SPECS:
+            command.extend(["--kind", kind])
         elif unit:
             command.extend(["--unit", str(unit)])
         if ask_yes_no("이미 게시한 영상도 다시 게시할까요?", False):
@@ -4480,6 +5209,9 @@ def main() -> None:
                     help="숙어 영상용 제목·설명 자동 생성 (data/idioms.js 기준)")
     ap.add_argument("--paraphrase", action="store_true",
                     help="동의어 치환 퀴즈 영상용 제목·설명 자동 생성 (data/extra.js paraphrase 기준)")
+    ap.add_argument("--kind", choices=sorted(KIND_SPECS),
+                    help="새 포맷 영상용 제목·설명 자동 생성 — confusables·grammar·numbers·traps·minimal·"
+                         "dictation·bizmail·drill·strategy·wordparts·sprint (생성 시 --kind 와 같은 이름)")
     ap.add_argument("--title", help="제목 직접 지정 (기본: 자동 생성)")
     ap.add_argument("--desc", help="설명 직접 지정")
     ap.add_argument("--platforms", default="auto", help="yt,ig,tt (기본: config 에서 enabled 인 플랫폼)")
@@ -4534,7 +5266,7 @@ def main() -> None:
     ap.add_argument("--auto-plan", type=int, metavar="N",
                     help="N일치 쇼츠를 자동 생성하고 (--plan-start 지정 시) 예약 게시까지 등록")
     ap.add_argument("--plan-kind", default="auto",
-                    choices=["auto", "unit", "idioms", "frequency", "paraphrase"],
+                    choices=["auto", "unit", "idioms", "frequency", "paraphrase", *KIND_SPECS],
                     help="--auto-plan 콘텐츠 종류 (기본 auto — 남은 콘텐츠가 많은 순)")
     ap.add_argument("--plan-start", help="--auto-plan 첫 예약 일시: YYYY-MM-DD HH:MM (생략하면 생성만)")
     ap.add_argument("--plan-days", type=int, default=1, help="예약 게시 간격(일) (기본 1)")
