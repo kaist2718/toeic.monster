@@ -27,7 +27,7 @@ Ken Burns 줌 효과와 슬라이드 간 크로스페이드, 선택적으로 영
   auto   : 내려받은 로컬(Piper) 음성이 있으면 로컬, 없으면 Windows 내장 (기본)
   piper  : 로컬 Piper(ONNX) 모델로 이 PC에서 합성 — 인터넷·API 불필요, assets/tts 에 음성 모델 필요
   windows: Windows 내장 TTS(SAPI) — 인터넷·패키지 불필요
-메뉴 29(원클릭 센터)에서 엔진·목소리 선택, 음성 내려받기, 테스트 재생을 할 수 있습니다.
+메뉴 31(원클릭 센터)에서 엔진·목소리 선택, 음성 내려받기, 테스트 재생을 할 수 있습니다.
 
 배경: --bg 로 테마(색 그라데이션 22종), --pattern 로 배경 패턴(15종)을 고릅니다. 둘 다 이름 또는
 번호(--list-bg 목록의 번호)를 받습니다. 기본 pattern 은 auto — 스타일 기본값을 그대로 씁니다.
@@ -1596,13 +1596,13 @@ def _piper_model(voice: str) -> tuple[str, "Path"]:
         male=bool(re.search(r"(?i)(david|ryan|guy|brian|george|male|andrew|thomas|joe|mike|norman)",
                             str(voice or ""))))
     if not fallback or piper_voice_path(fallback) is None:
-        raise RuntimeError("내려받은 Piper 음성이 없습니다 — 원클릭 메뉴 29 또는 "
+        raise RuntimeError("내려받은 Piper 음성이 없습니다 — 원클릭 메뉴 31 또는 "
                            "`python -m piper.download_voices en_US-amy-medium "
                            "--download-dir promo/assets/tts` 로 내려받으세요.")
     if str(voice) not in _PIPER_FALLBACK_WARNED:
         _PIPER_FALLBACK_WARNED.add(str(voice))
         warn(f"요청한 목소리 '{voice}' 는 내려받은 Piper 음성이 아니라 '{fallback}' 로 씁니다 "
-             "(메뉴 29 에서 바꿀 수 있습니다).")
+             "(메뉴 31 에서 바꿀 수 있습니다).")
     return fallback, piper_voice_path(fallback)  # type: ignore[return-value]
 
 
@@ -1917,7 +1917,7 @@ def main() -> None:
                 sys.exit("TTS 엔진 piper 를 쓰려면 piper-tts 가 필요합니다 — pip install piper-tts "
                          "(또는 --engine windows 로 변경)")
             if not list_piper_voices():
-                sys.exit("내려받은 Piper 음성이 없습니다 — 원클릭 메뉴 29 또는 "
+                sys.exit("내려받은 Piper 음성이 없습니다 — 원클릭 메뉴 31 또는 "
                          "`python -m piper.download_voices en_US-amy-medium "
                          "--download-dir promo/assets/tts` 로 내려받으세요.")
         elif sys.platform != "win32":

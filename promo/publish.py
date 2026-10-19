@@ -66,6 +66,14 @@ for _stream in (sys.stdout, sys.stderr):
             _stream.reconfigure(encoding="utf-8", errors="replace")
         except Exception:
             pass
+# 배치·파이프 입력(테스트·자동화)은 UTF-8 로 넘어오므로 같은 기준으로 읽습니다 —
+# 아니면 cp949 로 디코딩돼 한글 키워드(예: "문법")가 깨져 검색에 실패합니다.
+# 콘솔에서 직접 치는 입력은 Windows 넓은 API(input)를 쓰므로 영향이 없습니다.
+if sys.stdin is not None and not sys.stdin.isatty() and hasattr(sys.stdin, "reconfigure"):
+    try:
+        sys.stdin.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
 
 PROMO = Path(__file__).resolve().parent
 ROOT = PROMO.parent
@@ -79,7 +87,7 @@ REPORT_DIR = PROMO / "reports"
 PERF_FILE = PROMO / "performance.json"
 POSTED_FILE = PROMO / "posted.json"
 # 로컬 TTS(Piper) — promo/assets/tts 에 .onnx 음성 모델을 내려받아 오프라인으로 씁니다.
-# 내려받기: 메뉴 29 또는
+# 내려받기: 메뉴 31 또는
 #   python -m piper.download_voices en_US-amy-medium --download-dir promo/assets/tts
 # (설치: pip install piper-tts — 안 되면 엔진을 windows 로 두면 Windows 내장 SAPI 를 씁니다)
 PIPER_VOICE_DIR = PROMO / "assets" / "tts"
@@ -194,16 +202,16 @@ def config_issues(cfg: dict) -> tuple[list[str], list[str]]:
         if not piper_available():
             warnings.append("TTS 엔진이 piper 인데 piper-tts 가 미설치입니다 — pip install piper-tts (또는 엔진을 windows 로)")
         elif not list_piper_voices():
-            warnings.append("TTS 엔진이 piper 인데 내려받은 로컬 음성이 없습니다 — 메뉴 29 에서 내려받으세요.")
+            warnings.append("TTS 엔진이 piper 인데 내려받은 로컬 음성이 없습니다 — 메뉴 31 에서 내려받으세요.")
         else:
             for key in ("default_voice", "default_voice2"):
                 value = str(promo.get(key, "") or "")
                 if value and not piper_voice_path(value):
                     warnings.append(
-                        f"piper 엔진인데 {key} '{value}' 는 내려받은 Piper 음성이 아닙니다 — 메뉴 29 에서 다시 고르세요.")
+                        f"piper 엔진인데 {key} '{value}' 는 내려받은 Piper 음성이 아닙니다 — 메뉴 31 에서 다시 고르세요.")
     elif engine == "auto" and piper_available() and not list_piper_voices() \
             and promo.get("default_tts", True):
-        warnings.append("로컬 TTS(piper-tts) 는 설치됐지만 내려받은 음성이 없어 Windows 내장 TTS 로 낭독합니다 — 메뉴 29 에서 음성을 내려받으세요.")
+        warnings.append("로컬 TTS(piper-tts) 는 설치됐지만 내려받은 음성이 없어 Windows 내장 TTS 로 낭독합니다 — 메뉴 31 에서 음성을 내려받으세요.")
     return errors, warnings
 
 
@@ -1183,7 +1191,7 @@ def show_posted_menu() -> None:
 
 
 def reset_posted(target: str = "all") -> None:
-    """중복 방지 기록을 초기화합니다(target=all · UNIT 번호 · idioms · frequency · paraphrase)."""
+    """중복 방지 기록을 초기화합니다(target=all · UNIT 번호 · idioms · frequency · paraphrase · 새 포맷 종류 이름)."""
     data = load_posted()
     target = str(target or "all").strip().lower()
     if target in ("all", "전체", "*"):
@@ -1198,10 +1206,16 @@ def reset_posted(target: str = "all") -> None:
         save_posted(data)
         ok(f"{posted_label(target)} 기록을 초기화했습니다.")
         return
+    if target in KIND_SPECS:
+        data["words"][target] = []
+        save_posted(data)
+        ok(f"{KIND_SPECS[target]['label']} 기록을 초기화했습니다.")
+        return
     if target.isdigit():
         warn(f"UNIT {target} 의 단어 기록이 없습니다.")
         return
-    warn("초기화 대상은 all, UNIT 번호, idioms, frequency, paraphrase 입니다.")
+    warn("초기화 대상은 all, UNIT 번호, idioms, frequency, paraphrase, 새 포맷 종류 이름"
+         "(예: confusables · grammar · sprint)입니다.")
 
 
 def content_inventory() -> list[dict]:
@@ -2465,7 +2479,7 @@ def refresh_youtube_descriptions(cfg: dict, *, video: Path | None = None,
         log(plans[0]["new_desc"])
         log("--- 여기까지 ---")
     if not apply:
-        log("\n미리보기입니다. 적용하려면 --apply 를 붙이거나 메뉴 28 번을 사용하세요.")
+        log("\n미리보기입니다. 적용하려면 --apply 를 붙이거나 메뉴 30 번을 사용하세요.")
         return
 
     try:
@@ -2692,7 +2706,7 @@ def ask_int(prompt: str, default: int, minimum: int, maximum: int) -> int:
 
 
 def choose_option(prompt: str, options: list[tuple[str, str]], default: str = "") -> str:
-    """번호로 항목을 고르는 번호 선택 도우미 — 번호·이름 둘 다 받고 Enter 는 기본값.
+    """번호로 항목을 고르는 번호 선택 도우미 — 번호·이름·키워드를 받고 Enter 는 기본값.
 
     테마·패턴·스타일·공개 범위·하위 메뉴 등 모든 선택 자리에서 씁니다.
     """
@@ -2717,10 +2731,14 @@ def choose_option(prompt: str, options: list[tuple[str, str]], default: str = ""
             continue
         if raw in values:
             return raw
-        hits = [v for v in values if raw in v]
+        # 항목 이름·설명 키워드로도 찾습니다 (예: "문법" → grammar, "sprint" → 30일 스프린트).
+        hits = [v for v, _label in options if raw in v.lower() or raw in _label.lower()]
         if len(hits) == 1:
             return hits[0]
-        warn(f"번호(1~{len(values)}) 또는 항목 이름을 입력해 주세요.")
+        if hits:
+            warn("여러 항목이 일치합니다: " + " · ".join(f"{v}({labels.get(v, '')})" for v in hits[:5]))
+            continue
+        warn(f"번호(1~{len(values)}) · 항목 이름 · 설명 키워드로 입력해 주세요.")
 
 
 def choose_theme(default: str = "blue") -> str:
@@ -2780,7 +2798,7 @@ def ask_voice(prompt: str, default: str, allow_none: bool = False, engine: str =
     for i, (name, label) in enumerate(choices, 1):
         log(f"  {i}. {name} — {label}")
     if not choices:
-        warn("내려받은 Piper 음성이 없습니다 — 메뉴 29 에서 내려받거나 엔진을 windows 로 두세요.")
+        warn("내려받은 Piper 음성이 없습니다 — 메뉴 31 에서 내려받거나 엔진을 windows 로 두세요.")
     elif engine != "piper" and not list_windows_voices():
         warn("설치된 Windows 음성을 확인하지 못해 기본 후보를 보여 줍니다 — 설치된 음성 이름을 직접 입력해도 됩니다.")
     log("  번호를 고르거나 음성 이름을 직접 입력하세요.")
@@ -2870,7 +2888,7 @@ def choose_video_menu() -> Path | None:
 
 
 def run_batch_menu(cfg: dict) -> None:
-    """메뉴 10: 여러 영상을 선택해 같은 UNIT·플랫폼으로 순차 게시합니다."""
+    """메뉴 12: 여러 영상을 선택해 같은 UNIT·플랫폼으로 순차 게시합니다."""
     videos = list_videos_menu()
     if not videos:
         warn("assets/shorts 폴더에 mp4 영상이 없습니다.")
@@ -3040,7 +3058,7 @@ def run_auto_plan(cfg: dict, count: int, kind: str = "auto", *, start_at: str | 
     if not start_at:
         log("\n생성만 완료했습니다. 예약 게시하려면:")
         log('  python publish.py --auto-plan N --plan-start "YYYY-MM-DD HH:MM"')
-        log("  또는 메뉴 21번에서 '예약 등록', 영상 하나씩은 메뉴 18번을 쓸 수 있습니다.")
+        log("  또는 메뉴 23번에서 '예약 등록', 영상 하나씩은 메뉴 20번을 쓸 수 있습니다.")
         return videos
 
     platforms = platforms or (",".join(resolve_platforms(cfg, "auto")) or "yt")
@@ -3063,12 +3081,12 @@ def run_auto_plan(cfg: dict, count: int, kind: str = "auto", *, start_at: str | 
             continue
         ok(f"  · {item['id']} · {item['scheduled_at']} · {video.name}")
     log("\n예약 시각에 '7. 예약 게시 실행' 또는 --run-due 를 실행하면 게시됩니다.")
-    log("(Windows 작업 스케줄러 — 메뉴 25번 — 에 등록하면 자동으로 확인합니다.)")
+    log("(Windows 작업 스케줄러 — 메뉴 27번 — 에 등록하면 자동으로 확인합니다.)")
     return videos
 
 
 def auto_plan_menu(cfg: dict) -> None:
-    """메뉴 21: 하루치(또는 N일치) 콘텐츠를 자동으로 만들고 예약 게시까지 등록합니다."""
+    """메뉴 23: 하루치(또는 N일치) 콘텐츠를 자동으로 만들고 예약 게시까지 등록합니다."""
     promo = cfg.get("promo", {})
     try:
         default_words = int(promo.get("default_words", 5) or 5)
@@ -3132,7 +3150,7 @@ def describe_saved_meta(saved: dict) -> str:
 
 
 def verify_video_menu(cfg: dict) -> None:
-    """메뉴 11: 배포 전 영상을 재생·점검하고 게시 메타를 확인한 뒤 게시를 진행합니다."""
+    """메뉴 13: 배포 전 영상을 재생·점검하고 게시 메타를 확인한 뒤 게시를 진행합니다."""
     video = choose_video_menu()
     if video is None:
         return
@@ -4126,7 +4144,7 @@ PRIVACY_CHOICES: list[tuple[str, str]] = [
 
 
 # --------------------------------------------------------------------------- #
-# TTS 엔진·목소리 설정 메뉴 (메뉴 23 / 메뉴 29 공용)
+# TTS 엔진·목소리 설정 메뉴 (메뉴 25 / 메뉴 31 공용)
 # --------------------------------------------------------------------------- #
 TTS_TEST_TEXT = "Come across means to meet unexpectedly. Please expedite the report."
 
@@ -4208,7 +4226,7 @@ def run_voice_preview(voice: str, text: str = "") -> bool:
 
 
 def preview_voice_menu() -> None:
-    """내려받은 Piper 음성을 골라 샘플 문장으로 바로 들어봅니다 (메뉴 29 · 내려받기 공용)."""
+    """내려받은 Piper 음성을 골라 샘플 문장으로 바로 들어봅니다 (메뉴 31 · 내려받기 공용)."""
     voices = list_piper_voices()
     if not voices:
         warn("내려받은 Piper 음성이 없습니다 — 먼저 음성을 내려받아 주세요.")
@@ -4316,7 +4334,7 @@ def run_tts_test(engine: str, voice: str) -> None:
 def tts_settings_flow(cfg: dict, *, full: bool = False) -> dict:
     """TTS 엔진·낭독 사용 여부·목소리를 입력받아 cfg 에 담습니다.
 
-    full=True 면 메뉴 29 처럼 음성 내려받기와 테스트 재생까지 묻습니다(메뉴 23 에서는 생략).
+    full=True 면 메뉴 31 처럼 음성 내려받기와 테스트 재생까지 묻습니다(메뉴 25 에서는 생략).
     """
     promo = cfg.setdefault("promo", {})
     engine = ask_tts_engine(str(promo.get("tts_engine", DEFAULT_TTS_ENGINE) or DEFAULT_TTS_ENGINE))
@@ -4348,7 +4366,7 @@ def tts_settings_flow(cfg: dict, *, full: bool = False) -> dict:
 
 
 def tts_voice_menu(cfg: dict) -> dict:
-    """메뉴 29 — 로컬 TTS(Piper) 엔진과 낭독 목소리를 설정합니다."""
+    """메뉴 31 — 로컬 TTS(Piper) 엔진과 낭독 목소리를 설정합니다."""
     log("\n" + "=" * 62)
     log("🔊 TTS 엔진·목소리 설정")
     log("=" * 62)
@@ -4414,15 +4432,16 @@ def configure_menu(cfg: dict) -> dict:
     if promo["default_style"] not in styles:
         promo["default_style"] = "classic"
     # Enter 를 눌렀을 때 바로 실행할 기본 메뉴 번호 (원클릭 센터 1~29)
-    current_menu = str(promo.get("default_menu", "") or "").strip() or "9"
+    current_menu = str(promo.get("default_menu", "") or "").strip() or "11"
     if current_menu not in MENU_TITLES:
-        current_menu = "9"
+        current_menu = "11"
     picked_menu = ask_menu(f"기본 메뉴 번호(Enter 기본값, 1~{len(MENU_ITEMS)})", current_menu).strip()
     if picked_menu and picked_menu not in MENU_TITLES:
         warn(f"{picked_menu} 는 없는 메뉴 번호입니다 — {current_menu}. {MENU_TITLES[current_menu]} 을 유지합니다.")
     promo["default_menu"] = picked_menu if picked_menu in MENU_TITLES else current_menu
+    promo["menu_number_version"] = MENU_NUMBER_VERSION
     log(f"  ↳ Enter 기본 메뉴: {promo['default_menu']}. {MENU_TITLES[promo['default_menu']]}")
-    # TTS 엔진·목소리 (메뉴 29 와 같은 흐름 — 내려받기·테스트는 메뉴 29 에서만, 설정 저장은 메뉴 23 과 공용)
+    # TTS 엔진·목소리 (메뉴 31 와 같은 흐름 — 내려받기·테스트는 메뉴 31 에서만, 설정 저장은 메뉴 25 과 공용)
     tts_settings_flow(cfg, full=False)
     promo["confirm_real_upload"] = ask_yes_no("실제 게시 전 확인 질문 사용", bool(promo.get("confirm_real_upload", True)))
     yt = cfg.setdefault("youtube", {})
@@ -4457,7 +4476,7 @@ def open_path(path: Path) -> None:
 
 
 # --------------------------------------------------------------------------- #
-# 원클릭 메뉴 — 표시·선택 도우미 (메뉴 29개를 그룹/키워드/복수 선택으로 다룸)
+# 원클릭 메뉴 — 표시·선택 도우미 (메뉴 31개를 그룹/키워드/복수 선택으로 다룸)
 # --------------------------------------------------------------------------- #
 # (번호, 제목, 검색 별칭) — 목록 출력·키워드 검색·오입력 제안이 여기서 한 번에 나옵니다.
 MENU_ITEMS: list[tuple[str, str, tuple[str, ...]]] = [
@@ -4466,37 +4485,38 @@ MENU_ITEMS: list[tuple[str, str, tuple[str, ...]]] = [
     ("2",  "숙어 쇼츠 생성",                ("숙어", "idiom", "생성", "make")),
     ("3",  "빈도 어휘 쇼츠 생성",           ("빈도", "frequency", "어휘", "생성", "make")),
     ("4",  "동의어 치환 퀴즈 생성",         ("퀴즈", "paraphrase", "동의어", "생성", "quiz", "make")),
-    ("30", "새 포맷 쇼츠 생성 (혼동 어휘·문법·듣기 등)", ("새포맷", "혼동", "문법", "듣기", "받아쓰기", "발음", "어원", "스프린트", "전략", "이메일", "함정", "생성", "make")),
-    ("31", "새 포맷 쇼츠 생성 후 게시",     ("새포맷", "혼동", "문법", "듣기", "생성+게시")),
     # 🚀 만들고 바로 게시 (5~8)
     ("5",  "쇼츠 생성 후 게시",             ("생성+게시", "원스톱", "generate")),
     ("6",  "숙어 쇼츠 생성 후 게시",         ("숙어", "idiom", "생성+게시")),
     ("7",  "빈도 어휘 쇼츠 생성 후 게시",     ("빈도", "frequency", "생성+게시")),
     ("8",  "동의어 치환 퀴즈 생성 후 게시",   ("퀴즈", "paraphrase", "생성+게시")),
-    # 📤 게시·이력·성과 (9~17)
-    ("9",  "기존 쇼츠 게시",               ("게시", "업로드", "upload", "publish", "youtube", "인스타")),
-    ("10", "여러 영상 일괄 게시",           ("일괄", "배치", "batch")),
-    ("11", "배포 전 검증 — 영상 재생·점검 후 게시", ("검증", "verify", "미리보기")),
-    ("12", "수동 게시 도우미",              ("수동", "캡션", "manual", "폴백")),
-    ("13", "중복 게시 방지 기록 보기",        ("중복", "기록", "posted", "목록")),
-    ("14", "중복 게시 방지 기록 초기화",      ("중복", "초기화", "reset")),
-    ("15", "게시 이력 CSV 보기",            ("이력", "history", "csv")),
-    ("16", "게시 이력 HTML 리포트",          ("리포트", "report", "이력")),
-    ("17", "게시 성과 수집·보고서",          ("성과", "조회수", "통계", "stats", "인사이트")),
-    # 🗓 예약·자동 준비 (18~21)
-    ("18", "예약 게시 등록",               ("예약", "schedule", "등록")),
-    ("19", "예약 목록 보기·취소",           ("예약", "취소", "schedule", "목록")),
-    ("20", "예약 게시 실행(지금 확인)",      ("예약", "실행", "due", "run")),
-    ("21", "콘텐츠 자동 준비 — N일치 생성 + 예약", ("자동", "auto", "예약", "준비", "auto-plan")),
-    # ⚙️ 설정·점검·도구 (22~29)
-    ("22", "계정·API 설정 상태 확인",        ("점검", "상태", "check", "설정확인")),
-    ("23", "설정 편집",                    ("config", "설정", "edit")),
-    ("24", "의존성·폴더 열기",              ("폴더", "열기", "open", "folder")),
-    ("25", "Windows 작업 스케줄러 예약 실행 등록/해제", ("작업스케줄러", "task", "예약", "스케줄")),
-    ("26", "YouTube 설정·로그인",           ("youtube", "구글", "oauth", "로그인", "설정")),
-    ("27", "남은 콘텐츠 수량 보기",          ("잔여", "수량", "remaining", "남은")),
-    ("28", "게시된 영상 YouTube 설명 갱신",   ("설명", "제목", "refresh", "youtube")),
-    ("29", "TTS 엔진·목소리 설정 (내려받기·미리 듣기)", ("tts", "음성", "목소리", "piper", "미리듣기")),
+    # 🆕 새 포맷 만들기 (9~10)
+    ("9",  "새 포맷 쇼츠 생성 (혼동 어휘·문법·듣기 등)", ("새포맷", "혼동", "문법", "듣기", "받아쓰기", "발음", "어원", "스프린트", "전략", "이메일", "함정", "생성", "make")),
+    ("10", "새 포맷 쇼츠 생성 후 게시",     ("새포맷", "혼동", "문법", "듣기", "생성+게시")),
+    # 📤 게시·이력·성과 (11~19)
+    ("11", "기존 쇼츠 게시",               ("게시", "업로드", "upload", "publish", "youtube", "인스타")),
+    ("12", "여러 영상 일괄 게시",           ("일괄", "배치", "batch")),
+    ("13", "배포 전 검증 — 영상 재생·점검 후 게시", ("검증", "verify", "미리보기")),
+    ("14", "수동 게시 도우미",              ("수동", "캡션", "manual", "폴백")),
+    ("15", "중복 게시 방지 기록 보기",        ("중복", "기록", "posted", "목록")),
+    ("16", "중복 게시 방지 기록 초기화",      ("중복", "초기화", "reset")),
+    ("17", "게시 이력 CSV 보기",            ("이력", "history", "csv")),
+    ("18", "게시 이력 HTML 리포트",          ("리포트", "report", "이력")),
+    ("19", "게시 성과 수집·보고서",          ("성과", "조회수", "통계", "stats", "인사이트")),
+    # 🗓 예약·자동 준비 (20~23)
+    ("20", "예약 게시 등록",               ("예약", "schedule", "등록")),
+    ("21", "예약 목록 보기·취소",           ("예약", "취소", "schedule", "목록")),
+    ("22", "예약 게시 실행(지금 확인)",      ("예약", "실행", "due", "run")),
+    ("23", "콘텐츠 자동 준비 — N일치 생성 + 예약", ("자동", "auto", "예약", "준비", "auto-plan")),
+    # ⚙️ 설정·점검·도구 (24~31)
+    ("24", "계정·API 설정 상태 확인",        ("점검", "상태", "check", "설정확인")),
+    ("25", "설정 편집",                    ("config", "설정", "edit")),
+    ("26", "의존성·폴더 열기",              ("폴더", "열기", "open", "folder")),
+    ("27", "Windows 작업 스케줄러 예약 실행 등록/해제", ("작업스케줄러", "task", "예약", "스케줄")),
+    ("28", "YouTube 설정·로그인",           ("youtube", "구글", "oauth", "로그인", "설정")),
+    ("29", "남은 콘텐츠 수량 보기",          ("잔여", "수량", "remaining", "남은")),
+    ("30", "게시된 영상 YouTube 설명 갱신",   ("설명", "제목", "refresh", "youtube")),
+    ("31", "TTS 엔진·목소리 설정 (내려받기·미리 듣기)", ("tts", "음성", "목소리", "piper", "미리듣기")),
 ]
 # 목록·검색·표시 순서를 항상 번호 순으로 맞춰 둡니다(번호를 고치면 여기까지 자동 정렬).
 MENU_ITEMS.sort(key=lambda item: int(item[0]))
@@ -4505,11 +4525,16 @@ MENU_TITLES: dict[str, str] = {num: title for num, title, _alias in MENU_ITEMS}
 MENU_GROUPS: list[tuple[str, list[str]]] = [
     ("🎬 쇼츠 만들기",          ["1", "2", "3", "4"]),
     ("🚀 만들고 바로 게시",      ["5", "6", "7", "8"]),
-    ("🆕 새 포맷 만들기",        ["30", "31"]),
-    ("📤 게시·이력·성과",       ["9", "10", "11", "12", "13", "14", "15", "16", "17"]),
-    ("🗓 예약·자동 준비",        ["18", "19", "20", "21"]),
-    ("⚙️ 설정·점검·도구",        ["22", "23", "24", "25", "26", "27", "28", "29"]),
+    ("🆕 새 포맷 만들기",        ["9", "10"]),
+    ("📤 게시·이력·성과",       ["11", "12", "13", "14", "15", "16", "17", "18", "19"]),
+    ("🗓 예약·자동 준비",        ["20", "21", "22", "23"]),
+    ("⚙️ 설정·점검·도구",        ["24", "25", "26", "27", "28", "29", "30", "31"]),
 ]
+# 메뉴 번호 체계 버전 — 2: 표시 순서와 번호를 1 → 31 로 재정렬 (2026-10).
+# 이전 버전 config 의 default_menu 는 구 번호라, 처음 메뉴를 열 때 migrate_menu_numbers 가 새 번호로 바꿉니다.
+MENU_NUMBER_VERSION = 2
+# 구 번호 → 새 번호: 새 포맷 30·31 → 9·10, 그 뒤 메뉴는 각 2 씩 뒤로 (구 9~29 → 새 11~31).
+OLD_MENU_NUMBERS: dict[str, str] = {"30": "9", "31": "10", **{str(n): str(n + 2) for n in range(9, 30)}}
 QUIT_WORDS = {"0", "q", "quit", "exit", "n", "no", "종료", "나가기"}
 HELP_WORDS = {"?", "h", "help", "도움", "도움말"}
 # r(또는 최근) 를 누르면 마지막에 실행한 메뉴(순서 포함)를 그대로 반복합니다.
@@ -4525,7 +4550,35 @@ MAX_MENU_STEPS = 10
 def default_menu_number(cfg: dict) -> str:
     """Enter 를 눌렀을 때 실행할 기본 메뉴 번호 (config 의 promo.default_menu)."""
     raw = str(cfg.get("promo", {}).get("default_menu", "") or "").strip()
-    return raw if raw in MENU_TITLES else "9"
+    return raw if raw in MENU_TITLES else "11"
+
+
+def migrate_menu_numbers(cfg: dict) -> None:
+    """재정렬 이전(2026-10)에 만든 config 를 새 메뉴 번호 체계로 맞추고, 변경 사실을 한 번 안내합니다.
+
+    구 config 의 promo.default_menu 는 재정렬 전 번호라 새 번호로 바꿔 저장합니다.
+    menu_number_version 이 기록되면 다음부터는 건너뜁니다.
+    """
+    promo = cfg.setdefault("promo", {})
+    try:
+        version = int(promo.get("menu_number_version", 1) or 1)
+    except (TypeError, ValueError):
+        version = 1
+    if version >= MENU_NUMBER_VERSION:
+        return
+    old = str(promo.get("default_menu", "") or "").strip()
+    new = OLD_MENU_NUMBERS.get(old, old)
+    promo["menu_number_version"] = MENU_NUMBER_VERSION
+    if new != old:
+        promo["default_menu"] = new
+    if config_is_real():
+        save_config(cfg)
+    log("\n⚠️ 메뉴 번호가 재정렬되었습니다 (2026-10) — 새 포맷 30·31 → 9·10, 그 뒤 메뉴는 각 2 씩 뒤로 (구 9~29 → 새 11~31)")
+    log("   예) 기존 쇼츠 게시 9→11 · 설정 편집 23→25 · 작업 스케줄러 25→27 · TTS 설정 29→31")
+    if new != old:
+        log(f"   Enter 기본 메뉴를 구 {old} 에서 새 {new}. {MENU_TITLES.get(new, '')} (으)로 바꿨습니다.")
+    log("   게시 메뉴(11~14 · 20 · 22)는 번호를 확인한 뒤 눌러 주세요 — 잘못 눌러도 실제 업로드 전에는 확인 질문이 있습니다.")
+    log("   자세한 내용: promo/README.md 「메뉴 번호 변경 안내」")
 
 
 def short_menu_label(num: str, max_cols: int = 30) -> str:
@@ -4541,6 +4594,31 @@ def short_menu_label(num: str, max_cols: int = 30) -> str:
         out += ch
         width += step
     return out
+
+
+def choose_kind_menu() -> str:
+    """새 포맷 콘텐츠 종류 선택 — 종류별 남은 수량을 함께 보여 주고, 남은 콘텐츠가 가장 많은 종류를 추천합니다.
+
+    새 포맷 생성(메뉴 번호 9)과 생성 후 게시(메뉴 번호 10)가 같은 11종을 공유하므로 한 자리에서 고릅니다.
+    """
+    posted = load_posted()["words"]
+    remain: dict[str, int] = {}
+    options: list[tuple[str, str]] = []
+    for key, spec in KIND_SPECS.items():
+        total = len(load_kind_rows(key))
+        left = max(0, total - len(posted.get(key, [])))
+        remain[key] = left
+        options.append((key, f"{spec['label']} — {spec['desc_label']} · 남음 {left}/{total}"))
+    # 남은 콘텐츠가 가장 많은 종류를 추천합니다(양이 같으면 문서 표의 앞쪽 종류 우선).
+    ordered = list(KIND_SPECS)
+    best = max(ordered, key=lambda k: (remain[k], -ordered.index(k)))
+    picked = choose_option(
+        f"새 포맷 콘텐츠 종류 (Enter = 추천: {KIND_SPECS[best]['label']} · 남음 {remain[best]})",
+        options, best)
+    if remain.get(picked, 0) == 0:
+        warn(f"{KIND_SPECS[picked]['label']} 은(는) 남은 콘텐츠가 0개입니다 — 이미 쓴 항목이 다시 쓰이거나 "
+             "건너뛸 수 있습니다 (중복 게시 방지 기록 초기화 메뉴에서 기록을 비울 수 있습니다).")
+    return picked
 
 
 def print_interactive_menu() -> None:
@@ -4568,7 +4646,7 @@ def show_menu_summary(cfg: dict, unit: int, words: int, theme: str, style: str,
 def show_menu_help(default: str) -> None:
     """? 를 눌렀을 때 보여 주는 사용법 (전체 목록은 바로 위에 그대로 출력되어 있습니다)."""
     log("\n사용법")
-    log("  5 · 15,16 · 1-4   번호 / 여러 개 / 범위를 입력해 실행 (한 번에 최대 "
+    log("  5 · 17,18 · 1-4   번호 / 여러 개 / 범위를 입력해 실행 (한 번에 최대 "
         f"{MAX_MENU_STEPS}개까지)")
     log("  예약 · tts         키워드 검색 (여러 개면 목록에서 번호로 선택)")
     log("  r                 마지막 실행을 그대로 반복 (메뉴·순서까지 재실행)")
@@ -4706,6 +4784,7 @@ def interactive_menu(initial: str | None = None) -> None:
     except SystemExit as exc:
         fail(str(exc))
         return
+    migrate_menu_numbers(cfg)   # 재정렬 이전 config 는 여기서 한 번 새 번호 체계로 맞춥니다
     promo_cfg = cfg.get("promo", {})
     try:
         default_unit = int(promo_cfg.get("default_unit", 1) or 1)
@@ -4746,7 +4825,7 @@ def interactive_menu(initial: str | None = None) -> None:
         show_menu_summary(cfg, default_unit, default_words, default_theme, default_style,
                           default_pattern, default_tts, default_voice)
         log(f"  ▶ Enter = {menu_default}. {short_menu_label(menu_default)}")
-        log("  입력: 5(번호) · 예약/tts(검색) · 15,16(여러 개) · 1-4(범위) · r(반복) · ?(도움말) · q(종료)")
+        log("  입력: 5(번호) · 예약/tts(검색) · 17,18(여러 개) · 1-4(범위) · r(반복) · ?(도움말) · q(종료)")
         if pending:
             action = pending.pop(0)
             pending_done += 1
@@ -4792,10 +4871,10 @@ def interactive_menu(initial: str | None = None) -> None:
             pending = resolved[1:]
             if pending:
                 log(f"──── [1/{pending_total}] {action}. {MENU_TITLES.get(action, '')} ────")
-        if action == "22":
+        if action == "24":
             show_config_status(cfg)
             continue
-        if action == "23":
+        if action == "25":
             if not config_is_real():
                 if not ask_yes_no("config.json을 새로 만들까요?", True):
                     continue
@@ -4832,7 +4911,7 @@ def interactive_menu(initial: str | None = None) -> None:
             default_voice2 = str(promo_cfg.get("default_voice2", DEFAULT_VOICE2) or "")
             confirm_real_upload = bool(promo_cfg.get("confirm_real_upload", True))
             continue
-        if action == "24":
+        if action == "26":
             target = choose_option("폴더·파일 열기",
                                    [("1", "쇼츠 폴더 (assets/shorts)"),
                                     ("2", "비밀키 폴더 (.secrets)"),
@@ -4844,7 +4923,7 @@ def interactive_menu(initial: str | None = None) -> None:
                 path.parent.mkdir(parents=True, exist_ok=True) if path.suffix else path.mkdir(parents=True, exist_ok=True)
                 open_path(path)
             continue
-        if action == "19":
+        if action == "21":
             items = load_schedules()
             display_schedules(items)
             scheduled = [x for x in items if x.get("status") == "scheduled"]
@@ -4855,7 +4934,7 @@ def interactive_menu(initial: str | None = None) -> None:
                 else:
                     warn("예약 ID가 없거나 이미 처리된 예약입니다.")
             continue
-        if action == "20":
+        if action == "22":
             due = due_schedules()
             if not due:
                 log("지금 실행할 예약 게시가 없습니다.")
@@ -4868,10 +4947,10 @@ def interactive_menu(initial: str | None = None) -> None:
             processed = process_due_schedules(cfg, dry_run=dry_run)
             log(f"도래한 예약 {processed}건을 처리했습니다.")
             continue
-        if action == "15":
+        if action == "17":
             show_history_menu()
             continue
-        if action == "25":
+        if action == "27":
             sub = choose_option("작업 스케줄러",
                                 [("r", "등록 — 주기적으로 예약 게시 자동 확인"),
                                  ("d", "해제 — 등록된 자동 확인 삭제")], "r")
@@ -4882,13 +4961,13 @@ def interactive_menu(initial: str | None = None) -> None:
             elif sub in ("d", "해제", "삭제"):
                 remove_scheduled_task()
             continue
-        if action == "10":
+        if action == "12":
             run_batch_menu(cfg)
             continue
-        if action == "16":
+        if action == "18":
             write_history_report()
             continue
-        if action == "17":
+        if action == "19":
             sub = choose_option("성과 메뉴",
                                 [("c", "성과 수집 (YouTube/Instagram 조회수)"),
                                  ("r", "성과 보고서 (HTML)"),
@@ -4900,19 +4979,19 @@ def interactive_menu(initial: str | None = None) -> None:
             else:
                 write_performance_report()
             continue
-        if action == "11":
+        if action == "13":
             verify_video_menu(cfg)
             continue
-        if action == "13":
+        if action == "15":
             show_posted_menu()
             continue
-        if action == "27":
+        if action == "29":
             print_remaining()
             continue
-        if action == "21":
+        if action == "23":
             auto_plan_menu(cfg)
             continue
-        if action == "28":
+        if action == "30":
             keep_title = not ask_yes_no("제목도 함께 갱신할까요?", True)
             only = ask_menu("대상 영상 파일명 일부 (Enter=전체)", "")
             video = None
@@ -4929,7 +5008,7 @@ def interactive_menu(initial: str | None = None) -> None:
             if ask_yes_no("위 내용으로 YouTube 제목·설명을 실제 갱신할까요?", False):
                 refresh_youtube_descriptions(cfg, video=video, apply=True, keep_title=keep_title)
             continue
-        if action == "29":
+        if action == "31":
             tts_voice_menu(cfg)
             promo_cfg = cfg.get("promo", {})
             default_tts = bool(promo_cfg.get("default_tts", True))
@@ -4937,7 +5016,7 @@ def interactive_menu(initial: str | None = None) -> None:
             # 빈 문자열이면 '두 번째 목소리 없음'을 뜻합니다(오른쪽 or DEFAULT_VOICE2 를 쓰지 않음).
             default_voice2 = str(promo_cfg.get("default_voice2", DEFAULT_VOICE2) or "")
             continue
-        if action == "14":
+        if action == "16":
             pick = choose_option("초기화 대상",
                                  [("all", "전체 (모든 중복 방지 기록)"),
                                   ("unit", "특정 UNIT 번호만"),
@@ -4958,10 +5037,10 @@ def interactive_menu(initial: str | None = None) -> None:
             if ask_yes_no(f"중복 방지 기록({target})을 초기화할까요?", False):
                 reset_posted(target)
             continue
-        if action == "26":
+        if action == "28":
             youtube_menu(cfg)
             continue
-        if action == "12":
+        if action == "14":
             video = choose_video_menu()
             if video is None:
                 continue
@@ -4982,11 +5061,11 @@ def interactive_menu(initial: str | None = None) -> None:
             if meta.get("word"):
                 mark_words_posted(meta.get("word_bucket") or unit, [meta["word"]])
             continue
-        if action not in ("1", "2", "3", "4", "5", "6", "7", "8", "9", "18", "21", "30", "31"):
+        if action not in ("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "20", "23"):
             warn("메뉴 번호를 확인해 주세요.")
             continue
 
-        if action == "18":
+        if action == "20":
             unit = choose_unit(default_unit)
             video = choose_video_menu()
             if video is None:
@@ -5006,10 +5085,8 @@ def interactive_menu(initial: str | None = None) -> None:
 
         # 2·6 숙어, 3·7 빈도 어휘, 4·8 동의어 치환 퀴즈, 30·31 새 포맷, 나머지(1·5) 단어 —
         # 같은 흐름을 종류만 바꿔 돕습니다.
-        if action in ("30", "31"):
-            kind = choose_option("새 포맷 콘텐츠 종류",
-                                 [(k, f"{s['label']} — {s['desc_label']}")
-                                  for k, s in KIND_SPECS.items()], "confusables")
+        if action in ("9", "10"):
+            kind = choose_kind_menu()
         else:
             kind = ("idioms" if action in ("2", "6")
                     else "frequency" if action in ("3", "7")
@@ -5018,12 +5095,12 @@ def interactive_menu(initial: str | None = None) -> None:
         unit = choose_unit(default_unit) if (kind == "unit" and action in ("1", "5")) else None
         video = None
         # 1~8·30·31 은 쇼츠를 만드는 흐름(생성만 / 생성 후 게시)입니다.
-        if action in ("1", "2", "3", "4", "5", "6", "7", "8", "30", "31"):
+        if action in ("1", "2", "3", "4", "5", "6", "7", "8", "9", "10"):
             words = str(ask_int("영상에 넣을 항목 수(1~10)", default_words, 1, 10))
             theme = choose_theme(default_theme)
             pattern = choose_pattern(default_pattern)
             style = choose_style(default_style)
-            # 선택한 배경 설정을 다음 기본값으로 저장할지 묻습니다(메뉴 23 과 같은 자리에 저장).
+            # 선택한 배경 설정을 다음 기본값으로 저장할지 묻습니다(메뉴 25 과 같은 자리에 저장).
             if ((theme, pattern, style) != (default_theme, default_pattern, default_style)
                     and ask_yes_no("선택한 배경 테마·패턴·스타일을 다음부터 기본값으로 저장할까요?", False)):
                 bg_now = cfg.setdefault("promo", {})
@@ -5061,7 +5138,7 @@ def interactive_menu(initial: str | None = None) -> None:
                     command.append("--single-voice")
             else:
                 command.append("--no-tts")
-            # 이번에 고른 TTS 설정을 다음부터 기본값으로 저장할지 묻습니다(메뉴 23·29 와 같은 자리에 저장).
+            # 이번에 고른 TTS 설정을 다음부터 기본값으로 저장할지 묻습니다(메뉴 25·31 와 같은 자리에 저장).
             promo_now = cfg.setdefault("promo", {})
             tts_changed = bool(promo_now.get("default_tts", True)) != tts_on or (
                 tts_on and (picked_voice != default_voice or picked_voice2 != default_voice2))
@@ -5102,7 +5179,7 @@ def interactive_menu(initial: str | None = None) -> None:
                 if video is None:
                     fail("생성된 영상을 찾지 못했습니다.")
                     continue
-            if action in ("1", "2", "3", "4", "30"):
+            if action in ("1", "2", "3", "4", "9"):
                 ok(f"쇼츠 생성 완료: {video}")
                 continue
         else:
@@ -5227,7 +5304,7 @@ def main() -> None:
     ap.add_argument("--menu-run", metavar="메뉴",
                     help="메뉴를 바로 실행 — 번호·범위·키워드 모두 가능 (예: --menu-run 5 · 1-4 · 예약)")
     ap.add_argument("--menu-list", action="store_true",
-                    help="번호 순(1~29)으로 원클릭 메뉴 목록만 출력하고 종료")
+                    help="번호 순(1~31)으로 원클릭 메뉴 목록만 출력하고 종료")
     ap.add_argument("--non-interactive", action="store_true", help=argparse.SUPPRESS)
     ap.add_argument("--no-pause", "--nopause", action="store_true", help=argparse.SUPPRESS)
     # ↑ BAT 전달용 안전 플래그: publish.py 는 무시하고, promo_center.bat 가 마지막
@@ -5247,11 +5324,11 @@ def main() -> None:
     ap.add_argument("--list-posted", action="store_true",
                     help="사용한 단어·게시한 영상 기록 출력 (중복 방지)")
     ap.add_argument("--list-remaining", action="store_true",
-                    help="종류별 남은 콘텐츠 수량만 출력 (단어·숙어·빈도·동의어 치환)")
+                    help="종류별 남은 콘텐츠 수량만 출력 (단어·숙어·빈도·퀴즈·새 포맷 11종)")
     ap.add_argument("--voice-gender", action="store_true",
-                    help="내려받은 Piper 음성의 성별(여성/남성)을 측정해 표시 — 메뉴 29·미리듣기 필터(f/m)에서도 씁니다")
-    ap.add_argument("--reset-posted", nargs="?", const="all", metavar="UNIT|idioms|all",
-                    help="중복 방지 기록 초기화 (기본 all, UNIT 번호·idioms·frequency·paraphrase 지정 가능)")
+                    help="내려받은 Piper 음성의 성별(여성/남성)을 측정해 표시 — 메뉴 31·미리듣기 필터(f/m)에서도 씁니다")
+    ap.add_argument("--reset-posted", nargs="?", const="all", metavar="UNIT|idioms|kind|all",
+                    help="중복 방지 기록 초기화 (기본 all, UNIT 번호·idioms·frequency·paraphrase·새 포맷 종류 이름 지정 가능)")
     ap.add_argument("--init-config", action="store_true", help="config.example.json에서 config.json 생성")
     ap.add_argument("--check", action="store_true", help="설정·의존성·폴더 상태 점검")
     ap.add_argument("--edit-config", action="store_true", help="터미널에서 설정 편집")

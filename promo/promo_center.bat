@@ -15,7 +15,7 @@ if /i "%~1"=="setup" goto :do_setup
 
 rem ===== 자동 실행에서는 멈춤 없이 종료 ====================================
 rem  --run-due / --no-pause 를 주거나 환경변수 PROMO_NO_PAUSE=1 이면
-rem  마지막 "아무 키나 누르세요" 를 생략합니다 - 작업 스케줄러(메뉴 25)가
+rem  마지막 "아무 키나 누르세요" 를 생략합니다 - 작업 스케줄러(메뉴 27)가
 rem  매 N분 실행할 때 창이 입력 대기로 멈추지 않게 하는 장치입니다.
 set "SKIP_PAUSE="
 for %%A in (%*) do (
@@ -81,10 +81,10 @@ echo  toeic.monster 홍보 원클릭 센터 - 사용법
 echo  =================================================================
 echo    promo_center.bat                 원클릭 메뉴 열기 (기본)
 echo    promo_center.bat setup           처음 설치 - 의존성 설치 + 설정 점검
-echo    promo_center.bat menu-list       번호 순(1~29) 메뉴 목록만 보기
+echo    promo_center.bat menu-list       번호 순(1~31) 메뉴 목록만 보기
 echo    promo_center.bat 5               메뉴 5 바로 실행
-echo    promo_center.bat 1-4             메뉴 1~4 를 순서대로 실행 (15,16 도 가능)
-echo    promo_center.bat 29              TTS 엔진/목소리 설정 (내려받기, 미리 듣기)
+echo    promo_center.bat 1-4             메뉴 1~4 를 순서대로 실행 (17,18 도 가능)
+echo    promo_center.bat 31              TTS 엔진/목소리 설정 (내려받기, 미리 듣기)
 echo    promo_center.bat check           설정 / 의존성 / 폴더 상태 점검
 echo    promo_center.bat verify          배포 전 검증 (재생 + 메타 확인 후 게시)
 echo    promo_center.bat report          게시 이력 HTML 리포트

@@ -2,9 +2,9 @@
 """TTS 샘플 일괄 생성 — 내려받은 Piper 음성 + Windows 내장(SAPI) 음성의
 샘플 낭독을 TTS 순서대로 만듭니다.
 
-목소리가 많아 구분하기 어려울 때, 메뉴 29 목소리 목록과 **같은 순서**로
+목소리가 많아 구분하기 어려울 때, 메뉴 31 목소리 목록과 **같은 순서**로
 한 음성당 샘플 파일 하나를 만들어 폴더에서 번호 순으로 들어볼 수 있습니다.
-순서는 ① 내려받은 Piper 음성(메뉴 29 순서) → ② Windows 내장 음성(영어 먼저)입니다.
+순서는 ① 내려받은 Piper 음성(메뉴 31 순서) → ② Windows 내장 음성(영어 먼저)입니다.
 
 사용법:
   python make_tts_samples.py                      # 전체 음성 샘플 생성
@@ -47,7 +47,7 @@ def safe_name(name: str) -> str:
 
 
 def windows_voices_in_order() -> list[tuple[str, str]]:
-    """Windows 내장(SAPI) 음성을 메뉴(29) 목록 순서로 — (이름, 라벨). 설치된 것만.
+    """Windows 내장(SAPI) 음성을 메뉴(31) 목록 순서로 — (이름, 라벨). 설치된 것만.
 
     낭독 문장이 영어라 영어 음성을 먼저 보여 주는 short_voice_choices 와 같은 순서입니다.
     """
