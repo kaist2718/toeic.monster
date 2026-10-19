@@ -89,6 +89,7 @@ echo    promo_center.bat check           설정 / 의존성 / 폴더 상태 점�
 echo    promo_center.bat verify          배포 전 검증 (재생 + 메타 확인 후 게시)
 echo    promo_center.bat report          게시 이력 HTML 리포트
 echo    promo_center.bat list-remaining  종류별 남은 콘텐츠 수량
+echo    promo_center.bat quota           YouTube 업로드 가능 시간·쿼터 잔량
 echo    promo_center.bat list-posted     중복 게시 방지 기록
 echo    promo_center.bat history         게시 이력
 echo    promo_center.bat --video ^<mp4^> --unit 1 --dry-run

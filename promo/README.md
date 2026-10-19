@@ -136,7 +136,7 @@ python make_shorts.py --kind sprint --words 7    # 30일 스프린트로 바로 
 
 > **메뉴 번호 변경 안내 (2026-10)**: 표시 순서와 번호를 일치시키기 위해 재정렬했습니다 — 새 포맷 2종이 `30·31` 에서 `9·10` 이 되고, 그 뒤의 메뉴는 각각 2 씩 밀렸습니다(구 `9~29` → 새 `11~31`). 예를 들어 기존 쇼츠 게시는 구 `9` → 새 `11`, TTS 설정은 구 `29` → 새 `31` 입니다. 오래된 메모·스크립트의 번호와 `config.json` 의 `default_menu`(기본 `11` = 기존 쇼츠 게시)를 이 규칙에 맞게 확인하세요. 재정렬 전에 만든 `config.json` 은 처음 메뉴를 열 때 **자동으로** `default_menu` 를 새 번호로 바꾸고 한 번 안내합니다.
 
-생성·게시가 끝나면 **남은 콘텐츠 수량**(종류별 사용/전체/남음)을 자동으로 표시합니다(`make_shorts.py`·`publish.py` 공통).
+생성·게시가 끝나면 **남은 콘텐츠 수량**(종류별 사용/전체/남음)을 자동으로 표시합니다(`make_shorts.py`·`publish.py` 공통). 메뉴를 열 때는 상단에 **YouTube 업로드 가능 시간**(오늘 쿼터 사용/잔량, 초기화까지 남은 시간, 채널 24시간 제한 해제 추정 시각)이 함께 표시됩니다.
 
 메뉴 입력에서 Enter를 누르면 **방금 실행한 메뉴**(실행 전에는 설정의 기본 메뉴)가 다시 실행됩니다. 기본 게시 방식은 dry-run이며, 실제 업로드는 별도의 확인 질문을 거칩니다.
 
@@ -185,6 +185,9 @@ python publish.py --video assets/shorts/idioms_come-across_shorts.mp4 --idioms -
 
 # 남은 콘텐츠 수량 보기(생성·게시는 끝날 때 자동 표시)
 python publish.py --list-remaining
+
+# YouTube 업로드 가능 시간 — API 쿼터 잔량·초기화까지 남은 시간·채널 24시간 제한 (메뉴를 열면 상단에 자동 표시)
+python publish.py --quota
 
 # 내려받은 Piper 음성의 성별(여성/남성) 분류 표 — 메뉴 31 와 미리 듣기 필터(f/m)와 같은 결과
 python publish.py --voice-gender
@@ -315,7 +318,8 @@ Windows 작업 스케줄러에서 `promo_center.bat --run-due --dry-run` 또는 
 | `OAuth 파일 없음` | 파일이 `.secrets/` 밖에 있거나 확장자가 `.json.txt` 인 경우가 많습니다. [Windows 탐색기 → 보기 → 파일 확장명]을 켜고 확인하세요. 이름은 그대로 둬도 자동 인식합니다 |
 | 매주 로그아웃됨 (7일 후 401) | OAuth 동의 화면이 **테스트** 상태면 refresh 토큰이 7일마다 만료. 동의 화면 → 게시 상태 → **앱 게시(프로덕션)** 로 전환 |
 | `403 access_denied` ("개발자가 승인한 테스터만…") | OAuth 동의 화면의 **테스트 사용자**에 그 계정이 없습니다. https://console.cloud.google.com/auth/audience → `+ ADD USERS` → 저장 후 1~2분 뒤 재시도. 계정이 여러 개면 등록한 계정을 골라야 합니다 |
-| `403 quotaExceeded` | 기본 할당량 10,000 units/일, 업로드 1건 = 1,600 units → **하루 약 6개**. 하루 1~2개 권장 |
+| `403 quotaExceeded` | 기본 할당량 10,000 units/일, 업로드 1건 = 1,600 units → **하루 약 6개**. `promo_center.bat quota`(또는 메뉴 상단)로 잔량·초기화까지 남은 시간 확인. 하루 1~2개 권장 |
+| `400 uploadLimitExceeded` ("The user has exceeded the number of videos they may upload.") | API 쿼터가 아니라 **채널 자체의 24시간 업로드 제한**입니다(새 채널·미인증 채널일수록 낮음, 여러 개를 연달아 올리면 잘 걸림). 약 하루가 지나면 풀리므로 나중에 다시 게시하세요. 급하면 수동 게시 폴백으로 브라우저에서 직접 올리면 됩니다 |
 | `'웹 애플리케이션' 유형` 경고 | OAuth 클라이언트를 **데스크톱 앱**으로 다시 만들어 교체 |
 | “확인되지 않은 앱” 경고 | **고급 → 계속(안전하지 않음)** 클릭 (본인 앱이므로 정상) |
 | Shorts로 안 올라감 | 9:16 세로·60초 이내·제목/설명에 `#Shorts` (도구가 자동 포함) |

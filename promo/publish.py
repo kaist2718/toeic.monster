@@ -12,6 +12,7 @@ toeic.monster 홍보 자동 배포 — YouTube Shorts / Instagram Reels / TikTok
   python publish.py --dry-run                       # 업로드 없이 계획만 출력
   python publish.py --list-posted                    # 사용한 단어·게시한 영상 기록 보기
   python publish.py --list-remaining                 # 종류별 남은 콘텐츠 수량 보기
+  python publish.py --quota                          # YouTube 업로드 가능 시간·쿼터 잔량 보기
   python publish.py --reset-posted 1                 # UNIT 1 중복 방지 기록 초기화
 
 자동 제목/설명 (우선순위):
@@ -56,7 +57,7 @@ import subprocess
 import sys
 import time
 import uuid
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 # Windows 콘솔(cp949)에서 IPA 발음기호(ˈ, ʌ 등) 출력 시 UnicodeEncodeError 방지
@@ -2355,6 +2356,31 @@ def youtube_menu(cfg: dict) -> None:
 # --------------------------------------------------------------------------- #
 # YouTube Shorts (공식 Data API v3)
 # --------------------------------------------------------------------------- #
+def youtube_error_message(exc: Exception) -> str:
+    """YouTube API 오류를 다음에 무엇을 할지 알 수 있는 한국어 메시지로 바꿉니다."""
+    # googleapiclient 버전마다 reason 속성에 코드가 들어가기도, 메시지가 들어가기도 해서
+    # 오류 전체 텍스트(reason 코드가 Details 에 항상 포함됨)에서 코드를 찾습니다.
+    blob = f"{getattr(exc, 'reason', '')} {getattr(exc, 'content', '')} {exc}"
+    detail = (str(exc).strip().splitlines() or [""])[0] or exc.__class__.__name__
+    tips = {
+        "uploadLimitExceeded": (
+            "YouTube 채널의 업로드 한도를 초과했습니다. (uploadLimitExceeded)\n"
+            "   · API 할당량이 아니라 채널 자체의 24시간 업로드 제한입니다 (새 채널·미인증 채널일수록 낮습니다).\n"
+            "   · 약 하루가 지나면 풀리니, 내일 다시 게시하거나 예약 게시를 사용하세요.\n"
+            "   · 급하면 수동 게시 폴백으로 브라우저에서 직접 올리세요."
+        ),
+        "quotaExceeded": (
+            "YouTube API 일일 사용량(쿼터)을 초과했습니다. (quotaExceeded)\n"
+            "   · 기본 할당량 10,000 units/일, 업로드 1건 = 1,600 units → 하루 약 6개입니다.\n"
+            "   · 할당량은 태평양 표준시 자정에 초기화됩니다."
+        ),
+    }
+    for code, tip in tips.items():
+        if code in blob:
+            return tip
+    return detail
+
+
 def upload_youtube(video: Path, meta: dict, cfg: dict, dry_run: bool) -> str | None:
     yt = cfg.get("youtube", {})
     if not yt.get("enabled", True):
@@ -2395,10 +2421,14 @@ def upload_youtube(video: Path, meta: dict, cfg: dict, dry_run: bool) -> str | N
     request = youtube.videos().insert(part="snippet,status", body=body, media_body=media)
     log("   YouTube 업로드 시작...")
     response = None
-    while response is None:
-        status, response = request.next_chunk()
-        if status:
-            log(f"   업로드 진행률: {int(status.progress() * 100)}%")
+    try:
+        while response is None:
+            status, response = request.next_chunk()
+            if status:
+                log(f"   업로드 진행률: {int(status.progress() * 100)}%")
+    except Exception as exc:   # 업로드 오류가 나도 게시 도구 전체가 죽지 않게 합니다 (IG·TikTok과 동일)
+        fail(f"YouTube 업로드 실패: {youtube_error_message(exc)}")
+        return None
     video_id = response.get("id")
     return f"https://youtu.be/{video_id}"
 
@@ -3228,6 +3258,130 @@ def read_history_rows() -> list[dict]:
         return []
     with HISTORY_FILE.open("r", newline="", encoding="utf-8-sig") as f:
         return list(csv.DictReader(f))
+
+
+# --------------------------------------------------------------------------- #
+# YouTube 업로드 가능 시간 — API 쿼터·채널 24시간 제한 추정
+# --------------------------------------------------------------------------- #
+# YouTube Data API v3 기본 할당량은 10,000 units/일, 영상 업로드 1건 = 1,600 units 이므로
+# 하루 약 6건까지 올릴 수 있고, 할당량은 태평양 시간 자정에 초기화됩니다.
+YT_UPLOAD_QUOTA_UNITS = 1600
+YT_DAILY_QUOTA_UNITS = 10_000
+YT_UPLOADS_PER_DAY = YT_DAILY_QUOTA_UNITS // YT_UPLOAD_QUOTA_UNITS   # 6건
+CHANNEL_UPLOAD_WINDOW = timedelta(hours=24)   # 채널 업로드 한도는 24시간 기준
+
+
+def format_duration(delta: timedelta) -> str:
+    """남은 시간을 '2시간 5분 3초' 처럼 읽기 쉽게 만듭니다."""
+    secs = int(delta.total_seconds())
+    if secs <= 0:
+        return "0초"
+    days, secs = divmod(secs, 86400)
+    hours, secs = divmod(secs, 3600)
+    mins, secs = divmod(secs, 60)
+    parts = [f"{days}일" if days else "", f"{hours}시간" if hours else "",
+             f"{mins}분" if mins else "", f"{secs}초" if (secs or not (days or hours or mins)) else ""]
+    return " ".join(p for p in parts if p)
+
+
+def _nth_sunday(year: int, month: int, n: int) -> datetime:
+    """해당 월의 n번째 일요일(UTC 자정 기준)을 돌려줍니다."""
+    d = datetime(year, month, 1, tzinfo=timezone.utc)
+    d += timedelta(days=(6 - d.weekday()) % 7)   # weekday(): 월=0 … 일=6
+    return d + timedelta(days=7 * (n - 1))
+
+
+def _pt_utc_offset_hours(at_utc: datetime) -> int:
+    """태평양 시간 오프셋 — 2007년 이후 미국 일광절약 규칙(3월 둘째 일요일~11월 첫 일요일)."""
+    year = at_utc.year
+    dst_start = _nth_sunday(year, 3, 2) + timedelta(hours=10)   # 02:00 PST = 10:00 UTC
+    dst_end = _nth_sunday(year, 11, 1) + timedelta(hours=9)   # 02:00 PDT = 09:00 UTC
+    return -7 if dst_start <= at_utc < dst_end else -8
+
+
+def youtube_quota_window(now: datetime | None = None) -> tuple[datetime, datetime]:
+    """이번 쿼터 주기(태평양 시간 자정 ~ 다음 자정)를 로컬 시간으로 돌려줍니다."""
+    now = now or datetime.now().astimezone()
+    now_utc = now.astimezone(timezone.utc)
+    pt_today = (now_utc + timedelta(hours=_pt_utc_offset_hours(now_utc))).date()
+
+    def pt_midnight_utc(day: date) -> datetime:
+        # 태평양 시간 자정(D 00:00)은 오프셋에 따라 UTC 08:00(PST) 또는 07:00(PDT) 입니다.
+        noon = datetime(day.year, day.month, day.day, 12, tzinfo=timezone.utc)
+        return datetime(day.year, day.month, day.day, tzinfo=timezone.utc) - timedelta(
+            hours=_pt_utc_offset_hours(noon))
+
+    start, end = pt_midnight_utc(pt_today), pt_midnight_utc(pt_today + timedelta(days=1))
+    if now_utc >= end:      # 자정 직후 경계 보정
+        start, end = end, pt_midnight_utc(pt_today + timedelta(days=2))
+    elif now_utc < start:   # 일광절약 전환 시각 근처 보정
+        start, end = pt_midnight_utc(pt_today - timedelta(days=1)), start
+    return start.astimezone(now.tzinfo), end.astimezone(now.tzinfo)
+
+
+def youtube_quota_status(now: datetime | None = None) -> dict:
+    """게시 이력(publish_history.csv)의 YouTube 업로드로 쿼터 사용량을 추정합니다.
+
+    업로드 성공만 셉니다(dry-run·수동 게시는 API 업로드가 아니고, 실패 건은 사용량이
+    확정되지 않음) — 정확한 사용량은 Google Cloud 콘솔의 할당량 페이지가 기준입니다.
+    """
+    now = now or datetime.now().astimezone()
+    uploads: list[datetime] = []
+    for row in read_history_rows():
+        if row.get("event") != "publish" or row.get("platform") != "yt":
+            continue
+        if row.get("status") != "success":
+            continue
+        try:
+            when = datetime.fromisoformat(row.get("timestamp", ""))
+        except ValueError:
+            continue
+        if when.tzinfo is None:
+            when = when.astimezone()
+        uploads.append(when)
+    start, end = youtube_quota_window(now)
+    used = sum(1 for when in uploads if start <= when < end)
+    last = max(uploads) if uploads else None
+    return {
+        "used": used,
+        "max": YT_UPLOADS_PER_DAY,
+        "remaining": max(0, YT_UPLOADS_PER_DAY - used),
+        "units_used": used * YT_UPLOAD_QUOTA_UNITS,
+        "units_total": YT_DAILY_QUOTA_UNITS,
+        "reset_at": end,
+        "last_upload": last,
+        "recent_24h": sum(1 for when in uploads if now - when <= CHANNEL_UPLOAD_WINDOW),
+        "channel_unlock_at": (last + CHANNEL_UPLOAD_WINDOW) if last else None,
+    }
+
+
+def print_quota_status(now: datetime | None = None) -> dict:
+    """업로드 가능 시간 — API 쿼터 잔량·초기화까지 남은 시간·채널 24시간 제한을 표시합니다."""
+    now = now or datetime.now().astimezone()
+    st = youtube_quota_status(now)
+
+    def fmt(when: datetime) -> str:
+        return when.astimezone().strftime("%Y-%m-%d %H:%M")
+
+    log("\n⏱ YouTube 업로드 가능 시간 (게시 이력 기준 추정)")
+    log(f"   · API 쿼터: 오늘 {st['used']}건 사용 / 약 {st['max']}건 · "
+        f"{st['units_used']:,} / {st['units_total']:,} units · 남음 {st['remaining']}건")
+    if st["remaining"] > 0:
+        log(f"   · 지금 업로드 가능 — {st['remaining']}건 더 올릴 수 있습니다")
+    else:
+        warn("오늘 API 쿼터를 모두 사용했습니다 — 초기화까지 기다리세요.")
+    log(f"   · 쿼터 초기화: {fmt(st['reset_at'])} ({format_duration(st['reset_at'] - now)} 남음)")
+    if st["last_upload"]:
+        log(f"   · 마지막 업로드: {fmt(st['last_upload'])} · 최근 24시간 {st['recent_24h']}건")
+        unlock = st["channel_unlock_at"]
+        if unlock > now:
+            log(f"   · 채널 24시간 제한 해제 추정: {fmt(unlock)} "
+                f"({format_duration(unlock - now)} 남음) — 새 채널이면 더 늦을 수 있습니다")
+        else:
+            log("   · 채널 24시간 제한은 지난 시점입니다 — 실제 한도는 업로드 시도로 확인됩니다")
+    else:
+        log("   · 아직 게시한 영상이 없어 채널 제한 정보가 없습니다")
+    return st
 
 
 def write_history_report(open_after: bool = True) -> Path | None:
@@ -4824,6 +4978,7 @@ def interactive_menu(initial: str | None = None) -> None:
         print_interactive_menu()
         show_menu_summary(cfg, default_unit, default_words, default_theme, default_style,
                           default_pattern, default_tts, default_voice)
+        print_quota_status()   # 업로드 가능 시간 — 쿼터 잔량·초기화까지 남은 시간
         log(f"  ▶ Enter = {menu_default}. {short_menu_label(menu_default)}")
         log("  입력: 5(번호) · 예약/tts(검색) · 17,18(여러 개) · 1-4(범위) · r(반복) · ?(도움말) · q(종료)")
         if pending:
@@ -5325,6 +5480,8 @@ def main() -> None:
                     help="사용한 단어·게시한 영상 기록 출력 (중복 방지)")
     ap.add_argument("--list-remaining", action="store_true",
                     help="종류별 남은 콘텐츠 수량만 출력 (단어·숙어·빈도·퀴즈·새 포맷 11종)")
+    ap.add_argument("--quota", action="store_true",
+                    help="YouTube 업로드 가능 시간 — API 쿼터 잔량·초기화까지 남은 시간·채널 24시간 제한 표시")
     ap.add_argument("--voice-gender", action="store_true",
                     help="내려받은 Piper 음성의 성별(여성/남성)을 측정해 표시 — 메뉴 31·미리듣기 필터(f/m)에서도 씁니다")
     ap.add_argument("--reset-posted", nargs="?", const="all", metavar="UNIT|idioms|kind|all",
@@ -5368,6 +5525,9 @@ def main() -> None:
         return
     if args.voice_gender:
         show_voice_gender_table()
+        return
+    if args.quota:
+        print_quota_status()
         return
     if args.menu_list:
         print_interactive_menu()
