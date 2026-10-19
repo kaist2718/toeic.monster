@@ -4675,6 +4675,41 @@ MENU_ITEMS: list[tuple[str, str, tuple[str, ...]]] = [
 # 목록·검색·표시 순서를 항상 번호 순으로 맞춰 둡니다(번호를 고치면 여기까지 자동 정렬).
 MENU_ITEMS.sort(key=lambda item: int(item[0]))
 MENU_TITLES: dict[str, str] = {num: title for num, title, _alias in MENU_ITEMS}
+# 메뉴 설명 — 검색 결과·선택 목록·도움말에서 무엇을 하는 메뉴인지 한 줄로 보여 줍니다.
+MENU_DESC: dict[str, str] = {
+    "1":  "UNIT 단어로 쇼츠 mp4 생성 (테마·단어 개수 지정)",
+    "2":  "data/idioms.js 숙어 4개 단위로 쇼츠 생성",
+    "3":  "빈출 어휘 4개 단위로 쇼츠 생성",
+    "4":  "동의어 치환 4문제 퀴즈 쇼츠 생성",
+    "5":  "단어 쇼츠를 만들고 바로 게시까지 원스톱 진행",
+    "6":  "숙어 쇼츠를 만들고 바로 게시까지 진행",
+    "7":  "빈도 어휘 쇼츠를 만들고 바로 게시까지 진행",
+    "8":  "퀴즈 쇼츠를 만들고 바로 게시까지 진행",
+    "9":  "혼동 어휘·문법·듣기 등 새 포맷 11종 중에서 골라 생성",
+    "10": "새 포맷 11종 중에서 골라 만들고 바로 게시",
+    "11": "assets/shorts 의 mp4 를 YouTube/Instagram/TikTok 에 게시",
+    "12": "assets/shorts 의 최신 N개 영상을 순서대로 일괄 게시",
+    "13": "영상 재생·Shorts 요건을 점검한 뒤 게시 (배포 전 검증)",
+    "14": "브라우저 업로드 페이지 열기 + 캡션 복사 (수동 게시 폴백)",
+    "15": "사용한 단어·게시한 영상 기록(중복 방지) 확인",
+    "16": "중복 방지 기록을 비워 이미 쓴 항목을 다시 쓰기 가능하게 함",
+    "17": "최근 게시 이력 10건을 CSV 에서 확인",
+    "18": "게시 이력 통계를 HTML 리포트로 생성",
+    "19": "조회수 수집 · HTML 보고서 · 게시 시간대 인사이트",
+    "20": "특정 시각에 올라가도록 게시 예약 등록",
+    "21": "예약된 게시 목록 확인 및 취소",
+    "22": "지금 시각까지 도래한 예약 게시를 실행",
+    "23": "N일치 쇼츠를 자동 생성하고 예약 게시까지 등록",
+    "24": "계정·API·의존성·폴더 상태 점검",
+    "25": "기본값·계정·플랫폼 설정을 터미널에서 변경",
+    "26": "쇼츠 폴더·비밀키 폴더·config.json 열기",
+    "27": "Windows 작업 스케줄러에 예약 자동 확인 등록/해제",
+    "28": "YouTube OAuth 설정·로그인·상태 점검",
+    "29": "종류별 콘텐츠 사용/전체/남음 수량 표로 확인",
+    "30": "게시된 YouTube 영상의 제목·설명을 새 형식으로 갱신",
+    "31": "TTS 엔진·목소리 선택, Piper 음성 내려받기·미리 듣기",
+}
+MAX_RECENT_MENUS = 5   # 메뉴 상단에 보여 줄 최근 사용 메뉴 수
 # 번호가 위에서 아래로 1 → 31 로 이어지도록 그룹을 순서대로 묶습니다.
 MENU_GROUPS: list[tuple[str, list[str]]] = [
     ("🎬 쇼츠 만들기",          ["1", "2", "3", "4"]),
@@ -4775,15 +4810,85 @@ def choose_kind_menu() -> str:
     return picked
 
 
-def print_interactive_menu() -> None:
-    """원클릭 메뉴를 그룹과 번호 함께 보여 줍니다."""
+def favorite_menus(cfg: dict) -> list[str]:
+    """config 에 저장된 즐겨찾기 메뉴 번호 목록 (유효한 번호만)."""
+    raw = cfg.get("promo", {}).get("favorite_menus", []) or []
+    return [str(n) for n in raw if str(n) in MENU_TITLES]
+
+
+def recent_menus(cfg: dict) -> list[str]:
+    """최근 실행한 메뉴 번호 목록 (최신이 앞, 최대 MAX_RECENT_MENUS 개)."""
+    raw = cfg.get("promo", {}).get("recent_menus", []) or []
+    return [str(n) for n in raw if str(n) in MENU_TITLES][:MAX_RECENT_MENUS]
+
+
+def record_recent_menu(cfg: dict, num: str) -> None:
+    """실행한 메뉴를 최근 사용 목록 맨 앞에 기록합니다(중복 제거 후 저장)."""
+    if num not in MENU_TITLES:
+        return
+    promo = cfg.setdefault("promo", {})
+    old = [str(n) for n in (promo.get("recent_menus") or [])]
+    new = ([num] + [n for n in old if n != num])[:MAX_RECENT_MENUS]
+    if new == old:
+        return
+    promo["recent_menus"] = new
+    save_config(cfg)
+
+
+def toggle_favorite_menu(cfg: dict, num: str) -> None:
+    """즐겨찾기 메뉴를 추가/제거하고 config 에 저장합니다."""
+    promo = cfg.setdefault("promo", {})
+    favs = [str(n) for n in (promo.get("favorite_menus") or []) if str(n) in MENU_TITLES]
+    if num in favs:
+        favs.remove(num)
+        ok(f"즐겨찾기에서 제거했습니다: {num}. {MENU_TITLES[num]}")
+    else:
+        favs.append(num)
+        ok(f"즐겨찾기에 추가했습니다: {num}. {MENU_TITLES[num]}")
+    promo["favorite_menus"] = favs
+    save_config(cfg)
+
+
+FAVORITE_RE = re.compile(r"^(?:f|fav|favorite|즐겨찾기|★)\s*(\d+)?$", re.IGNORECASE)
+
+
+def handle_favorite_command(raw: str, cfg: dict, last_menu: str) -> bool:
+    """즐겨찾기 입력(f · fav · 즐겨찾기 [번호])을 처리했으면 True 를 돌려줍니다.
+
+    번호를 붙이지 않으면 마지막으로 실행한 메뉴(없으면 기본 메뉴)를 토글합니다.
+    """
+    m = FAVORITE_RE.match(str(raw or "").strip())
+    if not m:
+        return False
+    target = m.group(1) or last_menu
+    if target not in MENU_TITLES:
+        warn(f"{target} 는 없는 메뉴 번호입니다 — 1~{len(MENU_ITEMS)} 사이로 입력하세요.")
+        return True
+    toggle_favorite_menu(cfg, target)
+    return True
+
+
+def print_interactive_menu(cfg: dict | None = None, with_desc: bool = False) -> None:
+    """원클릭 메뉴를 그룹과 번호 함께 보여 줍니다.
+
+    cfg 를 주면 즐겨찾기·최근 사용 메뉴를 상단에 표시하고, with_desc 이면 설명을 붙입니다.
+    """
     log("\n" + "=" * 62)
     log("🎬 toeic.monster 홍보 원클릭 센터")
     log("=" * 62)
+    if cfg is not None:
+        favs = favorite_menus(cfg)
+        recents = recent_menus(cfg)
+        if favs:
+            log("  ⭐ 즐겨찾기: " + " · ".join(f"{n}. {short_menu_label(n, 14)}" for n in favs))
+        if recents:
+            log("  🕘 최근 사용: " + " · ".join(f"{n}. {short_menu_label(n, 14)}" for n in recents))
     for group, numbers in MENU_GROUPS:
         log(f"  {group}")
         for num in numbers:
-            log(f"   {num:>2}. {MENU_TITLES.get(num, '')}")
+            title = MENU_TITLES.get(num, "")
+            desc = MENU_DESC.get(num, "")
+            log(f"   {num:>2}. {title} — {desc}" if with_desc and desc else f"   {num:>2}. {title}")
     log("    0. 종료")
 
 
@@ -4795,37 +4900,61 @@ def show_menu_summary(cfg: dict, unit: int, words: int, theme: str, style: str,
     if tts:
         tts_part += f" · {voice_label(voice, engine)}"
     log(f"  현재 기본값: UNIT {unit} · {words}개 · {theme}/{pattern}/{style} · {tts_part}")
+    names = (("youtube", "YouTube", True), ("instagram", "Instagram", True),
+             ("tiktok", "TikTok", False))
+    plat = " · ".join(f"{label} {'✓' if cfg.get(key, {}).get('enabled', default) else '✗'}"
+                      for key, label, default in names)
+    confirm = "켜짐" if bool(cfg.get("promo", {}).get("confirm_real_upload", True)) else "꺼짐"
+    log(f"  게시 대상: {plat} · 실제 게시 확인: {confirm}")
 
 
 def show_menu_help(default: str) -> None:
-    """? 를 눌렀을 때 보여 주는 사용법 (전체 목록은 바로 위에 그대로 출력되어 있습니다)."""
+    """? 를 눌렀을 때 보여 주는 사용법 — 메뉴 설명도 함께 보여 줍니다."""
     log("\n사용법")
     log("  5 · 17,18 · 1-4   번호 / 여러 개 / 범위를 입력해 실행 (한 번에 최대 "
         f"{MAX_MENU_STEPS}개까지)")
-    log("  예약 · tts         키워드 검색 (여러 개면 목록에서 번호로 선택)")
+    log("  숙어 생성          여러 단어 검색 — 단어를 모두 포함한 메뉴 중에서 선택")
+    log("  예약 · tts         키워드 검색 (제목·별칭·설명, 관련도 순으로 표시)")
+    log("  f · f 11          즐겨찾기 추가/제거 — 메뉴 상단에 ⭐ 로 표시됩니다")
     log("  r                 마지막 실행을 그대로 반복 (메뉴·순서까지 재실행)")
     log(f"  Enter              기본값 [{default}] {short_menu_label(default)} 실행")
     log("  ?                 이 도움말 · q 또는 0  종료")
-    log("  게시·성과·검증 같은 한 단어로도 이동할 수 있습니다.")
     log("\n예시")
     log("  1-4          — 단어·숙어·빈도·퀴즈 쇼츠를 한 번에 생성")
     log("  5            — 쇼츠를 만들고 바로 게시까지 원스톱으로 진행")
-    log("  16,17        — 게시 이력 CSV 보고 → HTML 리포트 만들기")
-    log("  21           — 남은 콘텐츠 순으로 N일치 자동 준비 + 예약 등록")
+    log("  17,18        — 게시 이력 CSV 보고 → HTML 리포트 만들기")
+    log("  23           — 남은 콘텐츠 순으로 N일치 자동 준비 + 예약 등록")
+    log("\n메뉴 설명 (번호. 제목 — 무엇을 하는지)")
+    for group, numbers in MENU_GROUPS:
+        log(f"  {group}")
+        for num in numbers:
+            log(f"   {num:>2}. {MENU_TITLES.get(num, '')} — {MENU_DESC.get(num, '')}")
     log("")
 
 
 def search_menu(query: str) -> list[str]:
-    """제목·별칭에서 키워드를 찾아 해당 메뉴 번호 목록을 돌려줍니다(순서 유지)."""
-    q = query.strip().lower()
-    if not q:
+    """제목·별칭·설명에서 키워드를 찾아 해당 메뉴 번호 목록을 돌려줍니다(관련도 순).
+
+    여러 단어는 모두 포함하는 메뉴만 찾습니다(예: '숙어 생성' → 숙어 쇼츠 생성 후보).
+    우선순위는 제목 일치 → 별칭 일치 → 설명 일치, 점수가 같으면 번호 순입니다.
+    """
+    tokens = [t for t in re.split(r"\s+", str(query or "").strip().lower()) if t]
+    if not tokens:
         return []
-    hits: list[str] = []
+    scored: list[tuple[int, int, str]] = []
     for num, title, aliases in MENU_ITEMS:
-        hay = f"{title} {' '.join(aliases)}".lower()
-        if q in hay:
-            hits.append(num)
-    return hits
+        parts = (title.lower(), " ".join(aliases).lower(), MENU_DESC.get(num, "").lower())
+        score = -1
+        for t in tokens:
+            matched = next((rank for rank, part in enumerate(parts) if t in part), None)
+            if matched is None:
+                score = -1
+                break
+            score = max(score, matched)
+        if score >= 0:
+            scored.append((score, int(num), num))
+    scored.sort()
+    return [num for _score, _n, num in scored]
 
 
 def suggest_menu(query: str) -> None:
@@ -4837,7 +4966,10 @@ def suggest_menu(query: str) -> None:
     if not close:
         close = difflib.get_close_matches(q, list(pool), n=3, cutoff=0.3)
     if close:
-        log("비슷한 메뉴: " + " · ".join(f"{pool[key]} {MENU_TITLES[pool[key]]}" for key in close))
+        log("비슷한 메뉴:")
+        for key in close:
+            num = pool[key]
+            log(f"   {num:>2}. {MENU_TITLES[num]} — {MENU_DESC.get(num, '')}")
     log("? 를 입력하면 전체 목록과 사용법이 나옵니다.")
 
 
@@ -4867,7 +4999,7 @@ def add_menu_number(picked: list[str], num: str) -> bool:
 def parse_menu_input(raw: str, default: str) -> tuple[list[str], bool, bool]:
     """메뉴 입력(숫자·범위·키워드·복수)을 실행할 번호 목록으로 바꿉니다.
 
-    쓸 수 있는 형태: 5 · 15,16 · 1-4 · 1~4 · 예약 · tts  (종료 q/0, 도움말 ?)
+    쓸 수 있는 형태: 5 · 15,16 · 1-4 · 1~4 · 예약 · tts · 숙어 생성  (종료 q/0, 도움말 ?)
     반환값: (실행할 번호 목록, 종료 여부, 도움말 여부). 안내 문구는 여기서 바로 출력합니다.
     """
     text = str(raw or "").strip() or str(default or "").strip()
@@ -4877,11 +5009,26 @@ def parse_menu_input(raw: str, default: str) -> tuple[list[str], bool, bool]:
     if low in HELP_WORDS:
         return [], False, True
     picked: list[str] = []
-    # "숙어 생성" 처럼 띄어 쓴 키워드는 잘라서 각각 찾기 전에 한 덩어리로 먼저 찾습니다.
+    # 숫자·쉼표가 없는 순수 단어 입력은 여러 단어 검색부터 처리합니다 —
+    # "숙어 생성" 처럼 띄어 쓴 검색어가 곧바로 여러 메뉴를 순서대로 잡는 일이 없도록.
     if not text[0].isdigit() and "," not in text:
-        whole = search_menu(text)
-        if len(whole) == 1:
-            return list(whole), False, False
+        hits = search_menu(text)
+        if len(hits) == 1:
+            return hits, False, False
+        if len(hits) > 1:
+            log(f"'{text}' 와(과) 관련된 메뉴 {len(hits)}개 — 번호로 선택하세요")
+            for num in hits:
+                log(f"   {num:>2}. {MENU_TITLES[num]} — {MENU_DESC.get(num, '')}")
+            choice = ask_menu("번호로 선택 (Enter: 취소)", "").strip()
+            if choice.isdigit() and choice in hits:
+                return [choice], False, False
+            log("취소했습니다.")
+            return [], False, False
+        if not any(t.isdigit() for t in re.split(r"\s+", text)):
+            warn(f"'{text}' 와(과) 맞는 메뉴가 없습니다.")
+            suggest_menu(text)
+            return [], False, False
+        # 숫자가 섞여 있고 검색에 안 맞으면 아래 숫자·범위 처리로 넘깁니다
     for token in re.split(r"[,\s]+", text):
         if not token:
             continue
@@ -4905,7 +5052,7 @@ def parse_menu_input(raw: str, default: str) -> tuple[list[str], bool, bool]:
         elif len(hits) > 1:
             log(f"'{token}' 와 관련된 메뉴 {len(hits)}개")
             for num in hits:
-                log(f"   {num:>2}. {MENU_TITLES[num]}")
+                log(f"   {num:>2}. {MENU_TITLES[num]} — {MENU_DESC.get(num, '')}")
             choice = ask_menu("번호로 선택 (Enter: 취소)", "").strip()
             if choice.isdigit() and choice in hits and choice not in picked:
                 picked.append(choice)
@@ -4975,12 +5122,14 @@ def interactive_menu(initial: str | None = None) -> None:
     pending_done = 0
     last_sequence: list[str] = []   # r 입력 시 그대로 반복할 마지막 실행 순서
     while True:
-        print_interactive_menu()
+        print_interactive_menu(cfg)
         show_menu_summary(cfg, default_unit, default_words, default_theme, default_style,
                           default_pattern, default_tts, default_voice)
         print_quota_status()   # 업로드 가능 시간 — 쿼터 잔량·초기화까지 남은 시간
-        log(f"  ▶ Enter = {menu_default}. {short_menu_label(menu_default)}")
-        log("  입력: 5(번호) · 예약/tts(검색) · 17,18(여러 개) · 1-4(범위) · r(반복) · ?(도움말) · q(종료)")
+        log(f"  ▶ Enter = {menu_default}. {short_menu_label(menu_default)} — "
+            f"{MENU_DESC.get(menu_default, '')}")
+        log("  입력: 5(번호) · 숙어 생성(검색) · 17,18(여러 개) · 1-4(범위) · "
+            "f(즐겨찾기) · r(반복) · ?(도움말) · q(종료)")
         if pending:
             action = pending.pop(0)
             pending_done += 1
@@ -4998,6 +5147,8 @@ def interactive_menu(initial: str | None = None) -> None:
                     # 파이프 입력이 끝났는데 기본값으로 같은 메뉴를 반복하면 자동 실행이 무한 루프에 빠집니다.
                     log("표준 입력이 끝나 메뉴를 종료합니다 (자동 실행에는 --run-due 등 옵션을 쓰세요).")
                     return
+            if handle_favorite_command(raw, cfg, menu_default):
+                continue   # 즐겨찾기만 바꾸고 메뉴를 다시 표시합니다
             if str(raw or "").strip().lower() in REPEAT_WORDS:
                 if not last_sequence:
                     warn("반복할 이전 실행이 없습니다 — 번호나 키워드로 메뉴를 입력하세요.")
@@ -5026,6 +5177,7 @@ def interactive_menu(initial: str | None = None) -> None:
             pending = resolved[1:]
             if pending:
                 log(f"──── [1/{pending_total}] {action}. {MENU_TITLES.get(action, '')} ────")
+        record_recent_menu(cfg, action)   # 최근 사용 메뉴에 기록 (메뉴 상단에 표시)
         if action == "24":
             show_config_status(cfg)
             continue
@@ -5530,7 +5682,7 @@ def main() -> None:
         print_quota_status()
         return
     if args.menu_list:
-        print_interactive_menu()
+        print_interactive_menu(with_desc=True)
         log("  예) promo_center.bat 1-4  ·  promo_center.bat 5  ·  promo_center.bat (메뉴 열기)")
         return
     if args.menu_run is not None:

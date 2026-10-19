@@ -81,7 +81,7 @@ echo  toeic.monster 홍보 원클릭 센터 - 사용법
 echo  =================================================================
 echo    promo_center.bat                 원클릭 메뉴 열기 (기본)
 echo    promo_center.bat setup           처음 설치 - 의존성 설치 + 설정 점검
-echo    promo_center.bat menu-list       번호 순(1~31) 메뉴 목록만 보기
+echo    promo_center.bat menu-list       번호 순(1~31) 메뉴 목록·설명 보기
 echo    promo_center.bat 5               메뉴 5 바로 실행
 echo    promo_center.bat 1-4             메뉴 1~4 를 순서대로 실행 (17,18 도 가능)
 echo    promo_center.bat 31              TTS 엔진/목소리 설정 (내려받기, 미리 듣기)
@@ -97,7 +97,7 @@ echo    promo_center.bat --auto-plan 5 --plan-start "2026-10-01 19:00"
 echo.
 echo    * 첫 단어가 번호면 그 메뉴가 바로 실행됩니다: 5 / 1-4 / 15,16
 echo    * 하이픈 없는 첫 단어는 자동으로 -- 플래그가 됩니다: check = --check
-echo    * 메뉴 안에서는 범위(1-4), 여러 개(15,16), 반복(r), 검색(tts), 도움말(?)
+echo    * 메뉴 안에서는 범위(1-4), 여러 개(15,16), 검색(숙어 생성), 즐겨찾기(f), 반복(r), 도움말(?)
 echo    * 자동 실행용: --run-due 또는 --no-pause 를 주면 멈춤 없이 종료
 echo    * 안에서 실행되는 명령: python publish.py
 echo  =================================================================
