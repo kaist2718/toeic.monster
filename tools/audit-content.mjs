@@ -373,18 +373,11 @@ if (fs.existsSync(unitPage)) {
 // 여기서 세는 것은 파트별 **보유 문항**이고, 50% 아래로 떨어지면 실패로 알립니다.
 const LC_REAL = { part1: 6, part2: 25, part3: 39, part4: 30 };
 
-// Part 3·4 세트는 앱 소스의 PART34_SETS 에 있습니다(세트마다 kind · qs).
-// 파일을 통째로 실행하지 않고 블록만 잘라 세트/문항 수를 셉니다(실행은 무거운 작업이라 부담).
-const part34Block = (() => {
-  const start = code.indexOf("var PART34_SETS = [");
-  if (start < 0) return "";
-  const end = code.indexOf("\n  ];", start);
-  return code.slice(start, end < 0 ? code.length : end);
-})();
-const part34Sets = part34Block.split(/\{\s*title:/).slice(1).map((chunk) => ({
-  kind: (chunk.match(/kind: "([^"]+)"/) || [])[1] || "",
-  // qs 배열 안의 문항(객체) 수 — `q: "` 로 나옵니다.
-  questions: (chunk.match(/\bq: "/g) || []).length,
+// Part 3·4 세트는 data/extra.js 의 part34 에 있습니다(세트마다 kind · qs).
+// data/extra.js 는 위에서 sandbox 로 실행해 `extra` 로 갖고 있으므로 그대로 셉니다(2026-10-19 앱에서 이동).
+const part34Sets = (extra.part34 || []).map((s) => ({
+  kind: s.kind || "",
+  questions: Array.isArray(s.qs) ? s.qs.length : 0,
 }));
 const lcOwned = {
   part1: (extra.part1 || []).length,
@@ -401,7 +394,7 @@ for (const c of coverage) {
   if (c.pct < 50) {
     fail(
       `LC 커버리지가 50% 아래입니다 — ${c.part.replace("part", "Part ")} ${c.owned}/${c.real}문항(${c.pct}%)\n` +
-        "     → data/extra.js 의 traps(Part 2)·app.js 의 PART34_SETS(Part 3·4)에 문항을 보충하세요.",
+        "     → data/extra.js 의 traps(Part 2)·part34(Part 3·4)에 문항을 보충하세요.",
     );
   }
 }

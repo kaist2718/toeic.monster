@@ -1671,6 +1671,59 @@ try {
   check(/30:00/.test(mock30.timer), `30분 코스: 남은 시간이 정확히 30분에서 시작합니다 (${mock30.timer})`);
   check(/문제 1 \/ 20/.test(mock30.section), `30분 코스: LC·RC 10문항씩 20문항입니다 (${mock30.section})`);
 
+  /* ---------------------------------------------------------------- */
+  /* 3-13. 온보딩 · 기록 보호 · TOEIC 풀 모의 200문항 (2026-10-19 추가)    */
+  /* ---------------------------------------------------------------- */
+
+  // 온보딩 — 첫 방문 상태면 시작 가이드가 보이고, 닫으면 사라지며 다시 뜨지 않습니다.
+  const onboard = await evaluate(`(() => {
+    var card = document.getElementById("onboardCard");
+    var btns = ["onboardDiag", "onboardToday", "onboardGoal", "onboardClose"].every(function (id) { return !!document.getElementById(id); });
+    return { present: !!card, visible: card ? !card.hidden : false, btns: btns };
+  })()`);
+  check(onboard.present && onboard.btns, "온보딩: 시작 가이드 카드와 3단계 버튼이 있습니다");
+  check(onboard.visible, "온보딩: 첫 방문 상태에서 카드가 보입니다");
+  const onboardClosed = await evaluate(`(() => {
+    document.getElementById("onboardClose").click();
+    return { hidden: document.getElementById("onboardCard").hidden, saved: !!localStorage.getItem("toeic1000_onboarded") };
+  })()`);
+  check(onboardClosed.hidden && onboardClosed.saved, "온보딩: 닫으면 사라지고 다시 뜨지 않도록 기록됩니다");
+
+  // 기록 보호 — 파일 백업에 더해 클립보드 기록 코드 복사·붙여넣기와 백업 리마인드 자리가 있습니다.
+  const backupUi = await evaluate(`(() => ({
+    copy: !!document.getElementById("btnCopyData"),
+    paste: !!document.getElementById("btnPasteData"),
+    hint: !!document.getElementById("backupHint"),
+  }))()`);
+  check(backupUi.copy && backupUi.paste, "기록 보호: 클립보드 기록 코드 복사·붙여넣기 버튼이 있습니다");
+  check(backupUi.hint, "기록 보호: 백업 리마인드 안내 자리가 있습니다");
+
+  // TOEIC 풀 모의 — 실제 구성 200문항(Part 1~7)이 세팅되고 채점되는지 봅니다.
+  const toeicOpt = await evaluate(`(() => Array.prototype.some.call(document.querySelectorAll("#mockMode option"), function (o) { return o.value === "toeic"; }))()`);
+  check(toeicOpt, "TOEIC 풀 모의: 모의고사 모드에 200문항 풀 모의가 있습니다");
+  await evaluate(`(() => {
+    document.getElementById("mockMode").value = "toeic";
+    document.getElementById("mockLength").value = "15";
+    document.getElementById("mockStart").click();
+  })()`);
+  let fullSection = "";
+  for (let i = 0; i < 20; i++) {
+    await wait(300);
+    const snap = await evaluate(`(() => ({ s: ((document.getElementById("mockSection") || {}).textContent || "").trim() }))()`);
+    fullSection = snap.s;
+    if (/문제 1 \/ 200/.test(fullSection)) break;
+  }
+  check(/문제 1 \/ 200/.test(fullSection), `TOEIC 풀 모의: 200문항이 세팅됩니다 (${fullSection || "아직 준비 중"})`);
+  const fullAnswer = await evaluate(`(() => {
+    var opts = document.querySelectorAll("#mockBox .quiz-opt");
+    if (!opts.length) return { opts: 0, answered: false };
+    opts[0].click();
+    var fb = (document.getElementById("mockFeedback") || {}).textContent || "";
+    return { opts: opts.length, answered: fb.trim().length > 0 };
+  })()`);
+  check(fullAnswer.opts === 4, `TOEIC 풀 모의: 문항에 보기가 4개 나옵니다 (${fullAnswer.opts}개)`);
+  check(fullAnswer.answered, "TOEIC 풀 모의: 답을 고르면 채점 피드백이 나옵니다");
+
   await evaluate(`localStorage.clear()`);
 } finally {
   await shutdown();

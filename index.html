@@ -291,9 +291,9 @@
       <li><b>33. 📧 비즈니스 이메일·회의 표현 템플릿</b> — Part 6·7 빈출 상황에서 바로 쓸 수 있는 문장입니다. 🔊로 듣고 📋로 복사하세요.</li>
       <li><b>34. 🗣 말하기·쓰기 템플릿</b> — TOEIC Speaking 5개 유형과 Writing 3개 유형(문항 1~5·6~7·8번)의 문장 구조를 그대로 따라 써 보세요.</li>
       <li><b>35. 🎤 TOEIC Speaking·Writing 시험 구성</b> — Speaking 11문항(약 20분) · Writing 8문항(약 60분) · 각 0~200점. 문항 번호와 제한 시간은 공식 기준입니다.</li>
-      <li><b>36. 🎙️ Speaking 유형별 연습</b> — 지문 낭독(1~2번)부터 사진 묘사·질문 답변·정보 활용·의견 제시(11번)까지 5개 유형을 고르게 연습합니다.</li>
-      <li><b>37. ✍️ Writing 유형별 연습</b> — 사진 보고 한 문장 쓰기(1~5번), 이메일 답장(6~7번), 의견 에세이(8번)를 실제 문항 순서대로 연습합니다.</li>
-      <li><b>38. 🗣️ 말하기·쓰기 확장 연습</b> — TOEIC Speaking·Writing을 대비하는 짧은 출력 연습입니다. 답변은 서버에 전송되지 않습니다.</li>
+      <li><b>36. 🎙️ Speaking 유형별 연습</b> — 지문 낭독(1~2번)부터 사진 묘사·질문 답변·정보 활용·의견 제시(11번)까지 5개 유형을 고르게 연습합니다. 예시 답안과 대조하는 자가 채점 방식입니다(자동 채점·서버 전송 없음).</li>
+      <li><b>37. ✍️ Writing 유형별 연습</b> — 사진 보고 한 문장 쓰기(1~5번), 이메일 답장(6~7번), 의견 에세이(8번)를 실제 문항 순서대로 연습합니다. 예시 답안과 대조하는 자가 채점 방식입니다(자동 채점·서버 전송 없음).</li>
+      <li><b>38. 🗣️ 말하기·쓰기 확장 연습</b> — TOEIC Speaking·Writing을 대비하는 짧은 출력 연습입니다. 예시·체크 포인트와 대조하는 자가 채점 방식이며, 답변은 서버에 전송되지 않고 자동 채점도 하지 않습니다.</li>
       <li><b>39. 📕 회화 교재 3단계</b> — 인사·주문부터 회의·협상까지, 상황을 축으로 만든 초급·중급·고급 회화 교재입니다. 과마다 표현 표·발음과 억양 안내·흔한 실수·연습 문제를 담았습니다.</li>
       <li><b>40. ✏️ 회화 문제 풀이</b> — 회화 교재 36과의 연습 문제를 앱에서 바로 풀어 보세요. 문법 문제 풀이와 같은 흐름이고, 결과는 대시보드 '회화' 영역에 쌓이며 틀린 문제는 아래 오답노트에 모입니다.</li>
       <li><b>41. ⚡ 빠른 학습 도구</b> — 단어장을 내보내거나, 전체 단어 풀에서 랜덤 10문제를 바로 풀어 보세요.</li>
@@ -338,6 +338,22 @@
         <button type="button" class="btn-hero" id="homeStartFlash">🃏 암기 카드</button>
         <button type="button" class="btn-hero" id="homeDiag">🧭 실력 진단</button>
         <a class="btn-hero btn-hero-link" id="homeResourceHub" href="#resource-hub">🌐 학습 자료 둘러보기</a>
+      </div>
+    </section>
+
+    <!-- 첫 방문 시작 가이드 — 학습 기록이 거의 없을 때만 보이고, 완료하거나 닫으면 사라집니다(온보딩). -->
+    <section class="onboard-card print-hide" id="onboardCard" aria-label="시작 가이드" hidden>
+      <h2 class="onboard-title">🚀 처음이신가요? 3단계면 시작할 수 있어요</h2>
+      <ol class="onboard-steps">
+        <li><b>① 5분 진단</b><span>지금 실력과 예상 점수대를 먼저 측정해요</span></li>
+        <li><b>② 오늘의 학습</b><span>단어 30개 + 퀴즈로 하루치를 끝내요</span></li>
+        <li><b>③ 일일 목표 설정</b><span>상단바에서 목표 개수를 정하면 매일 알려 드려요</span></li>
+      </ol>
+      <div class="onboard-actions">
+        <button type="button" class="btn-hero primary" id="onboardDiag">① 5분 진단 시작</button>
+        <button type="button" class="btn-hero" id="onboardToday">② 오늘의 학습으로</button>
+        <button type="button" class="btn-hero" id="onboardGoal">③ 목표 설정하기</button>
+        <button type="button" class="btn-hero" id="onboardClose">✕ 닫기</button>
       </div>
     </section>
 
@@ -555,7 +571,7 @@
           <span class="mode-badge" id="homeSrsBadge"></span>
           <span class="mode-ico">🔁</span>
           <span class="mode-name">간격 반복 복습</span>
-          <span class="mode-desc">1·3·7·14·30일 주기 복습</span>
+          <span class="mode-desc">맞춤 주기 복습 · 오답 단어는 더 자주</span>
         </button>
         <button type="button" class="mode-btn" data-mode="listen">
           <span class="mode-ico">🎧</span>
@@ -564,8 +580,8 @@
         </button>
         <button type="button" class="mode-btn" data-mode="mock">
           <span class="mode-ico">📝</span>
-          <span class="mode-name">실전 모의고사</span>
-          <span class="mode-desc">LC + RC 예상 점수 산출</span>
+          <span class="mode-name">TOEIC 모의고사</span>
+          <span class="mode-desc">풀 모의 200문항 · 예상 점수(참고치)</span>
         </button>
         <button type="button" class="mode-btn" data-mode="diag">
           <span class="mode-ico">🧭</span>
@@ -859,7 +875,7 @@
 
     <section class="home-section" aria-label="Speaking 유형별 연습">
       <h2 class="home-section-title">🎙️ Speaking 유형별 연습</h2>
-      <p class="home-section-sub">지문 낭독(1~2번)부터 사진 묘사·질문 답변·정보 활용·의견 제시(11번)까지 5개 유형을 고르게 연습합니다.</p>
+      <p class="home-section-sub">지문 낭독(1~2번)부터 사진 묘사·질문 답변·정보 활용·의견 제시(11번)까지 5개 유형을 고르게 연습합니다. <b>예시 답안과 대조하는 자가 채점 방식</b>입니다(자동 채점·서버 전송 없음).</p>
       <div class="reading-grid" id="speakDrillBox"><!-- prerender:start speakDrillBox -->
 <article class="speaking-card"><span class="bank-label">Q1-2 지문 낭독</span><h3>매장 영업시간 안내문</h3><div class="reading-passage">Thank you for shopping at Greenway Market. Our store hours are from nine in the morning to ten at night on weekdays, and from ten to eight on Sundays.<button type="button" class="tts-btn js-tts" data-say="Thank you for shopping at Greenway Market. Our store hours are from nine in the morning to ten at night on weekdays, and from ten to eight on Sundays." title="문장 듣기" aria-label="문장 듣기">🔊</button></div><p class="practice-note">45초 동안 문장 부호에서 끊어 읽고, 숫자와 요일은 또렷하게 발음하세요.</p></article><article class="speaking-card"><span class="bank-label">Q1-2 지문 낭독</span><h3>행사 안내 방송</h3><div class="reading-passage">Welcome to the annual business forum. Please keep your badge visible at all times, and note that the keynote speech will begin promptly at ten.<button type="button" class="tts-btn js-tts" data-say="Welcome to the annual business forum. Please keep your badge visible at all times, and note that the keynote speech will begin promptly at ten." title="문장 듣기" aria-label="문장 듣기">🔊</button></div><p class="practice-note">고유명사와 시간 표현에서 강세를 살짝 눌러 주면 훨씬 자연스럽습니다.</p></article><article class="speaking-card"><span class="bank-label">Q3-4 사진 묘사</span><h3>회의실에서 발표하는 장면</h3><div class="reading-passage">This picture shows a meeting room where a woman is presenting in front of a screen. Three colleagues are seated at the table and taking notes.<button type="button" class="tts-btn js-tts" data-say="This picture shows a meeting room where a woman is presenting in front of a screen. Three colleagues are seated at the table and taking notes." title="문장 듣기" aria-label="문장 듣기">🔊</button></div><p class="practice-note">중심 인물, 주변 인물, 배경 순서로 30초 동안 이어서 말해 보세요.</p></article><article class="speaking-card"><span class="bank-label">Q3-4 사진 묘사</span><h3>물류 창고에서 상자를 옮기는 장면</h3><div class="reading-passage">In this picture, two workers are carrying boxes in a large warehouse while a forklift is parked nearby.<button type="button" class="tts-btn js-tts" data-say="In this picture, two workers are carrying boxes in a large warehouse while a forklift is parked nearby." title="문장 듣기" aria-label="문장 듣기">🔊</button></div><p class="practice-note">진행형으로 동작을 묘사하고, 위치 표현 next to와 behind를 한 번씩 넣어 보세요.</p></article><article class="speaking-card"><span class="bank-label">Q5-7 질문에 답하기</span><h3>업무 루틴 질문</h3><div class="reading-passage">How do you usually organize your tasks when you have several deadlines in the same week?<button type="button" class="tts-btn js-tts" data-say="How do you usually organize your tasks when you have several deadlines in the same week?" title="문장 듣기" aria-label="문장 듣기">🔊</button></div><p class="practice-note">문항 5와 6은 15초, 문항 7은 30초입니다. 첫 문장에서 결론을 말하고 이유를 붙이세요.</p></article><article class="speaking-card"><span class="bank-label">Q5-7 질문에 답하기</span><h3>선호도 질문</h3><div class="reading-passage">What do you enjoy most about working in a team, and why?<button type="button" class="tts-btn js-tts" data-say="What do you enjoy most about working in a team, and why?" title="문장 듣기" aria-label="문장 듣기">🔊</button></div><p class="practice-note">I enjoy ~ because ~ 구조로 시작하면 15초 안에 답을 끝낼 수 있습니다.</p></article><article class="speaking-card"><span class="bank-label">Q8-10 제공된 정보 활용</span><h3>워크숍 일정표</h3><div class="reading-passage">According to the schedule, what time does the afternoon session start, and which room is it in?<button type="button" class="tts-btn js-tts" data-say="According to the schedule, what time does the afternoon session start, and which room is it in?" title="문장 듣기" aria-label="문장 듣기">🔊</button></div><p class="practice-note">일정표를 먼저 45초간 훑고 시간, 장소, 담당자 순으로 메모한 뒤 답하세요.</p></article><article class="speaking-card"><span class="bank-label">Q8-10 제공된 정보 활용</span><h3>고객센터 운영표</h3><div class="reading-passage">I would like to know whether the customer center is open on Saturday afternoon.<button type="button" class="tts-btn js-tts" data-say="I would like to know whether the customer center is open on Saturday afternoon." title="문장 듣기" aria-label="문장 듣기">🔊</button></div><p class="practice-note">문항 10은 두 번 들려줍니다. 질문의 핵심 명사 하나를 받아 답을 시작하세요.</p></article><article class="speaking-card"><span class="bank-label">Q11 의견 제시</span><h3>회의는 대면이 좋은가</h3><div class="reading-passage">Some people believe that online meetings are more efficient than in-person meetings. What is your opinion and why?<button type="button" class="tts-btn js-tts" data-say="Some people believe that online meetings are more efficient than in-person meetings. What is your opinion and why?" title="문장 듣기" aria-label="문장 듣기">🔊</button></div><p class="practice-note">준비 45초, 말하기 60초입니다. 입장, 근거 두 가지, 예시 하나, 마무리 순서로 구성하세요.</p></article><article class="speaking-card"><span class="bank-label">Q11 의견 제시</span><h3>직원 교육은 언제 해야 하나</h3><div class="reading-passage">Should companies provide training during working hours or outside them? Explain your view with reasons.<button type="button" class="tts-btn js-tts" data-say="Should companies provide training during working hours or outside them? Explain your view with reasons." title="문장 듣기" aria-label="문장 듣기">🔊</button></div><p class="practice-note">한쪽 입장을 분명히 밝히고 반대 의견도 한 문장으로 인정해 주면 점수가 올라갑니다.</p></article>
 <!-- prerender:end speakDrillBox --></div>
@@ -867,7 +883,7 @@
 
     <section class="home-section" aria-label="Writing 유형별 연습">
       <h2 class="home-section-title">✍️ Writing 유형별 연습</h2>
-      <p class="home-section-sub">사진 보고 한 문장 쓰기(1~5번), 이메일 답장(6~7번), 의견 에세이(8번)를 실제 문항 순서대로 연습합니다.</p>
+      <p class="home-section-sub">사진 보고 한 문장 쓰기(1~5번), 이메일 답장(6~7번), 의견 에세이(8번)를 실제 문항 순서대로 연습합니다. <b>예시 답안과 대조하는 자가 채점 방식</b>입니다(자동 채점·서버 전송 없음).</p>
       <div class="reading-grid" id="writeDrillBox"><!-- prerender:start writeDrillBox -->
 <article class="writing-card"><span class="bank-label">Q1-5 사진 묘사 문장</span><h3>행사장에서 발표하는 장면</h3><div class="sw-given">주어진 단어: <b>conference</b> + <b>presentation</b></div><details class="sw-sample"><summary>예시 답안 보기</summary><div class="tpl-sample">The speaker is giving a presentation at a conference.<button type="button" class="tts-btn js-tts" data-say="The speaker is giving a presentation at a conference." title="예시 듣기" aria-label="예시 듣기">🔊</button></div></details></article><article class="writing-card"><span class="bank-label">Q1-5 사진 묘사 문장</span><h3>창고에 상자가 쌓인 장면</h3><div class="sw-given">주어진 단어: <b>warehouse</b> + <b>stack</b></div><details class="sw-sample"><summary>예시 답안 보기</summary><div class="tpl-sample">Several boxes are stacked on a shelf in the warehouse.<button type="button" class="tts-btn js-tts" data-say="Several boxes are stacked on a shelf in the warehouse." title="예시 듣기" aria-label="예시 듣기">🔊</button></div></details></article><article class="writing-card"><span class="bank-label">Q1-5 사진 묘사 문장</span><h3>매장 앞 보도를 고치는 장면</h3><div class="sw-given">주어진 단어: <b>sidewalk</b> + <b>repair</b></div><details class="sw-sample"><summary>예시 답안 보기</summary><div class="tpl-sample">Workers are repairing the sidewalk in front of the store.<button type="button" class="tts-btn js-tts" data-say="Workers are repairing the sidewalk in front of the store." title="예시 듣기" aria-label="예시 듣기">🔊</button></div></details></article><article class="writing-card"><span class="bank-label">Q6-7 이메일 답장</span><h3>배송 지연에 답장하기</h3><div class="reading-passage">Our order was supposed to arrive on Monday, but it has not been delivered yet. Could you tell us what happened and when we can expect it?<button type="button" class="tts-btn js-tts" data-say="Our order was supposed to arrive on Monday, but it has not been delivered yet. Could you tell us what happened and when we can expect it?" title="요청 듣기" aria-label="요청 듣기">🔊</button></div><details class="sw-sample"><summary>예시 답안 보기</summary><div class="tpl-sample">Dear Ms. Carter, Thank you for your message. I am sorry for the delay; a customs inspection held your shipment for two days. It will arrive by Thursday, and I will send you the tracking number today.<button type="button" class="tts-btn js-tts" data-say="Dear Ms. Carter, Thank you for your message. I am sorry for the delay; a customs inspection held your shipment for two days. It will arrive by Thursday, and I will send you the tracking number today." title="예시 듣기" aria-label="예시 듣기">🔊</button></div></details></article><article class="writing-card"><span class="bank-label">Q6-7 이메일 답장</span><h3>회의 참석 요청에 답장하기</h3><div class="reading-passage">We are planning a product review meeting next Tuesday at three. Can you join us and bring the latest sales figures?<button type="button" class="tts-btn js-tts" data-say="We are planning a product review meeting next Tuesday at three. Can you join us and bring the latest sales figures?" title="요청 듣기" aria-label="요청 듣기">🔊</button></div><details class="sw-sample"><summary>예시 답안 보기</summary><div class="tpl-sample">Thank you for the invitation. I can join the product review on Tuesday at three, and I will bring the latest sales figures for the second quarter.<button type="button" class="tts-btn js-tts" data-say="Thank you for the invitation. I can join the product review on Tuesday at three, and I will bring the latest sales figures for the second quarter." title="예시 듣기" aria-label="예시 듣기">🔊</button></div></details></article><article class="writing-card"><span class="bank-label">Q6-7 이메일 답장</span><h3>환불 요청에 답장하기</h3><div class="reading-passage">I would like to return the keyboard I bought last week because two keys do not work. Is a refund possible?<button type="button" class="tts-btn js-tts" data-say="I would like to return the keyboard I bought last week because two keys do not work. Is a refund possible?" title="요청 듣기" aria-label="요청 듣기">🔊</button></div><details class="sw-sample"><summary>예시 답안 보기</summary><div class="tpl-sample">I apologize for the problem with your keyboard. A full refund is possible, and you can return the item using the prepaid label attached to this email.<button type="button" class="tts-btn js-tts" data-say="I apologize for the problem with your keyboard. A full refund is possible, and you can return the item using the prepaid label attached to this email." title="예시 듣기" aria-label="예시 듣기">🔊</button></div></details></article><article class="writing-card"><span class="bank-label">Q8 의견 에세이</span><h3>재택근무를 늘려야 할까</h3><div class="reading-passage">Some companies now allow employees to work from home several days a week. Do you think this change benefits companies?<button type="button" class="tts-btn js-tts" data-say="Some companies now allow employees to work from home several days a week. Do you think this change benefits companies?" title="질문 듣기" aria-label="질문 듣기">🔊</button></div><details class="sw-sample"><summary>예시 답안 보기</summary><div class="tpl-sample">Many companies have adopted remote work policies in recent years. In my opinion, this change benefits companies for two main reasons.<button type="button" class="tts-btn js-tts" data-say="Many companies have adopted remote work policies in recent years. In my opinion, this change benefits companies for two main reasons." title="예시 듣기" aria-label="예시 듣기">🔊</button></div></details></article><article class="writing-card"><span class="bank-label">Q8 의견 에세이</span><h3>대학 교육은 실습 중심이어야 할까</h3><div class="reading-passage">Should universities focus more on practical skills than on theory? State your opinion and support it with examples.<button type="button" class="tts-btn js-tts" data-say="Should universities focus more on practical skills than on theory? State your opinion and support it with examples." title="질문 듣기" aria-label="질문 듣기">🔊</button></div><details class="sw-sample"><summary>예시 답안 보기</summary><div class="tpl-sample">Universities should keep a balance between theory and practice. Practical courses help students find jobs, but theory gives them the tools to keep learning after they graduate.<button type="button" class="tts-btn js-tts" data-say="Universities should keep a balance between theory and practice. Practical courses help students find jobs, but theory gives them the tools to keep learning after they graduate." title="예시 듣기" aria-label="예시 듣기">🔊</button></div></details></article>
 <!-- prerender:end writeDrillBox --></div>
@@ -875,7 +891,7 @@
 
     <section class="home-section" aria-label="말하기·쓰기 연습">
       <h2 class="home-section-title">🗣️ 말하기·쓰기 확장 연습</h2>
-      <p class="home-section-sub">TOEIC Speaking·Writing을 대비하는 짧은 출력 연습입니다. 답변은 서버에 전송되지 않습니다.</p>
+      <p class="home-section-sub">TOEIC Speaking·Writing을 대비하는 짧은 출력 연습입니다. <b>예시·체크 포인트와 대조하는 자가 채점 방식</b>이며, 답변은 서버에 전송되지 않고 자동 채점도 하지 않습니다.</p>
       <div class="reading-grid">
         <article class="speaking-card"><h3>🎙️ 15초 말하기 프롬프트</h3><div class="prompt-list" id="speakingPromptList"></div><div class="practice-actions"><button type="button" class="btn quiz-btn" id="speakingListen">🔊 질문 듣기</button><button type="button" class="btn quiz-btn" id="speakingRandom">🔄 다른 질문</button></div><p class="practice-note">핵심 단어 2개를 사용해 영어로 15초 동안 말해 보세요.</p></article>
         <article class="writing-card"><h3>✍️ 이메일 한 문장 쓰기</h3><p class="practice-note">아래 상황에 맞는 정중한 영어 문장을 작성해 보세요.</p><div class="reading-passage" id="writingPrompt"></div><textarea class="writing-area" id="writingArea" aria-label="이메일 한 문장 쓰기" placeholder="예: Thank you for your message. I will confirm the schedule shortly."></textarea><div class="practice-actions"><button type="button" class="btn quiz-btn" id="writingCheck">✅ 체크 포인트 보기</button><button type="button" class="btn quiz-btn" id="writingSample">💡 예시 보기</button></div><div class="practice-note" id="writingFeedback" role="status" aria-live="polite" aria-atomic="true"></div></article>
@@ -1101,7 +1117,7 @@
       <h2 class="home-section-title">📕 전략·공략 가이드</h2>
       <p class="home-section-sub">파트별 공략법을 별도 페이지로 정리했습니다. 검색으로도 찾아올 수 있어요.</p>
       <div class="guide-grid" id="guideCardGrid"><!-- prerender:start guideCardGrid -->
-<article class="guide-card"><h3>TOEIC Part 5 빈출 문법 10가지</h3><p>품사·수일치·시제·전치사·관계사 등 Part 5에서 반복 출제되는 문법 포인트를 예문과 함께 정리했습니다.</p><a href="guides/part-5-grammar.html">가이드 읽기 ↗</a></article><article class="guide-card"><h3>TOEIC Part 6 장문 공란 공략법</h3><p>한 지문에 4개의 빈칸이 있는 Part 6를 빠르게 푸는 순서와 유형별 판단 기준을 정리했습니다.</p><a href="guides/part-6-text-completion.html">가이드 읽기 ↗</a></article><article class="guide-card"><h3>TOEIC Part 7 복수 지문(이중·삼중) 공략</h3><p>표·양식 지문과 연계 문제를 빠르게 푸는 순서, 자주 나오는 연계 유형을 정리했습니다.</p><a href="guides/part-7-double-passage.html">가이드 읽기 ↗</a></article><article class="guide-card"><h3>TOEIC Part 2 오답 함정 유형 정리</h3><p>간접 응답, 부정 의문문, 유사 발음 등 Part 2에서 함정에 빠지기 쉬운 유형을 정리했습니다.</p><a href="guides/part-2-traps.html">가이드 읽기 ↗</a></article><article class="guide-card"><h3>TOEIC 어휘 30일 완성 커리큘럼</h3><p>하루 1유닛 30개 단어를 기준으로 30일 동안 1,000단어를 끝내는 학습 계획입니다.</p><a href="guides/vocabulary-30day.html">가이드 읽기 ↗</a></article><article class="guide-card"><h3>TOEIC LC 숫자·금액·시간 함정 정리</h3><p>숫자, 금액, 날짜, 전화번호가 나오는 LC 문제에서 실수를 줄이는 방법을 정리했습니다.</p><a href="guides/listening-numbers.html">가이드 읽기 ↗</a></article><article class="guide-card"><h3>TOEIC 접속사·전치사·접속부사 구분법</h3><p>뒤에 절이 오는지 명사구가 오는지로 접속사와 전치사를 가르고, however·therefore 같은 접속부사의 위치를 정리했습니다.</p><a href="guides/part-5-connectors.html">가이드 읽기 ↗</a></article><article class="guide-card"><h3>TOEIC 어형 변화(품사 변환) 공략</h3><p>한 어근이 명사·동사·형용사·부사로 바뀌는 규칙과 Part 5·6에서 빈칸 자리로 품사를 판단하는 방법을 정리했습니다.</p><a href="guides/part-5-word-forms.html">가이드 읽기 ↗</a></article><article class="guide-card"><h3>TOEIC Speaking·Writing 유형 완전 정리</h3><p>Speaking 11문항과 Writing 8문항의 공식 구성, 유형별 시간 배분과 답변 프레임을 한 페이지에 정리했습니다.</p><a href="guides/speaking-writing-guide.html">가이드 읽기 ↗</a></article>
+<article class="guide-card"><h3>TOEIC Part 5 빈출 문법 10가지</h3><p>품사·수일치·시제·전치사·관계사 등 Part 5에서 반복 출제되는 문법 포인트를 예문과 함께 정리했습니다.</p><a href="guides/part-5-grammar.html">가이드 읽기 ↗</a></article><article class="guide-card"><h3>TOEIC Part 6 장문 공란 공략법</h3><p>한 지문에 4개의 빈칸이 있는 Part 6를 빠르게 푸는 순서와 유형별 판단 기준을 정리했습니다.</p><a href="guides/part-6-text-completion.html">가이드 읽기 ↗</a></article><article class="guide-card"><h3>TOEIC Part 7 복수 지문(이중·삼중) 공략</h3><p>표·양식 지문과 연계 문제를 빠르게 푸는 순서, 자주 나오는 연계 유형을 정리했습니다.</p><a href="guides/part-7-double-passage.html">가이드 읽기 ↗</a></article><article class="guide-card"><h3>TOEIC Part 2 오답 함정 유형 정리</h3><p>간접 응답, 부정 의문문, 유사 발음 등 Part 2에서 함정에 빠지기 쉬운 유형을 정리했습니다.</p><a href="guides/part-2-traps.html">가이드 읽기 ↗</a></article><article class="guide-card"><h3>TOEIC 어휘 30일 완성 커리큘럼</h3><p>하루 1유닛 30개 단어를 기준으로 30일 동안 1,000단어를 끝내는 학습 계획입니다.</p><a href="guides/vocabulary-30day.html">가이드 읽기 ↗</a></article><article class="guide-card"><h3>TOEIC LC 숫자·금액·시간 함정 정리</h3><p>숫자, 금액, 날짜, 전화번호가 나오는 LC 문제에서 실수를 줄이는 방법을 정리했습니다.</p><a href="guides/listening-numbers.html">가이드 읽기 ↗</a></article><article class="guide-card"><h3>TOEIC 접속사·전치사·접속부사 구분법</h3><p>뒤에 절이 오는지 명사구가 오는지로 접속사와 전치사를 가르고, however·therefore 같은 접속부사의 위치를 정리했습니다.</p><a href="guides/part-5-connectors.html">가이드 읽기 ↗</a></article><article class="guide-card"><h3>TOEIC 어형 변화(품사 변환) 공략</h3><p>한 어근이 명사·동사·형용사·부사로 바뀌는 규칙과 Part 5·6에서 빈칸 자리로 품사를 판단하는 방법을 정리했습니다.</p><a href="guides/part-5-word-forms.html">가이드 읽기 ↗</a></article><article class="guide-card"><h3>TOEIC Speaking·Writing 유형 완전 정리</h3><p>Speaking 11문항과 Writing 8문항의 공식 구성, 유형별 시간 배분과 답변 프레임을 한 페이지에 정리했습니다.</p><a href="guides/speaking-writing-guide.html">가이드 읽기 ↗</a></article><article class="guide-card"><h3>어휘 1,000으로 850점 넘기기: 단어장을 점수로 바꾸는 학습법</h3><p>1,000단어를 그저 외우는 것과 점수로 바꾸는 것의 차이는 순서와 연결에 있습니다. 빈출 우선순위·콜로케이션·파트별 연결·오답노트 활용까지, 850점대를 목표로 하는 어휘 학습 로드맵을 정리했습니다.</p><a href="guides/vocab-to-850.html">가이드 읽기 ↗</a></article>
 <!-- prerender:end guideCardGrid --></div>
     </section>
 
@@ -1178,7 +1194,7 @@
           <p>🎯 20문제 퀴즈로 오늘 배운 단어를 확인. 틀린 단어는 오답노트에 자동 저장!</p>
         </div>
       </div>
-      <p class="home-section-sub" style="margin-top:10px">💡 주말에는 📝 실전 모의고사 1회로 실력을 점검해 보세요. 주 5일이면 30개 유닛을 6주 만에 완주할 수 있어요.</p>
+      <p class="home-section-sub" style="margin-top:10px">💡 주말에는 📝 TOEIC 풀 모의 200문항으로 실력을 점검해 보세요. 주 5일이면 30개 유닛을 6주 만에 완주할 수 있어요.</p>
     </section>
 
     <section class="home-section" aria-label="암기 과학">
@@ -1377,8 +1393,9 @@
     <div class="quiz-wrap">
       <div class="quiz-head">
         <select id="mockMode" aria-label="모의고사 범위">
-          <option value="mini" selected>미니 모의고사 (LC 10 + RC 10)</option>
-          <option value="full">풀 모의고사 (LC 30 + RC 30)</option>
+          <option value="toeic" selected>TOEIC 풀 모의 200문항 (Part 1~7 실제 구성)</option>
+          <option value="mini">미니 어휘 모의 (LC 10 + RC 10)</option>
+          <option value="full">어휘 모의 60문항 (LC 30 + RC 30)</option>
         </select>
         <select id="mockLength" aria-label="문항당 제한 시간">
           <option value="15">15초/문항 (고속)</option>
@@ -1388,7 +1405,7 @@
         </select>
         <button class="btn quiz-btn" id="mockStart">📝 시작</button>
       </div>
-      <div class="quiz-hint">🧪 실제 TOEIC처럼 <b>LC(리스닝) → RC(리딩)</b> 순서로 진행됩니다. 파트별 시간 제한이 걸리며, 종료 시 <b>LC/RC 구분 예상 점수</b>와 유형별 분석을 제공합니다. <br>⏱ <b>30분 코스</b>는 「미니 모의고사 + 90초/문항」을 고르면 LC·RC 각 10문항으로 정확히 30분입니다.</div>
+      <div class="quiz-hint">🧪 실제 TOEIC처럼 <b>LC(리스닝) → RC(리딩)</b> 순서로 진행됩니다. <b>TOEIC 풀 모의 200문항</b>은 실제 시험 구성(Part 1 6 · Part 2 25 · Part 3 39 · Part 4 30 · Part 5 30 · Part 6 16 · Part 7 54) 그대로 치릅니다. <b>어휘 모의</b>는 외운 단어로 실전 형식을 훑는 연습용입니다.<br>📊 예상 점수는 <b>정답률 × 4.95</b>(LC·RC 각 5~495점)로 계산한 <b>참고치</b>이며, ETS 공식 환산표가 아닙니다. <br>⏱ <b>30분 코스</b>는 「미니 어휘 모의 + 90초/문항」을 고르면 LC·RC 각 10문항으로 정확히 30분입니다.</div>
       <div class="exam-timer" id="mockTimer"></div>
       <div class="mock-section" id="mockSection"></div>
       <div id="mockBox"></div>
@@ -1500,10 +1517,13 @@
         <div class="modal-actions">
           <button class="btn" id="btnExport">💾 데이터 내보내기</button>
           <button class="btn" id="btnImport">📥 데이터 가져오기</button>
+          <button class="btn" id="btnCopyData">📋 기록 코드 복사</button>
+          <button class="btn" id="btnPasteData">📋 기록 코드 붙여넣기</button>
           <button class="btn" id="btnResetData">🗑️ 학습 데이터 초기화</button>
           <input type="file" id="importFile" accept=".json,application/json" aria-label="백업 파일 선택" style="display:none">
         </div>
-        <p style="font-size:12px;color:var(--text-muted);margin-top:10px">💾 내보내기: 학습 데이터를 JSON 파일로 저장해 다른 기기로 옮길 수 있어요. 가져오기 시 현재 데이터가 덮어써집니다.</p>
+        <p style="font-size:12px;color:var(--text-muted);margin-top:10px">💾 내보내기: 학습 데이터를 JSON 파일로 저장해 다른 기기로 옮길 수 있어요. 가져오기 시 현재 데이터가 덮어써집니다. 📋 기록 코드는 클립보드로 복사·붙여넣기해 파일 없이 옮기는 방법입니다.</p>
+        <p id="backupHint" class="practice-note" hidden></p>
       </div>
       <div class="guide-panel" id="guideUsage" style="display:none">
         <h3>🧭 사이트 사용법</h3>

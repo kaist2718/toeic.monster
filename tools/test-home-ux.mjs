@@ -868,6 +868,19 @@ console.log("\n[9] 오늘의 챌린지 · 딥다이브 · 읽기 라이브러리
   assert(/id="mockShare"/.test(html), "모의고사 결과에도 공유 버튼이 붙습니다");
   assert(/function mockShareText\(/.test(html), "모의고사 공유 문구를 만드는 함수가 있습니다");
 
+  // 2026-10-19 — 모의고사 정직화(C2) · 온보딩(U1) · 기록 보호(U2) · 적응형 SRS(U5) · 자가 채점 명시(C4)
+  assert(/TOEIC 풀 모의 200문항/.test(html), "모의고사에 실제 구성 200문항 풀 모의가 있습니다");
+  assert(/function genMockToeic\(/.test(html), "TOEIC 풀 모의 문제 생성 함수가 있습니다");
+  assert(
+    /산출식: LC·RC 각각 정답률/.test(html) && /ETS 공식 환산표가 아닙니다/.test(html),
+    "예상 점수 산출식이 화면에 공개됩니다(참고치 명시)",
+    "점수가 어떻게 계산되는지 숨기지 않기 위함입니다",
+  );
+  assert(/자가 채점/.test(html), "말하기·쓰기 연습이 자가 채점 방식임을 명시합니다");
+  assert(/id="onboardCard"/.test(html) && /id="onboardDiag"/.test(html), "첫 방문 시작 가이드(온보딩)가 있습니다");
+  assert(/id="btnCopyData"/.test(html) && /id="btnPasteData"/.test(html), "클립보드 기록 코드 복사·붙여넣기가 있습니다");
+  assert(/SRS_INTERVALS_HARD/.test(html), "SRS가 오답 단어를 더 자주 보여 주는 적응형 간격을 씁니다");
+
   for (const fn of ["startChallenge", "renderLibrary", "openWordPop", "exportStudyIcs", "shareText", "track", "libraryPassage", "linkifyPassage"]) {
     assert(
       new RegExp(`function ${fn}\\(`).test(html),

@@ -8,11 +8,12 @@
     "node": ">=22"
   },
   "scripts": {
-    "audit": "npm run audit:content && npm run audit:text && npm run audit:site && npm run audit:a11y && npm run audit:density",
+    "audit": "npm run audit:content && npm run audit:text && npm run audit:site && npm run audit:a11y && npm run audit:prose && npm run audit:density",
     "audit:content": "node tools/audit-content.mjs",
     "audit:text": "node tools/audit-text.mjs",
     "audit:site": "node tools/audit-site.mjs",
     "audit:a11y": "node tools/audit-a11y.mjs",
+    "audit:prose": "node tools/audit-prose.mjs",
     "audit:density": "node tools/audit-density.mjs",
     "audit:density:strict": "node tools/audit-density.mjs --strict",
     "audit:external": "node tools/audit-site.mjs --external",

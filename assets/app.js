@@ -2482,283 +2482,17 @@
   wireMiniQuiz("lc12Start", lc12Quiz, true);
 
   // ---------- 4) Part 3·4 미니 세트 ----------
-  var PART34_SETS = [
-    { title: "사무실 공지", kind: "담화",
-      lines: [
-        "Attention, all employees. The elevator in Building B will be closed for maintenance from Monday to Wednesday.",
-        "During this period, please use the stairs or the elevator in Building A.",
-        "Employees attending the 10 a.m. workshop should allow extra time to arrive."
-      ],
-      qs: [
-        { q: "직원들이 해야 할 일로 옳은 것은?", a: "다른 엘리베이터나 계단을 이용한다", opts: ["다른 엘리베이터나 계단을 이용한다", "워크숍을 취소한다", "빌딩 B에서 기다린다", "정비 일정을 변경한다"], why: "Building B 대신 계단이나 Building A 엘리베이터를 이용하라고 안내합니다.", ex: "During this period, please use the stairs or the elevator in Building A.", exKo: "이 기간에는 계단이나 빌딩 A의 엘리베이터를 이용해 주세요." },
-        { q: "엘리베이터 정비 기간은 언제인가?", a: "월요일부터 수요일까지", opts: ["월요일부터 수요일까지", "수요일부터 금요일까지", "월요일 하루", "주말 내내"], why: "from Monday to Wednesday라고 명시되어 있습니다." },
-        { q: "10시 워크숍 참석자에 대한 안내는?", a: "시간 여유를 두고 도착해야 한다", opts: ["시간 여유를 두고 도착해야 한다", "엘리베이터를 쓸 수 없다", "장소가 Building A로 바뀐다", "참석이 취소된다"], why: "allow extra time to arrive = 시간 여유를 두라는 뜻입니다." }
-      ] },
-    { title: "항공편 변경 상담", kind: "대화",
-      lines: [
-        "M: Thank you for calling SkyLine Airlines. How may I help you?",
-        "W: I'd like to change my flight from Chicago to Boston. My original departure was 7 a.m.",
-        "M: Certainly. There is a 2 p.m. flight available at no extra charge.",
-        "W: That works. Please confirm the new booking by email."
-      ],
-      qs: [
-        { q: "여성이 요청한 것은?", a: "항공편 변경", opts: ["항공편 변경", "좌석 업그레이드", "수하물 추가", "환불 요청"], why: "change my flight 라고 말했습니다." },
-        { q: "새 항공편 출발 시각은?", a: "오후 2시", opts: ["오후 2시", "오전 7시", "오후 5시", "오전 10시"], why: "a 2 p.m. flight 라고 안내했습니다." },
-        { q: "항공편 변경 추가 요금은?", a: "없다", opts: ["없다", "50달러", "100달러", "20%"], why: "at no extra charge = 추가 요금 없음" }
-      ] },
-    { title: "신제품 출시 담화", kind: "담화",
-      lines: [
-        "Thank you for attending the product launch. The new FlexiDesk will be available from March 1.",
-        "Orders placed before March 31 include free delivery and a two-year warranty.",
-        "Visit our website to see bulk-order pricing."
-      ],
-      qs: [
-        { q: "신제품 출시일은?", a: "3월 1일", opts: ["3월 1일", "3월 31일", "4월 1일", "2월 말"], why: "available from March 1" },
-        { q: "3월 31일 전에 주문하면 받는 혜택은?", a: "무료 배송과 2년 보증", opts: ["무료 배송과 2년 보증", "20% 할인", "추가 사은품", "무료 설치"], why: "include free delivery and a two-year warranty" },
-        { q: "대량 주문 가격은 어디서 확인하나?", a: "웹사이트", opts: ["웹사이트", "매장 방문", "이메일 문의", "전화 상담"], why: "Visit our website to see bulk-order pricing." }
-      ] },
-    { title: "병원 예약 확인", kind: "담화",
-      lines: [
-        "Good afternoon. This is Riverside Clinic calling to confirm your appointment.",
-        "Your appointment with Dr. Patel is on Thursday at 4 p.m. Please arrive ten minutes early.",
-        "If you need to reschedule, call us at least 24 hours in advance."
-      ],
-      qs: [
-        { q: "예약 일시는?", a: "목요일 오후 4시", opts: ["목요일 오후 4시", "화요일 오전 4시", "목요일 오전 10시", "금요일 오후 4시"], why: "Thursday at 4 p.m." },
-        { q: "몇 분 일찍 도착해야 하나?", a: "10분", opts: ["10분", "20분", "30분", "5분"], why: "arrive ten minutes early" },        { q: "일정 변경은 언제까지 연락해야 하나?", a: "최소 24시간 전", opts: ["최소 24시간 전", "당일 아침", "최소 2시간 전", "언제든 가능"], why: "at least 24 hours in advance" }
-      ]
-    },
-    { title: "은행 대출 상담", kind: "대화",
-      lines: [
-        "W: Good morning. I would like to apply for a small business loan.",
-        "M: Certainly. Could you tell me how long you have been in business?",
-        "W: About three years. I can provide the financial statements.",
-        "M: Great. The interest rate will depend on your credit history."
-      ],
-      qs: [
-        { q: "여성이 신청하려는 것은?", a: "소규모 사업 대출", opts: ["소규모 사업 대출", "신용카드 발급", "계좌 개설", "환전 서비스"], why: "apply for a small business loan이라고 말했습니다." },
-        { q: "남성이 물어본 것은?", a: "사업을 한 기간", opts: ["사업을 한 기간", "직원 수", "매출 규모", "사업장 위치"], why: "how long you have been in business = 사업 기간" },
-        { q: "금리를 결정하는 요인은?", a: "신용 기록", opts: ["신용 기록", "사업 규모", "직원 수", "거래 은행"], why: "depend on your credit history" }
-      ] },
-    { title: "호텔 예약 변경", kind: "대화",
-      lines: [
-        "M: Hello, I have a reservation for a double room on May 12.",
-        "W: May I have your confirmation number, please?",
-        "M: Yes, it is 48213. I need to change the dates to May 14.",
-        "W: No problem. There is no change fee for the first modification."
-      ],
-      qs: [
-        { q: "남성이 요청한 것은?", a: "예약 날짜 변경", opts: ["예약 날짜 변경", "객실 업그레이드", "조식 추가", "예약 취소"], why: "change the dates to May 14라고 말했습니다." },
-        { q: "여성이 요청한 정보는?", a: "예약 확인 번호", opts: ["예약 확인 번호", "신용카드 번호", "전화번호", "여권 번호"], why: "May I have your confirmation number" },
-        { q: "첫 번째 변경에 대한 수수료는?", a: "없다", opts: ["없다", "20달러", "1박 요금", "10%"], why: "no change fee for the first modification" }
-      ] },
-    // 17차 점검: 실제 시험은 Part 3 대화 13세트 · Part 4 담화 10세트입니다.
-    // 홈은 무작위로 한 세트씩 보여 주므로, 고를 수 있는 세트를 늘려 실제 구성에 가깝게 맞춥니다.
-    /* ============ Part 3 대화 ============ */
-    { title: "배송 지연 문의", kind: "대화",
-      lines: [
-        "W: Hello, I ordered a desk lamp last week, but it has not arrived yet.",
-        "M: Let me check the tracking number for you. Could you give me the order number?",
-        "W: It is 73015. The delivery date on the website was Monday.",
-        "M: I am sorry. The courier reported a delay, so it will arrive on Thursday."
-      ],
-      qs: [
-        { q: "여성이 전화한 이유는?", a: "주문한 물건이 아직 오지 않아서", opts: ["주문한 물건이 아직 오지 않아서", "환불을 받으려고", "새로 주문하려고", "배송지를 바꾸려고"], why: "ordered a desk lamp last week, but it has not arrived yet.", ex: "I ordered a desk lamp last week, but it has not arrived yet.", exKo: "지난주에 스탠드를 주문했는데 아직 오지 않았어요." },
-        { q: "남성이 요청한 정보는?", a: "주문 번호", opts: ["주문 번호", "배송 기사 연락처", "카드 번호", "제품 사진"], why: "Could you give me the order number?" },
-        { q: "새 도착 예정일은?", a: "목요일", opts: ["목요일", "월요일", "수요일", "금요일"], why: "it will arrive on Thursday." }
-      ] },
-    { title: "사무실 리모델링 상담", kind: "대화",
-      lines: [
-        "M: We are planning to repaint the third-floor offices next month.",
-        "W: How long will the work take? Our team has a client visit on the tenth.",
-        "M: It usually takes four days, so we can start on the eleventh.",
-        "W: That works. Please let us know which furniture needs to be moved."
-      ],
-      qs: [
-        { q: "무엇을 논의하고 있는가?", a: "사무실 도색 일정", opts: ["사무실 도색 일정", "가구 구매", "직원 채용", "사무실 이전"], why: "repaint the third-floor offices next month." },
-        { q: "여성이 걱정하는 것은?", a: "10일에 고객 방문이 있다", opts: ["10일에 고객 방문이 있다", "예산이 부족하다", "직원이 휴가 중이다", "엘리베이터가 고장 났다"], why: "Our team has a client visit on the tenth." },
-        { q: "공사를 언제 시작하는가?", a: "11일", opts: ["11일", "10일", "4일", "다음 달 1일"], why: "we can start on the eleventh." }
-      ] },
-    { title: "채용 면접 일정 조정", kind: "대화",
-      lines: [
-        "W: I would like to confirm the interview time for Mr. Yoon.",
-        "M: He is scheduled for Wednesday at ten, but he asked to come in the afternoon.",
-        "W: We can offer two o'clock. Does the conference room have a video link?",
-        "M: Yes, it does. I will send him the updated invitation."
-      ],
-      qs: [
-        { q: "무엇을 조정하는가?", a: "면접 시간", opts: ["면접 시간", "회의실 예약", "급여 조건", "출근 날짜"], why: "He is scheduled for Wednesday at ten, but he asked to come in the afternoon." },
-        { q: "새 면접 시간은?", a: "오후 2시", opts: ["오후 2시", "오전 10시", "오후 4시", "오전 11시"], why: "We can offer two o'clock." },
-        { q: "남성이 하기로 한 일은?", a: "변경된 초대장을 보낸다", opts: ["변경된 초대장을 보낸다", "회의실을 예약한다", "면접을 취소한다", "지원자에게 전화한다"], why: "I will send him the updated invitation." }
-      ] },
-    { title: "렌터카 반납 연장", kind: "대화",
-      lines: [
-        "M: My rental car is due back at five o'clock today. Can I keep it one more day?",
-        "W: Yes, but please note that the daily rate increases on weekends.",
-        "M: That is fine. I will return it tomorrow evening at the airport branch.",
-        "W: Noted. I have extended your reservation until Saturday."
-      ],
-      qs: [
-        { q: "남성이 요청한 것은?", a: "차량 반납을 하루 미루는 것", opts: ["차량 반납을 하루 미루는 것", "차량 교체", "보험 가입", "기사 요청"], why: "Can I keep it one more day?" },
-        { q: "주말에 오르는 것은?", a: "일일 요금", opts: ["일일 요금", "보험료", "주차 요금", "세금"], why: "the daily rate increases on weekends." },
-        { q: "어디에서 반납하는가?", a: "공항 지점", opts: ["공항 지점", "시내 지점", "호텔 주차장", "기차역"], why: "at the airport branch." }
-      ] },
-    { title: "공장 견학 안내", kind: "대화",
-      lines: [
-        "W: Our visitors from the Osaka branch will tour the plant on Thursday morning.",
-        "M: Do they need safety equipment? All guests must wear a helmet and a vest.",
-        "W: I will prepare six sets. Could you also arrange a translator?",
-        "M: Certainly. I will ask Ms. Sato from the export team to join us."
-      ],
-      qs: [
-        { q: "방문객들이 하는 일은?", a: "공장 견학", opts: ["공장 견학", "제품 발표", "계약 서명", "직원 교육"], why: "will tour the plant on Thursday morning." },
-        { q: "방문객이 반드시 착용해야 하는 것은?", a: "안전모와 조끼", opts: ["안전모와 조끼", "앞치마", "장갑과 마스크", "안전화만"], why: "must wear a helmet and a vest." },
-        { q: "남성이 하겠다고 한 일은?", a: "통역 담당자를 섭외한다", opts: ["통역 담당자를 섭외한다", "장비를 직접 준비한다", "견학을 취소한다", "일정을 바꾼다"], why: "I will ask Ms. Sato from the export team to join us." }
-      ] },
-    /* ============ Part 4 담화 ============ */
-    { title: "기차 지연 안내 방송", kind: "담화",
-      lines: [
-        "Good afternoon, passengers. The 4:15 train to Brighton is delayed by about twenty minutes.",
-        "The delay is due to track maintenance near the Riverside station.",
-        "Passengers holding tickets for the 4:15 may also board the 4:40 express at platform 3."
-      ],
-      qs: [
-        { q: "무엇을 안내하고 있는가?", a: "기차 지연", opts: ["기차 지연", "요금 인상", "좌석 변경", "역 공사 완료"], why: "The 4:15 train to Brighton is delayed.", ex: "The 4:15 train to Brighton is delayed by about twenty minutes.", exKo: "4시 15분 브라이턴행 열차가 약 20분 지연되고 있습니다." },
-        { q: "지연 이유는?", a: "선로 정비", opts: ["선로 정비", "폭우", "차량 고장", "인력 부족"], why: "due to track maintenance near the Riverside station." },
-        { q: "승객들이 할 수 있는 일은?", a: "4시 40분 급행 열차를 탈 수 있다", opts: ["4시 40분 급행 열차를 탈 수 있다", "환불만 받을 수 있다", "다음 날 다시 와야 한다", "택시비를 지원받는다"], why: "may also board the 4:40 express at platform 3." }
-      ] },
-    { title: "도서관 이용 안내", kind: "담화",
-      lines: [
-        "Welcome to the City Library. Study rooms on the second floor can be reserved online for up to three hours a day.",
-        "Books borrowed from the reference section must be returned within one week.",
-        "During the summer reading program, storytelling sessions are held every Saturday at 11 a.m."
-      ],
-      qs: [
-        { q: "하루에 예약할 수 있는 시간은?", a: "최대 3시간", opts: ["최대 3시간", "최대 1시간", "최대 6시간", "제한 없음"], why: "for up to three hours a day." },
-        { q: "참고자료실 책은 언제까지 반납해야 하는가?", a: "일주일 이내", opts: ["일주일 이내", "하루 이내", "한 달 이내", "반납하지 않아도 된다"], why: "must be returned within one week." },
-        { q: "토요일 오전 11시에 열리는 것은?", a: "이야기 들려주기 프로그램", opts: ["이야기 들려주기 프로그램", "독서 토론회", "작가 강연", "도서 교환 시장"], why: "storytelling sessions are held every Saturday at 11 a.m." }
-      ] },
-    { title: "헬스장 신규 프로그램 안내", kind: "담화",
-      lines: [
-        "Thank you for choosing Fitline Gym. Starting next month, we are adding early-morning yoga classes at 6:30 a.m. on weekdays.",
-        "Members who sign up before the twentieth receive one free personal training session.",
-        "Please bring your membership card to the front desk to register."
-      ],
-      qs: [
-        { q: "새로 생기는 프로그램은?", a: "이른 아침 요가 수업", opts: ["이른 아침 요가 수업", "주말 수영 강좌", "야간 필라테스", "단체 마라톤"], why: "we are adding early-morning yoga classes at 6:30 a.m. on weekdays." },
-        { q: "20일 전에 등록하면 받는 혜택은?", a: "무료 개인 트레이닝 1회", opts: ["무료 개인 트레이닝 1회", "한 달 무료 이용", "운동복 제공", "주차권"], why: "receive one free personal training session." },
-        { q: "등록할 때 가져와야 하는 것은?", a: "회원 카드", opts: ["회원 카드", "신분증 사본", "운동화", "결제 영수증"], why: "Please bring your membership card to the front desk." }
-      ] },
-    { title: "분기 실적 발표", kind: "담화",
-      lines: [
-        "Thank you all for joining the quarterly briefing. Our online sales grew by twelve percent compared with the previous quarter.",
-        "The increase came mainly from the new subscription plan launched in April.",
-        "Next quarter, we will focus on improving delivery times in the southern region."
-      ],
-      qs: [
-        { q: "온라인 매출은 어떻게 변했는가?", a: "전 분기보다 12퍼센트 늘었다", opts: ["전 분기보다 12퍼센트 늘었다", "전 분기보다 12퍼센트 줄었다", "변화가 없었다", "두 배가 되었다"], why: "grew by twelve percent compared with the previous quarter." },
-        { q: "성장의 주된 이유는?", a: "4월에 시작한 구독 요금제", opts: ["4월에 시작한 구독 요금제", "광고비 증가", "신규 매장 개설", "가격 인상"], why: "came mainly from the new subscription plan launched in April." },
-        { q: "다음 분기의 중점 사항은?", a: "남부 지역 배송 시간 개선", opts: ["남부 지역 배송 시간 개선", "신제품 개발", "직원 채용", "해외 진출"], why: "we will focus on improving delivery times in the southern region." }
-      ] },
-    { title: "회의실 예약 변경", kind: "대화",
-      lines: [
-        "W: I reserved the main conference room for Thursday, but our client asked to meet on Friday instead.",
-        "M: Friday morning is already booked for the sales review. Would two o'clock work?",
-        "W: Yes, that is fine. Can you also set up the video link for the overseas team?",
-        "M: Sure. I will update the reservation and send the new invite this afternoon."
-      ],
-      qs: [
-        { q: "여성이 예약을 바꾸려는 이유는?", a: "고객이 금요일로 옮겨 달라고 해서", opts: ["고객이 금요일로 옮겨 달라고 해서", "회의실이 공사 중이라서", "직원이 휴가 중이라서", "장비가 고장 났기 때문에"], why: "our client asked to meet on Friday instead.", ex: "Our client asked to meet on Friday instead.", exKo: "고객이 대신 금요일에 만나자고 했습니다." },
-        { q: "금요일 오전에 이미 잡혀 있는 일정은?", a: "매출 검토 회의", opts: ["매출 검토 회의", "직원 교육", "면접", "월간 안전 점검"], why: "Friday morning is already booked for the sales review." },
-        { q: "남성이 하기로 한 일은?", a: "예약을 수정하고 새 초대장을 보낸다", opts: ["예약을 수정하고 새 초대장을 보낸다", "회의를 취소한다", "고객에게 직접 전화한다", "다른 회의실을 지금 정한다"], why: "I will update the reservation and send the new invite this afternoon." }
-      ] },
-    { title: "프린터 수리 요청", kind: "대화",
-      lines: [
-        "M: The printer on the fifth floor keeps jamming. Could someone take a look at it today?",
-        "W: I will send a technician this morning. Which model is it?",
-        "M: It is the MX 480. The display shows an error code as well.",
-        "W: Thank you. If the part needs to be ordered, it may take two days."
-      ],
-      qs: [
-        { q: "남성이 요청한 것은?", a: "프린터를 점검해 주는 것", opts: ["프린터를 점검해 주는 것", "새 프린터를 사는 것", "사무실을 옮기는 것", "소모품을 주문하는 것"], why: "Could someone take a look at it today?", ex: "The printer on the fifth floor keeps jamming.", exKo: "5층 프런터가 계속 걸립니다." },
-        { q: "여성이 보내겠다고 한 사람은?", a: "기술자", opts: ["기술자", "배송 기사", "청소 담당자", "보안 요원"], why: "I will send a technician this morning." },
-        { q: "부품을 주문해야 할 때 걸리는 시간은?", a: "이틀", opts: ["이틀", "하루", "일주일", "한 달"], why: "If the part needs to be ordered, it may take two days." }
-      ] },
-    { title: "고객 불만 응대", kind: "대화",
-      lines: [
-        "W: I am calling about an extra charge on my last bill. I was billed twice for the installation.",
-        "M: I apologize for the error. Let me pull up your account and check the payment history.",
-        "W: The amount is 45 dollars. I would like it refunded to my card.",
-        "M: Understood. The refund will appear within three business days."
-      ],
-      qs: [
-        { q: "여성이 전화한 목적은?", a: "중복 청구된 요금을 환불받으려고", opts: ["중복 청구된 요금을 환불받으려고", "설치 일정을 잡으려고", "계약을 해지하려고", "요금제를 바꾸려고"], why: "I was billed twice for the installation.", ex: "I was billed twice for the installation.", exKo: "설치비가 두 번 청구되었습니다." },
-        { q: "잘못 청구된 금액은?", a: "45달러", opts: ["45달러", "54달러", "450달러", "40달러"], why: "The amount is 45 dollars." },
-        { q: "환불은 언제 처리되는가?", a: "영업일 기준 삼일 이내", opts: ["영업일 기준 삼일 이내", "즉시", "일주일 이내", "다음 달 말"], why: "The refund will appear within three business days." }
-      ] },
-    { title: "행사 등록 확인", kind: "대화",
-      lines: [
-        "M: Hello, I registered for the trade show online, but I have not received a confirmation email.",
-        "W: Let me check your name. Could you spell it for me, please?",
-        "M: It is Daniel Cho. I used my work address when I signed up.",
-        "W: I found it. The email bounced, so I will resend it to your office address."
-      ],
-      qs: [
-        { q: "남성의 문제는?", a: "확인 메일을 받지 못했다", opts: ["확인 메일을 받지 못했다", "등록비를 잘못 냈다", "행사 날짜를 착각했다", "이름을 잘못 적었다"], why: "I have not received a confirmation email.", ex: "I have not received a confirmation email.", exKo: "확인 메일을 받지 못했습니다." },
-        { q: "여성이 남성에게 요청한 것은?", a: "이름의 철자를 말해 달라", opts: ["이름의 철자를 말해 달라", "등록 번호를 다시 확인해 달라", "전화번호를 알려 달라", "메일 주소를 바꿔 달라"], why: "Could you spell it for me, please?" },
-        { q: "여성이 하기로 한 일은?", a: "사무실 주소로 메일을 다시 보낸다", opts: ["사무실 주소로 메일을 다시 보낸다", "등록을 취소한다", "전화로 연락한다", "참가비를 환불한다"], why: "I will resend it to your office address." }
-      ] },
-    { title: "택배 픽업 일정", kind: "대화",
-      lines: [
-        "W: I need to pick up a package, but I will not be home before six. Is the office open late?",
-        "M: Our counter closes at seven on weekdays and at noon on Saturdays.",
-        "W: Then I will come by tomorrow around six thirty with my ID.",
-        "M: Please bring the tracking number as well so we can find it quickly."
-      ],
-      qs: [
-        { q: "여성이 걱정하는 것은?", a: "6시 전에 집에 없을 것 같아서", opts: ["6시 전에 집에 없을 것 같아서", "택배가 분실되어서", "주말에 문을 닫아서", "요금이 너무 비싸서"], why: "I will not be home before six.", ex: "I will not be home before six.", exKo: "6시 전에는 집에 없을 것 같습니다." },
-        { q: "평일 접수처는 몇 시에 닫는가?", a: "오후 7시", opts: ["오후 7시", "오후 6시", "오후 8시", "정오"], why: "Our counter closes at seven on weekdays." },
-        { q: "여성이 함께 가져와야 하는 것은?", a: "운송장 번호", opts: ["운송장 번호", "카드 영수증", "주문 확인서", "배송 주소록"], why: "Please bring the tracking number as well." }
-      ] },
-    /* ============ Part 4 담화 (보강) ============ */
-    { title: "박물관 특별전 안내", kind: "담화",
-      lines: [
-        "Welcome to the Grand Museum. Our special exhibition on old maps opens this Saturday in Hall B.",
-        "Members may enter one hour earlier, at nine o'clock, and join a free guided tour.",
-        "Tickets for the opening weekend must be reserved online because seating is limited."
-      ],
-      qs: [
-        { q: "특별전이 열리는 장소는?", a: "B홀", opts: ["B홀", "A홀", "중앙 로비", "야외 정원"], why: "opens this Saturday in Hall B.", ex: "Our special exhibition on old maps opens this Saturday in Hall B.", exKo: "옛 지도 특별전이 이번 토요일 B홀에서 열립니다." },
-        { q: "회원이 누릴 수 있는 혜택은?", a: "한 시간 먼저 입장하고 무료 해설 투어에 참여한다", opts: ["한 시간 먼저 입장하고 무료 해설 투어에 참여한다", "기념품을 받는다", "주차비를 면제받는다", "도록을 무료로 받는다"], why: "Members may enter one hour earlier and join a free guided tour." },
-        { q: "개막 주말의 티켓은 어떻게 준비하는가?", a: "온라인으로 예약한다", opts: ["온라인으로 예약한다", "현장에서 바로 산다", "전화로 예약한다", "회원만 입장할 수 있다"], why: "Tickets for the opening weekend must be reserved online." }
-      ] },
-    { title: "공항 셔틀 운행 변경", kind: "담화",
-      lines: [
-        "Attention, passengers. Due to road work near Terminal 2, the airport shuttle will use the east entrance until the end of the month.",
-        "Shuttles now leave every fifteen minutes instead of every ten.",
-        "Passengers with flights departing within two hours should take the express bus from Gate 5."
-      ],
-      qs: [
-        { q: "셔틀 경로가 바뀌는 이유는?", a: "2터미널 근처의 도로 공사", opts: ["2터미널 근처의 도로 공사", "폭설", "차량 고장", "직원 파업"], why: "Due to road work near Terminal 2.", ex: "The airport shuttle will use the east entrance until the end of the month.", exKo: "공항 셔틀은 이달 말까지 동쪽 출입구를 이용할 것입니다." },
-        { q: "공사 기간 중 배차 간격은?", a: "15분", opts: ["15분", "10분", "20분", "30분"], why: "Shuttles now leave every fifteen minutes instead of every ten." },
-        { q: "두 시간 이내에 출발하는 승객에게 권하는 교통편은?", a: "5번 게이트의 급행 버스", opts: ["5번 게이트의 급행 버스", "택시", "지하철", "도보 이동"], why: "should take the express bus from Gate 5." }
-      ] },
-    { title: "사내 교육 등록 안내", kind: "담화",
-      lines: [
-        "Good morning, everyone. Registration for the second-quarter safety training is now open on the company intranet.",
-        "All new employees must complete the session by the end of May, and managers are asked to confirm attendance for their teams.",
-        "The training takes about ninety minutes and is offered both in person and online."
-      ],
-      qs: [
-        { q: "안전 교육 등록은 어디서 하는가?", a: "사내 인트라넷", opts: ["사내 인트라넷", "인사팀 방문", "이메일 신청", "교육장 현장"], why: "Registration is now open on the company intranet.", ex: "Registration for the second-quarter safety training is now open on the company intranet.", exKo: "2분기 안전 교육 등록이 사내 인트라넷에서 시작되었습니다." },
-        { q: "신입 직원이 교육을 마쳐야 하는 시점은?", a: "5월 말까지", opts: ["5월 말까지", "4월 말까지", "6월 초까지", "분기 말까지"], why: "must complete the session by the end of May." },
-        { q: "교육에 걸리는 시간은?", a: "약 90분", opts: ["약 90분", "약 30분", "약 두 시간", "약 여섯 시간"], why: "The training takes about ninety minutes." }
-      ] }
-  ];
+  // Part 3·4 세트 데이터는 data/extra.js 의 part34 로 옮겼습니다(앱 스크립트 경량화 · docs/app-split-plan.md).
+  // applyExtraData 가 EXTRA.part34 를 채웁니다 — 데이터가 오기 전 호출에 대비해 빈 배열로 시작합니다.
+  var PART34_SETS = [];
   var p34Idx = 0;
   function renderPart34(forceRandom) {
     var box = document.getElementById("p34Box");
     if (!box) return;
+    if (!PART34_SETS.length) {
+      box.innerHTML = '<p class="practice-note">Part 3·4 세트 데이터를 불러오지 못했습니다. 새로고침하면 다시 시도합니다.</p>';
+      return;
+    }
     if (forceRandom || p34Idx < 0) p34Idx = Math.floor(Math.random() * PART34_SETS.length);
     if (p34Idx >= PART34_SETS.length) p34Idx = 0;
     var s = PART34_SETS[p34Idx];
@@ -3641,6 +3375,8 @@
     if (EXTRA.traps && EXTRA.traps.length) LC_TRAINING = LC_TRAINING.concat(EXTRA.traps);
     PART6_SETS = EXTRA.part6 || [];
     DICT_LIST = EXTRA.dictation || [];
+    // Part 3·4 세트는 data/extra.js part34 에서 옵니다(앱 스크립트 경량화).
+    if (EXTRA.part34 && EXTRA.part34.length) PART34_SETS = EXTRA.part34;
     // 읽기·듣기 라이브러리(연재 지문)도 이때 함께 받아 둡니다.
     if (EXTRA.library && EXTRA.library.length) LIBRARY = EXTRA.library;
     renderLibrary();
@@ -4710,7 +4446,9 @@
       a.click();
       document.body.removeChild(a);
       setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+      try { localStorage.setItem("toeic1000_backupat", todayKey()); } catch (e2) {}
       showToast("💾 학습 데이터를 백업 파일로 저장했습니다.");
+      checkBackupReminder();
     } catch (e) {
       showToast("⚠️ 내보내기에 실패했습니다.");
     }
@@ -4725,34 +4463,7 @@
     var reader = new FileReader();
     reader.onload = function (ev) {
       try {
-        var data = JSON.parse(ev.target.result);
-        if (!data || typeof data !== "object") throw new Error("bad");
-        learned = data.learned || {};
-        wrongSet = data.wrong || {};
-        wrongCount = data.wrongcount || {};
-        favSet = data.fav || {};
-        daily = data.daily || { date: "", count: 0 };
-        streakInfo = data.streak || { last: "", count: 0 };
-        examBest = data.exambest || 0;
-        quizStats = data.quizstats || {};
-        weeklyLog = data.weekly || {};
-        // 테마는 백업에 담겨 있을 때만 바꿉니다(없으면 지금 보고 있는 테마를 유지).
-        // 저장은 아래 setTheme 이 직접 처리합니다.
-        saveLearned();
-        saveWrong();
-        saveDaily();
-        try { localStorage.setItem("toeic1000_streak", JSON.stringify(streakInfo)); } catch (err) {}
-        try { localStorage.setItem("toeic1000_exambest", String(examBest)); } catch (err) {}
-        try { localStorage.setItem("toeic1000_quizstats", JSON.stringify(quizStats)); } catch (err) {}
-        try { localStorage.setItem("toeic1000_weekly", JSON.stringify(weeklyLog)); } catch (err) {}
-        invalidateUnits();
-        syncLevelButtons();
-        updateProgress();
-        updateWrongBadge();
-        updateDailyUI();
-        updateStreakUI();
-        renderStats();
-        if (data.theme) setTheme(data.theme === "dark" ? "dark" : "light");
+        applyBackupData(JSON.parse(ev.target.result));
         showToast("📥 백업 데이터를 불러왔습니다.");
       } catch (err) {
         showToast("⚠️ 올바른 백업 파일이 아닙니다.");
@@ -4761,6 +4472,147 @@
     };
     reader.readAsText(file);
   });
+
+  /** 백업 데이터를 화면·저장소에 반영합니다 (파일 가져오기 · 기록 코드 붙여넣기 공용). */
+  function applyBackupData(data) {
+    if (!data || typeof data !== "object") throw new Error("bad");
+    learned = data.learned || {};
+    wrongSet = data.wrong || {};
+    wrongCount = data.wrongcount || {};
+    favSet = data.fav || {};
+    daily = data.daily || { date: "", count: 0 };
+    streakInfo = data.streak || { last: "", count: 0 };
+    examBest = data.exambest || 0;
+    quizStats = data.quizstats || {};
+    weeklyLog = data.weekly || {};
+    // 테마는 백업에 담겨 있을 때만 바꿉니다(없으면 지금 보고 있는 테마를 유지).
+    // 저장은 아래 setTheme 이 직접 처리합니다.
+    saveLearned();
+    saveWrong();
+    saveDaily();
+    try { localStorage.setItem("toeic1000_streak", JSON.stringify(streakInfo)); } catch (err) {}
+    try { localStorage.setItem("toeic1000_exambest", String(examBest)); } catch (err) {}
+    try { localStorage.setItem("toeic1000_quizstats", JSON.stringify(quizStats)); } catch (err) {}
+    try { localStorage.setItem("toeic1000_weekly", JSON.stringify(weeklyLog)); } catch (err) {}
+    try { localStorage.setItem("toeic1000_backupat", todayKey()); } catch (err) {}
+    invalidateUnits();
+    syncLevelButtons();
+    updateProgress();
+    updateWrongBadge();
+    updateDailyUI();
+    updateStreakUI();
+    renderStats();
+    if (data.theme) setTheme(data.theme === "dark" ? "dark" : "light");
+    checkBackupReminder();
+  }
+
+  // ---------- 기록 코드(클립보드 백업) — 파일 없이 기기를 옮길 때 씁니다 ----------
+  function copyTextFallback(text) {
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.left = "-9999px";
+    document.body.appendChild(ta);
+    ta.select();
+    var ok = false;
+    try { ok = document.execCommand("copy"); } catch (e) {}
+    document.body.removeChild(ta);
+    return ok;
+  }
+  var btnCopyData = document.getElementById("btnCopyData");
+  if (btnCopyData) btnCopyData.addEventListener("click", function () {
+    var text = JSON.stringify(collectAllData());
+    var done = function () {
+      try { localStorage.setItem("toeic1000_backupat", todayKey()); } catch (e) {}
+      showToast("📋 기록 코드를 복사했습니다. 새 기기에서 「기록 코드 붙여넣기」로 그대로 복원돼요.");
+      checkBackupReminder();
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, function () {
+        if (copyTextFallback(text)) done();
+        else showToast("⚠️ 복사에 실패했습니다. 「데이터 내보내기」를 이용해 주세요.");
+      });
+    } else if (copyTextFallback(text)) done();
+    else showToast("⚠️ 복사에 실패했습니다. 「데이터 내보내기」를 이용해 주세요.");
+  });
+  var btnPasteData = document.getElementById("btnPasteData");
+  if (btnPasteData) btnPasteData.addEventListener("click", function () {
+    var apply = function (text) {
+      try {
+        applyBackupData(JSON.parse(String(text || "").trim()));
+        showToast("📥 기록 코드를 복원했습니다.");
+      } catch (err) {
+        showToast("⚠️ 올바른 기록 코드가 아닙니다.");
+      }
+    };
+    if (navigator.clipboard && navigator.clipboard.readText) {
+      navigator.clipboard.readText().then(apply, function () {
+        var pasted = window.prompt("기록 코드를 붙여넣어 주세요:");
+        if (pasted) apply(pasted);
+      });
+    } else {
+      var pasted = window.prompt("기록 코드를 붙여넣어 주세요:");
+      if (pasted) apply(pasted);
+    }
+  });
+
+  // ---------- 백업 리마인드 — 이 브라우저에만 남은 학습 기록을 주기적으로 알려 줍니다 ----------
+  function checkBackupReminder() {
+    var n = Object.keys(learned).length;
+    if (n < 20) return;
+    var last = ""; try { last = localStorage.getItem("toeic1000_backupat") || ""; } catch (e) {}
+    var stale = !last || dayDiff(last, todayKey()) >= 30;
+    var hint = document.getElementById("backupHint");
+    if (hint) {
+      if (stale) {
+        hint.hidden = false;
+        hint.textContent = "💾 학습 기록 " + n + "개가 이 브라우저에만 저장되어 있어요. 최근 백업: " +
+          (last ? dayDiff(last, todayKey()) + "일 전" : "없음") + " — 「데이터 내보내기」나 「기록 코드 복사」로 백업해 두세요.";
+      } else {
+        hint.hidden = true;
+      }
+    }
+    var nag = ""; try { nag = localStorage.getItem("toeic1000_backupnag") || ""; } catch (e) {}
+    if (stale && (!nag || dayDiff(nag, todayKey()) >= 7)) {
+      showToast("💾 학습 기록 백업 리마인드 — 「📊 나의 학습 현황」에서 기록을 백업해 두세요!");
+      try { localStorage.setItem("toeic1000_backupnag", todayKey()); } catch (e) {}
+    }
+  }
+
+  // ---------- 첫 방문 시작 가이드(온보딩) ----------
+  (function setupOnboarding() {
+    var card = document.getElementById("onboardCard");
+    if (!card) return;
+    var seen = "";
+    try { seen = localStorage.getItem("toeic1000_onboarded") || ""; } catch (e) {}
+    if (seen || Object.keys(learned).length >= 5) return;
+    card.hidden = false;
+    function dismiss() {
+      card.hidden = true;
+      try { localStorage.setItem("toeic1000_onboarded", todayKey()); } catch (e) {}
+    }
+    var diag = document.getElementById("onboardDiag");
+    if (diag) diag.addEventListener("click", function () {
+      var b = document.getElementById("homeDiag");
+      if (b) b.click();
+      dismiss();
+    });
+    var todayBtn = document.getElementById("onboardToday");
+    if (todayBtn) todayBtn.addEventListener("click", function () {
+      var chip = document.querySelector('.sn-chip[data-target="오늘의 학습"]');
+      if (chip) chip.click();
+      dismiss();
+    });
+    var goalBtn = document.getElementById("onboardGoal");
+    if (goalBtn) goalBtn.addEventListener("click", function () {
+      var sel = document.getElementById("goalSel");
+      if (sel) { sel.scrollIntoView({ block: "center" }); sel.focus(); }
+      dismiss();
+    });
+    var closeBtn = document.getElementById("onboardClose");
+    if (closeBtn) closeBtn.addEventListener("click", dismiss);
+  })();
 
   // ---------- 토스트 알림 ----------
   var toastTimer = null;
@@ -5444,8 +5296,13 @@
   }
 
   // ---------- SRS 간격 반복 복습 ----------
-  // 복습 간격: 학습 후 1/3/7/14/30일 뒤
+  // 기본 간격: 학습 후 1/3/7/14/30일 뒤. 자주 틀리는 단어(오답 2회 이상)는 더 자주(1/2/4/7/14일) 만납니다.
+  // 놓친 주기가 있으면 그 뒤 2일 안에 보충으로 다시 데려옵니다.
   var SRS_INTERVALS = [1, 3, 7, 14, 30];
+  var SRS_INTERVALS_HARD = [1, 2, 4, 7, 14];
+  function srsIntervalsFor(word) {
+    return (wrongCount[word] || 0) >= 2 ? SRS_INTERVALS_HARD : SRS_INTERVALS;
+  }
   function dayDiff(fromKey, toKey) {
     var a = fromKey.split("-").map(Number);
     var b = toKey.split("-").map(Number);
@@ -5459,7 +5316,8 @@
       var d = learned[w[0]];
       if (!d || d === true) return false;
       var diff = dayDiff(d, t);
-      return SRS_INTERVALS.indexOf(diff) !== -1;
+      var iv = srsIntervalsFor(w[0]);
+      return iv.indexOf(diff) !== -1 || iv.some(function (x) { return diff > x && diff <= x + 2; });
     });
   }
   function enterSrs() {
@@ -5470,7 +5328,7 @@
       renderDashboard();
       var msg = document.createElement("div");
       msg.className = "quiz-result";
-      msg.innerHTML = "<p>🎉 오늘 복습할 단어가 없어요!<br>새 단어를 외우면 1일·3일·7일·14일 간격으로 복습 알림이 생깁니다.</p>";
+      msg.innerHTML = "<p>🎉 오늘 복습할 단어가 없어요!<br>새 단어를 외우면 1·3·7·14·30일 주기로 복습 알림이 생기고, 자주 틀리는 단어는 더 자주 나옵니다.</p>";
       var box = document.getElementById("dashBox");
       box.insertBefore(msg, box.firstChild);
       return;
@@ -5677,7 +5535,8 @@
     if (mockTimerId) { clearInterval(mockTimerId); mockTimerId = null; }
   }
 
-  function genMock() {
+  // 어휘 모의 — 외운 단어로 실전 형식(듣기·빈칸)을 훑는 연습용 문제를 만듭니다.
+  function genMockVocab() {
     var mode = document.getElementById("mockMode").value;
     var secPerQ = parseInt(document.getElementById("mockLength").value, 10);
     var pool = allWords();
@@ -5725,6 +5584,72 @@
     mockTimeLeft = mockQ.reduce(function (n, q) { return n + q.sec; }, 0);
   }
 
+  // TOEIC 풀 모의 200문항 — 실제 시험 구성 그대로 치릅니다.
+  // Part 1 6 · Part 2 25 · Part 3 39 · Part 4 30 · Part 5 30 · Part 6 16 · Part 7 54
+  // 문항은 보유 콘텐츠 풀(data/extra.js · PART34_SETS)에서 회차마다 무작위로 뽑습니다.
+  function pickN(arr, n) {
+    var copy = arr.slice();
+    shuffle(copy);
+    return copy.slice(0, n);
+  }
+
+  function genMockToeic() {
+    var secPerQ = parseInt(document.getElementById("mockLength").value, 10);
+    var X = EXTRA || {};
+    mockQ = [];
+    function mk(o) {
+      o.sec = secPerQ;
+      o.ok = false;
+      o.section = /^Part [1-4]$/.test(o.part) ? "LC" : "RC";
+      mockQ.push(o);
+    }
+    // Part 1 — 사진 묘사 6문항
+    pickN(X.part1 || [], 6).forEach(function (t) {
+      mk({ part: "Part 1", kind: "p1", context: t.scene, prompt: t.q, answer: t.a, options: t.opts.slice(), why: t.why });
+    });
+    // Part 2 — 질의·응답 25문항 (듣기)
+    pickN(X.traps || [], 25).forEach(function (t) {
+      mk({ part: "Part 2", kind: "listen", audio: t.audio, prompt: t.ko, answer: t.a, options: t.opts.slice(), why: t.why });
+    });
+    // Part 3 — 대화 13세트 39문항 · Part 4 — 담화 10세트 30문항
+    var sets = (PART34_SETS || []).slice();
+    pickN(sets.filter(function (s) { return s.kind === "대화"; }), 13).forEach(function (s) {
+      s.qs.forEach(function (q) {
+        mk({ part: "Part 3", kind: "set", context: s.lines, passageTitle: s.title, prompt: q.q, answer: q.a, options: q.opts.slice(), why: q.why, example: q.ex, exampleKo: q.exKo });
+      });
+    });
+    pickN(sets.filter(function (s) { return s.kind === "담화"; }), 10).forEach(function (s) {
+      s.qs.forEach(function (q) {
+        mk({ part: "Part 4", kind: "set", context: s.lines, passageTitle: s.title, prompt: q.q, answer: q.a, options: q.opts.slice(), why: q.why, example: q.ex, exampleKo: q.exKo });
+      });
+    });
+    // Part 5 — 빈칸 채우기 30문항 (연결어·전치사 콜로케이션)
+    pickN((X.transitions || []).concat(X.prepositions || []), 30).forEach(function (t) {
+      mk({ part: "Part 5", kind: "fill", prompt: t.prompt, answer: t.a, options: t.opts.slice(), why: t.why });
+    });
+    // Part 6 — 장문 공란 16문항 (지문 4개 × 빈칸 4개)
+    pickN(X.part6 || [], 4).forEach(function (s) {
+      s.blanks.forEach(function (b) {
+        mk({ part: "Part 6", kind: "p6", context: s.text, passageTitle: s.title, prompt: "빈칸 (" + b.n + ")에 들어갈 알맞은 말은?", answer: b.a, options: b.opts.slice(), why: b.why });
+      });
+    });
+    // Part 7 — 독해 54문항 (세트 18개 × 3문항)
+    pickN(X.part7 || [], 18).forEach(function (s) {
+      s.qs.forEach(function (q) {
+        mk({ part: "Part 7", kind: "p7", context: s.passages, passageTitle: s.title, prompt: q.q, answer: q.a, options: q.opts.slice(), why: q.why });
+      });
+    });
+    var lcN = mockQ.filter(function (q) { return q.section === "LC"; }).length;
+    mockSections = [{ name: "LC", correct: 0, total: lcN }, { name: "RC", correct: 0, total: mockQ.length - lcN }];
+    mockTimeLeft = mockQ.reduce(function (n, q) { return n + q.sec; }, 0);
+  }
+
+  function genMock() {
+    var mode = document.getElementById("mockMode").value;
+    if (mode === "toeic") genMockToeic();
+    else genMockVocab();
+  }
+
   function enterMock() {
     stopMockTimer();
     document.getElementById("mockTimer").textContent = "";
@@ -5736,6 +5661,18 @@
 
   function startMock() {
     stopMockTimer();
+    var startMode = document.getElementById("mockMode").value;
+    // TOEIC 풀 모의는 확장 콘텐츠(data/extra.js)가 필요하므로 데이터가 온 뒤에 시작합니다.
+    if (startMode === "toeic" && extraScriptState !== "ready") {
+      if (extraScriptState === "failed") {
+        showToast("⚠️ 문제 데이터를 불러오지 못해 어휘 모의 60문항으로 대신 시작합니다.");
+        document.getElementById("mockMode").value = "full";
+      } else {
+        document.getElementById("mockBox").innerHTML = '<div class="quiz-result"><p>⏳ TOEIC 풀 모의 200문항을 준비하는 중…</p></div>';
+        loadExtra(function () { startMock(); });
+        return;
+      }
+    }
     genMock();
     track("mock_start", { mode: document.getElementById("mockMode").value, questions: mockQ.length });
     mockIdx = 0;
@@ -5771,8 +5708,24 @@
     document.getElementById("mockSection").textContent =
       mockSection + " 섹션 · " + q.part + " · 문제 " + (mockIdx + 1) + " / " + mockQ.length;
     var html = '<div class="quiz-progress">현재 정답 ' + mockCorrect + "개</div>";
-    if (q.kind === "blank") {
-      html += '<div class="quiz-q" style="font-size:20px">' + esc(q.prompt) + '</div>';
+    if (q.kind === "p1") {
+      html += '<div class="listen-script">📷 사진: ' + esc(q.context) + "</div>";
+      html += '<div class="quiz-q" style="font-size:18px">' + esc(q.prompt) + "</div>";
+    } else if (q.kind === "listen") {
+      html += '<div class="quiz-q" style="font-size:20px">🔊 듣고 알맞은 대답을 고르세요</div>';
+      html += '<div style="text-align:center"><button class="listen-play" id="mockPlay">🔊 듣기</button></div>';
+    } else if (q.kind === "set") {
+      html += '<div class="listen-script">🎧 ' + esc(q.passageTitle) + " · " + ttsBtn(q.context.join(" "), "대화 듣기") + "</div>";
+      html += '<div class="quiz-q" style="font-size:18px">' + esc(q.prompt) + "</div>";
+    } else if (q.kind === "p6") {
+      html += '<div class="listen-script">📄 ' + esc(q.passageTitle) + "<br>" + esc(q.context) + "</div>";
+      html += '<div class="quiz-q" style="font-size:18px">' + esc(q.prompt) + "</div>";
+    } else if (q.kind === "p7") {
+      html += '<div class="listen-script">📄 ' + esc(q.passageTitle) + "</div>";
+      q.context.forEach(function (p) { html += '<div class="listen-script">' + esc(p.label) + " — " + esc(p.text) + "</div>"; });
+      html += '<div class="quiz-q" style="font-size:18px">' + esc(q.prompt) + "</div>";
+    } else if (q.kind === "blank" || q.kind === "fill") {
+      html += '<div class="quiz-q" style="font-size:20px">' + esc(q.prompt) + "</div>";
     } else if (q.kind === "word" && q.section === "RC") {
       html += '<div class="quiz-q" style="font-size:20px">' + esc(q.prompt) + " → 알맞은 단어</div>";
     } else {
@@ -5803,13 +5756,16 @@
       mockCorrect++;
       mockSections.forEach(function (s) { if (s.name === q.section) s.correct++; });
       recordStat("mock_" + q.section, true);
-      if (wrongSet[q.word]) { delete wrongSet[q.word]; saveWrong(); }
+      // 어휘 문항만 단어 오답노트에 쌓습니다(콘텐츠 문항은 통계만 남깁니다).
+      if (q.word && wrongSet[q.word]) { delete wrongSet[q.word]; saveWrong(); }
     } else {
       btn.classList.add("wrong");
-      wrongSet[q.word] = true;
-      wrongCount[q.word] = (wrongCount[q.word] || 0) + 1;
+      if (q.word) {
+        wrongSet[q.word] = true;
+        wrongCount[q.word] = (wrongCount[q.word] || 0) + 1;
+        saveWrong();
+      }
       recordStat("mock_" + q.section, false);
-      saveWrong();
       if (correctBtn) correctBtn.classList.add("correct");
     }
     opts.forEach(function (o) { o.disabled = true; });
@@ -5819,6 +5775,13 @@
       if (w) html += '<div class="listen-script">📝 ' + esc(w[4]) + ttsBtn(w[4], "예문 듣기") + '<br>💬 ' + esc(w[5]) + "</div>";
     } else {
       html += exFeedback(q);
+      if (q.kind === "listen" && q.audio) {
+        html += '<div class="listen-script" lang="en">📜 ' + esc(q.audio) + ttsBtn(q.audio, "다시 듣기") + "</div>";
+      }
+      if (q.kind === "set" && q.context) {
+        html += '<div class="listen-script">📜 ' + esc(q.context.join(" ")) + ttsBtn(q.context.join(" "), "대화 듣기") + "</div>";
+      }
+      if (q.why) html += '<div class="quiz-ex">💡 ' + esc(q.why) + "</div>";
     }
     var mockFb = document.getElementById("mockFeedback");
     mockFb.innerHTML = html;
@@ -5876,7 +5839,12 @@
       "Part 1·2": "사진 속 동작·상태 묘사와 의문사(Who/When/Why)에 집중해 반복 청취하세요.",
       "Part 3·4": "문제를 먼저 읽고 인물·장소·시간 정보를 메모하며 듣는 연습을 하세요.",
       "Part 5": "품사·시제·수 일치 단서를 빠르게 찾는 30초 풀이 훈련이 필요해요.",
-      "Part 7": "지문 유형별 스캔과 질문 키워드 찾기 속독 훈련이 필요해요."
+      "Part 7": "지문 유형별 스캔과 질문 키워드 찾기 속독 훈련이 필요해요.",
+      "Part 1": "동작·상태 동사(hang, lean, be seated 등)를 사진 묘사 표현과 함께 암기하세요.",
+      "Part 2": "의문사(Who/What/When/Where/Why/How)와 간접 응답 유형을 반복 청취하세요.",
+      "Part 3": "선택지를 먼저 훑고 인물·장소·시각 키워드를 들으며 메모하는 연습이 필요해요.",
+      "Part 4": "담화의 도입부(목적·장소)를 먼저 잡고, 세부 정보 문제는 메모로 대응하세요.",
+      "Part 6": "빈칸 앞뒤 문맥과 문장 결속(연결어·대명사 지시)을 함께 보는 연습이 필요해요."
     };
     var weakHtml = weakPart
       ? '<div class="listen-script" style="margin-top:10px">🎯 취약 유형: <b>' + weakPart + "</b> (" + weakPct + "%)<br>💡 " + partTips[weakPart] + "</div>"
@@ -5884,7 +5852,8 @@
     document.getElementById("mockBox").innerHTML =
       '<div class="quiz-result">' +
       '<div class="score">' + mockCorrect + " / " + total + '</div>' +
-      '<p>예상 TOEIC 점수 <b class="est-score">' + est + "점</b> · " + msg + "</p>" +
+      '<p>예상 점수(참고치) <b class="est-score">' + est + "점</b> · " + msg + "</p>" +
+      '<p class="muted" style="font-size:12px;margin:0 0 8px">🧮 산출식: LC·RC 각각 정답률(%) × 4.95 를 5~495점으로 보정해 합산한 값입니다. 이는 자체 환산 근사치이며 <b>ETS 공식 환산표가 아닙니다</b> — 실제 시험에서는 문항 난이도에 따른 비선형 환산이 적용됩니다.</p>' +
       '<div class="bar-row"><span class="bar-label">LC (리스닝)</span><div class="bar-track"><div class="bar-fill" style="width:' + lcPct + '%"></div></div><span class="bar-pct">' + lcPct + "%</span></div>" +
       '<div class="bar-row"><span class="bar-label">RC (리딩)</span><div class="bar-track"><div class="bar-fill" style="width:' + rcPct + '%"></div></div><span class="bar-pct">' + rcPct + "%</span></div>" +
       '<p style="font-size:13px;font-weight:800;color:var(--text);margin:14px 0 2px">📊 유형별 정답</p>' +
@@ -5893,7 +5862,7 @@
       '<p class="muted">LC 예상 ' + lcScore + "점 · RC 예상 " + rcScore + "점 · 최고 기록 " + examBest + "점</p>" +
       '<div class="fc-controls" style="justify-content:center">' +
       '<button class="btn" id="mockRestart">🔁 다시 풀기</button>' +
-      '<button class="btn" id="mockWrong">📕 오답 복습</button>' +
+      (Object.keys(wrongSet).length ? '<button class="btn" id="mockWrong">📕 오답 복습</button>' : "") +
       '<button class="btn" id="mockShare">📤 결과 공유</button>' +
       '<button class="btn" id="mockBack">📖 목록으로</button>' +
       "</div></div>";
@@ -6310,6 +6279,7 @@
     showHome();
     scheduleExtendedHome();
     openFromQuery();
+    checkBackupReminder();
     // 초기 렌더(오늘의 학습 등)가 끝난 뒤에 이동해야 위치가 어긋나지 않습니다.
     setTimeout(function () {
       // 교재 페이지에서 넘어온 흐름(?level=·&ch=)이면 교재 데이터가 먼저 필요합니다

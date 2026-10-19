@@ -1048,6 +1048,21 @@
   .btn-hero.primary { background: var(--primary-solid); border-color: var(--primary-solid); color: #fff; }
   .btn-hero.primary:hover { background: var(--primary-solid-hover); border-color: var(--primary-solid-hover); }
 
+  /* 첫 방문 시작 가이드(온보딩) — 히어로 바로 아래, 학습 기록이 거의 없을 때만 표시 */
+  .onboard-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+    padding: 18px 18px 16px; margin: 14px auto 4px; max-width: 980px;
+  }
+  .onboard-title { font-size: 17px; font-weight: 800; color: var(--text); margin-bottom: 10px; }
+  .onboard-steps { list-style: none; display: flex; flex-wrap: wrap; gap: 10px; padding: 0; margin: 0 0 12px; }
+  .onboard-steps li {
+    flex: 1 1 220px; background: var(--soft-blue); border-radius: 12px; padding: 10px 12px;
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .onboard-steps li b { color: var(--text); font-size: 14px; }
+  .onboard-steps li span { color: var(--text-muted); font-size: 12.5px; }
+  .onboard-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
   .home-section { margin-bottom: 30px; }
   .home-section-title { font-size: 19px; font-weight: 800; margin-bottom: 4px; }
   .home-section-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 14px; }

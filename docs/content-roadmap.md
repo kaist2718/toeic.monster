@@ -10,7 +10,7 @@
 units = 30
 vocab = 1000
 idioms = 126
-guides = 9
+guides = 10
 paraphrase = 200
 frequency = 200
 grammar_books = 3
@@ -21,8 +21,8 @@ conversation_chapters = 36
 conversation_quizzes = 288
 speaking_questions = 11
 writing_questions = 8
-sitemap_urls = 127
-pages = 130
+sitemap_urls = 128
+pages = 131
 chapter_pages = 72
 -->
 
@@ -39,7 +39,7 @@ chapter_pages = 72
 | 확장 콘텐츠 | Part 1·2·3·4·5·6·7 문제, 이중·삼중 지문, 동의어 치환, 연결어·전치사 드릴, 빈도순 어휘, 30일 스프린트, 받아쓰기 |
 | 4기능 | TOEIC Speaking 5개 유형 · Writing 3개 유형 (공식 구성 기준) |
 | 정적 산출물 | `units/*.html` · `guides/*.html` · `grammar/*.html` · `sitemap.xml` (빌드 스크립트 자동 생성) |
-| 감사 게이트 | 콘텐츠 · 문구 · **사이트 구조** · **접근성·예산** 4종 + **밀도 점검**(보고용) + TTS 회귀 테스트 |
+| 감사 게이트 | 콘텐츠 · 문구 · **사이트 구조** · **접근성·예산** · **본문 품질** 5종 + **밀도 점검**(보고용) + TTS 회귀 테스트 |
 | 배포 도구 | `promo/` (블로그·숏폼 발행 스크립트), 수익화 전략서는 별도 **비공개 저장소**에서 관리 — 미구현 |
 
 ---
@@ -52,10 +52,11 @@ chapter_pages = 72
 | `npm run audit:text` | 화면에 보이는 모든 문자열의 맞춤법·영문 철자·공백·전각 문자·TTS 낭독 기호 |
 | `npm run audit:site` | **내부 링크·앵커, 정적 자산, HTML 중복 id, 메타·JSON-LD, 사이트맵 일치, 문서 수치, 홈 고정 표시값, 본문 서체 서브셋(5-3)** |
 | `npm run audit:a11y` | **접근성·성능 예산** — lang·제목 단계, 입력 요소 이름, ARIA 참조, 초점 표시, 색 대비(WCAG), 파일 크기 상한·head 동기 스크립트 |
+| `npm run audit:prose` | **본문 품질** — 영어 예문↔해석 숫자 대조(월 이름·수사·단위 표현 포함), 빈 필드·IPA·문장 부호, 보기 중복·정답 누락, 해설 길이 + 사람 검수 추천 샘플 (`tools/audit-prose.mjs` · 2026-10-19 신설) |
 | `npm run audit:density` | **밀도(보고용)** — 교재 과별 도입·개념·예문·표·note·실수·연습, 어휘 예문 길이, 허브·과 페이지·가이드 본문 분량, LC 커버리지. 기준 미달을 **알림만** 하고 `--strict` 를 주면 실패 처리 (`docs/content-density-audit.md`) |
 | `npm run audit:external` | 위 항목 + 외부 링크 HTTP 상태 (네트워크 필요) |
 | `npm run test` | TTS 음성 선택 로직 + 문법 문제 풀이 연동 회귀 테스트 |
-| `npm run check` | 감사 4종 + 밀도 점검 + 테스트 + 빌드 (커밋 전 권장) |
+| `npm run check` | 감사 5종 + 밀도 점검 + 테스트 + 빌드 (커밋 전 권장) |
 | `npm run check:ci` | `check` + 생성물 커밋 누락 감지(`verify`) |
 
 ### 2-1. 이번에 메운 사각지대
@@ -191,6 +192,7 @@ Speaking·Writing 구성은 ETS 공식 안내를 기준으로 하며, `data/extr
 | 과제 | 내용 | 막는 요인 |
 | --- | --- | --- |
 | LC 정적 오디오 | 브라우저 TTS 의존 → 억양·속도 다양성 부족. `edge-tts` 로 mp3 사전 생성 가능 | 외부 도구(Python) 실행 환경, 저장소 용량 |
+| 어휘 1,500 확장 | 유닛 31~40(500단어) 추가 — **후보 선정 완료**(기출 빈도 축 500선 · `docs/vocab-expansion-plan.md`) | 데이터 작성(7필드 × 500)과 유닛 탐색 범위 조정 작업량 |
 | 수익화 실행 | 교재·인강 제휴와 PDF 부가자료 판매 (전략서 §3·§13 — 별도 비공개 저장소) | 사업자등록·판매 채널·목표 수익 등 사업 결정 필요, 현재 코드 0건. 90일 계획은 전략서 §13 |
 | ~~접근성·성능 자동 검사~~ | 대비·포커스·번들 예산 자동 측정 | ✅ 완료 — `tools/audit-a11y.mjs` (17차 점검, 대비 6곳 수정) |
 | TOEIC LC·RC 시험 사실 고정 | S&W 는 `swFormat` 으로 고정했으나 LC·RC 구성은 아직 문서·화면 서술 | 시험 개편 시 갱신 트리거 규칙 필요 |
@@ -219,9 +221,9 @@ Speaking·Writing 구성은 ETS 공식 안내를 기준으로 하며, `data/extr
 ## 8. 실행 명령
 
 ```bash
-npm run audit          # 콘텐츠 + 문구 + 사이트 구조 + 접근성 감사 + 밀도 점검(보고용)
+npm run audit          # 콘텐츠 + 문구 + 사이트 구조 + 접근성 + 본문 품질 감사 + 밀도 점검(보고용)
 npm run audit:external # 외부 링크 HTTP 상태까지 확인 (네트워크 필요)
-npm run check          # 커밋 전 기본 점검 (감사 4종 + 밀도 점검 + 테스트 + 빌드)
+npm run check          # 커밋 전 기본 점검 (감사 5종 + 밀도 점검 + 테스트 + 빌드)
 npm run check:ci       # 생성물 커밋 누락까지 감지
 ```
 
@@ -240,7 +242,7 @@ npm run check:ci       # 생성물 커밋 누락까지 감지
 
 | 워크플로 작업 | 실행 시점 | 동작 |
 | --- | --- | --- |
-| `check (Node 22.x · 24.x)` | push(main) · pull_request · 수동 | `npm run check:ci` — 감사 4종 + 밀도 점검 + TTS 테스트 + 빌드 + 생성물 커밋 누락 감지. **실패하면 머지 불가** |
+| `check (Node 22.x · 24.x)` | push(main) · pull_request · 수동 | `npm run check:ci` — 감사 5종 + 밀도 점검 + TTS 테스트 + 빌드 + 생성물 커밋 누락 감지. **실패하면 머지 불가** |
 | `external-links` | 주 1회 예약 · 수동 | `npm run audit:external` — 공식 ETS 안내 등 외부 링크 HTTP 상태. 상대 사이트 사정으로 끊길 수 있어 `continue-on-error` 로 알림만 하고 CI를 막지 않습니다 |
 
 - Node 22·24 두 버전에서 도는 이유: `package.json` 의 `engines(>=22)` 을 실제로 지키는지 확인하기 위해서입니다(20 이하는 EOL, 브라우저 계측 도구가 전역 WebSocket 을 씁니다).

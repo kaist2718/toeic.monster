@@ -24,7 +24,6 @@ import fs from "node:fs";
 import path from "node:path";
 import vm from "node:vm";
 import { fileURLToPath } from "node:url";
-import { readAppSource } from "./app-source.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const STRICT = process.argv.includes("--strict");
@@ -262,18 +261,11 @@ listThin("가이드", thinGuides, BASELINE.guideChars);
 // docs/content-roadmap.md 7절과 audit-content.mjs 가 쓰는 같은 실제 구성입니다.
 const REAL = { part1: 6, part2: 25, part3: 39, part4: 30 };
 
-// Part 3·4 세트는 앱 소스의 PART34_SETS 에 있습니다 — audit-content.mjs 와 같은 방식으로 셉니다.
-const { code } = readAppSource();
-const part34Sets = (() => {
-  const start = code.indexOf("var PART34_SETS = [");
-  if (start < 0) return [];
-  const end = code.indexOf("\n  ];", start);
-  const block = code.slice(start, end < 0 ? code.length : end);
-  return block.split(/\{\s*title:/).slice(1).map((chunk) => ({
-    kind: (chunk.match(/kind: "([^"]+)"/) || [])[1] || "",
-    questions: (chunk.match(/\bq: "/g) || []).length,
-  }));
-})();
+// Part 3·4 세트는 data/extra.js 의 part34 에 있습니다 — audit-content.mjs 와 같은 방식으로 셉니다(2026-10-19 앱에서 이동).
+const part34Sets = (extra.part34 || []).map((s) => ({
+  kind: s.kind || "",
+  questions: Array.isArray(s.qs) ? s.qs.length : 0,
+}));
 const lcCount = (part) => {
   if (part === "part1") return (extra.part1 || []).length;
   if (part === "part2") return (extra.traps || []).length;

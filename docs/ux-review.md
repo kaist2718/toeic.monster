@@ -19,8 +19,8 @@
 > 수치는 `npm run audit` 출력과 계측값 기준입니다.
 
 <!-- audit:counts
-pages = 130
-sitemap_urls = 127
+pages = 131
+sitemap_urls = 128
 chapter_pages = 72
 -->
 
@@ -204,7 +204,7 @@ chapter_pages = 72
 
 ```bash
 npm run check        # 콘텐츠·문구·사이트 감사 + UI/TTS/문법 테스트 + 빌드
-npm run audit        # 감사 3종만 실행
+npm run audit        # 감사 5종 + 밀도 점검
 npm run test         # 홈 UI·TTS·문법 회귀 테스트만 실행
 ```
 
