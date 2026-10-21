@@ -97,6 +97,7 @@ from publish import (  # noqa: E402
     piper_voice_path,
     posted_words_for_unit,
     print_remaining,
+    record_content_created,
     resolve_tts_engine,
     warn,
 )
@@ -2069,7 +2070,7 @@ def main() -> None:
     log("=" * 62)
     card_label = ({"unit": "단어 카드", "idioms": "숙어 카드", "frequency": "빈도 어휘 카드",
                    "paraphrase": "동의어 치환 퀴즈"}.get(kind)
-                  or f"{KIND_SPECS[kind]['label']} 쇼츠")
+                  or KIND_SPECS[kind]["label"])   # 아래 '… 쇼츠 생성' 과 겹치지 않게 라벨만
     log(f"🎬 {card_label} 쇼츠 생성" + ("  (dry-run)" if args.dry_run else ""))
     log("=" * 62)
     if kind == "unit":
@@ -2255,6 +2256,8 @@ def main() -> None:
             added = mark_words_posted(bucket, [w[0] for w in picked])
             if added:
                 log(f"🔁 중복 방지 기록: {source_label} 항목 {added}개 저장 ({POSTED_FILE.name})")
+        # 이번에 만든 종류를 최근 이력에 남깁니다 — 다음 추천이 같은 종류에 몰리지 않게 합니다.
+        record_content_created(bucket)
         print_remaining(HIGHLIGHT_KEY.get(kind))
         rel = out.relative_to(PROMO)
         if args.idioms:

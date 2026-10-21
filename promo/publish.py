@@ -1050,7 +1050,7 @@ def normalize_word(value: str) -> str:
 
 def load_posted() -> dict:
     """사용한 단어와 게시한 영상 기록을 읽습니다. 없으면 빈 기록을 돌려줍니다."""
-    data: dict = {"version": POSTED_VERSION, "words": {}, "videos": {}}
+    data: dict = {"version": POSTED_VERSION, "words": {}, "videos": {}, "kind_history": []}
     if not POSTED_FILE.exists():
         return data
     try:
@@ -1066,6 +1066,9 @@ def load_posted() -> dict:
     videos = loaded.get("videos")
     if isinstance(videos, dict):
         data["videos"] = {str(k): v for k, v in videos.items() if isinstance(v, dict)}
+    history = loaded.get("kind_history")
+    if isinstance(history, list):
+        data["kind_history"] = [str(x) for x in history if str(x)]
     return data
 
 
@@ -1073,6 +1076,67 @@ def save_posted(data: dict) -> None:
     data["version"] = POSTED_VERSION
     data["updated_at"] = now_iso()
     POSTED_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+KIND_HISTORY_MAX = 20   # 최근 생성 종류 기록 길이 — 추천 회전에 씁니다
+
+
+def record_content_created(bucket: int | str | None) -> None:
+    """생성을 마친 콘텐츠 종류(UNIT 번호 포함)를 최근 이력 맨 앞에 기록합니다.
+
+    새 포맷 종류 추천(메뉴 9·10)과 콘텐츠 자동 준비(kind=auto)가 이 이력을 보고
+    최근에 만든 종류를 뒤로 미룹니다. 예전에는 '남은 콘텐츠가 가장 많은 종류'만 봐서
+    데이터가 가장 많은 문법 빈칸이 매번 추천됐습니다 — 이 기록이 있으면 종류가
+    돌려가며 추천됩니다.
+    """
+    if bucket is None:
+        return
+    key = str(bucket)
+    data = load_posted()
+    hist = [key] + [x for x in data.get("kind_history", []) if x != key]
+    data["kind_history"] = hist[:KIND_HISTORY_MAX]
+    save_posted(data)
+
+
+def bootstrap_kind_history() -> list[str]:
+    """이전에 만든 영상 메타(*.json)의 수정 시각 순으로 종류 이력을 복원합니다.
+
+    kind_history 가 비어 있는 첫 실행에서 과거 생성물을 훑어 이력을 채웁니다.
+    이렇게 하면 업그레이드 직후에도 추천이 과거에 만든 종류를 피해 돌아갑니다.
+    """
+    out: list[str] = []
+    if not SHORTS_DIR.exists():
+        return out
+    for p in sorted(SHORTS_DIR.glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True):
+        try:
+            data = json.loads(p.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        kind = str(data.get("kind", "") or "") if isinstance(data, dict) else ""
+        if kind and kind not in out:
+            out.append(kind)
+    return out[:KIND_HISTORY_MAX]
+
+
+def recent_content_history() -> list[str]:
+    """최근에 만든 콘텐츠 종류 키(최신이 앞) — 추천 종류 회전에 씁니다."""
+    data = load_posted()
+    hist = [str(x) for x in data.get("kind_history", []) if str(x)]
+    if hist:
+        return hist
+    hist = bootstrap_kind_history()
+    if hist:
+        data["kind_history"] = hist
+        save_posted(data)
+    return hist
+
+
+def rotation_rank(key: str, hist: list[str]) -> int:
+    """회전 순위 — 아직 안 만든 종류(-1)가 먼저, 그 뒤로 오래 안 만든 순."""
+    try:
+        return hist.index(key)
+    except ValueError:
+        return -1
 
 
 def posted_label(key: str) -> str:
@@ -1196,7 +1260,7 @@ def reset_posted(target: str = "all") -> None:
     data = load_posted()
     target = str(target or "all").strip().lower()
     if target in ("all", "전체", "*"):
-        save_posted({"words": {}, "videos": {}})
+        save_posted({"words": {}, "videos": {}, "kind_history": []})
         ok("중복 방지 기록을 모두 초기화했습니다.")
         return
     if target in data["words"]:
@@ -1253,13 +1317,22 @@ def content_inventory() -> list[dict]:
     return rows
 
 
+def remain_bar(used: int, total: int, width: int = 8) -> str:
+    """사용량 막대(■/□) — 남은 콘텐츠 비율을 한눈에 보여 줍니다."""
+    if total <= 0:
+        return "□" * width
+    filled = int(round(width * min(1.0, used / total)))
+    return "■" * filled + "□" * (width - filled)
+
+
 def print_remaining(highlight: str | None = None) -> None:
     """생성·게시 뒤에 남은 콘텐츠를 한눈에 보여 줍니다(중복 방지 기록 기준)."""
     rows = content_inventory()
     log("\n📊 남은 콘텐츠 (중복 방지 기록 기준)")
     for r in rows:
         mark = "   ← 이번" if highlight == r["key"] else ""
-        log(f"   · {r['label']:<7} {r['used']:>4} / {r['total']:<4} 사용 · 남음 {r['remaining']}{mark}")
+        bar = remain_bar(r["used"], r["total"])
+        log(f"   · {r['label']:<7} {r['used']:>4} / {r['total']:<4} 사용 · 남음 {r['remaining']:<4} {bar}{mark}")
     total = sum(r["total"] for r in rows)
     remaining = sum(r["remaining"] for r in rows)
     log(f"   · {'합계':<7} {total - remaining:>4} / {total:<4} 사용 · 남음 {remaining}")
@@ -1588,6 +1661,7 @@ def build_meta(cfg: dict, args) -> dict:
     items = saved.get("items") if isinstance(saved, dict) else None
     if items:
         kind = str(saved.get("kind"))
+        word_bucket = kind or None   # 남은 콘텐츠 표시에서 이번 종류를 강조하는 용도
         if kind == "idioms":
             title = title or idioms_title(items)
             desc = desc or idioms_desc(items, site_url)
@@ -2705,7 +2779,7 @@ def ask_menu(prompt: str, default: str | None = None) -> str:
     except EOFError:
         # 비대화형 실행(작업 스케줄러·파이프 입력)에서는 기본값으로 진행합니다.
         _INPUT_EOF = True
-        log(f"{prompt}: 입력 없음 — 기본값 {default if default is not None else '없음'} 사용")
+        log(f"{prompt}: 입력 없음 — 기본값 {default or '없음'} 사용")
         return default or ""
     return value if value else (default or "")
 
@@ -2947,7 +3021,16 @@ def run_batch_menu(cfg: dict) -> None:
     if not picked:
         warn("선택한 영상이 없습니다.")
         return
-    unit = choose_unit()
+    for video in picked:
+        saved = load_video_meta(video)
+        log(f"  · {video.name}" + (f" — {describe_saved_meta(saved)} (제목·설명 자동)"
+                               if saved else " — 메타 없음"))
+    # 메타가 있는 영상은 제목·설명이 자동 생성되므로 UNIT 을 묻지 않습니다(메뉴 11 과 같은 규칙).
+    if any(not load_video_meta(v) for v in picked):
+        unit = choose_unit()
+    else:
+        unit = None
+        log("선택한 영상 모두에 메타가 있어 제목·설명이 자동 생성됩니다.")
     platforms = choose_platforms_menu(cfg)
     allow_repeat = ask_yes_no("이미 게시한 영상도 다시 게시할까요?", False)
     if not allow_repeat:
@@ -3056,14 +3139,18 @@ def run_auto_plan(cfg: dict, count: int, kind: str = "auto", *, start_at: str | 
             inv = {r["key"]: r for r in content_inventory()}
 
             def remaining(k: str) -> int:
-                return max(0, int(inv.get(k, {}).get("remaining", 0)) - planned.get(k, 0))
+                # 영상 하나가 소비하는 항목 수(words)까지 빼야 N일치를 넉넉히 잡을 수 있습니다.
+                return max(0, int(inv.get(k, {}).get("remaining", 0)) - planned.get(k, 0) * words)
 
             candidates = [k for k in AUTO_KINDS if remaining(k) > 0]
             if not candidates:
                 warn("남은 콘텐츠가 없어 중단합니다 — 새 콘텐츠를 추가하거나 --reset-posted 로 초기화하세요.")
                 break
-            # 아직 안 만든 종류를 먼저 섞고, 같은 묶음 안에서는 남은 콘텐츠가 많은 쪽부터.
-            pick = min(candidates, key=lambda k: (planned.get(k, 0), -remaining(k)))
+            # 이번 배치에서 아직 안 만든 종류 → 최근에 안 만든 종류(회전) → 남은 콘텐츠 많은 쪽.
+            # 회전 기록이 없으면 예전처럼 남은 콘텐츠 많은 쪽부터 골라, 한 종류에 몰리지 않습니다.
+            hist = recent_content_history()
+            pick = min(candidates,
+                       key=lambda k: (planned.get(k, 0), rotation_rank(k, hist), -remaining(k)))
         planned[pick] = planned.get(pick, 0) + 1
         command = build_shorts_command(cfg, pick, words)
         if command is None:
@@ -4545,6 +4632,35 @@ def tts_voice_menu(cfg: dict) -> dict:
     return cfg
 
 
+def validate_content_data() -> tuple[list[str], list[str]]:
+    """콘텐츠 데이터 무결성 점검 — 각 종류가 게시에 필요한 필드를 갖췄는지 확인합니다.
+
+    잘못된 행(보기 부족·정답 누락 등)은 생성기에서 조용히 건너뛰므로, 여기서 미리
+    개수를 보여 주면 '왜 안 만들어지나' 를 찾기 쉽습니다. (오류 목록, 안내 목록) 을 돌려줍니다.
+    """
+    problems: list[str] = []
+    notes: list[str] = []
+    for key, spec in KIND_SPECS.items():
+        rows = load_kind_rows(key)
+        if not rows:
+            problems.append(f"{spec['label']}({key}) 데이터를 읽지 못했습니다 — data/ 폴더의 소스를 확인하세요.")
+            continue
+        missing = [r for r in rows if not str(r.get("term", "")).strip() or not str(r.get("meaning", "")).strip()]
+        if missing:
+            problems.append(f"{spec['label']}: {len(missing)}행이 표제어·정답이 비어 있습니다.")
+        # 보기(선택지)가 있는 행만 4지선다 규칙을 검사합니다 — 받아쓰기·비즈니스 이메일처럼
+        # 의도적으로 '보기 없는 쓰기형' 은 정답 문장만 있으면 정상입니다.
+        choice_rows = [r for r in rows if r.get("opts")]
+        bad_opts = [r for r in choice_rows
+                    if len(r.get("opts") or []) < 2 or str(r.get("a", "")) not in (r.get("opts") or [])]
+        if bad_opts:
+            problems.append(f"{spec['label']}: {len(bad_opts)}문항이 보기 부족 또는 정답이 보기 밖입니다.")
+        used = len(load_posted()["words"].get(key, []))
+        if used >= len(rows):
+            notes.append(f"{spec['label']}: 남은 항목 0개 — 중복 방지 기록 초기화가 필요합니다.")
+    return problems, notes
+
+
 def show_config_status(cfg: dict) -> None:
     log("\n🔐 설정·환경 상태")
     log(f"  설정 파일: {'config.json' if config_is_real() else 'config.example.json (예제)'}")
@@ -4558,6 +4674,23 @@ def show_config_status(cfg: dict) -> None:
     errors, warnings = config_issues(cfg)
     for name, installed, purpose in dependency_status():
         log(f"  {'✅' if installed else '⬜'} {name}: {'준비됨' if installed else '미설치'} · {purpose}")
+    # 콘텐츠 데이터 점검 — 종류별로 데이터가 읽히는지, 얼마나 남았는지 함께 확인합니다.
+    rows = content_inventory()
+    total_items = sum(r["total"] for r in rows)
+    total_left = sum(r["remaining"] for r in rows)
+    log(f"  📦 콘텐츠 데이터: {len(rows)}종 · 전체 {total_items}개 · 남음 {total_left}개")
+    data_problems, data_notes = validate_content_data()
+    empty = [r["label"] for r in rows if r["total"] == 0]
+    if empty:
+        warnings.append("데이터가 비어 있는 종류: " + ", ".join(empty)
+                        + " — data/ 폴더의 소스 파일을 확인하세요.")
+    exhausted = [f"{r['label']}({r['used']}/{r['total']})" for r in rows
+                 if r["total"] and r["remaining"] == 0]
+    if exhausted:
+        warnings.append("모두 사용한 종류: " + ", ".join(exhausted)
+                        + " — 중복 방지 기록 초기화(메뉴 16)로 다시 쓸 수 있습니다.")
+    warnings.extend(data_problems)
+    warnings.extend(data_notes)
     for message in errors:
         fail(message)
     for message in warnings:
@@ -4585,7 +4718,7 @@ def configure_menu(cfg: dict) -> dict:
     promo["default_style"] = choose_style(str(promo.get("default_style", "classic")))
     if promo["default_style"] not in styles:
         promo["default_style"] = "classic"
-    # Enter 를 눌렀을 때 바로 실행할 기본 메뉴 번호 (원클릭 센터 1~29)
+    # Enter 를 눌렀을 때 바로 실행할 기본 메뉴 번호 (원클릭 센터 1~31)
     current_menu = str(promo.get("default_menu", "") or "").strip() or "11"
     if current_menu not in MENU_TITLES:
         current_menu = "11"
@@ -4785,8 +4918,23 @@ def short_menu_label(num: str, max_cols: int = 30) -> str:
     return out
 
 
+def recommend_kind(remain: dict[str, int]) -> tuple[str, str]:
+    """추천 새 포맷 종류 — 최근에 만든 종류는 뒤로 미루고, 남은 콘텐츠가 많은 쪽을 고릅니다.
+
+    예전에는 '남은 콘텐츠가 가장 많은 종류'만 봐서, 데이터가 가장 많은 문법 빈칸이
+    매번 Enter 추천으로 잡혔습니다(문법만 계속 만들어지는 문제). 최근 생성 이력
+    (posted.json kind_history)을 함께 보므로 한 종류에 몰리지 않고 돌려가며 추천됩니다.
+    """
+    hist = recent_content_history()
+    order = list(KIND_SPECS)
+    cands = [k for k in order if remain.get(k, 0) > 0] or order
+    best = min(cands, key=lambda k: (rotation_rank(k, hist), -remain.get(k, 0), order.index(k)))
+    reason = "아직 안 만든 종류" if best not in hist else "가장 오래 안 만든 종류"
+    return best, reason
+
+
 def choose_kind_menu() -> str:
-    """새 포맷 콘텐츠 종류 선택 — 종류별 남은 수량을 함께 보여 주고, 남은 콘텐츠가 가장 많은 종류를 추천합니다.
+    """새 포맷 콘텐츠 종류 선택 — 종류별 남은 수량을 함께 보여 주고, 추천은 회전으로 바꿉니다.
 
     새 포맷 생성(메뉴 번호 9)과 생성 후 게시(메뉴 번호 10)가 같은 11종을 공유하므로 한 자리에서 고릅니다.
     """
@@ -4797,12 +4945,14 @@ def choose_kind_menu() -> str:
         total = len(load_kind_rows(key))
         left = max(0, total - len(posted.get(key, [])))
         remain[key] = left
-        options.append((key, f"{spec['label']} — {spec['desc_label']} · 남음 {left}/{total}"))
-    # 남은 콘텐츠가 가장 많은 종류를 추천합니다(양이 같으면 문서 표의 앞쪽 종류 우선).
-    ordered = list(KIND_SPECS)
-    best = max(ordered, key=lambda k: (remain[k], -ordered.index(k)))
+        options.append((key, f"{spec['label']} — {spec['desc_label']} · 남음 {left}/{total}"
+                             f" {remain_bar(total - left, total)}"))
+    best, reason = recommend_kind(remain)
+    recent = [KIND_SPECS[k]["label"] for k in recent_content_history() if k in KIND_SPECS][:5]
+    if recent:
+        log("최근 만듦: " + " · ".join(recent) + " (추천은 이 종류들을 뒤로 미룹니다)")
     picked = choose_option(
-        f"새 포맷 콘텐츠 종류 (Enter = 추천: {KIND_SPECS[best]['label']} · 남음 {remain[best]})",
+        f"새 포맷 콘텐츠 종류 (Enter = 추천: {KIND_SPECS[best]['label']} · 남음 {remain[best]} · {reason})",
         options, best)
     if remain.get(picked, 0) == 0:
         warn(f"{KIND_SPECS[picked]['label']} 은(는) 남은 콘텐츠가 0개입니다 — 이미 쓴 항목이 다시 쓰이거나 "
@@ -5390,7 +5540,7 @@ def interactive_menu(initial: str | None = None) -> None:
             log("예약 시각에 이 명령을 실행해야 게시됩니다: python publish.py --run-due")
             continue
 
-        # 2·6 숙어, 3·7 빈도 어휘, 4·8 동의어 치환 퀴즈, 30·31 새 포맷, 나머지(1·5) 단어 —
+        # 2·6 숙어, 3·7 빈도 어휘, 4·8 동의어 치환 퀴즈, 9·10 새 포맷, 나머지(1·5) 단어 —
         # 같은 흐름을 종류만 바꿔 돕습니다.
         if action in ("9", "10"):
             kind = choose_kind_menu()
@@ -5398,10 +5548,10 @@ def interactive_menu(initial: str | None = None) -> None:
             kind = ("idioms" if action in ("2", "6")
                     else "frequency" if action in ("3", "7")
                     else "paraphrase" if action in ("4", "8") else "unit")
-        # 기존 영상 게시(9)는 영상 메타가 있으면 UNIT을 묻지 않으므로, 여기서는 생성(1·5)만 묻습니다.
+        # 기존 영상 게시(11)는 영상 메타가 있으면 UNIT을 묻지 않으므로, 여기서는 생성(1·5)만 묻습니다.
         unit = choose_unit(default_unit) if (kind == "unit" and action in ("1", "5")) else None
         video = None
-        # 1~8·30·31 은 쇼츠를 만드는 흐름(생성만 / 생성 후 게시)입니다.
+        # 1~10 은 쇼츠를 만드는 흐름(생성만 / 생성 후 게시)입니다.
         if action in ("1", "2", "3", "4", "5", "6", "7", "8", "9", "10"):
             words = str(ask_int("영상에 넣을 항목 수(1~10)", default_words, 1, 10))
             theme = choose_theme(default_theme)
@@ -5911,6 +6061,8 @@ def publish_single(cfg: dict, args, video: Path) -> None:
             flag = " --frequency"
         elif getattr(args, "paraphrase", False):
             flag = " --paraphrase"
+        elif str(getattr(args, "kind", "") or "") in KIND_SPECS:
+            flag = f" --kind {args.kind}"
         elif args.unit:
             flag = f" --unit {args.unit}"
         else:
@@ -5918,10 +6070,15 @@ def publish_single(cfg: dict, args, video: Path) -> None:
             flag = ""
         log(f"예: python publish.py --video {video.relative_to(PROMO)}{flag}")
 
-    highlight = (IDIOM_BUCKET if getattr(args, "idioms", False)
-                 else FREQUENCY_BUCKET if getattr(args, "frequency", False)
-                 else PARAPHRASE_BUCKET if getattr(args, "paraphrase", False)
-                 else "unit" if getattr(args, "unit", None) else None)
+    bucket = meta.get("word_bucket")
+    highlight = "unit" if isinstance(bucket, int) else (str(bucket) if bucket else None)
+    if not highlight:
+        kind_arg = str(getattr(args, "kind", "") or "")
+        highlight = (IDIOM_BUCKET if getattr(args, "idioms", False)
+                     else FREQUENCY_BUCKET if getattr(args, "frequency", False)
+                     else PARAPHRASE_BUCKET if getattr(args, "paraphrase", False)
+                     else kind_arg if kind_arg in KIND_SPECS
+                     else "unit" if getattr(args, "unit", None) else None)
     print_remaining(highlight)
 
 
