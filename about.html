@@ -21,7 +21,11 @@
 <meta name="twitter:description" content="발음·예문으로 TOEIC 필수 어휘 1,000개를 외우는 무료 학습 사이트.">
 <meta name="twitter:image" content="https://toeic.monster/og-image.png">
 <link rel="canonical" href="https://toeic.monster/about.html">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👾</text></svg>">
+<meta name="theme-color" content="#3b5bdb">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="icon" href="icon-192.png" type="image/png" sizes="192x192">
+<!-- iOS 홈 화면은 SVG 아이콘을 쓰지 않으므로 PNG 를 따로 지정합니다(tools/make-icons.py 로 생성). -->
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <!-- 방문자 분석 (자체 호스팅 — 쿠키 미사용, 익명 통계). 설정은 assets/analytics.js 한 곳에서 정합니다. -->
 <script defer src="assets/analytics.js"></script>
 <script type="application/ld+json">
@@ -80,6 +84,20 @@
     }
   ]
 }
+</script>
+<script>
+  // 앱(index.html)에서 고른 테마를 이 페이지에도 첫 페인트 전에 적용합니다(정적 페이지와 같은 규칙).
+  (function () {
+    try {
+      var t = localStorage.getItem("toeic1000_theme");
+      if (!t) t = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      if (t === "dark") {
+        document.documentElement.classList.add("dark-pending");
+        var m = document.querySelector('meta[name="theme-color"]');
+        if (m) m.setAttribute("content", "#10141b");
+      }
+    } catch (e) {}
+  })();
 </script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -144,6 +162,28 @@
     white-space: nowrap;
     border: 0;
   }
+  /* ── 다크 모드 ────────────────────────────────────────
+     앱과 정적 페이지는 html.dark-pending 으로 어두운 토큰을 씨웁니다.
+     이 페이지도 같은 표시를 따르게 해, 다크 모드 사용자가 소개·약관에서만
+     흰 화면을 보는 일이 없도록 맞춥니다(토큰 값은 assets/site.css 와 동일). */
+  html.dark-pending body { background: #10141b; color: #e6e9ef; }
+  html.dark-pending header h1 { color: #8ba3ff; }
+  html.dark-pending header .date { color: #98a1b0; }
+  html.dark-pending section { background: #1a1f2a; border-color: #2c3442; }
+  html.dark-pending p, html.dark-pending li { color: #c9d1dc; }
+  html.dark-pending a { color: #8ba3ff; }
+  html.dark-pending .back { color: #8ba3ff; }
+  html.dark-pending .cf-row label { color: #c9d1dc; }
+  html.dark-pending .cf-row input,
+  html.dark-pending .cf-row select,
+  html.dark-pending .cf-row textarea { background: #1a1f2a; color: #e6e9ef; border-color: #3d4757; }
+  /* 빨간 "필수"·회색 "선택" 표시는 어두운 배경에서 대비가 부족해 밝은 값으로 바꿉니다. */
+  html.dark-pending .cf-req { color: #ff8787; }
+  html.dark-pending .cf-opt { color: #98a1b0; }
+  html.dark-pending .cf-status { color: #c9d1dc; }
+  html.dark-pending .cf-status.cf-ok { color: #51cf66; }
+  html.dark-pending .cf-status.cf-error { color: #ff8787; }
+  html.dark-pending .cf-submit:focus-visible { outline-color: #e6e9ef; }
 </style>
 </head>
 <body>

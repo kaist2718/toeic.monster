@@ -5,9 +5,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>개인정보처리방침 - toeic.monster</title>
 <meta name="robots" content="noindex">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👾</text></svg>">
+<meta name="theme-color" content="#3b5bdb">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="icon" href="icon-192.png" type="image/png" sizes="192x192">
+<!-- iOS 홈 화면은 SVG 아이콘을 쓰지 않으므로 PNG 를 따로 지정합니다(tools/make-icons.py 로 생성). -->
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <!-- 방문자 분석 (자체 호스팅 — 쿠키 미사용, 익명 통계). 설정은 assets/analytics.js 한 곳에서 정합니다. -->
 <script defer src="assets/analytics.js"></script>
+<script>
+  // 앱(index.html)에서 고른 테마를 이 페이지에도 첫 페인트 전에 적용합니다(정적 페이지와 같은 규칙).
+  (function () {
+    try {
+      var t = localStorage.getItem("toeic1000_theme");
+      if (!t) t = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      if (t === "dark") {
+        document.documentElement.classList.add("dark-pending");
+        var m = document.querySelector('meta[name="theme-color"]');
+        if (m) m.setAttribute("content", "#10141b");
+      }
+    } catch (e) {}
+  })();
+</script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -28,6 +46,15 @@
   .back { display: inline-block; margin-top: 10px; color: #3b5bdb; font-size: 14px; text-decoration: none; font-weight: 600; }
   .back:hover { text-decoration: underline; }
   code { background: #eef2ff; padding: 1px 6px; border-radius: 5px; font-size: 13px; }
+  /* ── 다크 모드 — 앱·정적 페이지와 같은 html.dark-pending 기준(토큰은 assets/site.css 와 동일) ── */
+  html.dark-pending body { background: #10141b; color: #e6e9ef; }
+  html.dark-pending header h1 { color: #8ba3ff; }
+  html.dark-pending header .date { color: #98a1b0; }
+  html.dark-pending section { background: #1a1f2a; border-color: #2c3442; }
+  html.dark-pending p, html.dark-pending li { color: #c9d1dc; }
+  html.dark-pending a { color: #8ba3ff; }
+  html.dark-pending .back { color: #8ba3ff; }
+  html.dark-pending code { background: #232c44; color: #c9d1dc; }
 </style>
 </head>
 <body>

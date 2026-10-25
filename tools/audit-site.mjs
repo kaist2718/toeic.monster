@@ -750,7 +750,7 @@ for (const page of pages) {
 /* ------------------------------------------------------------------ */
 
 /* 검색에 노출되는 페이지가 "제목만 있는" 상태로 배포되지 않게, 화면에 보이는 글자 수를 셉니다.
-   (2026-09-18 점검에서 가이드 9편이 1,200~1,800자로 가장 얇았고 — 도입 문단·문답·내부 링크를
+   (2026-09-18 점검에서 가이드가 1,200~1,800자로 가장 얇았고 — 도입 문단·문답·내부 링크를
    보강했습니다. 이 점검이 그 바닥을 다시 내려가지 않게 지킵니다.) */
 const THIN_OK = 1500; // 참고 기준 — 이보다 얇으면 목록에 올려 보고합니다(실패 아님)
 const THIN_FLOOR = 800; // 이보다 얇으면 실패 — 제목만 있는 페이지입니다
@@ -1032,6 +1032,36 @@ if (!idiomShown) {
   fail("index.html: 숙어 수 고정값(#idiomCount)을 찾지 못했습니다.");
 } else if (Number(idiomShown.replace(/,/g, "")) !== idioms.length) {
   fail(`index.html: 숙어 수 고정값이 실제와 다릅니다 (표시 ${idiomShown} / 실제 ${idioms.length})`);
+}
+
+/* ------------------------------------------------------------------ */
+/* 6-2. 가이드 편수 표기 ↔ 실제 가이드 수                               */
+/* ------------------------------------------------------------------ */
+
+/* 가이드는 데이터(data/extra.js)에서 늘어나는데, "공략 9편" 같은 문장은
+   생성기와 404·<noscript> 안에 손으로 적혀 있습니다. 실제로 가이드가 10편이 된 뒤에도
+   세 곳이 "9편"·"아홉 편"으로 남아 있었습니다(2026-10-25 점검).
+   숫자 표기(가이드 N편 · 공략 N편)와 한글 수사("열 편은 따로 봐도")를 함께 대조합니다. */
+const guideTotal = (extra.guides || []).length;
+const KO_NUM = ["", "한", "두", "세", "네", "다섯", "여섯", "일곱", "여덟", "아홉", "열",
+  "열한", "열두", "열세", "열네", "열다섯", "열여섯", "열일곱", "열여덟", "열아홉", "스무"];
+const guideClaims = [];
+for (const [page, src] of Object.entries(srcOf)) {
+  const text = src.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+  for (const m of text.matchAll(/(?:전략·유형 가이드|파트별 공략)\s*(\d+)\s*편/g)) {
+    guideClaims.push({ page, shown: Number(m[1]), raw: m[0] });
+  }
+  const ko = text.match(/([가-힣]+)\s*편은 따로/);
+  if (ko) guideClaims.push({ page, shown: KO_NUM.indexOf(ko[1]), raw: ko[0] });
+}
+if (guideTotal) {
+  for (const c of guideClaims) {
+    if (c.shown !== guideTotal) {
+      fail(`${c.page}: 가이드 편수 표기가 실제와 다릅니다 — "${c.raw.trim()}" (실제 ${guideTotal}편)`);
+    }
+  }
+  if (guideClaims.length) note(`가이드 편수 표기 ${guideClaims.length}곳이 실제(${guideTotal}편)와 일치`);
+  else note("가이드 편수 표기를 찾지 못했습니다(대조 생략).");
 }
 
 /* ------------------------------------------------------------------ */

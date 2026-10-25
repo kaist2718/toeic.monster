@@ -403,6 +403,7 @@ function page({ title, description, canonical, ld, body, footerNav, speak, chapt
 <meta property="og:image" content="${OG_IMAGE}">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="toeic.monster — 발음·예문으로 외우는 TOEIC 필수 어휘 1,000">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="${esc(title)}">
 <meta name="twitter:description" content="${esc(description)}">
@@ -569,7 +570,7 @@ ${items}
 }
 
 /**
- * 「다른 가이드로 바로 가기」 — 가이드 9편은 순서대로 읽는 코스라
+ * 「다른 가이드로 바로 가기」 — 가이드는 순서대로 읽는 코스라
  * 이전/다음 편만으로는 중간 편으로 건너뛰기 어렵습니다.
  */
 function guideJumpList(guides, currentSlug) {
@@ -1317,7 +1318,7 @@ ${guides
   </ul>
 
   <h2 class="sec">어떤 순서로 읽으면 좋을까요</h2>
-  <p class="lead">아홉 편은 따로 봐도 되지만, 약한 파트부터 이어서 보면 더 빠릅니다. 지금 점수가 막힌 지점에서 시작하세요.</p>
+  <p class="lead">열 편은 따로 봐도 되지만, 약한 파트부터 이어서 보면 더 빠릅니다. 지금 점수가 막힌 지점에서 시작하세요.</p>
   <ol class="words">
     <li><span class="w-mean"><b>RC 기초가 약하다면</b> Part 5 빈출 문법 → 어형 변화 → 접속사·전치사 구분법 순서로 보세요. 세 편이 같은 빈칸 문제를 서로 다른 각도에서 다룹니다.</span></li>
     <li><span class="w-mean"><b>긴 지문에서 시간이 모자라다면</b> Part 6 장문 공란 → Part 7 복수 지문 순서로 보세요. 지문을 읽는 순서와 시간 배분을 먼저 정하는 것이 핵심입니다.</span></li>
@@ -1375,7 +1376,7 @@ function buildGuidePage(g, prev, next, guides) {
     ],
   });
 
-  // 가이드 9편은 순서대로 읽는 코스라, 유닛처럼 이전/다음 편으로 이어 볼 수 있게 합니다.
+  // 가이드는 순서대로 읽는 코스라, 유닛처럼 이전/다음 편으로 이어 볼 수 있게 합니다.
   // 제목이 모두 "TOEIC " 로 시작해서, pager 에서는 그 접두어를 떼어 짧게 보여 줍니다.
   const shortTitle = (t) => t.replace(/^TOEIC /, "");
   const guidePager = [
@@ -2336,7 +2337,7 @@ const NOT_FOUND_LINKS = [
   ["/units/idioms.html", "빈출 구동사·숙어", "126개 숙어와 예문"],
   ["/grammar/", "문법 교재", "기초·중급·고급 36과 + 연습 288문항"],
   ["/grammar/cheatsheet.html", "문법 한 장 요약", "시험 직전에 훑는 핵심 정리"],
-  ["/guides/", "전략·유형 가이드", "파트별 공략 9편"],
+  ["/guides/", "전략·유형 가이드", "파트별 공략 10편"],
   ["/conversation/", "영어회화 교재", "초급·중급·고급 3단계 + 연습 288문항"],
 ];
 

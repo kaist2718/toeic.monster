@@ -1142,7 +1142,7 @@ try {
   const midPagerDup = ["초급 초급", "중급 중급", "고급 고급", "기초 기초"].filter((s) => midPager.includes(s));
   check(midPagerDup.length === 0, `교재: pager 에 단계명이 겹치지 않습니다 (${midPager})`);
 
-  // 가이드 9편은 이전/다음 편으로 이어 볼 수 있습니다.
+  // 가이드는 이전/다음 편으로 이어 볼 수 있습니다.
   await openPage("guides/part-2-traps.html");
   const guideHrefs = await evaluate(`[...document.querySelectorAll(".pager a")].map((a) => a.getAttribute("href")).join(",")`);
   check(
