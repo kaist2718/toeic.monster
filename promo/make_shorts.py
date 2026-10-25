@@ -45,6 +45,7 @@ import argparse
 import base64
 import json
 import math
+import os
 import random
 import re
 import shutil
@@ -53,6 +54,7 @@ import sys
 import tempfile
 import urllib.request
 import wave
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 try:
@@ -137,6 +139,9 @@ W, H = 1080, 1920
 FPS = 30
 ZOOM = 0.06          # 슬라이드 시작→끝 6% 줌인
 FADE_FRAMES = 12     # 크로스페이드 프레임 수 (0.4초)
+# 줌 프레임은 스레드로 병렬 렌더링합니다(Pillow 는 resize 중 GIL 을 놓아 실측 4배 이상).
+# 렌더링 결과는 순서대로 같은 파일에 쓰이므로 CPU 수와 무관하게 같은 영상이 나옵니다.
+FRAME_WORKERS = max(1, min(8, (os.cpu_count() or 2)))
 
 # ---------------------------------------------------------------- fonts ----
 # 기본 폰트는 **네이버 마루부리(Maru Buri)** 입니다. 프로젝트에 함께 넣어 둔
@@ -1491,6 +1496,40 @@ def crop_zoom(img: Image.Image, scale: float) -> Image.Image:
     return img.crop((x, y, x + cw, y + ch)).resize((W, H), Image.LANCZOS)
 
 
+def save_zoom_frame(slide: Image.Image, scale: float, out: Path, quality: int = 92) -> Path:
+    """줌 프레임 한 장을 만들어 JPEG 로 저장합니다 — 병렬 실행용(스레드에서 호출)."""
+    crop_zoom(slide, scale).save(out, quality=quality)
+    return out
+
+
+def render_slide_frames(slide: Image.Image, frames: list[Path],
+                        prev_last: Image.Image | None, workers: int | None = None) -> Image.Image:
+    """슬라이드 한 장의 프레임 전체를 저장하고, 다음 슬라이드 페이드용 마지막 프레임을 돌려줍니다.
+
+    프레임마다 1080×1920 리샘플(LANCZOS)이 필요해 생성 시간의 대부분을 차지합니다.
+    Pillow 는 resize 중 GIL 을 놓으므로 스레드로 나누면 실측 4배 이상 빨라지고 결과 픽셀은 같습니다.
+    (프레임 파일은 서로 다른 경로라 저장 충돌도 없습니다.)
+    """
+    n = len(frames)
+    if n == 0:
+        return prev_last if prev_last is not None else slide
+    scales = [1.0 + ZOOM * (i / (n - 1) if n > 1 else 0.0) for i in range(n)]
+    # 앞 FADE_FRAMES 장은 이전 슬라이드와 크로스페이드라 뒤에서 단독으로 처리합니다.
+    fade = min(FADE_FRAMES, n) if prev_last is not None else 0
+    count = FRAME_WORKERS if workers is None else workers
+    workers = max(1, min(count, n - fade))
+    if workers > 1:
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            list(pool.map(lambda i: save_zoom_frame(slide, scales[i], frames[i]), range(fade, n)))
+    else:
+        for i in range(fade, n):
+            save_zoom_frame(slide, scales[i], frames[i])
+    for i in range(fade):
+        frame = Image.blend(prev_last, crop_zoom(slide, scales[i]), i / FADE_FRAMES)
+        frame.save(frames[i], quality=92)
+    return crop_zoom(slide, 1.0 + ZOOM)
+
+
 # ---------------------------------------------------------------- tts -----
 VOICE_GAP = 0.4  # 두 목소리 사이 무음(초) — 같은 문장이 두 번 읽히므로 구분을 준다
 WORD_GAP = 0.4   # 단어와 예문 사이 무음(초) — 설치된 piper-tts 는 문장 사이 무음 기능이 없어
@@ -1599,6 +1638,7 @@ def tts_speak(text: str, voice: str, out: Path, engine: str = "auto") -> Path:
 
 
 # 로컬 Piper — 음성 모델을 한 번만 올려 놓고 슬라이드마다 재사용합니다 (매번 올리면 슬라이드당 1~2초 손해).
+PIPER_MODEL_CACHE = 2   # 동시에 올려 둘 Piper 모델 수 — 기본 설정(여성+남성)이 번갈아 읽으므로 2
 _PIPER_SESSIONS: dict[str, object] = {}
 _PIPER_FALLBACK_WARNED: set[str] = set()
 
@@ -1629,11 +1669,19 @@ def _synthesize_piper(text: str, voice: str, out: Path) -> Path:
     except ImportError as exc:
         raise RuntimeError("piper-tts 가 미설치입니다 — pip install piper-tts (또는 --engine windows 로 SAPI 사용)") from exc
     label, model = _piper_model(voice)
-    session = _PIPER_SESSIONS.get(str(model))
-    if session is None:
-        session = PiperVoice.load(str(model))
-        _PIPER_SESSIONS.clear()          # 메모리 보호 — 한 번에 하나의 모델만 올려 둡니다
-        _PIPER_SESSIONS[str(model)] = session
+    key = str(model)
+    session = _PIPER_SESSIONS.get(key)
+    if session is not None:
+        # 다음에 다시 쓸 수 있게 최근 사용으로 올려 둡니다(dict 순서 = LRU).
+        _PIPER_SESSIONS.pop(key)
+        _PIPER_SESSIONS[key] = session
+    else:
+        session = PiperVoice.load(key)
+        # 메모리 보호 — 두 목소리(기본 설정)는 계속 올려 두고, 그보다 많으면 오래된 것부터 내립니다.
+        # 예전에는 한 개만 남겨서 슬라이드마다 여성·남성 모델을 번갈아 다시 읽었습니다(실측 37초 손해).
+        while len(_PIPER_SESSIONS) >= PIPER_MODEL_CACHE:
+            _PIPER_SESSIONS.pop(next(iter(_PIPER_SESSIONS)))
+        _PIPER_SESSIONS[key] = session
     with wave.open(str(out), "wb") as wf:
         session.synthesize_wav(text, wf)
     if not out.exists() or out.stat().st_size <= 44:
@@ -2208,16 +2256,9 @@ def main() -> None:
                         warn(f"TTS 음성 생성 실패({exc}) — 앰비언트 사운드로 대체합니다.")
                         dur = base_dur
             n = max(2, int(round(dur * FPS)))
-            for i in range(n):
-                t = i / (n - 1) if n > 1 else 0.0
-                frame = crop_zoom(slide, 1.0 + ZOOM * t)
-                if prev_last is not None and i < FADE_FRAMES:
-                    alpha = i / FADE_FRAMES
-                    frame = Image.blend(prev_last, frame, alpha)
-                fp = tmp / f"frame_{len(frame_files):05d}.jpg"
-                frame.save(fp, quality=92)
-                frame_files.append(fp)
-            prev_last = crop_zoom(slide, 1.0 + ZOOM)
+            paths = [tmp / f"frame_{len(frame_files) + i:05d}.jpg" for i in range(n)]
+            prev_last = render_slide_frames(slide, paths, prev_last)
+            frame_files.extend(paths)
 
         ok(f"프레임 {len(frame_files)}장 생성 완료 — 인코딩 중...")
 

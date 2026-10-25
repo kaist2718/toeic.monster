@@ -29,6 +29,51 @@ promo/
 └── .secrets/              # OAuth·세션 파일
 ```
 
+## 0. 처음이라면 — 5분 빠른 시작
+
+처음 한 번만 이 순서로 따라 하면 첫 쇼츠가 올라갑니다. 준비물은 **Python 3.8 이상** 하나입니다(설치할 때 *Add python.exe to PATH* 를 체크). Windows 가 아니면 `setup.bat`·`promo_center.bat` 대신 `python` 명령을 그대로 쓰세요.
+
+```bat
+:: 1) 설치 — 의존성 설치 + config.json 생성 + 점검 (처음 한 번만)
+promo\setup.bat
+
+:: 2) 설정 확인 — config.json 이 메모장으로 열립니다
+::    youtube.enabled      true
+::    instagram.enabled    false        (처음엔 YouTube 만 켜 두면 가장 단순합니다)
+::    youtube.privacy      "unlisted"   (처음엔 비공개 목록으로 올리는 것을 권합니다)
+
+:: 3) YouTube 로그인 — 브라우저가 열리면 채널 계정으로 로그인
+promo_center.bat youtube-guide
+
+:: 4) 쇼츠 한 편 만들기 → assets/shorts/ 에 mp4 생성 (TTS 낭독 포함)
+promo_center.bat 1
+
+:: 5) 올리기 전 미리보기 — 실제 업로드는 일어나지 않습니다
+promo_center.bat --no-pause check
+python publish.py --video assets/shorts/unit01_shorts.mp4 --unit 1 --dry-run
+
+:: 6) 실제 게시 (확인 질문에 y)
+python publish.py --video assets/shorts/unit01_shorts.mp4 --unit 1 --youtube-privacy unlisted
+```
+
+성공하면 마지막에 `YouTube Shorts: https://youtu.be/...` 주소와 함께 **남은 콘텐츠 수량**이 표시됩니다. 같은 영상을 다시 올리려 하면 중복 방지가 먼저 막습니다(정말 다시 올리려면 `--allow-repeat`).
+
+**다음 단계**
+
+- 매일 자동으로 만들고 올리기 → 메뉴 **23. 콘텐츠 자동 준비** (N일치 생성 + YouTube 예약 게시) → [7-3](#7-3-콘텐츠-자동-준비-하루치n일치)
+- PC 가 꺼져 있어도 정시 공개 → `--publish-at` (YouTube 예약 게시) → [5. 예약 게시](#5-예약-게시-두-가지-방식)
+- 목소리·테마 바꾸기 → 메뉴 **31** (TTS) · **25** (기본값) → [7. 쇼츠 생성](#7-쇼츠-생성)
+
+**잘 안 될 때**
+
+| 증상 | 확인할 것 |
+| --- | --- |
+| `Python 3 was not found` | Python 설치 후 **새 창**에서 다시 실행(PATH 는 새 창부터 적용) |
+| `--check` 에서 ❌ | `pip install -r requirements.txt` 재실행 — ffmpeg 는 `imageio-ffmpeg` 가 함께 설치되어 대체됩니다 |
+| 업로드가 `insufficientPermissions` | 업로드 토큰에는 조회·삭제 권한이 없습니다 → `promo_center.bat youtube-login-full` |
+| 낭독이 안 나옴 | 메뉴 **31** 에서 엔진 `windows` · 목소리 선택 후 테스트 재생 |
+| 예약 시각이 거부됨 | 최소 10분 뒤 · `YYYY-MM-DD HH:MM` (또는 ISO) 형식 |
+
 ## 1. Windows 원클릭 시작
 
 1. `promo/setup.bat`을 **한 번 실행**합니다.
@@ -42,7 +87,7 @@ promo/
 4. `promo/promo_center.bat`을 실행합니다.
 5. 메뉴에서 `5. 쇼츠 생성 후 게시`를 선택합니다.
 
-`promo_center.bat`은 `py -3`을 우선 사용하고, 없으면 `python`을 사용합니다. BAT에 경로를 고정하지 않아 다른 Windows PC에서도 실행하기 쉽고, Python 3.8 이상이 아니면 설치 안내를 보여 줍니다. **처음 설치는 `promo_center.bat setup` 한 번이면 끝납니다**(의존성 설치 + 설정 생성 + 점검).
+`promo_center.bat`은 `py -3`을 우선 사용하고, 없으면 `python`을 사용합니다. BAT에 경로를 고정하지 않아 다른 Windows PC에서도 실행하기 쉽고, Python 3.8 이상이 아니면 설치 안내를 보여 줍니다. **처음 설치는 `promo_center.bat setup` 한 번이면 끝납니다**(의존성 설치 + 설정 생성 + 점검). 처음 설치의 최소 경로만 빠르게 보려면 위 [0. 빠른 시작](#0-처음이라면--5분-빠른-시작) 을 먼저 보세요.
 
 `promo_center.bat help` 로 자주 쓰는 명령(`check`·`verify`·`report`·`list-remaining` 등)을 볼 수 있고, **하이픈 없는 첫 단어는 자동으로 `--` 플래그가 됩니다** — `promo_center.bat check` 는 `publish.py --check` 와 같습니다. 값 없는 플래그 뒤에서도 같은 규칙이 이어져 `promo_center.bat --no-pause menu-list` 처럼 써도 됩니다. **첫 단어가 번호면 그 메뉴가 바로 실행**됩니다:
 
@@ -534,6 +579,8 @@ python make_shorts.py --kind strategy --words 5 --bg mint   # 전략 카드 1장
 python make_shorts.py --kind sprint --words 7           # 30일 스프린트 DAY 연재
 ```
 
+- **생성 속도(실측 · 5단어 · 1080×1920 · 30fps)**: 처음에는 **91초**, 지금은 같은 영상을 **35초**에 만듭니다(`--no-tts`는 52초 → 21초). 두 곳이 병목이었습니다 — ① 프레임마다 1080×1920 리샘플(Ken Burns)이 전체의 65%를 차지해 **최대 8스레드 병렬 렌더링**으로 바꿨고(프레임 결과는 바이트 단위로 동일합니다), ② 두 목소리가 슬라이드마다 여성·남성 Piper 모델을 번갈아 다시 읽어 **모델 캐시를 1개 → 2개**로 늘렸습니다. 느린 PC에서도 프레임끼리 결과가 같으므로 생성되는 영상은 동일합니다.
+
 `9:16 / 1080×1920 / 30fps` 영상을 만들며, **기본 폰트는 네이버 마루부리(Maru Buri)** 입니다 — `promo/fonts/MaruBuri-Regular.otf` · `MaruBuri-Bold.otf` 를 쓰고, 파일이 없으면 배포처에서 한 번 내려받은 뒤 씁니다(내려받지 못하면 맑은 고딕 등 시스템 한글 폰트로 내려가며 경고를 남깁니다). 마루부리에 없는 IPA 기호는 기존 폴백 폰트(Arial 등)로 그려 □가 생기지 않습니다. `--font` 로 다른 폰트를 지정할 수 있고, 생성 전 `--dry-run`으로 계획을 확인할 수 있습니다.
 
 생성이 끝나면 영상 옆에 같은 이름의 메타 파일(`unit01_shorts.json`)을 남깁니다. **게시 제목·설명은 이 파일을 읽어 만들어집니다** — 영상에 실제로 들어간 항목이라 제목이 내용과 어긋나지 않습니다. 메타가 없는 영상(예전 산출물)은 기존처럼 `--unit` / `--idioms` 로 남은 목록에서 하나를 골라 씁니다(`promo/assets/` 는 git 에 올라가지 않습니다).
@@ -695,5 +742,10 @@ python -m unittest test_publish -v
 - `verify_native_schedules` — 공개/찾을 수 없음/비공개 유예/조회 실패 시 장부 보존, dry-run 은 저장 안 함
 - API 키만 있는 경우(비공개를 볼 수 없음)는 `missing` 으로 단정하지 않음, `--cancel-native` 는 권한 없으면 장부 보존
 - 메뉴 번호 1~31 연속성·그룹 중복 없음·설명 누락, README·BAT 의 `--publish-at`·`--schedules` 안내
+- 메뉴 입력 해석 — 번호·쉼표·범위(`1-4`·`4~1`)·키워드·종료(`q`·`?`), 없는 번호는 조용히 이웃 메뉴를 실행하지 않고 거부(한 번 최대 10개)
+- 즐겨찾기·최근 사용 메뉴 — 중복 제거·최대 5개 유지, 잘못된 번호는 무시, 저장은 바뀔 때만
+- 게시 경로 — dry-run 은 이력만 남기고, 이미 올린 플랫폼은 건너뜨고, 실패는 수동 게시 도우미로 넘기고, 예약 게시는 브라우저를 열지 않음
+- 로컬 예약 실행 — 영상이 없으면 실패 기록, 중복이면 `skipped` 기록으로 남기고 다음 예약은 계속
+- 생성 성능 — 병렬 프레임 렌더링 결과가 예전 순차 렌더링과 바이트 단위로 같고, 두 목소리를 번갈아 써도 Piper 모델을 두 번만 읽는지 확인
 
 메뉴를 고치거나 예약 방식을 바꿀 때 이 테스트를 먼저 돌리세요.

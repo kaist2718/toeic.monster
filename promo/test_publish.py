@@ -13,15 +13,24 @@
 
 from __future__ import annotations
 
+import argparse
 import ast
+import io
 import json
+import sys
 import tempfile
+import types
 import unittest
 from datetime import datetime, timedelta
 from pathlib import Path
 from unittest import mock
 
 import publish
+
+try:
+    from PIL import Image
+except ImportError:  # Pillow 는 requirements 필수지만, 없으면 그 테스트만 건너뜁니다.
+    Image = None  # type: ignore[assignment]
 
 PROMO = Path(__file__).resolve().parent
 SOURCES = ("publish.py", "make_shorts.py", "make_tts_samples.py", "test_publish.py")
@@ -521,6 +530,324 @@ class DefaultVoiceTest(unittest.TestCase):
     def test_unknown_attribute_raises(self):
         with self.assertRaises(AttributeError):
             publish.NOT_A_REAL_SETTING  # noqa: B018
+
+
+class MenuInputParseTest(unittest.TestCase):
+    """메뉴 입력 해석 — 번호·범위·키워드·종료가 정확한 실행 목록으로 바뀌어야 합니다."""
+
+    def parse(self, raw: str, default: str = "11"):
+        return publish.parse_menu_input(raw, default)
+
+    def test_plain_number_and_empty_uses_default(self):
+        self.assertEqual(self.parse("5")[0], ["5"])
+        self.assertEqual(self.parse("")[0], ["11"])
+        self.assertEqual(self.parse("   ")[0], ["11"])
+
+    def test_comma_list_keeps_order_and_dedupes(self):
+        self.assertEqual(self.parse("15,16")[0], ["15", "16"])
+        self.assertEqual(self.parse("5,5")[0], ["5"])
+
+    def test_ranges_are_inclusive_and_normalized(self):
+        self.assertEqual(self.parse("1-4")[0], ["1", "2", "3", "4"])
+        self.assertEqual(self.parse("4~1")[0], ["1", "2", "3", "4"])
+
+    def test_quit_and_help_words(self):
+        self.assertEqual(self.parse("q"), ([], True, False))
+        self.assertEqual(self.parse("종료"), ([], True, False))
+        self.assertEqual(self.parse("?"), ([], False, True))
+
+    def test_keyword_resolves_to_single_menu(self):
+        hits = publish.search_menu("piper")
+        self.assertEqual(len(hits), 1, "고유 키워드는 바로 실행되어야 합니다")
+        self.assertEqual(self.parse("piper")[0], hits)
+
+    def test_unknown_number_is_refused_not_clamped(self):
+        # 이웃 번호를 조용히 실행하면 엉뚱한 메뉴(게시 등)가 돌아갑니다.
+        self.assertEqual(self.parse("99")[0], [])
+
+    def test_too_many_steps_are_refused(self):
+        too_many = ",".join(str(n) for n in range(1, publish.MAX_MENU_STEPS + 2))
+        self.assertEqual(self.parse(too_many)[0], [])
+
+    def test_search_results_are_valid_menu_numbers(self):
+        for query in ("예약", "숙어", "tts", "설정"):
+            hits = publish.search_menu(query)
+            with self.subTest(query=query):
+                self.assertTrue(hits)
+                self.assertTrue(set(hits) <= set(publish.MENU_TITLES))
+
+    def test_nearest_menu_number_never_invents_a_menu(self):
+        for token in ("99", "0", "-3", "abc"):
+            near = publish.nearest_menu_number(token)
+            with self.subTest(token=token):
+                self.assertTrue(near == "" or near in publish.MENU_TITLES)
+
+
+class MenuHistoryAndFavoritesTest(unittest.TestCase):
+    """최근 사용·즐겨찾기 메뉴 — config 에 저장되고 잘못된 번호는 걸러집니다."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self._old = publish.CONFIG_FILE
+        publish.CONFIG_FILE = Path(self.tmp.name) / "config.json"
+        self.cfg: dict = {"promo": {}}
+
+    def tearDown(self):
+        publish.CONFIG_FILE = self._old
+        self.tmp.cleanup()
+
+    def test_recent_menus_are_deduped_and_capped(self):
+        for num in ("1", "2", "3", "4", "5", "6", "2"):
+            publish.record_recent_menu(self.cfg, num)
+        recent = publish.recent_menus(self.cfg)
+        self.assertEqual(recent[0], "2", "다시 실행한 메뉴가 맨 앞으로 와야 합니다")
+        self.assertEqual(len(recent), publish.MAX_RECENT_MENUS)
+        self.assertEqual(len(set(recent)), len(recent))
+
+    def test_unknown_menu_is_not_recorded(self):
+        publish.record_recent_menu(self.cfg, "99")
+        self.assertEqual(publish.recent_menus(self.cfg), [])
+        self.assertFalse(publish.CONFIG_FILE.exists(), "바뀐 것이 없으면 파일을 쓰지 않습니다")
+
+    def test_record_recent_menu_saves_config(self):
+        publish.record_recent_menu(self.cfg, "5")
+        saved = json.loads(publish.CONFIG_FILE.read_text(encoding="utf-8"))
+        self.assertEqual(saved["promo"]["recent_menus"], ["5"])
+
+    def test_favorite_toggle_adds_then_removes(self):
+        publish.toggle_favorite_menu(self.cfg, "11")
+        self.assertEqual(publish.favorite_menus(self.cfg), ["11"])
+        publish.toggle_favorite_menu(self.cfg, "11")
+        self.assertEqual(publish.favorite_menus(self.cfg), [])
+
+    def test_favorites_filter_invalid_numbers(self):
+        self.cfg["promo"]["favorite_menus"] = ["11", "99", 12]
+        self.assertEqual(publish.favorite_menus(self.cfg), ["11", "12"])
+
+
+class HistoryLimitTest(unittest.TestCase):
+    """이력 건수 설정 — 잘못된 값도 1~100 사이로 안전하게 맞춥니다."""
+
+    def test_default_and_clamp(self):
+        self.assertEqual(publish.history_limit_of({}), 10)
+        self.assertEqual(publish.history_limit_of({"promo": {"history_limit": 5}}), 5)
+        self.assertEqual(publish.history_limit_of({"promo": {"history_limit": 0}}), 1)
+        self.assertEqual(publish.history_limit_of({"promo": {"history_limit": "999"}}), 100)
+        self.assertEqual(publish.history_limit_of({"promo": {"history_limit": "abc"}}), 10)
+
+
+class PublishPathTest(unittest.TestCase):
+    """게시 경로 — 중복 방지·dry-run·수동 폴백이 실제 업로드 없이 검증되어야 합니다."""
+
+    META = {"title": "t", "desc": "d", "hashtags": "#toeic", "word": "access",
+            "word_bucket": 1, "unit": 1}
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self.tmp.name)
+        self.video = self.root / "v.mp4"
+        self.video.write_bytes(b"x" * 16)
+        self._old = (publish.HISTORY_FILE, publish.POSTED_FILE, publish.PROMO)
+        publish.HISTORY_FILE = self.root / "history.csv"
+        publish.POSTED_FILE = self.root / "posted.json"
+        publish.PROMO = self.root
+
+    def tearDown(self):
+        publish.HISTORY_FILE, publish.POSTED_FILE, publish.PROMO = self._old
+        self.tmp.cleanup()
+
+    def args(self, **kw) -> argparse.Namespace:
+        base = dict(video=str(self.video), unit=1, title=None, desc=None, platforms="yt",
+                    dry_run=True, youtube_privacy=None, publish_at=None, allow_repeat=False,
+                    manual_fallback=None, idioms=False, frequency=False, paraphrase=False,
+                    kind="")
+        base.update(kw)
+        return argparse.Namespace(**base)
+
+    def test_resolve_platforms_explicit_and_auto(self):
+        cfg = {"youtube": {"enabled": True}, "instagram": {"enabled": False},
+               "tiktok": {"enabled": False}}
+        self.assertEqual(publish.resolve_platforms(cfg, "auto"), ["yt"])
+        self.assertEqual(publish.resolve_platforms(cfg, None), ["yt"])
+        self.assertEqual(publish.resolve_platforms(cfg, " IG , tt "), ["ig", "tt"])
+
+    def test_dry_run_writes_history_without_marking(self):
+        with mock.patch.object(publish, "build_meta", return_value=dict(self.META)), \
+                mock.patch.object(publish, "upload_youtube", return_value="dry-run") as upload, \
+                mock.patch.object(publish, "print_remaining"), \
+                mock.patch.object(publish, "mark_words_posted") as mark_words, \
+                mock.patch.object(publish, "mark_video_posted") as mark_video:
+            publish.publish_single({"youtube": {"enabled": True}}, self.args(), self.video)
+        upload.assert_called_once()
+        mark_words.assert_not_called()
+        mark_video.assert_not_called()
+        rows = publish.read_history_rows()
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["status"], "dry-run")
+        self.assertEqual(rows[0]["platform"], "yt")
+
+    def test_already_posted_platform_is_skipped(self):
+        with mock.patch.object(publish, "build_meta", return_value=dict(self.META)), \
+                mock.patch.object(publish, "filter_posted_platforms", return_value=([], ["yt"])), \
+                mock.patch.object(publish, "upload_youtube") as upload:
+            publish.publish_single({"youtube": {"enabled": True}},
+                                   self.args(dry_run=False), self.video)
+        upload.assert_not_called()
+        self.assertEqual(publish.read_history_rows(), [])
+
+    def test_failed_upload_falls_back_to_manual_helper(self):
+        with mock.patch.object(publish, "build_meta", return_value=dict(self.META)), \
+                mock.patch.object(publish, "upload_youtube", return_value=None), \
+                mock.patch.object(publish, "filter_posted_platforms", return_value=(["yt"], [])), \
+                mock.patch.object(publish, "manual_publish", return_value=True) as manual, \
+                mock.patch.object(publish, "print_remaining"):
+            publish.publish_single({"youtube": {"enabled": True}, "promo": {"manual_fallback": True}},
+                                   self.args(dry_run=False), self.video)
+        manual.assert_called_once()
+        self.assertEqual(publish.read_history_rows()[0]["status"], "failed")
+
+    def test_scheduled_upload_does_not_open_a_browser(self):
+        # 예약 게시는 업로드가 끝난 뒤라 수동 폴백으로 브라우저를 열면 오해를 부릅니다.
+        with mock.patch.object(publish, "build_meta", return_value=dict(self.META)), \
+                mock.patch.object(publish, "upload_youtube", return_value=None), \
+                mock.patch.object(publish, "filter_posted_platforms", return_value=(["yt"], [])), \
+                mock.patch.object(publish, "manual_publish") as manual, \
+                mock.patch.object(publish, "print_remaining"):
+            publish.publish_single({"youtube": {"enabled": True}, "promo": {"manual_fallback": True}},
+                                   self.args(dry_run=False, publish_at="2026-11-01T19:00:00+09:00"),
+                                   self.video)
+        manual.assert_not_called()
+
+    def test_no_enabled_platform_exits(self):
+        cfg = {"youtube": {"enabled": False}, "instagram": {"enabled": False},
+               "tiktok": {"enabled": False}}
+        with mock.patch.object(publish, "build_meta", return_value=dict(self.META)):
+            with self.assertRaises(SystemExit):
+                publish.publish_single(cfg, self.args(platforms="auto"), self.video)
+
+    def test_scheduled_item_missing_video_records_failure(self):
+        item = {"id": "s1", "video": "assets/shorts/none.mp4", "platforms": "yt"}
+        self.assertFalse(publish.run_scheduled_item(item, {}))
+        row = publish.read_history_rows()[0]
+        self.assertEqual(row["status"], "failed")
+        self.assertIn("찾을 수 없습니다", row["message"])
+
+    def test_scheduled_item_skips_already_posted(self):
+        item = {"id": "s2", "video": str(self.video), "platforms": "yt"}
+        with mock.patch.object(publish, "build_meta", return_value=dict(self.META)), \
+                mock.patch.object(publish, "filter_posted_platforms", return_value=([], ["yt"])), \
+                mock.patch.object(publish, "upload_youtube") as upload:
+            self.assertTrue(publish.run_scheduled_item(item, {}))
+        upload.assert_not_called()
+        self.assertEqual(publish.read_history_rows()[0]["status"], "skipped")
+
+    def test_video_fingerprint_makes_duplicate_detection_content_based(self):
+        copy = self.root / "copy.mp4"
+        copy.write_bytes(self.video.read_bytes())
+        publish.mark_video_posted(self.video, "yt", "https://youtu.be/x")
+        remaining, skipped = publish.filter_posted_platforms(copy, ["yt", "ig"])
+        self.assertEqual(remaining, ["ig"], "같은 내용의 다른 파일명도 이미 게시한 것으로 봅니다")
+        self.assertEqual(skipped, ["yt"])
+
+
+class FrameRenderTest(unittest.TestCase):
+    """프레임 생성 — 병렬 렌더링을 켜도 예전 순차 렌더링과 같은 영상이 나와야 합니다."""
+
+    def setUp(self):
+        if Image is None:
+            self.skipTest("Pillow 가 없어 프레임 테스트를 건너뜁니다")
+        import make_shorts
+        self.shorts = make_shorts
+
+    def slide(self, color=(30, 40, 60)):
+        return Image.new("RGB", (self.shorts.W, self.shorts.H), color)
+
+    def test_frames_match_sequential_reference(self):
+        shorts = self.shorts
+        slide = self.slide()
+        n = 20
+        with tempfile.TemporaryDirectory() as td:
+            paths = [Path(td) / f"f{i}.jpg" for i in range(n)]
+            shorts.render_slide_frames(slide, paths, None)
+            for i, path in enumerate(paths):
+                t = i / (n - 1)
+                expected = shorts.crop_zoom(slide, 1.0 + shorts.ZOOM * t)
+                buf = io.BytesIO()
+                expected.save(buf, format="JPEG", quality=92)
+                with self.subTest(frame=i):
+                    self.assertEqual(path.read_bytes(), buf.getvalue())
+
+    def test_first_fade_frame_blends_with_previous_slide(self):
+        shorts = self.shorts
+        first, second = self.slide((20, 40, 70)), self.slide((70, 20, 40))
+        with tempfile.TemporaryDirectory() as td:
+            td = Path(td)
+            head = [td / f"a{i}.jpg" for i in range(8)]
+            prev_last = shorts.render_slide_frames(first, head, None)
+            tail = [td / f"b{i}.jpg" for i in range(8)]
+            shorts.render_slide_frames(second, tail, prev_last)
+            expected = Image.blend(prev_last, shorts.crop_zoom(second, 1.0), 1 / shorts.FADE_FRAMES)
+            buf = io.BytesIO()
+            expected.save(buf, format="JPEG", quality=92)
+            self.assertEqual(tail[1].read_bytes(), buf.getvalue())
+
+    def test_workers_are_bounded_and_positive(self):
+        self.assertGreaterEqual(self.shorts.FRAME_WORKERS, 1)
+        self.assertLessEqual(self.shorts.FRAME_WORKERS, 8)
+
+
+class PiperModelCacheTest(unittest.TestCase):
+    """두 목소리를 번갈아 써도 모델을 다시 읽지 않아야 합니다(예전엔 슬라이드마다 재로딩, 실측 37초)."""
+
+    def setUp(self):
+        import make_shorts
+        self.shorts = make_shorts
+        self.tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self.tmp.name)
+        self.voices = {name: self.root / f"{name}.onnx" for name in ("en_US-amy-low", "en_US-ryan-high")}
+        for path in self.voices.values():
+            path.write_bytes(b"onnx")
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def fake_module(self, loads):
+        class FakeVoice:
+            @classmethod
+            def load(cls, path):
+                loads.append(path)
+                return cls()
+
+            def synthesize_wav(self, _text, wf):
+                wf.setnchannels(1)
+                wf.setsampwidth(2)
+                wf.setframerate(22050)
+                wf.writeframes(b"\x00\x00" * 800)
+
+        module = types.ModuleType("piper")
+        module.PiperVoice = FakeVoice
+        return module
+
+    def test_two_voices_load_each_model_once(self):
+        loads: list[str] = []
+        with mock.patch.dict(sys.modules, {"piper": self.fake_module(loads)}), \
+                mock.patch.object(self.shorts, "piper_voice_path", side_effect=self.voices.get), \
+                mock.patch.object(self.shorts, "_PIPER_SESSIONS", {}):
+            for i, voice in enumerate(("en_US-amy-low", "en_US-ryan-high") * 3):
+                self.shorts._synthesize_piper("hello", voice, self.root / f"a{i}.wav")
+        self.assertEqual(len(loads), 2, f"모델을 {len(loads)}번 읽었습니다 — 두 목소리는 두 번이면 됩니다")
+
+    def test_cache_evicts_oldest_beyond_limit(self):
+        loads: list[str] = []
+        third = self.root / "en_US-third.onnx"
+        third.write_bytes(b"onnx")
+        paths = dict(self.voices, **{"en_US-third": third})
+        with mock.patch.dict(sys.modules, {"piper": self.fake_module(loads)}), \
+                mock.patch.object(self.shorts, "piper_voice_path", side_effect=paths.get), \
+                mock.patch.object(self.shorts, "_PIPER_SESSIONS", {}) as cache:
+            for voice in ("en_US-amy-low", "en_US-ryan-high", "en_US-third"):
+                self.shorts._synthesize_piper("hi", voice, self.root / f"{voice}.wav")
+            self.assertLessEqual(len(cache), self.shorts.PIPER_MODEL_CACHE)
 
 
 if __name__ == "__main__":
