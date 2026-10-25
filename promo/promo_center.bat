@@ -94,6 +94,7 @@ echo    promo_center.bat list-posted     중복 게시 방지 기록
 echo    promo_center.bat history         게시 이력
 echo    promo_center.bat --video ^<mp4^> --unit 1 --dry-run
 echo    promo_center.bat --auto-plan 5 --plan-start "2026-10-01 19:00"
+echo    promo_center.bat --video ^<mp4^> --platforms yt --publish-at "2026-10-26 19:00"
 echo.
 echo    * 첫 단어가 번호면 그 메뉴가 바로 실행됩니다: 5 / 1-4 / 15,16
 echo    * 하이픈 없는 첫 단어는 자동으로 -- 플래그가 됩니다: check = --check

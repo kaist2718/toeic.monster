@@ -4,14 +4,18 @@
 **Windows 원클릭 BAT 또는 터미널 메뉴로 안전하게 게시**하는 도구입니다.
 
 > **지원 환경**: 원클릭 BAT(`promo_center.bat`)·Windows 작업 스케줄러 등록(메뉴 27)·Windows 내장 TTS는
-> **Windows 전용**입니다. macOS/Linux 에서는 터미널 메뉴(`python publish.py`)와 Piper TTS를 쓰되,
-> 예약 게시는 cron 같은 OS 예약 도구로 `python publish.py --run-due` 를 호출하면 됩니다.
+> **Windows 전용**입니다. macOS/Linux 에서는 터미널 메뉴(`python publish.py`)와 Piper TTS를 씁니다.
+>
+> **예약 게시는 두 방식**입니다. YouTube 자체 예약 게시(`--publish-at`)는 지금 업로드하고
+> YouTube 가 지정 시각에 공개하므로 **PC 가 꺼져 있어도** 정시에 올라갑니다. 로컬 예약(`--schedule`)은
+> 그 시각에 `--run-due`(cron·작업 스케줄러)가 실행되어야 업로드됩니다 → [5. 예약 게시](#5-예약-게시-두-가지-방식).
 
 ```
 promo/
 ├── promo_center.bat       # Windows 원클릭 메뉴 런처
 ├── setup.bat              # 최초 1회: 의존성 설치·설정 파일 생성·점검
 ├── publish.py             # 생성·게시·예약·점검·설정 메뉴
+├── test_publish.py        # 회귀 테스트 (예약 시각·YouTube 요청 본문·메뉴/문서 일치)
 ├── make_shorts.py         # 9:16 쇼츠 생성기
 ├── config.example.json    # 설정 예제
 ├── config.json            # 실제 설정 (자동 생성, git 제외)
@@ -118,7 +122,7 @@ python make_shorts.py --kind sprint --words 7    # 30일 스프린트로 바로 
 
 🗓 **예약·자동 준비**
 
-20. **예약 게시 등록** — 영상·플랫폼·공개 범위·예약 시각 저장
+20. **예약 게시 등록** — 방식을 고릅니다: **YouTube 예약 게시**(지금 업로드, 그 시각 공개 — PC 가 꺼져 있어도 공개) 또는 **로컬 예약**(그 시각에 이 PC 가 업로드, 플랫폼·공개 범위 선택)
 21. **예약 목록·취소** — 예약 ID로 안전하게 취소
 22. **도래한 예약 실행** — 기본 dry-run, 실제 게시 전 확인
 23. **콘텐츠 자동 준비** — N일치 쇼츠를 자동 생성하고 예약 게시까지 등록 (종류는 남은 콘텐츠 많은 순으로 자동 배합)
@@ -128,7 +132,7 @@ python make_shorts.py --kind sprint --words 7    # 30일 스프린트로 바로 
 24. **설정 상태 확인** — config, 플랫폼, Python 패키지, ffmpeg, OAuth 파일 점검 + 콘텐츠 데이터 무결성(종류별 데이터 읽힘·보기·정답·남은 수량) 점검
 25. **설정 편집** — 기본값·플랫폼·계정 설정을 터미널에서 수정
 26. **폴더·파일 열기** — 쇼츠·비밀키·설정·운영 폴더를 기본 앱으로 열기
-27. **Windows 작업 스케줄러 등록/해제** — 도래한 예약을 매 N분 자동 확인(dry-run)
+27. **Windows 작업 스케줄러 등록/해제** — 도래한 예약을 매 N분 자동 확인 (등록할 때 dry-run 여부를 고르며, 기본은 안전한 dry-run)
 28. **YouTube 설정 도우미** — OAuth 안내·검증·로그인을 한 흐름으로
 29. **남은 콘텐츠 수량 보기** — 종류별 사용/전체/남음과 합계를 표로 확인
 30. **게시된 영상 YouTube 설명 갱신** — 이미 업로드한 영상의 제목·설명을 새 형식(모든 단어·퀴즈 정답 위치 포함)으로 다시 만들어 교체. 먼저 미리보기를 보여 주고 확인 후 적용하며, 태그·카테고리·공개 설정은 그대로 둡니다
@@ -204,6 +208,9 @@ python publish.py --voice-gender
 python publish.py --auto-plan 5 --plan-start "2026-10-01 19:00" --plan-days 1
 python publish.py --auto-plan 3 --plan-kind idioms   # 지정 종류로 생성만 (예약 없음)
 
+# YouTube 예약 게시 — 지금 업로드하고 지정 시각에 공개 (PC 가 꺼져 있어도 공개)
+python publish.py --video assets/shorts/unit01_shorts.mp4 --platforms yt --publish-at "2026-10-26 19:00" --dry-run
+
 # 성과 인사이트 — 종류별 평균 조회수·좋은 게시 시간대·추천 콘텐츠
 python publish.py --stats-insights
 
@@ -275,19 +282,57 @@ python publish.py --remove-task
 
 비밀번호·토큰은 화면에 출력하지 않으며 `config.json`과 `.secrets/`는 git에 포함되지 않습니다.
 
-## 5. 예약 게시
+## 5. 예약 게시 (두 가지 방식)
+
+| | **YouTube 예약 게시** (권장) | **로컬 예약** |
+| --- | --- | --- |
+| 명령 | `--publish-at "YYYY-MM-DD HH:MM"` · 메뉴 20 → 2 | `--schedule --schedule-time "…"` · 메뉴 20 → 1 |
+| 업로드 | **지금** (쿼터 사용) | 예약 시각 이후 `--run-due` 가 실행될 때 |
+| 공개 | YouTube 가 지정 시각에 **자동 공개** | 업로드 즉시 (public/unlisted/private) |
+| PC 필요 | ❌ 없음 (YouTube 서버가 처리) | ✅ 그 시각 이후 `--run-due` 필요 |
+| 플랫폼 | YouTube 전용 | yt · ig · tt |
+
+### 5-1. YouTube 예약 게시 — 지금 업로드, 그 시각 공개
+
+```bash
+# ① 미리보기로 제목·설명·시각 확인
+python publish.py --video assets/shorts/unit01_shorts.mp4 --platforms yt \
+  --publish-at "2026-10-26 19:00" --dry-run
+
+# ② 실제 — 지금 비공개로 업로드되고, 지정 시각에 공개됩니다
+python publish.py --video assets/shorts/unit01_shorts.mp4 --platforms yt \
+  --publish-at "2026-10-26 19:00"
+```
+
+- YouTube Data API 의 `publishAt` 을 씁니다 — 업로드는 **지금 비공개**, 지정 시각에 **공개**로 전환됩니다
+  (YouTube 규칙상 공개 범위를 따로 고를 수 없습니다).
+- 시각은 **로컬 기준** `YYYY-MM-DD HH:MM` 이고, API 에는 오프셋이 붙은 ISO
+  (`2026-10-26T19:00:00+09:00`)로 전송합니다. **지금부터 10분 이후**여야 하며, 지난 시각은 거부합니다.
+- 업로드 쿼터(1건 1,600 units)는 **지금** 사용합니다 — `python publish.py --quota` 로 잔량을 확인하세요.
+- 등록 뒤에는 YouTube Studio → 콘텐츠 → **예약됨** 에서 시각 변경·취소·즉시 공개가 가능합니다.
+  (이 방식은 YouTube 쪽 예약이라 `--list-schedules` 목록에는 나오지 않습니다 — 게시 이력에는 남습니다.)
+- 메뉴 **20번 → 2) YouTube 예약 게시** 도 같은 흐름(미리보기 → 확인 → 업로드)입니다.
+- `--youtube-privacy` 는 쓰이지 않고(항상 비공개 → 공개), `--platforms` 는 `yt` 만 지정할 수 있습니다.
+  여러 영상을 한 번에 예약하는 `--batch`·`--auto-plan` 과는 함께 쓸 수 없습니다.
+
+### 5-2. 로컬 예약 — 그 시각에 이 PC 가 업로드
 
 예약은 `promo/scheduled_posts.json`에 저장되며, 프로그램이 백그라운드에서 계속 실행되지는 않습니다.
 
 ```bash
-python publish.py --run-due --dry-run
-python publish.py --run-due
+python publish.py --schedule --schedule-time "2026-10-26 19:00" \
+  --video assets/shorts/unit01_shorts.mp4 --platforms yt --youtube-privacy unlisted
+
+python publish.py --run-due --dry-run   # 도래한 예약 미리보기
+python publish.py --run-due             # 실제 업로드
 python publish.py --list-schedules
 python publish.py --cancel-schedule 예약ID
 python publish.py --history
 ```
 
 Windows 작업 스케줄러에서 `promo_center.bat --run-due --dry-run` 또는 실제 운영용 `promo_center.bat --run-due`를 5~15분 간격으로 실행할 수 있습니다. 실제 게시 예약은 먼저 dry-run으로 확인하세요. `--run-due` 는 자동으로 `pause` 를 건너뛰어 창이 멈추지 않고, **메뉴 27번**으로 등록하면 `--no-pause` 가 포함된 상태로 자동 등록됩니다.
+
+> `python publish.py --install-task` 는 **안전을 위해 항상 dry-run** 으로 등록합니다. 실제 게시까지 자동화하려면 **메뉴 27번**에서 "dry-run 모드로 등록"에 **아니오**를 고르세요.
 
 ## 6. 플랫폼별 설정
 
@@ -534,4 +579,20 @@ https://toeic.monster/?utm_source=shorts&utm_medium=social&utm_campaign=unit
 - [ ] YouTube는 처음에 `unlisted`로 테스트
 - [ ] `--dry-run`으로 제목·설명·해시태그·플랫폼 확인
 - [ ] 실제 게시 전 영상·계정·공개 범위를 재확인
+- [ ] 예약 공개(`--publish-at`)라면 YouTube Studio → 콘텐츠 → **예약됨** 에서 시각·공개 상태 확인
 - [ ] 하루 1~2개 수준으로 운영하고 각 플랫폼 정책 준수
+
+## 9. 회귀 테스트
+
+업로드·네트워크 없이 예약 로직을 검증합니다(YouTube 요청 본문을 만드는 함수를 분리해 두었습니다).
+
+```bash
+cd promo
+python -m unittest test_publish -v
+```
+
+- `parse_publish_at` — 과거·10분 이내 시각 거부, 로컬/ISO 입력, 시간대 부여
+- `build_youtube_body` — 예약일 때만 `private` + `publishAt`, 일반 업로드는 지정 공개 범위 유지
+- 메뉴 번호 1~31 연속성·그룹 중복 없음·설명 누락, README·BAT 의 `--publish-at` 안내
+
+메뉴를 고치거나 예약 방식을 바꿀 때 이 테스트를 먼저 돌리세요.

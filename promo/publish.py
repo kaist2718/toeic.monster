@@ -9,6 +9,8 @@ toeic.monster 홍보 자동 배포 — YouTube Shorts / Instagram Reels / TikTok
   python publish.py --video assets/shorts/my.mp4 --platforms yt,ig --youtube-privacy unlisted
   python publish.py --video assets/shorts/idioms_x.mp4 --idioms   # 숙어 영상용 제목·설명
   python publish.py --video assets/shorts/quiz_x.mp4 --paraphrase # 동의어 치환 퀴즈 영상용 제목·설명
+  python publish.py --video assets/shorts/x.mp4 --platforms yt --publish-at "2026-10-26 19:00"
+                                                    # YouTube 예약 게시 — 지금 업로드, 그 시각 공개
   python publish.py --dry-run                       # 업로드 없이 계획만 출력
   python publish.py --list-posted                    # 사용한 단어·게시한 영상 기록 보기
   python publish.py --list-remaining                 # 종류별 남은 콘텐츠 수량 보기
@@ -1821,6 +1823,8 @@ def now_iso() -> str:
 def parse_schedule_time(value: str) -> datetime:
     """ISO 또는 YYYY-MM-DD HH:MM 형식의 로컬 시간을 파싱합니다."""
     raw = value.strip()
+    if not raw:
+        raise ValueError("시간을 입력해 주세요. (YYYY-MM-DD HH:MM)")
     try:
         parsed = datetime.fromisoformat(raw)
     except ValueError as exc:
@@ -1828,6 +1832,33 @@ def parse_schedule_time(value: str) -> datetime:
     if parsed.tzinfo is None:
         parsed = parsed.astimezone()
     return parsed
+
+
+# YouTube 예약 게시(publishAt) — 업로드는 지금, 공개는 지정 시각.
+# YouTube 는 publishAt 을 미래 시각으로 요구하고 그 전까지 영상을 비공개로 둡니다.
+# 너무 촉박한 시각은 API 가 거부하므로, 보내기 전에 최소 여유를 둡니다.
+PUBLISH_AT_MIN_LEAD = timedelta(minutes=10)
+
+
+def parse_publish_at(value: str) -> datetime:
+    """YouTube 예약 공개 시각(로컬)을 파싱하고 검증합니다.
+
+    `YYYY-MM-DD HH:MM`(로컬) 또는 시간대가 있는 ISO 형식을 받습니다.
+    과거·너무 이른 시각은 YouTube 가 거부할 수 있으므로 지금부터 10분 이후인지 먼저 확인합니다.
+    """
+    when = parse_schedule_time(value)
+    now = datetime.now().astimezone()
+    if when - now < PUBLISH_AT_MIN_LEAD:
+        raise ValueError(
+            "예약 공개 시각은 지금부터 10분 이후여야 합니다. "
+            f"(입력 {when:%Y-%m-%d %H:%M} · 현재 {now:%Y-%m-%d %H:%M})"
+        )
+    return when
+
+
+def publish_at_iso(when: datetime) -> str:
+    """YouTube API 가 받는 RFC 3339 형식(초 단위·시간대 포함)으로 바꿉니다."""
+    return when.astimezone().isoformat(timespec="seconds")
 
 
 def load_schedules() -> list[dict]:
@@ -1915,10 +1946,26 @@ def cancel_schedule(schedule_id: str) -> bool:
     return False
 
 
-def due_schedules() -> list[dict]:
+def due_schedules(items: list[dict] | None = None) -> list[dict]:
+    """도래한 예약만 골라냅니다.
+
+    scheduled_posts.json 을 손으로 고쳤거나 예전 형식이 남아 시각을 읽지 못하는 항목이
+    있어도 **전체 자동 실행을 멈추지 않도록** 그 항목만 건너뛰고 알립니다.
+    items 를 넘기면 그 목록을 그대로 쓰고(호출자가 상태를 저장해야 할 때), 없으면 파일을 읽습니다.
+    """
     current = datetime.now().astimezone()
-    return [item for item in load_schedules()
-            if item.get("status") == "scheduled" and parse_schedule_time(item["scheduled_at"]) <= current]
+    due: list[dict] = []
+    for item in (load_schedules() if items is None else items):
+        if item.get("status") != "scheduled":
+            continue
+        try:
+            when = parse_schedule_time(item.get("scheduled_at") or "")
+        except ValueError as exc:
+            warn(f"예약 {item.get('id') or '?'} 의 시각을 읽지 못했습니다 — 건너뜁니다 ({exc})")
+            continue
+        if when <= current:
+            due.append(item)
+    return due
 
 
 def run_scheduled_item(item: dict, cfg: dict, *, dry_run: bool = False) -> bool:
@@ -1988,8 +2035,7 @@ def run_scheduled_item(item: dict, cfg: dict, *, dry_run: bool = False) -> bool:
 
 def process_due_schedules(cfg: dict, *, dry_run: bool = False) -> int:
     items = load_schedules()
-    due = [item for item in items if item.get("status") == "scheduled" and
-           parse_schedule_time(item["scheduled_at"]) <= datetime.now().astimezone()]
+    due = due_schedules(items)
     count = 0
     for item in due:
         log(f"\n⏰ 예약 게시 실행: {item.get('id')} ({item.get('scheduled_at')})")
@@ -2455,12 +2501,53 @@ def youtube_error_message(exc: Exception) -> str:
     return detail
 
 
-def upload_youtube(video: Path, meta: dict, cfg: dict, dry_run: bool) -> str | None:
+def build_youtube_body(meta: dict, yt: dict, privacy: str,
+                       publish_at: str | None = None) -> dict:
+    """videos.insert 요청 본문을 만듭니다.
+
+    publish_at(예약 공시 시각)이 있으면 **비공개로 업로드하고 그 시각에 공개**합니다.
+    YouTube 규칙상 publishAt 은 privacyStatus=private 일 때만 쓸 수 있고, 공개 시점의
+    공개 범위를 따로 고를 수 없습니다(항상 공개). 이 함수는 네트워크를 쓰지 않아
+    단위 테스트(promo/test_publish.py)가 그대로 검증합니다.
+    """
+    desc = meta["desc"]
+    if meta["hashtags"]:
+        desc = f"{desc}\n\n{meta['hashtags']}" if desc else meta["hashtags"]
+
+    tags = list(yt.get("tags", [])) + [t.lstrip("#") for t in meta["hashtags"].split() if t.lstrip("#")]
+    status = {
+        "privacyStatus": "private" if publish_at else privacy,
+        "selfDeclaredMadeForKids": False,
+    }
+    if publish_at:
+        status["publishAt"] = publish_at
+    return {
+        "snippet": {
+            "title": meta["title"],
+            "description": desc,
+            "tags": tags[:500],
+            "categoryId": str(yt.get("category_id", "27")),  # 27 = Education
+            "defaultLanguage": "ko",
+        },
+        "status": status,
+    }
+
+
+def upload_youtube(video: Path, meta: dict, cfg: dict, dry_run: bool,
+                   publish_at: str | None = None) -> str | None:
+    """YouTube Shorts 업로드.
+
+    publish_at 이 있으면 YouTube 자체 예약 게시를 씁니다 — 지금 업로드(비공개)하고
+    지정 시각에 YouTube 가 공개하므로, 이 PC 가 꺼져 있어도 정시에 공개됩니다.
+    """
     yt = cfg.get("youtube", {})
     if not yt.get("enabled", True):
         return None
     if dry_run:
-        log("   [YouTube Shorts] 업로드 예정 (dry-run)")
+        if publish_at:
+            log(f"   [YouTube Shorts] 예약 게시 예정 (dry-run) — {publish_at} 에 공개")
+        else:
+            log("   [YouTube Shorts] 업로드 예정 (dry-run)")
         return "dry-run"
     try:
         from googleapiclient.discovery import build
@@ -2473,27 +2560,10 @@ def upload_youtube(video: Path, meta: dict, cfg: dict, dry_run: bool) -> str | N
         return None
 
     youtube = build("youtube", "v3", credentials=creds)
-    desc = meta["desc"]
-    if meta["hashtags"]:
-        desc = f"{desc}\n\n{meta['hashtags']}" if desc else meta["hashtags"]
-
-    tags = list(yt.get("tags", [])) + [t.lstrip("#") for t in meta["hashtags"].split() if t.lstrip("#")]
-    body = {
-        "snippet": {
-            "title": meta["title"],
-            "description": desc,
-            "tags": tags[:500],
-            "categoryId": str(yt.get("category_id", "27")),  # 27 = Education
-            "defaultLanguage": "ko",
-        },
-        "status": {
-            "privacyStatus": args_youtube_privacy(yt),
-            "selfDeclaredMadeForKids": False,
-        },
-    }
+    body = build_youtube_body(meta, yt, args_youtube_privacy(yt), publish_at)
     media = MediaFileUpload(str(video), mimetype="video/mp4", resumable=True)
     request = youtube.videos().insert(part="snippet,status", body=body, media_body=media)
-    log("   YouTube 업로드 시작...")
+    log("   YouTube 업로드 시작..." + (f" (예약 공개 {publish_at})" if publish_at else ""))
     response = None
     try:
         while response is None:
@@ -2504,6 +2574,8 @@ def upload_youtube(video: Path, meta: dict, cfg: dict, dry_run: bool) -> str | N
         fail(f"YouTube 업로드 실패: {youtube_error_message(exc)}")
         return None
     video_id = response.get("id")
+    if publish_at:
+        ok(f"   YouTube 예약 게시 등록 완료 — {publish_at} 에 공개됩니다 (그때까지 비공개)")
     return f"https://youtu.be/{video_id}"
 
 
@@ -4829,7 +4901,7 @@ MENU_DESC: dict[str, str] = {
     "17": "최근 게시 이력 10건을 CSV 에서 확인",
     "18": "게시 이력 통계를 HTML 리포트로 생성",
     "19": "조회수 수집 · HTML 보고서 · 게시 시간대 인사이트",
-    "20": "특정 시각에 올라가도록 게시 예약 등록",
+    "20": "공개 시각 예약 — 로컬 예약(그 시각 업로드) 또는 YouTube 예약 게시(지금 업로드, 그 시각 공개)",
     "21": "예약된 게시 목록 확인 및 취소",
     "22": "지금 시각까지 도래한 예약 게시를 실행",
     "23": "N일치 쇼츠를 자동 생성하고 예약 게시까지 등록",
@@ -5527,6 +5599,42 @@ def interactive_menu(initial: str | None = None) -> None:
             video = choose_video_menu()
             if video is None:
                 continue
+            mode = choose_option(
+                "예약 방식",
+                [("local", "로컬 예약 — 그 시각에 이 PC 가 업로드 (PC 가 켜져 있어야 함)"),
+                 ("native", "YouTube 예약 게시 — 지금 업로드하고 그 시각에 공개 (PC 가 꺼져 있어도 공개)")],
+                "local",
+            )
+            if mode == "native":
+                # YouTube 자체 예약 게시(publishAt) — 업로드 후 비공개로 두었다가 지정 시각에 공개합니다.
+                log("\nYouTube 예약 게시")
+                log("  · 지금 비공개로 업로드하고, 지정 시각에 YouTube 가 자동으로 공개합니다.")
+                log("  · 공개 범위는 '공개'로 고정됩니다(YouTube 규칙) — 비공개·일부 공개 예약은 지원하지 않습니다.")
+                log("  · 업로드 쿼터(1건 1,600 units)는 지금 사용합니다.")
+                scheduled_at = ask_menu("공개 시각(YYYY-MM-DD HH:MM)")
+                try:
+                    when = parse_publish_at(scheduled_at)
+                except ValueError as exc:
+                    warn(str(exc))
+                    continue
+                dry_run = ask_yes_no("먼저 미리보기(dry-run)로 확인할까요?", True)
+                if not dry_run and confirm_real_upload:
+                    log(f"⚠️ 지금 YouTube 에 업로드하고 {when:%Y-%m-%d %H:%M} 에 공개합니다.")
+                    if not ask_yes_no("정말 진행할까요?", False):
+                        log("예약 게시를 취소했습니다.")
+                        continue
+                command = [sys.executable, str(PROMO / "publish.py"), "--non-interactive",
+                           "--video", str(video), "--platforms", "yt",
+                           "--publish-at", publish_at_iso(when)]
+                if unit:
+                    command.extend(["--unit", str(unit)])
+                if ask_yes_no("이미 게시한 영상도 다시 게시할까요?", False):
+                    command.append("--allow-repeat")
+                if dry_run:
+                    command.append("--dry-run")
+                if run_menu_command(command):
+                    ok("원클릭 작업이 완료되었습니다.")
+                continue
             platforms = choose_platforms_menu(cfg)
             privacy = choose_privacy(default_privacy)
             scheduled_at = ask_menu("예약 일시(YYYY-MM-DD HH:MM)")
@@ -5750,6 +5858,9 @@ def main() -> None:
     ap.add_argument("--desc", help="설명 직접 지정")
     ap.add_argument("--platforms", default="auto", help="yt,ig,tt (기본: config 에서 enabled 인 플랫폼)")
     ap.add_argument("--youtube-privacy", choices=["public", "unlisted", "private"], help="YouTube 공개 범위")
+    ap.add_argument("--publish-at", metavar="TIME",
+                    help="YouTube 예약 게시 — 지금 업로드하고 TIME(YYYY-MM-DD HH:MM)에 공개. "
+                         "PC 가 꺼져 있어도 정시에 공개되며, 업로드 쿼터는 지금 사용합니다")
     ap.add_argument("--dry-run", action="store_true", help="실제 업로드 없이 계획만 출력")
     ap.add_argument("--allow-repeat", action="store_true",
                     help="이미 사용한 단어·게시한 영상도 다시 사용 (중복 방지 무시)")
@@ -5808,7 +5919,8 @@ def main() -> None:
     ap.add_argument("--plan-days", type=int, default=1, help="예약 게시 간격(일) (기본 1)")
     ap.add_argument("--plan-words", type=int, help="영상당 항목 수 (기본: 설정 default_words)")
     ap.add_argument("--install-task", nargs="?", const=10, type=int, metavar="MIN",
-                    help="Windows 작업 스케줄러에 매 MIN분 예약 확인 등록 (기본 10)")
+                    help="Windows 작업 스케줄러에 매 MIN분 예약 확인 등록 (기본 10 · 안전을 위해 dry-run 전용 — "
+                         "실제 게시까지 자동화하려면 메뉴 27 에서 dry-run 을 끄고 등록)")
     ap.add_argument("--remove-task", action="store_true", help="Windows 작업 스케줄러 등록 해제")
     ap.add_argument("--verify", action="store_true",
                     help="배포 전 영상 검증 실행 (재생·Shorts 요건 점검 후 게시)")
@@ -5921,6 +6033,27 @@ def main() -> None:
     if args.stats_insights:
         show_performance_insights()
         return
+    if args.publish_at:
+        # YouTube 예약 게시 — 업로드는 지금, 공개는 지정 시각(PC 가 꺼져 있어도 공개).
+        if args.schedule:
+            fail("--schedule(로컬 예약)과 --publish-at(YouTube 예약 게시)은 함께 쓸 수 없습니다 — 하나만 고르세요.")
+            return
+        if args.auto_plan is not None or args.batch:
+            fail("--auto-plan·--batch 는 영상이 여러 개라 --publish-at 과 함께 쓸 수 없습니다.")
+            return
+        try:
+            args.publish_at = publish_at_iso(parse_publish_at(args.publish_at))
+        except ValueError as exc:
+            fail(str(exc))
+            return
+        if args.youtube_privacy:
+            warn("YouTube 예약 게시는 지금 비공개로 올리고 지정 시각에 공개합니다"
+                 " — --youtube-privacy 값은 쓰이지 않습니다.")
+        others = [p for p in resolve_platforms(cfg, args.platforms) if p != "yt"]
+        if others:
+            fail(f"--publish-at 은 YouTube 전용입니다 (함께 선택됨: {', '.join(p.upper() for p in others)}). "
+                 "--platforms yt 로 실행하세요 — 다른 플랫폼은 예약 공개를 지원하지 않습니다.")
+            return
     if args.auto_plan is not None:
         run_auto_plan(cfg, args.auto_plan, args.plan_kind, start_at=args.plan_start,
                       interval_days=args.plan_days, words=args.plan_words)
@@ -5971,6 +6104,8 @@ def publish_single(cfg: dict, args, video: Path) -> None:
     """영상 하나를 지정 플랫폼에 게시하고 이력을 남깁니다. (--dry-run 지원)"""
     meta = build_meta(cfg, args)
     platforms = resolve_platforms(cfg, args.platforms)
+    # YouTube 예약 게시 시각(정규화된 ISO) — 있으면 업로드는 지금, 공개는 그 시각.
+    publish_at = getattr(args, "publish_at", None)
 
     if not args.dry_run and not getattr(args, "allow_repeat", False) and platforms:
         remaining, already = filter_posted_platforms(video, platforms)
@@ -5997,6 +6132,8 @@ def publish_single(cfg: dict, args, video: Path) -> None:
     if meta["hashtags"]:
         log(f"해시태그: {meta['hashtags']}")
     log(f"플랫폼: {', '.join(p.upper() for p in platforms) or '(없음 — config 에서 enabled 확인)'}")
+    if publish_at and "yt" in platforms:
+        log(f"예약  : YouTube 예약 게시 — {publish_at} 에 공개 (지금은 비공개로 업로드)")
     log("-" * 62)
 
     if not platforms:
@@ -6006,7 +6143,7 @@ def publish_single(cfg: dict, args, video: Path) -> None:
     results = []
     for short in platforms:
         if short == "yt":
-            url = upload_youtube(video, meta, cfg, args.dry_run)
+            url = upload_youtube(video, meta, cfg, args.dry_run, publish_at)
         elif short == "ig":
             url = upload_instagram(video, meta, cfg, args.dry_run)
         elif short == "tt":
@@ -6017,6 +6154,15 @@ def publish_single(cfg: dict, args, video: Path) -> None:
         results.append((short, url))
         if url and url != "dry-run":
             mark_video_posted(video, short, url)
+        if short == "yt" and publish_at:
+            if url == "dry-run":
+                message = f"YouTube 예약 게시 미리보기 — {publish_at} 공개"
+            elif url:
+                message = f"YouTube 예약 게시 — {publish_at} 공개"
+            else:
+                message = "YouTube 예약 게시 실패"
+        else:
+            message = "직접 게시 실행" if url else "플랫폼 게시 실패 또는 건너뜀"
         append_history(
             event="publish",
             status="dry-run" if url == "dry-run" else ("success" if url else "failed"),
@@ -6025,7 +6171,7 @@ def publish_single(cfg: dict, args, video: Path) -> None:
             unit=args.unit,
             title=meta["title"],
             url=url or "",
-            message="직접 게시 실행" if url else "플랫폼 게시 실패 또는 건너뜀",
+            message=message,
         )
 
     if not args.dry_run and fallback:
@@ -6054,7 +6200,8 @@ def publish_single(cfg: dict, args, video: Path) -> None:
         else:
             fail(f"{names[short]}: 건너뜀 (설정/오류 — 위 메시지 확인)")
     if args.dry_run:
-        log("\n실제 업로드하려면 --dry-run 을 빼고 실행하세요.")
+        log("\n실제 예약 게시하려면 --dry-run 을 빼고 실행하세요." if publish_at
+            else "\n실제 업로드하려면 --dry-run 을 빼고 실행하세요.")
         if getattr(args, "idioms", False):
             flag = " --idioms"
         elif getattr(args, "frequency", False):
@@ -6068,6 +6215,8 @@ def publish_single(cfg: dict, args, video: Path) -> None:
         else:
             # 영상 옆 메타(*.json)가 제목·설명을 만들므로 다시 돌릴 때 UNIT 이 필요 없습니다.
             flag = ""
+        if publish_at:
+            flag += f' --platforms yt --publish-at "{publish_at}"'
         log(f"예: python publish.py --video {video.relative_to(PROMO)}{flag}")
 
     bucket = meta.get("word_bucket")
