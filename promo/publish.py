@@ -11,6 +11,10 @@ toeic.monster 홍보 자동 배포 — YouTube Shorts / Instagram Reels / TikTok
   python publish.py --video assets/shorts/quiz_x.mp4 --paraphrase # 동의어 치환 퀴즈 영상용 제목·설명
   python publish.py --video assets/shorts/x.mp4 --platforms yt --publish-at "2026-10-26 19:00"
                                                     # YouTube 예약 게시 — 지금 업로드, 그 시각 공개
+  python publish.py --schedules                     # 로컬 예약 + YouTube 예약 게시 현황
+  python publish.py --verify-schedules              # YouTube 예약이 실제로 공개됐는지 확인
+  python publish.py --youtube-login-full            # 읽기·삭제 권한으로 따로 로그인(확인·취소용)
+  python publish.py --cancel-native 예약ID          # YouTube 예약 취소 — 예약된 영상 삭제
   python publish.py --dry-run                       # 업로드 없이 계획만 출력
   python publish.py --list-posted                    # 사용한 단어·게시한 영상 기록 보기
   python publish.py --list-remaining                 # 종류별 남은 콘텐츠 수량 보기
@@ -85,6 +89,9 @@ CONFIG_EXAMPLE = PROMO / "config.example.json"
 SECRETS_DIR = PROMO / ".secrets"
 SHORTS_DIR = PROMO / "assets" / "shorts"
 SCHEDULE_FILE = PROMO / "scheduled_posts.json"
+# YouTube 예약 게시(publishAt) 장부 — 실행 큐가 아니라 "무엇을 언제 공개하기로 했는지" 기록입니다.
+# 로컬 예약과 달리 YouTube 서버가 공개하므로, --verify-schedules 가 이 장부와 실제 상태를 대조합니다.
+NATIVE_SCHEDULE_FILE = PROMO / "native_schedules.json"
 HISTORY_FILE = PROMO / "publish_history.csv"
 REPORT_DIR = PROMO / "reports"
 PERF_FILE = PROMO / "performance.json"
@@ -1876,6 +1883,150 @@ def save_schedules(items: list[dict]) -> None:
     SCHEDULE_FILE.write_text(json.dumps(items, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
+NATIVE_STATUS_LABELS = {
+    "scheduled": "예약됨 (YouTube 가 비공개로 보관 중)",
+    "published": "공개됨",
+    "missing": "YouTube 에서 찾을 수 없음 (삭제·비공개 전환)",
+}
+
+
+def load_native_schedules() -> list[dict]:
+    """YouTube 예약 게시 장부를 읽습니다. 파일이 없거나 깨졌으면 빈 목록."""
+    if not NATIVE_SCHEDULE_FILE.exists():
+        return []
+    try:
+        data = json.loads(NATIVE_SCHEDULE_FILE.read_text(encoding="utf-8"))
+        return data if isinstance(data, list) else []
+    except (OSError, json.JSONDecodeError) as exc:
+        warn(f"YouTube 예약 장부를 읽지 못했습니다: {exc}")
+        return []
+
+
+def save_native_schedules(items: list[dict]) -> None:
+    NATIVE_SCHEDULE_FILE.write_text(json.dumps(items, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def record_native_schedule(*, video_id: str, video: Path | str, title: str,
+                           publish_at: str, unit: int | None = None) -> dict:
+    """업로드에 성공한 YouTube 예약 게시를 장부에 남깁니다(같은 영상 ID 는 갱신).
+
+    업로드는 이미 끝났으므로 실패해도 게시 자체에는 영향이 없습니다.
+    장부는 `--schedules`(현황)와 `--verify-schedules`(공개 확인)의 기준입니다.
+    """
+    items = [i for i in load_native_schedules() if i.get("video_id") != video_id]
+    item = {
+        "id": uuid.uuid4().hex[:10],
+        "created_at": now_iso(),
+        "video_id": video_id,
+        "video": str(video),
+        "title": title,
+        "unit": unit,
+        "publish_at": publish_at,
+        "status": "scheduled",
+        "checked_at": "",
+        "note": "",
+    }
+    items.append(item)
+    try:
+        save_native_schedules(items)
+    except OSError as exc:
+        warn(f"YouTube 예약 장부를 저장하지 못했습니다: {exc}")
+    return item
+
+
+def schedule_when(item: dict, key: str = "scheduled_at") -> datetime | None:
+    """예약 항목의 시각을 읽습니다(형식이 깨졌으면 None)."""
+    try:
+        return parse_schedule_time(item.get(key) or "")
+    except ValueError:
+        return None
+
+
+def humanize_when(when: datetime, now: datetime | None = None) -> str:
+    """`2시간 5분 뒤` / `3일 1시간 지남` 처럼 남은·지난 시간을 사람 말로 보여 줍니다."""
+    now = now or datetime.now().astimezone()
+    seconds = int((when - now).total_seconds())
+    suffix = "뒤" if seconds >= 0 else "지남"
+    seconds = abs(seconds)
+    days, rest = divmod(seconds, 86400)
+    hours, rest = divmod(rest, 3600)
+    minutes = rest // 60
+    parts = []
+    if days:
+        parts.append(f"{days}일")
+    if hours:
+        parts.append(f"{hours}시간")
+    if not days:
+        parts.append(f"{minutes}분")
+    return " ".join(parts) + f" {suffix}"
+
+
+def display_schedule_overview() -> list[dict]:
+    """로컬 예약과 YouTube 예약 게시를 한 화면에 보여 줍니다.
+
+    반환값: 공개 시각이 지났는데 아직 확인하지 않은 YouTube 예약 항목
+    (호출자가 이어서 `verify_native_schedules` 를 실행할 수 있습니다).
+    """
+    now = datetime.now().astimezone()
+    local = [i for i in load_schedules() if i.get("status") == "scheduled"]
+    native = load_native_schedules()
+    native_pending = [i for i in native if i.get("status") == "scheduled"]
+    native_finished = [i for i in native if i.get("status") != "scheduled"]
+
+    log("\n⏰ 예약 현황")
+    log("-" * 62)
+    log("1) 로컬 예약 — 그 시각 이후 --run-due 가 실행될 때 이 PC 가 업로드")
+    if not local:
+        log("   없음")
+    for item in sorted(local, key=lambda x: str(x.get("scheduled_at", ""))):
+        when = schedule_when(item)
+        if when is None:
+            mark = "⚠️ 시각 읽기 실패"
+        elif when <= now:
+            mark = f"⏰ 도래 — {humanize_when(when, now)} · --run-due 필요"
+        else:
+            mark = humanize_when(when, now)
+        log(f"   {item.get('id', '')} | {when.strftime('%Y-%m-%d %H:%M') if when else item.get('scheduled_at', '')}"
+            f" | {item.get('platforms', '')} | {item.get('video', '')}")
+        log(f"      └ {mark}")
+
+    log("-" * 62)
+    log("2) YouTube 예약 게시 — 지금 업로드됨, YouTube 가 그 시각에 공개 (PC 불필요)")
+    if not native_pending:
+        log("   없음")
+    for item in sorted(native_pending, key=lambda x: str(x.get("publish_at", ""))):
+        when = schedule_when(item, "publish_at")
+        when_text = when.strftime("%Y-%m-%d %H:%M") if when else item.get("publish_at", "")
+        if when is None:
+            mark = "⚠️ 시각 읽기 실패 — --verify-schedules 로 확인"
+        elif when <= now:
+            mark = f"공개 시각이 {humanize_when(when, now)} — 확인 필요"
+        else:
+            mark = f"{humanize_when(when, now)} · 비공개로 대기"
+        log(f"   {item.get('id', '')} | {when_text} | https://youtu.be/{item.get('video_id', '')}")
+        log(f"      └ {item.get('title', '')[:60]}")
+        log(f"      └ {mark}")
+        if item.get("note"):
+            log(f"      └ ⚠️ {item['note']}")
+
+    if native_finished:
+        log("-" * 62)
+        log("최근 확인 결과")
+        for item in native_finished[-5:]:
+            label = NATIVE_STATUS_LABELS.get(item.get("status", ""), item.get("status", ""))
+            log(f"   {item.get('publish_at', '')} | {label} | https://youtu.be/{item.get('video_id', '')}")
+            if item.get("note"):
+                log(f"      └ {item['note']}")
+
+    due = [i for i in native_pending
+           if (when := schedule_when(i, "publish_at")) is not None and when <= now]
+    log("-" * 62)
+    log(f"   로컬 예약 {len(local)}건 · YouTube 예약 {len(native_pending)}건"
+        + (f" · 확인 필요 {len(due)}건" if due else ""))
+    log("   · 로컬: python publish.py --run-due   · YouTube 공개 확인: python publish.py --verify-schedules")
+    return due
+
+
 def append_history(*, event: str, status: str, schedule_id: str = "", scheduled_at: str = "",
                    platform: str = "", video: str = "", unit: int | None = None,
                    title: str = "", url: str = "", message: str = "") -> None:
@@ -2066,6 +2217,14 @@ YOUTUBE_SETUP_STEPS = [
     ("④ OAuth 클라이언트 ID 만들기 (유형: 데스크톱 앱)", "https://console.cloud.google.com/apis/credentials"),
 ]
 YOUTUBE_SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
+# 업로드만으로는 videos.list(공개 상태 확인)·videos.delete(예약 취소)를 쓸 수 없습니다.
+# 선택 기능(공개 확인·예약 취소)은 아래 넓은 범위로 **따로 로그인**한 토큰을 씁니다 —
+# 기존 업로드 토큰을 건드리지 않아 이미 되던 업로드가 막히지 않습니다.
+YOUTUBE_FULL_SCOPES = [
+    "https://www.googleapis.com/auth/youtube.upload",
+    "https://www.googleapis.com/auth/youtube.force-ssl",
+]
+YOUTUBE_FULL_TOKEN_NAME = "youtube_token_full.json"
 # OAuth 동의 화면 > 대상(Audience) > 테스트 사용자
 YOUTUBE_AUDIENCE_URL = "https://console.cloud.google.com/auth/audience"
 YOUTUBE_CONSENT_URL = "https://console.cloud.google.com/apis/credentials/consent"
@@ -2274,11 +2433,16 @@ def explain_youtube_auth_error(exc: Exception) -> None:
 
 
 def get_youtube_credentials(cfg: dict, *, interactive: bool = True, force: bool = False,
-                            allow_non_tty: bool = False):
-    """YouTube OAuth 자격증명을 준비해 돌려줍니다. 실패하면 None."""
+                            allow_non_tty: bool = False, scopes: list[str] | None = None,
+                            token_name: str | None = None):
+    """YouTube OAuth 자격증명을 준비해 돌려줍니다. 실패하면 None.
+
+    scopes·token_name 을 주면 그 범위·파일로 따로 로그인합니다(업로드 토큰은 그대로 둡니다).
+    """
     yt = cfg.get("youtube", {})
+    scopes = scopes or YOUTUBE_SCOPES
     client_secret = resolve_client_secret(cfg)
-    token_file = SECRETS_DIR / (yt.get("token_file") or "youtube_token.json")
+    token_file = SECRETS_DIR / (token_name or yt.get("token_file") or "youtube_token.json")
     if client_secret is None:
         warn(f"YouTube OAuth 파일이 없습니다: {SECRETS_DIR / 'client_secret.json'}")
         log("   · Google에서 받은 client_secret*.json 파일을 .secrets 폴더에 넣으면 자동 인식합니다.")
@@ -2301,7 +2465,7 @@ def get_youtube_credentials(cfg: dict, *, interactive: bool = True, force: bool 
     creds = None
     if token_file.exists() and not force:
         try:
-            creds = Credentials.from_authorized_user_file(str(token_file), YOUTUBE_SCOPES)
+            creds = Credentials.from_authorized_user_file(str(token_file), scopes)
         except Exception:
             creds = None
     if creds and creds.expired and creds.refresh_token:
@@ -2324,7 +2488,7 @@ def get_youtube_credentials(cfg: dict, *, interactive: bool = True, force: bool 
         log("   YouTube 로그인: 브라우저에서 승인해 주세요 (최초 1회)")
         log("   ※ 로그인 화면에서 '테스트 사용자'로 등록한 Google 계정을 선택하세요.")
         try:
-            flow = InstalledAppFlow.from_client_secrets_file(str(client_secret), YOUTUBE_SCOPES)
+            flow = InstalledAppFlow.from_client_secrets_file(str(client_secret), scopes)
             creds = flow.run_local_server(
                 port=0,
                 prompt="consent",
@@ -2357,10 +2521,12 @@ def youtube_login(cfg: dict, *, force: bool = False) -> bool:
     return True
 
 
-def load_stored_youtube_credentials(cfg: dict):
+def load_stored_youtube_credentials(cfg: dict, *, scopes: list[str] | None = None,
+                                    token_name: str | None = None):
     """토큰 파일에서 자격증명을 읽습니다(만료 시 자동 갱신). 실패하면 None."""
     yt = cfg.get("youtube", {})
-    token_file = SECRETS_DIR / (yt.get("token_file") or "youtube_token.json")
+    scopes = scopes or YOUTUBE_SCOPES
+    token_file = SECRETS_DIR / (token_name or yt.get("token_file") or "youtube_token.json")
     if not token_file.exists():
         return None
     try:
@@ -2369,7 +2535,7 @@ def load_stored_youtube_credentials(cfg: dict):
     except ImportError:
         return None
     try:
-        creds = Credentials.from_authorized_user_file(str(token_file), YOUTUBE_SCOPES)
+        creds = Credentials.from_authorized_user_file(str(token_file), scopes)
     except Exception:
         return None
     if creds.expired and creds.refresh_token:
@@ -2434,6 +2600,12 @@ def youtube_check(cfg: dict) -> None:
         log("   게시 준비 완료 — python publish.py --video <mp4> --platforms yt 으로 업로드할 수 있습니다.")
     else:
         log("   → python publish.py --youtube-login 으로 로그인하세요.")
+    # 업로드 토큰은 videos.list/delete 권한이 없습니다 — 예약 공개 확인·취소용 별도 토큰 상태.
+    if load_full_youtube_credentials(cfg) is not None:
+        ok("읽기·삭제 토큰: 있음 — --verify-schedules · --cancel-native 사용 가능")
+    else:
+        log("읽기·삭제 토큰: 없음 — 공개 확인·예약 취소는 python publish.py --youtube-login-full")
+        log("   (업로드만 쓸 때는 없어도 됩니다. YouTube Studio 에서 직접 확인·취소할 수 있습니다.)")
 
 
 def youtube_menu(cfg: dict) -> None:
@@ -2533,6 +2705,227 @@ def build_youtube_body(meta: dict, yt: dict, privacy: str,
     }
 
 
+def load_full_youtube_credentials(cfg: dict):
+    """공개 상태 조회·예약 취소용(넓은 범위) 토큰. 없으면 None — 업로드 토큰과 별개입니다."""
+    return load_stored_youtube_credentials(cfg, scopes=YOUTUBE_FULL_SCOPES,
+                                           token_name=YOUTUBE_FULL_TOKEN_NAME)
+
+
+def youtube_full_login(cfg: dict, *, force: bool = False) -> bool:
+    """공개 확인·예약 취소에 필요한 넓은 범위로 로그인해 별도 토큰을 저장합니다."""
+    creds = get_youtube_credentials(cfg, interactive=True, force=force, allow_non_tty=True,
+                                    scopes=YOUTUBE_FULL_SCOPES,
+                                    token_name=YOUTUBE_FULL_TOKEN_NAME)
+    if not creds:
+        return False
+    ok("YouTube 읽기·삭제 권한 로그인 완료 — 토큰을 따로 저장했습니다.")
+    log("  · 기존 업로드 토큰은 그대로라 게시·예약은 다시 로그인하지 않아도 됩니다.")
+    log("  · 이제 python publish.py --verify-schedules / --cancel-native 예약ID 를 쓸 수 있습니다.")
+    if YOUTUBE_FULL_SCOPES[1] not in (creds.scopes or []):
+        warn("승인된 범위에 force-ssl 이 없습니다 — OAuth 동의 화면에서 범위를 추가한 뒤 다시 로그인하세요.")
+    return True
+
+
+def fetch_youtube_status(cfg: dict, video_ids: list[str]) -> tuple[dict[str, dict], bool] | None:
+    """YouTube 영상의 실제 공개 상태를 조회합니다(저장된 토큰·API 키만 사용, 브라우저 로그인 없음).
+
+    반환: ({video_id: {privacy, publish_at, upload_status, title}}, 비공개까지 보이는지)
+      - 넓은 범위 토큰·업로드 토큰 → 모두 볼 수 있음(True)
+      - API 키만 → 공개 영상만(False) — 이때는 '없음'을 삭제로 단정하면 안 됩니다.
+    조회 자체가 실패하면 None — 호출자는 장부를 바꾸지 않아야 합니다.
+    """
+    if not video_ids:
+        return {}, True
+    try:
+        from googleapiclient.discovery import build
+    except ImportError:
+        warn("google-api-python-client 미설치 — pip install -r requirements.txt")
+        return None
+
+    service = None
+    private_visible = False
+    for creds in (load_full_youtube_credentials(cfg), load_stored_youtube_credentials(cfg)):
+        if creds is None:
+            continue
+        try:
+            service = build("youtube", "v3", credentials=creds, cache_discovery=False)
+            private_visible = True
+            break
+        except Exception as exc:
+            warn(f"YouTube 연결 실패: {youtube_error_message(exc)}")
+    api_key = str(cfg.get("youtube", {}).get("api_key") or "")
+    key_usable = bool(api_key) and not api_key.startswith("YOUR_")
+    if service is None and key_usable:
+        try:
+            service = build("youtube", "v3", developerKey=api_key, cache_discovery=False)
+            private_visible = False
+        except Exception as exc:
+            warn(f"YouTube API 키 연결 실패: {youtube_error_message(exc)}")
+    if service is None:
+        warn("YouTube 공개 상태를 확인하려면 읽기 권한이 필요합니다:")
+        log("   · python publish.py --youtube-login-full  (읽기·삭제 권한으로 따로 로그인)")
+        log("   · 또는 config.json 의 youtube.api_key (공개된 영상만 확인 가능)")
+        return None
+
+    def query() -> dict[str, dict]:
+        found: dict[str, dict] = {}
+        for i in range(0, len(video_ids), 50):
+            resp = service.videos().list(part="status,snippet",
+                                         id=",".join(video_ids[i:i + 50])).execute()
+            for item in resp.get("items") or []:
+                status = item.get("status", {})
+                found[item.get("id", "")] = {
+                    "privacy": (status.get("privacyStatus") or "").lower(),
+                    "publish_at": status.get("publishAt", ""),
+                    "upload_status": status.get("uploadStatus", ""),
+                    "title": item.get("snippet", {}).get("title", ""),
+                }
+        return found
+
+    try:
+        return query(), private_visible
+    except Exception as exc:
+        message = youtube_error_message(exc)
+        # 업로드 범위 토큰으로는 videos.list 가 403 입니다 — API 키로 공개 영상만 다시 시도합니다.
+        if private_visible and key_usable and "insufficient" in str(exc).lower():
+            try:
+                service = build("youtube", "v3", developerKey=api_key, cache_discovery=False)
+                warn("업로드 토큰으로는 공개 상태를 볼 수 없어 API 키로 공개된 영상만 확인합니다.")
+                return query(), False
+            except Exception:
+                pass
+        warn(f"YouTube 상태를 확인하지 못했습니다: {message}")
+        return None
+
+
+# 예약 시각이 지나도 YouTube 가 곧바로 공개하지 않는 경우가 있어, 확인 지연을 이만큼 허용합니다.
+VERIFY_GRACE = timedelta(minutes=15)
+
+
+def verify_native_schedules(cfg: dict, *, dry_run: bool = False,
+                            fetcher=None, now: datetime | None = None) -> int:
+    """YouTube 예약 게시가 실제로 공개됐는지 확인해 장부·이력에 반영합니다.
+
+    - public/unlisted → published
+    - videos.list 에 없음 → missing (삭제·다른 계정 이동 등)
+    - private + 예약 시각 경과(15분 초과) → 그대로 두고 경고(YouTube 처리 지연 가능)
+    반환: 상태를 바꾼 건수. dry_run 이면 출력만 하고 저장하지 않습니다.
+    """
+    items = load_native_schedules()
+    pending = [i for i in items if i.get("status") == "scheduled"]
+    if not pending:
+        log("확인할 YouTube 예약 게시가 없습니다.")
+        return 0
+    now = now or datetime.now().astimezone()
+    ids = [str(i.get("video_id") or "") for i in pending if i.get("video_id")]
+    log(f"\n🔎 YouTube 예약 게시 확인 — {len(ids)}건")
+    raw = (fetcher or fetch_youtube_status)(cfg, ids)
+    if raw is None:
+        warn("상태를 가져오지 못해 장부를 그대로 두었습니다.")
+        return 0
+    # fetcher 는 (상태, 비공개까지 보이는지) 또는 테스트용 dict 를 돌려줍니다.
+    statuses, private_visible = raw if isinstance(raw, tuple) else (raw, True)
+
+    changed = 0
+    for item in pending:
+        vid = str(item.get("video_id") or "")
+        info = statuses.get(vid)
+        when = schedule_when(item, "publish_at")
+        label = f"{vid} · {item.get('title', '')[:40]}"
+        privacy = (info or {}).get("privacy", "")
+        if info is None and not private_visible:
+            # API 키만으로는 비공개(예약 대기) 영상이 목록에 나오지 않습니다.
+            warn(f"  {label}: API 키로는 예약 대기 영상을 볼 수 없습니다 — "
+                 "--youtube-login-full 로 읽기 권한을 추가하면 확인됩니다.")
+            continue
+        if info is None:
+            note = "YouTube 에서 찾을 수 없음(삭제·비공개 전환)"
+            warn(f"  {label}: {note}")
+            if not dry_run:
+                item.update(status="missing", checked_at=now_iso(), note=note)
+                append_history(event="verify-schedule", status="missing", platform="yt",
+                               video=str(item.get("video", "")), title=item.get("title", ""),
+                               url=f"https://youtu.be/{vid}", message=note)
+            changed += 1
+        elif privacy in ("public", "unlisted"):
+            note = "공개 확인" if privacy == "public" else "일부 공개로 확인"
+            ok(f"  {label}: {note}")
+            if not dry_run:
+                item.update(status="published", checked_at=now_iso(), note=note,
+                            actual_privacy=privacy)
+                append_history(event="verify-schedule", status="published", platform="yt",
+                               video=str(item.get("video", "")), title=item.get("title", ""),
+                               url=f"https://youtu.be/{vid}", message=note)
+            changed += 1
+        elif when is not None and now - when > VERIFY_GRACE:
+            warn(f"  {label}: 예약 시각이 {humanize_when(when, now)}지만 아직 "
+                 f"{privacy or '비공개'} — YouTube 처리 지연일 수 있습니다(다음에 다시 확인).")
+            if dry_run:
+                item["note"] = " 예약 시각 경과 후에도 비공개 — 재확인 필요"
+            else:
+                item["checked_at"] = now_iso()
+                item["note"] = "예약 시각 경과 후에도 비공개 — 재확인 필요"
+        else:
+            scheduled_at = (info or {}).get("publish_at") or item.get("publish_at", "")
+            log(f"  {label}: 예약됨(비공개) — {scheduled_at} 공개 예정")
+
+    if dry_run:
+        log(f"\n미리보기입니다 — {changed}건이 바뀔 예정이었습니다(저장하지 않음).")
+        return changed
+    if changed:
+        save_native_schedules(items)
+    log(f"\n확인 완료 — {changed}건 갱신 · 장부 {NATIVE_SCHEDULE_FILE.name}")
+    return changed
+
+
+def cancel_native_schedule(identifier: str, cfg: dict) -> bool:
+    """YouTube 예약 게시를 취소합니다 — 예약된 영상을 YouTube 에서 삭제합니다.
+
+    삭제는 읽기·삭제 권한(force-ssl)이 필요해 `--youtube-login-full` 토큰을 씁니다.
+    그 토큰이 없으면 YouTube Studio 안내만 하고 장부는 그대로 둡니다.
+    """
+    key = (identifier or "").strip()
+    if not key:
+        warn("취소할 예약 ID(또는 영상 ID)를 입력하세요.")
+        return False
+    items = load_native_schedules()
+    matched = [i for i in items if key in (i.get("id"), i.get("video_id"))]
+    if not matched:
+        warn(f"YouTube 예약 장부에 없는 ID 입니다: {key}")
+        log("   · 현황: python publish.py --schedules")
+        return False
+    item = matched[0]
+    vid = str(item.get("video_id") or "")
+    if item.get("status") != "scheduled":
+        warn(f"이미 '{NATIVE_STATUS_LABELS.get(item.get('status'), item.get('status'))}' 상태입니다: {vid}")
+        return False
+    creds = load_full_youtube_credentials(cfg)
+    if creds is None:
+        warn("예약 취소는 YouTube 영상 삭제 권한이 필요합니다.")
+        log("   · python publish.py --youtube-login-full  (읽기·삭제 권한으로 로그인)")
+        log("   · 또는 YouTube Studio → 콘텐츠 → 예약됨 에서 직접 취소·삭제")
+        return False
+    try:
+        from googleapiclient.discovery import build
+        service = build("youtube", "v3", credentials=creds, cache_discovery=False)
+        service.videos().delete(id=vid).execute()
+    except Exception as exc:
+        message = youtube_error_message(exc)
+        if "404" in message or "notFound" in message:
+            warn(f"이미 YouTube 에 없는 영상입니다 — 장부만 정리합니다: {vid}")
+        else:
+            fail(f"YouTube 영상 삭제 실패: {message}")
+            log("   · YouTube Studio 에서 직접 삭제한 뒤 다시 실행하면 장부가 정리됩니다.")
+            return False
+    item.update(status="canceled", checked_at=now_iso(), note="사용자 취소(영상 삭제)")
+    save_native_schedules(items)
+    append_history(event="cancel-schedule", status="canceled", platform="yt",
+                   video=str(item.get("video", "")), title=item.get("title", ""),
+                   url=f"https://youtu.be/{vid}", message="YouTube 예약 게시 취소(영상 삭제)")
+    ok(f"예약을 취소하고 영상을 삭제했습니다: https://youtu.be/{vid}")
+    return True
+
+
 def upload_youtube(video: Path, meta: dict, cfg: dict, dry_run: bool,
                    publish_at: str | None = None) -> str | None:
     """YouTube Shorts 업로드.
@@ -2575,7 +2968,16 @@ def upload_youtube(video: Path, meta: dict, cfg: dict, dry_run: bool,
         return None
     video_id = response.get("id")
     if publish_at:
-        ok(f"   YouTube 예약 게시 등록 완료 — {publish_at} 에 공개됩니다 (그때까지 비공개)")
+        # YouTube 가 publishAt 을 받아들였는지 응답으로 확인합니다 —
+        # 거부·무시되면 영상이 바로 공개될 수 있어 여기서 반드시 확인합니다.
+        status = response.get("status", {}) or {}
+        got_privacy = status.get("privacyStatus", "")
+        got_at = status.get("publishAt", "")
+        if got_privacy == "private" and got_at:
+            ok(f"   YouTube 예약 접수 확인 — 비공개 · {got_at} 공개 예정")
+        else:
+            warn(f"   ⚠️ 예약 접수가 확인되지 않았습니다 (privacyStatus={got_privacy or '?'}, "
+                 f"publishAt={got_at or '없음'}) — YouTube Studio 에서 공개 상태를 확인하세요.")
     return f"https://youtu.be/{video_id}"
 
 
@@ -4864,7 +5266,7 @@ MENU_ITEMS: list[tuple[str, str, tuple[str, ...]]] = [
     ("19", "게시 성과 수집·보고서",          ("성과", "조회수", "통계", "stats", "인사이트")),
     # 🗓 예약·자동 준비 (20~23)
     ("20", "예약 게시 등록",               ("예약", "schedule", "등록")),
-    ("21", "예약 목록 보기·취소",           ("예약", "취소", "schedule", "목록")),
+    ("21", "예약 현황·점검",              ("예약", "취소", "schedule", "목록", "점검", "공개")),
     ("22", "예약 게시 실행(지금 확인)",      ("예약", "실행", "due", "run")),
     ("23", "콘텐츠 자동 준비 — N일치 생성 + 예약", ("자동", "auto", "예약", "준비", "auto-plan")),
     # ⚙️ 설정·점검·도구 (24~31)
@@ -4902,7 +5304,7 @@ MENU_DESC: dict[str, str] = {
     "18": "게시 이력 통계를 HTML 리포트로 생성",
     "19": "조회수 수집 · HTML 보고서 · 게시 시간대 인사이트",
     "20": "공개 시각 예약 — 로컬 예약(그 시각 업로드) 또는 YouTube 예약 게시(지금 업로드, 그 시각 공개)",
-    "21": "예약된 게시 목록 확인 및 취소",
+    "21": "예약 현황(로컬+YouTube) 확인 · 로컬 취소 · YouTube 공개 여부 점검",
     "22": "지금 시각까지 도래한 예약 게시를 실행",
     "23": "N일치 쇼츠를 자동 생성하고 예약 게시까지 등록",
     "24": "계정·API·의존성·폴더 상태 점검",
@@ -5453,15 +5855,34 @@ def interactive_menu(initial: str | None = None) -> None:
                 open_path(path)
             continue
         if action == "21":
-            items = load_schedules()
-            display_schedules(items)
-            scheduled = [x for x in items if x.get("status") == "scheduled"]
-            if scheduled and ask_yes_no("예약을 취소하시겠습니까?", False):
-                schedule_id = ask_menu("취소할 예약 ID")
-                if cancel_schedule(schedule_id):
-                    ok("예약을 취소했습니다.")
-                else:
-                    warn("예약 ID가 없거나 이미 처리된 예약입니다.")
+            sub = choose_option("예약",
+                                [("list", "예약 현황 — 로컬 예약과 YouTube 예약 게시를 한 번에"),
+                                 ("cancel", "로컬 예약 취소"),
+                                 ("verify", "YouTube 예약 게시 공개 여부 점검"),
+                                 ("cancel-native", "YouTube 예약 취소 — 예약된 영상 삭제")], "list")
+            if sub == "verify":
+                verify_native_schedules(cfg)
+                continue
+            if sub == "cancel-native":
+                display_schedule_overview()
+                native_id = ask_menu("취소할 YouTube 예약 ID(또는 영상 ID)")
+                if native_id and ask_yes_no("YouTube 에서 영상을 삭제할까요? 되돌릴 수 없습니다.", False):
+                    cancel_native_schedule(native_id, cfg)
+                continue
+            if sub == "cancel":
+                items = load_schedules()
+                display_schedules(items)
+                scheduled = [x for x in items if x.get("status") == "scheduled"]
+                if scheduled and ask_yes_no("예약을 취소하시겠습니까?", False):
+                    schedule_id = ask_menu("취소할 예약 ID")
+                    if cancel_schedule(schedule_id):
+                        ok("예약을 취소했습니다.")
+                    else:
+                        warn("예약 ID가 없거나 이미 처리된 예약입니다.")
+                continue
+            due = display_schedule_overview()
+            if due and ask_yes_no("공개 시각이 지난 YouTube 예약을 지금 확인할까요?", True):
+                verify_native_schedules(cfg)
             continue
         if action == "22":
             due = due_schedules()
@@ -5611,6 +6032,7 @@ def interactive_menu(initial: str | None = None) -> None:
                 log("  · 지금 비공개로 업로드하고, 지정 시각에 YouTube 가 자동으로 공개합니다.")
                 log("  · 공개 범위는 '공개'로 고정됩니다(YouTube 규칙) — 비공개·일부 공개 예약은 지원하지 않습니다.")
                 log("  · 업로드 쿼터(1건 1,600 units)는 지금 사용합니다.")
+                log("  · 공개 확인·취소까지 하려면 미리 python publish.py --youtube-login-full (읽기·삭제 권한)")
                 scheduled_at = ask_menu("공개 시각(YYYY-MM-DD HH:MM)")
                 try:
                     when = parse_publish_at(scheduled_at)
@@ -5861,6 +6283,10 @@ def main() -> None:
     ap.add_argument("--publish-at", metavar="TIME",
                     help="YouTube 예약 게시 — 지금 업로드하고 TIME(YYYY-MM-DD HH:MM)에 공개. "
                          "PC 가 꺼져 있어도 정시에 공개되며, 업로드 쿼터는 지금 사용합니다")
+    ap.add_argument("--schedules", action="store_true",
+                    help="예약 현황 — 로컬 예약(그 시각 업로드)과 YouTube 예약 게시를 한 번에")
+    ap.add_argument("--verify-schedules", action="store_true",
+                    help="YouTube 예약 게시가 실제로 공개됐는지 확인해 장부·이력에 반영")
     ap.add_argument("--dry-run", action="store_true", help="실제 업로드 없이 계획만 출력")
     ap.add_argument("--allow-repeat", action="store_true",
                     help="이미 사용한 단어·게시한 영상도 다시 사용 (중복 방지 무시)")
@@ -5929,6 +6355,10 @@ def main() -> None:
     ap.add_argument("--youtube-guide", action="store_true",
                     help="YouTube OAuth 설정 도우미 (안내·검증·로그인)")
     ap.add_argument("--youtube-login", action="store_true", help="YouTube 브라우저 로그인 후 토큰 저장")
+    ap.add_argument("--youtube-login-full", action="store_true",
+                    help="읽기·삭제 권한까지 포함해 따로 로그인 (공개 확인·예약 취소용, 업로드 토큰은 그대로)")
+    ap.add_argument("--cancel-native", metavar="ID",
+                    help="YouTube 예약 게시 취소 — 예약된 YouTube 영상을 삭제하고 장부를 정리 (읽기·삭제 권한 필요)")
     ap.add_argument("--youtube-relogin", action="store_true", help="기존 토큰 무시하고 YouTube 재로그인")
     ap.add_argument("--youtube-check", action="store_true", help="YouTube 설정 상태만 점검")
     ap.add_argument("--manual", action="store_true",
@@ -6009,6 +6439,12 @@ def main() -> None:
     if args.youtube_login or args.youtube_relogin:
         youtube_login(cfg, force=bool(args.youtube_relogin))
         return
+    if args.youtube_login_full:
+        youtube_full_login(cfg, force=args.youtube_relogin)
+        return
+    if args.cancel_native:
+        cancel_native_schedule(args.cancel_native, cfg)
+        return
     if args.manual:
         video = resolve_video(args)
         meta = build_meta(cfg, args)
@@ -6032,6 +6468,12 @@ def main() -> None:
         return
     if args.stats_insights:
         show_performance_insights()
+        return
+    if args.schedules:
+        display_schedule_overview()
+        return
+    if args.verify_schedules:
+        verify_native_schedules(cfg)
         return
     if args.publish_at:
         # YouTube 예약 게시 — 업로드는 지금, 공개는 지정 시각(PC 가 꺼져 있어도 공개).
@@ -6171,8 +6613,20 @@ def publish_single(cfg: dict, args, video: Path) -> None:
             unit=args.unit,
             title=meta["title"],
             url=url or "",
+            scheduled_at=publish_at or "",
             message=message,
         )
+
+    if publish_at and not args.dry_run:
+        # 업로드는 이미 끝났습니다 — 장부 기록이 실패해도 게시에는 영향이 없습니다.
+        yt_url = next((u for p, u in results if p == "yt" and u and u != "dry-run"), "")
+        if yt_url:
+            item = record_native_schedule(
+                video_id=yt_url.rsplit("/", 1)[-1], video=video, title=meta["title"],
+                publish_at=publish_at, unit=args.unit,
+            )
+            log(f"\n📌 예약 장부에 기록했습니다 ({item['id']}) — "
+                "`python publish.py --schedules` 로 현황, `--verify-schedules` 로 공개 여부를 확인하세요.")
 
     if not args.dry_run and fallback:
         failed = [s for s, u in results if u is None]

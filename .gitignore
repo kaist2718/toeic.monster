@@ -4,6 +4,7 @@ promo/.secrets/
 
 # 예약 게시·게시 이력·성과·중복 방지 (개인 운영 데이터)
 promo/scheduled_posts.json
+promo/native_schedules.json
 promo/publish_history.csv
 promo/performance.json
 promo/posted.json

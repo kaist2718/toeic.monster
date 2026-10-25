@@ -119,6 +119,107 @@ class DueSchedulesTest(unittest.TestCase):
         self.assertIs(due[0], items[0], "호출자가 상태를 저장할 수 있게 같은 객체를 돌려줍니다")
 
 
+class NativeScheduleLedgerTest(unittest.TestCase):
+    """YouTube 예약 게시 장부 — 현황 표시와 공개 여부 확인."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self._old = (publish.SCHEDULE_FILE, publish.NATIVE_SCHEDULE_FILE, publish.HISTORY_FILE)
+        publish.SCHEDULE_FILE = Path(self.tmp.name) / "scheduled_posts.json"
+        publish.NATIVE_SCHEDULE_FILE = Path(self.tmp.name) / "native_schedules.json"
+        publish.HISTORY_FILE = Path(self.tmp.name) / "history.csv"
+
+    def tearDown(self):
+        publish.SCHEDULE_FILE, publish.NATIVE_SCHEDULE_FILE, publish.HISTORY_FILE = self._old
+        self.tmp.cleanup()
+
+    @staticmethod
+    def iso(hours: float) -> str:
+        return (datetime.now().astimezone() + timedelta(hours=hours)).isoformat(timespec="seconds")
+
+    def test_record_same_video_is_updated_not_duplicated(self):
+        publish.record_native_schedule(video_id="abc", video="v.mp4", title="t",
+                                       publish_at=self.iso(5))
+        publish.record_native_schedule(video_id="abc", video="v.mp4", title="t2",
+                                       publish_at=self.iso(6))
+        items = publish.load_native_schedules()
+        self.assertEqual(len(items), 1)
+        self.assertEqual(items[0]["title"], "t2")
+        self.assertEqual(items[0]["status"], "scheduled")
+
+    def test_overview_returns_past_native_items(self):
+        publish.record_native_schedule(video_id="past", video="a.mp4", title="지난 것",
+                                       publish_at=self.iso(-1))
+        publish.record_native_schedule(video_id="future", video="b.mp4", title="앞으로",
+                                       publish_at=self.iso(24))
+        due = publish.display_schedule_overview()
+        self.assertEqual([i["video_id"] for i in due], ["past"])
+
+    def test_verify_marks_published(self):
+        publish.record_native_schedule(video_id="pub", video="a.mp4", title="t",
+                                       publish_at=self.iso(-1))
+        changed = publish.verify_native_schedules(
+            {}, fetcher=lambda _cfg, ids: {v: {"privacy": "public"} for v in ids})
+        self.assertEqual(changed, 1)
+        self.assertEqual(publish.load_native_schedules()[0]["status"], "published")
+        self.assertIn("published", publish.HISTORY_FILE.read_text(encoding="utf-8-sig"))
+
+    def test_verify_marks_missing_when_video_gone(self):
+        publish.record_native_schedule(video_id="gone", video="a.mp4", title="t",
+                                       publish_at=self.iso(-1))
+        publish.verify_native_schedules({}, fetcher=lambda _cfg, _ids: {})
+        self.assertEqual(publish.load_native_schedules()[0]["status"], "missing")
+
+    def test_verify_keeps_scheduled_before_publish_time(self):
+        publish.record_native_schedule(video_id="soon", video="a.mp4", title="t",
+                                       publish_at=self.iso(3))
+        publish.verify_native_schedules(
+            {}, fetcher=lambda _cfg, ids: {v: {"privacy": "private", "publish_at": "x"} for v in ids})
+        self.assertEqual(publish.load_native_schedules()[0]["status"], "scheduled")
+
+    def test_verify_tolerates_recent_private_after_publish_time(self):
+        publish.record_native_schedule(video_id="lag", video="a.mp4", title="t",
+                                       publish_at=self.iso(-0.05))  # 3분 전 — 유예 시간 안
+        publish.verify_native_schedules({}, fetcher=lambda _cfg, ids: {v: {"privacy": "private"} for v in ids})
+        self.assertEqual(publish.load_native_schedules()[0]["status"], "scheduled")
+
+    def test_verify_does_not_touch_ledger_when_fetch_fails(self):
+        publish.record_native_schedule(video_id="x", video="a.mp4", title="t",
+                                       publish_at=self.iso(-1))
+        self.assertEqual(publish.verify_native_schedules({}, fetcher=lambda _cfg, _ids: None), 0)
+        item = publish.load_native_schedules()[0]
+        self.assertEqual(item["status"], "scheduled")
+        self.assertEqual(item.get("checked_at", ""), "")
+
+    def test_verify_key_mode_does_not_mark_missing(self):
+        # API 키만 있을 때 비공개(예약 대기) 영상은 조회되지 않습니다 — 삭제로 단정하면 안 됩니다.
+        publish.record_native_schedule(video_id="hidden", video="a.mp4", title="t",
+                                       publish_at=self.iso(3))
+        changed = publish.verify_native_schedules(
+            {}, fetcher=lambda _cfg, _ids: ({}, False))
+        self.assertEqual(changed, 0)
+        self.assertEqual(publish.load_native_schedules()[0]["status"], "scheduled")
+
+    def test_cancel_without_full_token_keeps_ledger(self):
+        item = publish.record_native_schedule(video_id="keep", video="a.mp4", title="t",
+                                              publish_at=self.iso(3))
+        self.assertFalse(publish.cancel_native_schedule(item["id"], {}))
+        self.assertEqual(publish.load_native_schedules()[0]["status"], "scheduled")
+
+    def test_cancel_unknown_id_is_safe(self):
+        publish.record_native_schedule(video_id="keep", video="a.mp4", title="t",
+                                       publish_at=self.iso(3))
+        self.assertFalse(publish.cancel_native_schedule("nope", {}))
+        self.assertEqual(len(publish.load_native_schedules()), 1)
+
+    def test_verify_dry_run_does_not_save(self):
+        publish.record_native_schedule(video_id="pub", video="a.mp4", title="t",
+                                       publish_at=self.iso(-1))
+        publish.verify_native_schedules(
+            {}, dry_run=True, fetcher=lambda _cfg, ids: {v: {"privacy": "public"} for v in ids})
+        self.assertEqual(publish.load_native_schedules()[0]["status"], "scheduled")
+
+
 class YouTubeBodyTest(unittest.TestCase):
     """videos.insert 본문 — 예약 게시일 때만 private + publishAt 이 붙습니다."""
 
@@ -187,6 +288,11 @@ class MenuAndDocsTest(unittest.TestCase):
     def test_bat_help_documents_publish_at(self):
         bat = (PROMO / "promo_center.bat").read_text(encoding="utf-8")
         self.assertIn("--publish-at", bat)
+
+    def test_readme_documents_schedule_overview(self):
+        readme = (PROMO / "README.md").read_text(encoding="utf-8")
+        self.assertIn("--schedules", readme)
+        self.assertIn("--verify-schedules", readme)
 
 
 if __name__ == "__main__":

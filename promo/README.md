@@ -19,6 +19,8 @@ promo/
 ├── make_shorts.py         # 9:16 쇼츠 생성기
 ├── config.example.json    # 설정 예제
 ├── config.json            # 실제 설정 (자동 생성, git 제외)
+├── scheduled_posts.json   # 로컬 예약 큐 (자동 생성, git 제외)
+├── native_schedules.json  # YouTube 예약 게시 장부 (자동 생성, git 제외)
 ├── requirements.txt       # Python 의존성
 ├── assets/shorts/         # 배포할 쇼츠 mp4
 ├── assets/tts/            # 내려받은 로컬 TTS(Piper) 음성 모델 (.onnx)
@@ -123,7 +125,7 @@ python make_shorts.py --kind sprint --words 7    # 30일 스프린트로 바로 
 🗓 **예약·자동 준비**
 
 20. **예약 게시 등록** — 방식을 고릅니다: **YouTube 예약 게시**(지금 업로드, 그 시각 공개 — PC 가 꺼져 있어도 공개) 또는 **로컬 예약**(그 시각에 이 PC 가 업로드, 플랫폼·공개 범위 선택)
-21. **예약 목록·취소** — 예약 ID로 안전하게 취소
+21. **예약 현황·점검** — 로컬 예약과 YouTube 예약 게시를 한 화면에 보고, 로컬 예약 취소·YouTube 공개 여부 점검
 22. **도래한 예약 실행** — 기본 dry-run, 실제 게시 전 확인
 23. **콘텐츠 자동 준비** — N일치 쇼츠를 자동 생성하고 예약 게시까지 등록 (종류는 남은 콘텐츠 많은 순으로 자동 배합)
 
@@ -210,6 +212,16 @@ python publish.py --auto-plan 3 --plan-kind idioms   # 지정 종류로 생성�
 
 # YouTube 예약 게시 — 지금 업로드하고 지정 시각에 공개 (PC 가 꺼져 있어도 공개)
 python publish.py --video assets/shorts/unit01_shorts.mp4 --platforms yt --publish-at "2026-10-26 19:00" --dry-run
+
+# 예약 현황 — 로컬 예약 + YouTube 예약 게시를 한 번에
+python publish.py --schedules
+
+# YouTube 예약 게시가 실제로 공개됐는지 확인 (장부·게시 이력에 반영 — 읽기 권한 필요)
+python publish.py --verify-schedules
+
+# 읽기·삭제 권한으로 따로 로그인 (업로드 토큰은 그대로) / 예약 취소 = 영상 삭제
+python publish.py --youtube-login-full
+python publish.py --cancel-native 예약ID
 
 # 성과 인사이트 — 종류별 평균 조회수·좋은 게시 시간대·추천 콘텐츠
 python publish.py --stats-insights
@@ -310,7 +322,8 @@ python publish.py --video assets/shorts/unit01_shorts.mp4 --platforms yt \
   (`2026-10-26T19:00:00+09:00`)로 전송합니다. **지금부터 10분 이후**여야 하며, 지난 시각은 거부합니다.
 - 업로드 쿼터(1건 1,600 units)는 **지금** 사용합니다 — `python publish.py --quota` 로 잔량을 확인하세요.
 - 등록 뒤에는 YouTube Studio → 콘텐츠 → **예약됨** 에서 시각 변경·취소·즉시 공개가 가능합니다.
-  (이 방식은 YouTube 쪽 예약이라 `--list-schedules` 목록에는 나오지 않습니다 — 게시 이력에는 남습니다.)
+  (이 방식은 YouTube 쪽 예약이라 `--list-schedules` 목록에는 나오지 않습니다. 대신 업로드에 성공하면
+  `native_schedules.json` 장부에 기록되어 `--schedules`·`--verify-schedules` 로 관리합니다.)
 - 메뉴 **20번 → 2) YouTube 예약 게시** 도 같은 흐름(미리보기 → 확인 → 업로드)입니다.
 - `--youtube-privacy` 는 쓰이지 않고(항상 비공개 → 공개), `--platforms` 는 `yt` 만 지정할 수 있습니다.
   여러 영상을 한 번에 예약하는 `--batch`·`--auto-plan` 과는 함께 쓸 수 없습니다.
@@ -333,6 +346,58 @@ python publish.py --history
 Windows 작업 스케줄러에서 `promo_center.bat --run-due --dry-run` 또는 실제 운영용 `promo_center.bat --run-due`를 5~15분 간격으로 실행할 수 있습니다. 실제 게시 예약은 먼저 dry-run으로 확인하세요. `--run-due` 는 자동으로 `pause` 를 건너뛰어 창이 멈추지 않고, **메뉴 27번**으로 등록하면 `--no-pause` 가 포함된 상태로 자동 등록됩니다.
 
 > `python publish.py --install-task` 는 **안전을 위해 항상 dry-run** 으로 등록합니다. 실제 게시까지 자동화하려면 **메뉴 27번**에서 "dry-run 모드로 등록"에 **아니오**를 고르세요.
+
+### 5-3. 예약 현황과 공개 여부 점검
+
+두 방식의 예약을 따로 찾아다니지 않도록, 한 명령으로 모아 보여 줍니다.
+
+```bash
+python publish.py --schedules          # 로컬 예약 + YouTube 예약 게시 현황
+python publish.py --verify-schedules   # YouTube 예약 게시가 실제로 공개됐는지 확인
+```
+
+`--schedules` 는 다음을 한 화면에 보여 줍니다.
+
+- **로컬 예약** — 예약 시각, 남은 시간(또는 `⏰ 도래 — --run-due 필요`), 영상·플랫폼
+- **YouTube 예약 게시** — 공개 시각, 남은 시간(또는 `확인 필요`), 영상 링크·제목
+- 최근 확인 결과(공개됨·찾을 수 없음)와 건수 요약, 다음에 실행할 명령
+
+`--verify-schedules` 는 YouTube API 로 실제 상태를 조회해 장부를 갱신합니다.
+
+| YouTube 상태 | 장부 기록 |
+| --- | --- |
+| `public` / `unlisted` | `published` — 공개 확인 (게시 이력에도 남김) |
+| `private` + 예약 시각 전 | `scheduled` 유지 — 비공개로 대기 |
+| `private` + 예약 시각 15분 초과 | `scheduled` 유지 + 경고 — YouTube 처리 지연 가능, 다음에 재확인 |
+| `videos.list` 에 없음 | `missing` — 삭제·비공개 전환 등, YouTube Studio 에서 확인 |
+
+- 조회는 **저장된 OAuth 토큰만** 사용합니다(브라우저 로그인 창을 열지 않음). 로그인이 없으면
+  `python publish.py --youtube-login` 안내만 하고 장부는 그대로 둡니다.
+- 네트워크·권한 오류로 조회가 실패하면 **장부를 바꾸지 않습니다**(잘못 `missing` 으로 지우지 않음).
+- 원클릭 메뉴 **21번**에서도 1) 현황 2) 로컬 예약 취소 3) YouTube 공개 여부 점검 4) YouTube 예약 취소를
+  고를 수 있고, 현황에서 공개 시각이 지난 항목이 있으면 이어서 바로 점검할지 물어봅니다.
+- 예약 시각 변경·즉시 공개는 YouTube Studio → 콘텐츠 → **예약됨** 에서 합니다(장부는 다음 점검 때 따라갑니다).
+
+**권한 안내 — 업로드 토큰으로는 확인·취소가 안 됩니다**
+
+| 기능 | 필요한 권한 | 준비 |
+| --- | --- | --- |
+| 업로드·예약 게시(`--publish-at`) | `youtube.upload` | 기존 `--youtube-login` 그대로 |
+| 공개 여부 확인(`--verify-schedules`) | 조회(`youtube.force-ssl` 또는 API 키) | `--youtube-login-full` 권장 |
+| 예약 취소·영상 삭제(`--cancel-native`) | 삭제(`youtube.force-ssl`) | `--youtube-login-full` 필요 |
+
+```bash
+python publish.py --youtube-login-full          # 읽기·삭제 권한으로 따로 로그인 (브라우저 1회)
+python publish.py --verify-schedules            # 이제 실제 공개 상태를 확인
+python publish.py --cancel-native 예약ID        # 예약된 YouTube 영상 삭제 + 장부 정리
+```
+
+- `--youtube-login-full` 은 **별도 토큰**(`.secrets/youtube_token_full.json`)을 씁니다.
+  기존 업로드 토큰(`youtube_token.json`)은 그대로라 **이미 되던 업로드·예약이 막히지 않습니다**.
+- Google Cloud 의 OAuth 동의 화면 **범위**에 `.../auth/youtube.force-ssl` 이 없으면 추가해야 합니다.
+- 읽기 권한 없이 `config.json` 의 `youtube.api_key` 만 있으면 **공개된 영상만** 확인할 수 있습니다.
+  이때 예약 대기(비공개) 영상은 목록에 안 나오므로 **`missing` 으로 단정하지 않고** 그대로 둡니다.
+- `--cancel-native` 는 **YouTube 영상을 실제로 삭제**합니다(되돌릴 수 없음). 메뉴 21 → 4 는 실행 전에 한 번 더 묻습니다.
 
 ## 6. 플랫폼별 설정
 
@@ -580,6 +645,7 @@ https://toeic.monster/?utm_source=shorts&utm_medium=social&utm_campaign=unit
 - [ ] `--dry-run`으로 제목·설명·해시태그·플랫폼 확인
 - [ ] 실제 게시 전 영상·계정·공개 범위를 재확인
 - [ ] 예약 공개(`--publish-at`)라면 YouTube Studio → 콘텐츠 → **예약됨** 에서 시각·공개 상태 확인
+- [ ] 테스트 업로드는 `--cancel-native`(읽기·삭제 권한)로 지우거나 YouTube Studio 에서 삭제
 - [ ] 하루 1~2개 수준으로 운영하고 각 플랫폼 정책 준수
 
 ## 9. 회귀 테스트
@@ -593,6 +659,10 @@ python -m unittest test_publish -v
 
 - `parse_publish_at` — 과거·10분 이내 시각 거부, 로컬/ISO 입력, 시간대 부여
 - `build_youtube_body` — 예약일 때만 `private` + `publishAt`, 일반 업로드는 지정 공개 범위 유지
-- 메뉴 번호 1~31 연속성·그룹 중복 없음·설명 누락, README·BAT 의 `--publish-at` 안내
+- `due_schedules` — 도래한 로컬 예약만 선택, 시각이 깨진 항목은 건너뛰고 계속
+- `record_native_schedule`·`display_schedule_overview` — 같은 영상은 한 번만 기록, 공개 시각이 지난 항목 반환
+- `verify_native_schedules` — 공개/찾을 수 없음/비공개 유예/조회 실패 시 장부 보존, dry-run 은 저장 안 함
+- API 키만 있는 경우(비공개를 볼 수 없음)는 `missing` 으로 단정하지 않음, `--cancel-native` 는 권한 없으면 장부 보존
+- 메뉴 번호 1~31 연속성·그룹 중복 없음·설명 누락, README·BAT 의 `--publish-at`·`--schedules` 안내
 
 메뉴를 고치거나 예약 방식을 바꿀 때 이 테스트를 먼저 돌리세요.

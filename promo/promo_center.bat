@@ -95,6 +95,10 @@ echo    promo_center.bat history         게시 이력
 echo    promo_center.bat --video ^<mp4^> --unit 1 --dry-run
 echo    promo_center.bat --auto-plan 5 --plan-start "2026-10-01 19:00"
 echo    promo_center.bat --video ^<mp4^> --platforms yt --publish-at "2026-10-26 19:00"
+echo    promo_center.bat schedules       예약 현황 (로컬 + YouTube 예약 게시)
+echo    promo_center.bat verify-schedules   YouTube 예약 공개 여부 점검
+echo    promo_center.bat youtube-login-full  읽기·삭제 권한으로 따로 로그인
+echo    promo_center.bat cancel-native ^<ID^>  YouTube 예약 취소 (영상 삭제)
 echo.
 echo    * 첫 단어가 번호면 그 메뉴가 바로 실행됩니다: 5 / 1-4 / 15,16
 echo    * 하이픈 없는 첫 단어는 자동으로 -- 플래그가 됩니다: check = --check
