@@ -1785,8 +1785,11 @@ def write_sidecar(out: Path, *, kind: str, unit_no: int | None, items: list[list
     }
     if quiz:
         # 퀴즈는 보기·발문까지 남겨야 게시 단계가 영상에 맞는 제목·설명을 만들 수 있습니다.
-        for row, extra in zip(data["items"], quiz):
-            row.update(extra)
+        # zip 과 같은 동작(짧은 쪽까지) — Python 3.8 에는 zip(strict=) 이 없습니다.
+        for index, extra in enumerate(quiz):
+            if index >= len(data["items"]):
+                break
+            data["items"][index].update(extra)
     try:
         out.with_suffix(".json").write_text(
             json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")

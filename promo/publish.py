@@ -11,6 +11,10 @@ toeic.monster 홍보 자동 배포 — YouTube Shorts / Instagram Reels / TikTok
   python publish.py --video assets/shorts/quiz_x.mp4 --paraphrase # 동의어 치환 퀴즈 영상용 제목·설명
   python publish.py --video assets/shorts/x.mp4 --platforms yt --publish-at "2026-10-26 19:00"
                                                     # YouTube 예약 게시 — 지금 업로드, 그 시각 공개
+  python publish.py --batch 3 --platforms yt --publish-at "2026-10-26 19:00" --plan-days 1
+                                                    # 여러 영상 예약 — 지금 업로드, 간격두고 공개
+  python publish.py --auto-plan 5 --plan-start "2026-11-01 19:00" --plan-mode native
+                                                    # N일치 생성 + YouTube 예약 게시 (PC 불필요)
   python publish.py --schedules                     # 로컬 예약 + YouTube 예약 게시 현황
   python publish.py --verify-schedules              # YouTube 예약이 실제로 공개됐는지 확인
   python publish.py --youtube-login-full            # 읽기·삭제 권한으로 따로 로그인(확인·취소용)
@@ -379,8 +383,8 @@ def load_paraphrase():
     for m in PARA_OBJ_RE.finditer(block):
         item = m.group(0)
 
-        def grab(key: str) -> str:
-            mm = re.search(key + r'\s*:\s*"((?:[^"\\]|\\.)*)"', item)
+        def grab(key: str, text: str = item) -> str:
+            mm = re.search(key + r'\s*:\s*"((?:[^"\\]|\\.)*)"', text)
             return mm.group(1) if mm else ""
 
         opts_m = re.search(r'opts\s*:\s*\[((?:"(?:[^"\\]|\\.)*"\s*,?\s*)*)\]', item)
@@ -1363,7 +1367,7 @@ def resolve_video(args) -> Path | None:
             return vids[0]
     sys.exit(
         "영상이 없습니다. --video 로 지정하거나 assets/shorts/ 폴더에 mp4 를 넣어 주세요.\n"
-        f"예: python publish.py --video assets/shorts/unit01.mp4 --unit 1"
+        "예: python publish.py --video assets/shorts/unit01.mp4 --unit 1"
     )
 
 
@@ -1866,6 +1870,39 @@ def parse_publish_at(value: str) -> datetime:
 def publish_at_iso(when: datetime) -> str:
     """YouTube API 가 받는 RFC 3339 형식(초 단위·시간대 포함)으로 바꿉니다."""
     return when.astimezone().isoformat(timespec="seconds")
+
+
+# 여러 영상을 한 번에 예약할 때 쓰는 순수 함수들 — 네트워크가 없어도
+# promo/test_publish.py 에서 그대로 검증합니다.
+PLAN_MODE_LABELS = {
+    "native": "YouTube 예약 게시 (지금 업로드 · 지정 시각 공개 · PC 불필요)",
+    "local": "로컬 예약 (그 시각에 이 PC 가 업로드)",
+}
+
+
+def plan_publish_times(start: datetime, count: int, interval_days: int = 1) -> list[str]:
+    """여러 영상의 공개 시각을 start 부터 interval_days 간격으로 만듭니다(ISO).
+
+    첫 영상은 start, 다음 영상은 start + interval_days … 입니다. 모든 시각이
+    '지금부터 10분 이후'여야 하므로 호출 전에 start 를 `parse_publish_at` 로 검증합니다.
+    """
+    count = max(0, int(count))
+    interval = max(1, int(interval_days))
+    return [publish_at_iso(start + timedelta(days=interval * i)) for i in range(count)]
+
+
+def resolve_plan_mode(platforms: list[str], requested: str | None = None) -> str:
+    """예약 방식(native/local)을 정합니다.
+
+    auto(기본)는 **YouTube 만 대상이면 native**(PC 가 꺼져 있어도 공개),
+    Instagram·TikTok 이 섞여 있으면 local 입니다 — 그 플랫폼은 예약 공개를 지원하지 않습니다.
+    """
+    mode = str(requested or "auto").strip().lower()
+    if mode not in ("native", "local"):
+        mode = "auto"
+    if mode == "auto":
+        return "native" if platforms == ["yt"] else "local"
+    return mode
 
 
 def load_schedules() -> list[dict]:
@@ -2581,7 +2618,6 @@ def youtube_token_status(cfg: dict) -> tuple[bool, str]:
 
 def youtube_check(cfg: dict) -> None:
     """YouTube 설정 상태를 점검합니다."""
-    yt = cfg.get("youtube", {})
     client_secret = resolve_client_secret(cfg)
     log("\n📺 YouTube 상태")
     if client_secret is None:
@@ -3431,6 +3467,50 @@ def choose_platforms_menu(cfg: dict, default: str = "") -> str:
     return ",".join(chosen) or "yt"
 
 
+def ask_publish_at(prompt: str = "공개 시각(YYYY-MM-DD HH:MM)",
+                   default: str | None = None) -> datetime | None:
+    """YouTube 예약 공개 시각을 받습니다. 기본값이 없으면 빈 입력이 취소(None)입니다.
+
+    과거·10분 이내 시각은 YouTube 가 거부하므로, 통과할 때까지 그 자리에서 다시 묻습니다.
+    """
+    while True:
+        raw = ask_menu(prompt, default)
+        if not raw:
+            log("예약을 취소했습니다.")
+            return None
+        try:
+            return parse_publish_at(raw)
+        except ValueError as exc:
+            warn(str(exc))
+
+
+def choose_publish_timing(platforms: str) -> tuple[str, datetime | None] | None:
+    """게시 시점을 고릅니다 — (플랫폼, 예약 시각). 예약을 취소하면 None.
+
+    YouTube 예약 게시는 YouTube 전용이라, 다른 플랫폼을 함께 골랐으면 이번에는
+    YouTube 만 예약하도록 플랫폼을 좁힙니다(나머지는 나중에 따로 게시).
+    """
+    names = [p.strip() for p in platforms.split(",") if p.strip()]
+    if "yt" not in names:
+        return platforms, None
+    mode = choose_option(
+        "게시 시점",
+        [("now", "지금 바로 게시"),
+         ("native", "YouTube 예약 게시 — 지금 업로드하고 지정 시각에 공개 (PC 불필요)")],
+        "now",
+    )
+    if mode != "native":
+        return platforms, None
+    if names != ["yt"]:
+        warn("YouTube 예약 게시는 YouTube 전용입니다 — 이번에는 YouTube 만 예약하고 "
+             "나머지 플랫폼은 선택에서 뺍니다(따로 게시하세요).")
+        platforms = "yt"
+    when = ask_publish_at()
+    if when is None:
+        return None
+    return platforms, when
+
+
 def newest_video_since(started: float) -> Path | None:
     """방금 돌린 생성기가 만든 영상 — 시작 시각 이후에 만들어진 mp4 중 가장 최근.
 
@@ -3516,17 +3596,35 @@ def run_batch_menu(cfg: dict) -> None:
             if not picked:
                 warn("새로 게시할 영상이 없습니다. (중복 허용을 선택하면 다시 게시할 수 있습니다.)")
                 return
+    # 건너뛴 영상을 뺀 뒤에 물어야 예약 안내의 개수가 실제 업로드 수와 같습니다.
+    timing = choose_publish_timing(platforms)
+    if timing is None:
+        return
+    platforms, first_when = timing
+    interval = ask_int("예약 공개 간격(일)", 1, 1, 30) if first_when else 1
+    if first_when:
+        log(f"  · {len(picked)}개를 {first_when:%Y-%m-%d %H:%M} 부터 {interval}일 간격으로 공개합니다."
+            " (지금 업로드 · PC 불필요)")
     dry_run = ask_yes_no("dry-run으로 미리 확인할까요?", True)
     if not dry_run:
         log("⚠️ 실제 게시를 진행합니다. 각 플랫폼에 콘텐츠가 업로드됩니다.")
+        if first_when:
+            log(f"   YouTube 예약 게시 — 지금 업로드하고 {first_when:%Y-%m-%d %H:%M} 부터 "
+                f"{interval}일 간격으로 공개합니다.")
         if not ask_yes_no(f"{len(picked)}개 영상을 정말 게시할까요?", False):
             log("일괄 게시를 취소했습니다.")
             return
-    for video in picked:
+    for index, video in enumerate(picked):
         log(f"\n▶ {video.name} 게시 시작")
-        v_args = argparse.Namespace(video=str(video), unit=unit, title=None, desc=None,
-                                    platforms=platforms, dry_run=dry_run, youtube_privacy=None,
-                                    allow_repeat=allow_repeat)
+        v_args = argparse.Namespace(
+            video=str(video), unit=unit, title=None, desc=None,
+            platforms=platforms, dry_run=dry_run, youtube_privacy=None,
+            allow_repeat=allow_repeat,
+            publish_at=(publish_at_iso(first_when + timedelta(days=interval * index))
+                        if first_when else None),
+            # 예약 게시는 업로드가 이미 끝난 뒤라 브라우저 폴백이 의미 없습니다.
+            manual_fallback=False if first_when else None,
+        )
         publish_single(cfg, v_args, video)
     ok(f"일괄 게시 처리 완료: {len(picked)}개 영상")
 
@@ -3584,11 +3682,13 @@ def build_shorts_command(cfg: dict, kind: str, words: int) -> list[str] | None:
 
 def run_auto_plan(cfg: dict, count: int, kind: str = "auto", *, start_at: str | None = None,
                   interval_days: int = 1, words: int | None = None,
-                  platforms: str | None = None, privacy: str | None = None) -> list[Path]:
+                  platforms: str | None = None, privacy: str | None = None,
+                  mode: str | None = None, dry_run: bool = False) -> list[Path]:
     """N일치 쇼츠를 자동 생성하고, 시작 시각이 있으면 예약 게시까지 등록합니다.
 
     kind=auto 는 종류를 돌려가며 섞어 만듭니다(남은 콘텐츠가 많은 종류 우선).
     기본값(테마·스타일·목소리·항목 수)은 config.json 의 promo 설정을 따릅니다.
+    mode: auto(기본 — YouTube 만 대상이면 native, 섞여 있으면 local) / native / local
     """
     promo = cfg.get("promo", {})
     if words is None:
@@ -3612,7 +3712,7 @@ def run_auto_plan(cfg: dict, count: int, kind: str = "auto", *, start_at: str | 
         if kind == "auto":
             inv = {r["key"]: r for r in content_inventory()}
 
-            def remaining(k: str) -> int:
+            def remaining(k: str, inv=inv, planned=planned, words=words) -> int:
                 # 영상 하나가 소비하는 항목 수(words)까지 빼야 N일치를 넉넉히 잡을 수 있습니다.
                 return max(0, int(inv.get(k, {}).get("remaining", 0)) - planned.get(k, 0) * words)
 
@@ -3653,17 +3753,44 @@ def run_auto_plan(cfg: dict, count: int, kind: str = "auto", *, start_at: str | 
         return videos
 
     platforms = platforms or (",".join(resolve_platforms(cfg, "auto")) or "yt")
+    platform_list = [p.strip() for p in platforms.split(",") if p.strip()]
+    plan_mode = resolve_plan_mode(platform_list, mode)
+    if plan_mode == "native" and platform_list != ["yt"]:
+        fail("YouTube 예약 게시는 YouTube 전용입니다 — --platforms yt 로 실행하거나 "
+             "--plan-mode local(로컬 예약)을 쓰세요.")
+        return videos
     privacy = (privacy or str(promo.get("default_privacy", "unlisted"))).lower()
     if privacy not in ("public", "unlisted", "private"):
         privacy = "unlisted"
     try:
-        first = parse_schedule_time(start_at)
+        first = parse_publish_at(start_at) if plan_mode == "native" else parse_schedule_time(start_at)
     except ValueError as exc:
         fail(f"첫 예약 일시가 올바르지 않습니다: {exc}")
         return videos
-    ok(f"\n예약 게시 등록 — {len(videos)}건 · 플랫폼 {platforms} · YouTube 공개 {privacy}")
+    ok(f"\n예약 게시 등록 — {len(videos)}건 · 플랫폼 {', '.join(platform_list)}"
+       f" · {PLAN_MODE_LABELS[plan_mode]}")
+    if plan_mode == "native":
+        # 지금 업로드하고 YouTube 가 지정 시각에 공개 — PC 가 꺼져 있어도 됩니다.
+        log("  · 업로드 쿼터(1건 1,600 units)는 지금 사용합니다. `--quota` 로 잔량을 확인하세요.")
+        times = plan_publish_times(first, len(videos), interval_days)
+        for i, video in enumerate(videos):
+            when_iso = times[i]
+            v_args = argparse.Namespace(
+                video=str(video), unit=None, title=None, desc=None, platforms="yt",
+                dry_run=dry_run, youtube_privacy=None, allow_repeat=False,
+                manual_fallback=False, publish_at=when_iso,
+            )
+            publish_single(cfg, v_args, video)
+        if dry_run:
+            log("\n미리보기입니다 — 실제로 예약하려면 --dry-run 을 빼고 실행하세요.")
+        else:
+            log("\n공개 확인·취소: python publish.py --schedules · --verify-schedules · --cancel-native")
+        return videos
     for i, video in enumerate(videos):
         when = (first + timedelta(days=interval_days * i)).strftime("%Y-%m-%d %H:%M")
+        if dry_run:
+            log(f"  · (미리보기) 로컬 예약 {when} · {video.name}")
+            continue
         try:
             item = create_schedule(video=video, unit=None, platforms=platforms,
                                    privacy=privacy, scheduled_at=when)
@@ -3671,6 +3798,9 @@ def run_auto_plan(cfg: dict, count: int, kind: str = "auto", *, start_at: str | 
             warn(f"{video.name}: 예약 실패 — {exc}")
             continue
         ok(f"  · {item['id']} · {item['scheduled_at']} · {video.name}")
+    if dry_run:
+        log("\n미리보기입니다 — 예약을 저장하지 않았습니다(--dry-run).")
+        return videos
     log("\n예약 시각에 '7. 예약 게시 실행' 또는 --run-due 를 실행하면 게시됩니다.")
     log("(Windows 작업 스케줄러 — 메뉴 27번 — 에 등록하면 자동으로 확인합니다.)")
     return videos
@@ -3695,16 +3825,43 @@ def auto_plan_menu(cfg: dict) -> None:
     if mode == "g":
         run_auto_plan(cfg, count, kind, words=words)
         return
-    default_start = (datetime.now().astimezone() + timedelta(days=1)).strftime("%Y-%m-%d") + " 19:00"
-    start = ask_menu("첫 예약 일시(YYYY-MM-DD HH:MM)", default_start)
-    interval = ask_int("게시 간격(일)", 1, 1, 30)
     platforms = choose_platforms_menu(cfg)
+    names = [p.strip() for p in platforms.split(",") if p.strip()]
+    # YouTube 만 대상이면 PC 가 꺼져 있어도 공개되는 YouTube 예약 게시를 기본으로 권합니다.
+    schedule_mode = choose_option(
+        "예약 방식",
+        [("native", PLAN_MODE_LABELS["native"]),
+         ("local", PLAN_MODE_LABELS["local"] + " — yt·ig·tt")],
+        "native" if names == ["yt"] else "local",
+    )
+    if schedule_mode == "native" and names != ["yt"]:
+        warn("YouTube 예약 게시는 YouTube 전용입니다 — 이번에는 YouTube 만 예약합니다.")
+        platforms = "yt"
+    default_start = (datetime.now().astimezone() + timedelta(days=1)).strftime("%Y-%m-%d") + " 19:00"
+    if schedule_mode == "native":
+        log("  · 지금 각 영상을 비공개로 업로드하고, 지정 시각에 YouTube 가 공개합니다.")
+        log("  · 업로드 쿼터(1건 1,600 units)는 지금 사용합니다.")
+        when = ask_publish_at("첫 공개 시각(YYYY-MM-DD HH:MM)", default_start)
+        if when is None:
+            return
+        start = when.strftime("%Y-%m-%d %H:%M")
+    else:
+        start = ask_menu("첫 예약 일시(YYYY-MM-DD HH:MM)", default_start)
+    interval = ask_int("게시 간격(일)", 1, 1, 30)
     default_privacy = str(promo.get("default_privacy", "unlisted")).lower()
     if default_privacy not in ("public", "unlisted", "private"):
         default_privacy = "unlisted"
-    privacy = choose_privacy(default_privacy)
+    privacy = choose_privacy(default_privacy) if schedule_mode == "local" else default_privacy
+    dry_run = ask_yes_no("먼저 미리보기(dry-run)로 확인할까요?", True)
+    if not dry_run and schedule_mode == "native" and bool(promo.get("confirm_real_upload", True)):
+        log(f"⚠️ 지금 {count}개 영상을 YouTube 에 업로드하고 {start} 부터 예약 공개합니다.")
+        log("   업로드 쿼터를 지금 사용하며, 취소는 영상 삭제(YouTube Studio 또는 --cancel-native)입니다.")
+        if not ask_yes_no("정말 진행할까요?", False):
+            log("예약 게시를 취소했습니다.")
+            return
     run_auto_plan(cfg, count, kind, start_at=start, interval_days=interval,
-                  words=words, platforms=platforms, privacy=privacy)
+                  words=words, platforms=platforms, privacy=privacy,
+                  mode=schedule_mode, dry_run=dry_run)
 
 
 def probe_video_info(video: Path) -> dict:
@@ -3783,16 +3940,25 @@ def verify_video_menu(cfg: dict) -> None:
         log("검증만 하고 종료합니다.")
         return
     platforms = choose_platforms_menu(cfg)
-    privacy = choose_privacy(str(cfg.get("promo", {}).get("default_privacy", "unlisted")))
+    timing = choose_publish_timing(platforms)
+    if timing is None:
+        return
+    platforms, when = timing
+    # YouTube 예약 게시는 항상 '비공개 업로드 → 지정 시각 공개' 라 공개 범위를 묻지 않습니다.
+    privacy = None if when else choose_privacy(
+        str(cfg.get("promo", {}).get("default_privacy", "unlisted")))
     dry_run = ask_yes_no("먼저 dry-run으로 확인할까요?", True)
     if not dry_run:
         log("⚠️ 실제 게시를 진행합니다. 각 플랫폼에 콘텐츠가 업로드됩니다.")
+        if when:
+            log(f"   YouTube 예약 게시 — 지금 업로드하고 {when:%Y-%m-%d %H:%M} 에 공개합니다.")
         if not ask_yes_no("정말 게시할까요?", False):
             log("게시를 취소했습니다.")
             return
     v_args.platforms = platforms
     v_args.youtube_privacy = privacy
     v_args.dry_run = dry_run
+    v_args.publish_at = publish_at_iso(when) if when else None
     publish_single(cfg, v_args, video)
 
 
@@ -5257,7 +5423,7 @@ MENU_ITEMS: list[tuple[str, str, tuple[str, ...]]] = [
     # 📤 게시·이력·성과 (11~19)
     ("11", "기존 쇼츠 게시",               ("게시", "업로드", "upload", "publish", "youtube", "인스타")),
     ("12", "여러 영상 일괄 게시",           ("일괄", "배치", "batch")),
-    ("13", "배포 전 검증 — 영상 재생·점검 후 게시", ("검증", "verify", "미리보기")),
+    ("13", "배포 전 검증",                 ("검증", "verify", "미리보기")),
     ("14", "수동 게시 도우미",              ("수동", "캡션", "manual", "폴백")),
     ("15", "중복 게시 방지 기록 보기",        ("중복", "기록", "posted", "목록")),
     ("16", "중복 게시 방지 기록 초기화",      ("중복", "초기화", "reset")),
@@ -5268,7 +5434,7 @@ MENU_ITEMS: list[tuple[str, str, tuple[str, ...]]] = [
     ("20", "예약 게시 등록",               ("예약", "schedule", "등록")),
     ("21", "예약 현황·점검",              ("예약", "취소", "schedule", "목록", "점검", "공개")),
     ("22", "예약 게시 실행(지금 확인)",      ("예약", "실행", "due", "run")),
-    ("23", "콘텐츠 자동 준비 — N일치 생성 + 예약", ("자동", "auto", "예약", "준비", "auto-plan")),
+    ("23", "콘텐츠 자동 준비",             ("자동", "auto", "예약", "준비", "auto-plan")),
     # ⚙️ 설정·점검·도구 (24~31)
     ("24", "계정·API 설정 상태 확인",        ("점검", "상태", "check", "설정확인")),
     ("25", "설정 편집",                    ("config", "설정", "edit")),
@@ -5294,9 +5460,9 @@ MENU_DESC: dict[str, str] = {
     "8":  "퀴즈 쇼츠를 만들고 바로 게시까지 진행",
     "9":  "혼동 어휘·문법·듣기 등 새 포맷 11종 중에서 골라 생성",
     "10": "새 포맷 11종 중에서 골라 만들고 바로 게시",
-    "11": "assets/shorts 의 mp4 를 YouTube/Instagram/TikTok 에 게시",
-    "12": "assets/shorts 의 최신 N개 영상을 순서대로 일괄 게시",
-    "13": "영상 재생·Shorts 요건을 점검한 뒤 게시 (배포 전 검증)",
+    "11": "assets/shorts 의 mp4 를 YouTube/Instagram/TikTok 에 게시 (YouTube 예약 게시 선택 가능)",
+    "12": "assets/shorts 의 최신 N개 영상을 순서대로 일괄 게시 (YouTube 예약 게시 = 간격 예약)",
+    "13": "영상 재생·Shorts 요건을 점검한 뒤 게시 — YouTube 예약 게시 가능",
     "14": "브라우저 업로드 페이지 열기 + 캡션 복사 (수동 게시 폴백)",
     "15": "사용한 단어·게시한 영상 기록(중복 방지) 확인",
     "16": "중복 방지 기록을 비워 이미 쓴 항목을 다시 쓰기 가능하게 함",
@@ -5306,7 +5472,7 @@ MENU_DESC: dict[str, str] = {
     "20": "공개 시각 예약 — 로컬 예약(그 시각 업로드) 또는 YouTube 예약 게시(지금 업로드, 그 시각 공개)",
     "21": "예약 현황(로컬+YouTube) 확인 · 로컬 취소 · YouTube 공개 여부 점검",
     "22": "지금 시각까지 도래한 예약 게시를 실행",
-    "23": "N일치 쇼츠를 자동 생성하고 예약 게시까지 등록",
+    "23": "N일치 쇼츠를 자동 생성하고 YouTube 예약 게시/로컬 예약까지 등록",
     "24": "계정·API·의존성·폴더 상태 점검",
     "25": "기본값·계정·플랫폼 설정을 터미널에서 변경",
     "26": "쇼츠 폴더·비밀키 폴더·config.json 열기",
@@ -6033,11 +6199,8 @@ def interactive_menu(initial: str | None = None) -> None:
                 log("  · 공개 범위는 '공개'로 고정됩니다(YouTube 규칙) — 비공개·일부 공개 예약은 지원하지 않습니다.")
                 log("  · 업로드 쿼터(1건 1,600 units)는 지금 사용합니다.")
                 log("  · 공개 확인·취소까지 하려면 미리 python publish.py --youtube-login-full (읽기·삭제 권한)")
-                scheduled_at = ask_menu("공개 시각(YYYY-MM-DD HH:MM)")
-                try:
-                    when = parse_publish_at(scheduled_at)
-                except ValueError as exc:
-                    warn(str(exc))
+                when = ask_publish_at()
+                if when is None:
                     continue
                 dry_run = ask_yes_no("먼저 미리보기(dry-run)로 확인할까요?", True)
                 if not dry_run and confirm_real_upload:
@@ -6047,7 +6210,7 @@ def interactive_menu(initial: str | None = None) -> None:
                         continue
                 command = [sys.executable, str(PROMO / "publish.py"), "--non-interactive",
                            "--video", str(video), "--platforms", "yt",
-                           "--publish-at", publish_at_iso(when)]
+                           "--publish-at", publish_at_iso(when), "--no-manual-fallback"]
                 if unit:
                     command.extend(["--unit", str(unit)])
                 if ask_yes_no("이미 게시한 영상도 다시 게시할까요?", False):
@@ -6190,10 +6353,20 @@ def interactive_menu(initial: str | None = None) -> None:
                         unit = default_unit
 
         platforms = choose_platforms_menu(cfg)
-        privacy = choose_privacy(default_privacy)
+        timing = choose_publish_timing(platforms)
+        if timing is None:
+            continue
+        platforms, when = timing
+        # YouTube 예약 게시는 항상 '비공개 업로드 → 지정 시각 공개' 라 공개 범위를 묻지 않습니다.
+        privacy = None if when else choose_privacy(default_privacy)
         dry_run = ask_yes_no("먼저 미리보기(dry-run)로 확인할까요?", True)
         command = [sys.executable, str(PROMO / "publish.py"), "--non-interactive", "--video", str(video),
-                   "--platforms", platforms, "--youtube-privacy", privacy]
+                   "--platforms", platforms]
+        if privacy:
+            command.extend(["--youtube-privacy", privacy])
+        if when:
+            # 예약 게시는 업로드가 끝난 뒤라 브라우저 수동 폴백이 의미 없습니다.
+            command.extend(["--publish-at", publish_at_iso(when), "--no-manual-fallback"])
         if kind == "idioms":
             command.append("--idioms")   # 영상 메타가 없을 때를 위한 폴백
         elif kind == "frequency":
@@ -6211,6 +6384,8 @@ def interactive_menu(initial: str | None = None) -> None:
         else:
             if confirm_real_upload:
                 log("⚠️ 실제 게시를 진행합니다. 각 플랫폼에 콘텐츠가 업로드됩니다.")
+                if when:
+                    log(f"   YouTube 예약 게시 — 지금 업로드하고 {when:%Y-%m-%d %H:%M} 에 공개합니다.")
                 if not ask_yes_no("정말 게시할까요?", False):
                     log("게시를 취소했습니다.")
                     continue
@@ -6282,7 +6457,8 @@ def main() -> None:
     ap.add_argument("--youtube-privacy", choices=["public", "unlisted", "private"], help="YouTube 공개 범위")
     ap.add_argument("--publish-at", metavar="TIME",
                     help="YouTube 예약 게시 — 지금 업로드하고 TIME(YYYY-MM-DD HH:MM)에 공개. "
-                         "PC 가 꺼져 있어도 정시에 공개되며, 업로드 쿼터는 지금 사용합니다")
+                         "PC 가 꺼져 있어도 정시에 공개되며, 업로드 쿼터는 지금 사용합니다. "
+                         "--batch 와 함께 쓰면 --plan-days 간격으로 이어서 예약합니다")
     ap.add_argument("--schedules", action="store_true",
                     help="예약 현황 — 로컬 예약(그 시각 업로드)과 YouTube 예약 게시를 한 번에")
     ap.add_argument("--verify-schedules", action="store_true",
@@ -6342,7 +6518,12 @@ def main() -> None:
                     choices=["auto", "unit", "idioms", "frequency", "paraphrase", *KIND_SPECS],
                     help="--auto-plan 콘텐츠 종류 (기본 auto — 남은 콘텐츠가 많은 순)")
     ap.add_argument("--plan-start", help="--auto-plan 첫 예약 일시: YYYY-MM-DD HH:MM (생략하면 생성만)")
-    ap.add_argument("--plan-days", type=int, default=1, help="예약 게시 간격(일) (기본 1)")
+    ap.add_argument("--plan-mode", choices=["auto", "native", "local"], default="auto",
+                    help="--auto-plan 예약 방식 — auto(기본): YouTube 만 대상이면 YouTube 예약 게시, "
+                         "섞여 있으면 로컬 예약 · native: 지금 업로드 후 지정 시각 공개(PC 불필요, YouTube 전용) "
+                         "· local: 그 시각에 이 PC 가 업로드")
+    ap.add_argument("--plan-days", type=int, default=1,
+                    help="예약 간격(일) (기본 1) — --auto-plan · --batch 예약에 함께 적용")
     ap.add_argument("--plan-words", type=int, help="영상당 항목 수 (기본: 설정 default_words)")
     ap.add_argument("--install-task", nargs="?", const=10, type=int, metavar="MIN",
                     help="Windows 작업 스케줄러에 매 MIN분 예약 확인 등록 (기본 10 · 안전을 위해 dry-run 전용 — "
@@ -6475,19 +6656,22 @@ def main() -> None:
     if args.verify_schedules:
         verify_native_schedules(cfg)
         return
+    native_start: datetime | None = None
     if args.publish_at:
         # YouTube 예약 게시 — 업로드는 지금, 공개는 지정 시각(PC 가 꺼져 있어도 공개).
         if args.schedule:
             fail("--schedule(로컬 예약)과 --publish-at(YouTube 예약 게시)은 함께 쓸 수 없습니다 — 하나만 고르세요.")
             return
-        if args.auto_plan is not None or args.batch:
-            fail("--auto-plan·--batch 는 영상이 여러 개라 --publish-at 과 함께 쓸 수 없습니다.")
+        if args.auto_plan is not None:
+            fail("--auto-plan 은 --plan-start 와 --plan-mode native 로 예약하세요 "
+                 "— --publish-at 은 영상 하나 또는 --batch 에 씁니다.")
             return
         try:
-            args.publish_at = publish_at_iso(parse_publish_at(args.publish_at))
+            native_start = parse_publish_at(args.publish_at)
         except ValueError as exc:
             fail(str(exc))
             return
+        args.publish_at = publish_at_iso(native_start)
         if args.youtube_privacy:
             warn("YouTube 예약 게시는 지금 비공개로 올리고 지정 시각에 공개합니다"
                  " — --youtube-privacy 값은 쓰이지 않습니다.")
@@ -6498,7 +6682,8 @@ def main() -> None:
             return
     if args.auto_plan is not None:
         run_auto_plan(cfg, args.auto_plan, args.plan_kind, start_at=args.plan_start,
-                      interval_days=args.plan_days, words=args.plan_words)
+                      interval_days=args.plan_days, words=args.plan_words,
+                      mode=args.plan_mode, dry_run=args.dry_run)
         return
     if args.install_task:
         install_scheduled_task(interval_min=args.install_task)
@@ -6519,7 +6704,18 @@ def main() -> None:
             fail("assets/shorts 폴더에 게시할 mp4 영상이 없습니다.")
             sys.exit(1)
         log(f"\n일괄 게시: 최신 {len(videos)}개 영상 (dry-run={args.dry_run})")
-        for video in videos:
+        interval = max(1, args.plan_days)
+        if native_start is not None:
+            log(f"YouTube 예약 게시: 지금 업로드하고 {native_start:%Y-%m-%d %H:%M} 부터 "
+                f"{interval}일 간격으로 공개합니다.")
+        for index, video in enumerate(videos):
+            # 영상마다 --video 를 바꿔야 옆에 있는 메타(*.json)로 제목·설명을 만듭니다.
+            # (고정해 두면 모든 영상이 첫 영상의 제목·설명으로 올라갑니다.)
+            args.video = str(video)
+            if native_start is not None:
+                # 영상마다 공개 시각을 간격만큼 뒤로 미뤄 한꺼번에 겹치지 않게 합니다.
+                args.publish_at = publish_at_iso(
+                    native_start + timedelta(days=interval * index))
             publish_single(cfg, args, video)
         return
     video = resolve_video(args)
@@ -6544,6 +6740,12 @@ def main() -> None:
 
 def publish_single(cfg: dict, args, video: Path) -> None:
     """영상 하나를 지정 플랫폼에 게시하고 이력을 남깁니다. (--dry-run 지원)"""
+    global _yt_privacy_override
+    # 메뉴(12·13 등)는 publish_single 을 직접 부르므로, 화면에서 고른 공개 범위를
+    # 여기서 반영해야 합니다. (main 은 이미 전역값을 넣어 두었습니다.)
+    chosen_privacy = getattr(args, "youtube_privacy", None)
+    if chosen_privacy:
+        _yt_privacy_override = chosen_privacy
     meta = build_meta(cfg, args)
     platforms = resolve_platforms(cfg, args.platforms)
     # YouTube 예약 게시 시각(정규화된 ISO) — 있으면 업로드는 지금, 공개는 그 시각.
@@ -6561,6 +6763,10 @@ def publish_single(cfg: dict, args, video: Path) -> None:
     fallback = getattr(args, "manual_fallback", None)
     if fallback is None:
         fallback = bool(cfg.get("promo", {}).get("manual_fallback", True))
+        # 예약 게시는 업로드가 끝난 뒤라 자동으로 브라우저를 열면 오히려 헷갈립니다.
+        # (설정과 무관하게 수동 폴백을 원하면 --manual-fallback 을 명시하세요.)
+        if publish_at:
+            fallback = False
 
     size_mb = video.stat().st_size / (1024 * 1024)
     log("=" * 62)

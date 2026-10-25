@@ -93,8 +93,9 @@ echo    promo_center.bat quota           YouTube 업로드 가능 시간·쿼터
 echo    promo_center.bat list-posted     중복 게시 방지 기록
 echo    promo_center.bat history         게시 이력
 echo    promo_center.bat --video ^<mp4^> --unit 1 --dry-run
-echo    promo_center.bat --auto-plan 5 --plan-start "2026-10-01 19:00"
+echo    promo_center.bat --auto-plan 5 --plan-start "2026-10-01 19:00" --plan-mode native
 echo    promo_center.bat --video ^<mp4^> --platforms yt --publish-at "2026-10-26 19:00"
+echo    promo_center.bat --batch 3 --platforms yt --publish-at "2026-10-26 19:00" --plan-days 1
 echo    promo_center.bat schedules       예약 현황 (로컬 + YouTube 예약 게시)
 echo    promo_center.bat verify-schedules   YouTube 예약 공개 여부 점검
 echo    promo_center.bat youtube-login-full  읽기·삭제 권한으로 따로 로그인

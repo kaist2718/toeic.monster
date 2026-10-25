@@ -18,6 +18,7 @@ import tempfile
 import unittest
 from datetime import datetime, timedelta
 from pathlib import Path
+from unittest import mock
 
 import publish
 
@@ -62,6 +63,71 @@ class ParsePublishAtTest(unittest.TestCase):
         self.assertIn("T", iso)
         self.assertRegex(iso, r"T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$",
                          "초 단위(HH:MM:SS)와 시간대 오프셋이 있어야 합니다")
+
+
+class MultiVideoPlanTest(unittest.TestCase):
+    """여러 영상 예약 — 공개 시각 간격과 예약 방식 선택."""
+
+    def test_publish_times_are_staggered_by_days(self):
+        start = (datetime.now().astimezone() + timedelta(days=1)).replace(microsecond=0)
+        times = publish.plan_publish_times(start, 3, 2)
+        self.assertEqual(times, [publish.publish_at_iso(start + timedelta(days=2 * i))
+                                 for i in range(3)])
+        self.assertEqual(len(set(times)), 3, "영상마다 공개 시각이 달라야 합니다")
+
+    def test_publish_times_empty_and_interval_floor(self):
+        start = (datetime.now().astimezone() + timedelta(days=1)).replace(microsecond=0)
+        self.assertEqual(publish.plan_publish_times(start, 0, 1), [])
+        # 0·음수 간격은 1일로 올려 같은 시각에 몰리지 않게 합니다.
+        self.assertEqual(publish.plan_publish_times(start, 2, 0),
+                         publish.plan_publish_times(start, 2, 1))
+
+    def test_auto_mode_prefers_native_for_youtube_only(self):
+        self.assertEqual(publish.resolve_plan_mode(["yt"]), "native")
+        self.assertEqual(publish.resolve_plan_mode(["yt"], "auto"), "native")
+
+    def test_auto_mode_keeps_local_when_other_platforms_are_mixed(self):
+        # Instagram·TikTok 은 예약 공개를 지원하지 않으므로 YouTube 예약 게시로 바꾸면 안 됩니다.
+        self.assertEqual(publish.resolve_plan_mode(["yt", "ig"]), "local")
+        self.assertEqual(publish.resolve_plan_mode(["ig"]), "local")
+
+    def test_explicit_mode_wins_and_unknown_falls_back_to_auto(self):
+        self.assertEqual(publish.resolve_plan_mode(["yt", "ig"], "native"), "native")
+        self.assertEqual(publish.resolve_plan_mode(["yt"], "local"), "local")
+        self.assertEqual(publish.resolve_plan_mode(["yt"], "bogus"), "native")
+
+
+class AutoPlanNativeTest(unittest.TestCase):
+    """--auto-plan native — 영상마다 간격을 둔 publish_at 으로 즉시 업로드합니다."""
+
+    def test_native_plan_uploads_each_video_with_staggered_publish_at(self):
+        start = (datetime.now().astimezone() + timedelta(days=1)).replace(second=0, microsecond=0)
+        videos = [Path("a.mp4"), Path("b.mp4"), Path("c.mp4")]
+        calls = []
+        cfg = {"promo": {"default_words": 1}, "youtube": {"enabled": True}}
+        with mock.patch.object(publish, "build_shorts_command", return_value=["make"]), \
+                mock.patch.object(publish, "run_menu_command", return_value=True), \
+                mock.patch.object(publish, "newest_video_since", side_effect=videos), \
+                mock.patch.object(publish, "publish_single",
+                                  side_effect=lambda _cfg, args, _video: calls.append(args)):
+            publish.run_auto_plan(cfg, 3, "unit", start_at=start.strftime("%Y-%m-%d %H:%M"),
+                                  interval_days=2, platforms="yt", mode="native")
+        self.assertEqual(len(calls), 3)
+        self.assertEqual([c.publish_at for c in calls],
+                         publish.plan_publish_times(start, 3, 2))
+        self.assertTrue(all(c.platforms == "yt" for c in calls),
+                        "YouTube 예약 게시는 yt 만 대상으로 해야 합니다")
+        self.assertTrue(all(c.dry_run is False for c in calls))
+
+    def test_native_plan_refuses_mixed_platforms(self):
+        cfg = {"promo": {"default_words": 1}}
+        with mock.patch.object(publish, "build_shorts_command", return_value=["make"]), \
+                mock.patch.object(publish, "run_menu_command", return_value=True), \
+                mock.patch.object(publish, "newest_video_since", return_value=Path("a.mp4")), \
+                mock.patch.object(publish, "publish_single") as upload:
+            publish.run_auto_plan(cfg, 1, "unit", start_at="2026-11-01 19:00",
+                                  platforms="yt,ig", mode="native")
+        upload.assert_not_called()
 
 
 class LocalScheduleTimeTest(unittest.TestCase):
@@ -288,6 +354,13 @@ class MenuAndDocsTest(unittest.TestCase):
     def test_bat_help_documents_publish_at(self):
         bat = (PROMO / "promo_center.bat").read_text(encoding="utf-8")
         self.assertIn("--publish-at", bat)
+
+    def test_docs_document_multi_video_native_scheduling(self):
+        readme = (PROMO / "README.md").read_text(encoding="utf-8")
+        bat = (PROMO / "promo_center.bat").read_text(encoding="utf-8")
+        for text in ("--plan-mode", "--batch", "--publish-at"):
+            self.assertIn(text, readme)
+            self.assertIn(text, bat)
 
     def test_readme_documents_schedule_overview(self):
         readme = (PROMO / "README.md").read_text(encoding="utf-8")

@@ -9,6 +9,8 @@
 > **예약 게시는 두 방식**입니다. YouTube 자체 예약 게시(`--publish-at`)는 지금 업로드하고
 > YouTube 가 지정 시각에 공개하므로 **PC 가 꺼져 있어도** 정시에 올라갑니다. 로컬 예약(`--schedule`)은
 > 그 시각에 `--run-due`(cron·작업 스케줄러)가 실행되어야 업로드됩니다 → [5. 예약 게시](#5-예약-게시-두-가지-방식).
+> YouTube 예약 게시는 **단일·일괄(`--batch`)·자동 준비(`--auto-plan`)·원클릭 메뉴(5~13·20·23)** 등
+> YouTube 로 게시하는 모든 경로에서 선택할 수 있습니다.
 
 ```
 promo/
@@ -113,8 +115,8 @@ python make_shorts.py --kind sprint --words 7    # 30일 스프린트로 바로 
 📤 **게시·이력·성과**
 
 11. **기존 쇼츠 게시** — 최근 수정된 mp4 목록에서 선택 (영상 옆 메타가 있으면 UNIT을 묻지 않고 제목·설명을 자동 생성)
-12. **여러 영상 일괄 게시** — 영상 여러 개를 선택해 순차 게시 (영상 옆 메타가 있으면 제목·설명 자동 — 메타 없는 영상이 있을 때만 UNIT을 묻습니다)
-13. **배포 전 검증** — 영상을 재생해 직접 확인하고, 9:16·60초·게시 메타(제목/설명/해시태그)를 점검한 뒤 게시
+12. **여러 영상 일괄 게시** — 영상 여러 개를 선택해 순차 게시 (영상 옆 메타가 있으면 제목·설명 자동 — 메타 없는 영상이 있을 때만 UNIT을 묻습니다). 게시 시점에서 **YouTube 예약 게시**를 고르면 지금 업로드하고 첫 시각부터 지정 간격(일)으로 공개합니다 (PC 불필요).
+13. **배포 전 검증** — 영상을 재생해 직접 확인하고, 9:16·60초·게시 메타(제목/설명/해시태그)를 점검한 뒤 게시. 게시 시점에서 **YouTube 예약 게시**를 고를 수 있습니다.
 14. **수동 게시 도우미** — 업로드 페이지를 열고 캡션을 클립보드에 복사
 15. **중복 게시 방지 기록 보기** — 사용한 단어·게시한 영상 기록 확인
 16. **중복 게시 방지 기록 초기화** — 전체 또는 UNIT·숙어·빈도·퀴즈·새 포맷 종류별로 기록 삭제
@@ -127,7 +129,7 @@ python make_shorts.py --kind sprint --words 7    # 30일 스프린트로 바로 
 20. **예약 게시 등록** — 방식을 고릅니다: **YouTube 예약 게시**(지금 업로드, 그 시각 공개 — PC 가 꺼져 있어도 공개) 또는 **로컬 예약**(그 시각에 이 PC 가 업로드, 플랫폼·공개 범위 선택)
 21. **예약 현황·점검** — 로컬 예약과 YouTube 예약 게시를 한 화면에 보고, 로컬 예약 취소·YouTube 공개 여부 점검
 22. **도래한 예약 실행** — 기본 dry-run, 실제 게시 전 확인
-23. **콘텐츠 자동 준비** — N일치 쇼츠를 자동 생성하고 예약 게시까지 등록 (종류는 남은 콘텐츠 많은 순으로 자동 배합)
+23. **콘텐츠 자동 준비** — N일치 쇼츠를 자동 생성하고 예약 게시까지 등록 (종류는 남은 콘텐츠 많은 순으로 자동 배합). 예약 방식은 **YouTube 예약 게시**(YouTube 만 대상이면 기본 — PC 불필요) 또는 **로컬 예약**(yt·ig·tt) 중에서 고릅니다.
 
 ⚙️ **설정·점검·도구**
 
@@ -206,12 +208,17 @@ python publish.py --quota
 # 내려받은 Piper 음성의 성별(여성/남성) 분류 표 — 메뉴 31 와 미리 듣기 필터(f/m)와 같은 결과
 python publish.py --voice-gender
 
-# N일치 쇼츠 자동 생성 + 예약 게시 등록 (종류는 남은 콘텐츠 많은 순으로 자동 배합)
+# N일치 쇼츠 자동 생성 + YouTube 예약 게시 (YouTube 만 대상이면 기본 native — PC 불필요)
 python publish.py --auto-plan 5 --plan-start "2026-10-01 19:00" --plan-days 1
+python publish.py --auto-plan 5 --plan-start "2026-10-01 19:00" --plan-mode native --plan-days 1
+python publish.py --auto-plan 5 --plan-start "2026-10-01 19:00" --plan-mode local   # 로컬 예약 (yt·ig·tt)
 python publish.py --auto-plan 3 --plan-kind idioms   # 지정 종류로 생성만 (예약 없음)
 
 # YouTube 예약 게시 — 지금 업로드하고 지정 시각에 공개 (PC 가 꺼져 있어도 공개)
 python publish.py --video assets/shorts/unit01_shorts.mp4 --platforms yt --publish-at "2026-10-26 19:00" --dry-run
+
+# 최신 3개 영상을 1일 간격으로 YouTube 예약 게시 (지금 업로드, 첫 시각부터 차례로 공개)
+python publish.py --batch 3 --platforms yt --publish-at "2026-10-26 19:00" --plan-days 1 --dry-run
 
 # 예약 현황 — 로컬 예약 + YouTube 예약 게시를 한 번에
 python publish.py --schedules
@@ -298,7 +305,7 @@ python publish.py --remove-task
 
 | | **YouTube 예약 게시** (권장) | **로컬 예약** |
 | --- | --- | --- |
-| 명령 | `--publish-at "YYYY-MM-DD HH:MM"` · 메뉴 20 → 2 | `--schedule --schedule-time "…"` · 메뉴 20 → 1 |
+| 명령 | `--publish-at "YYYY-MM-DD HH:MM"` · `--batch`/`--auto-plan --plan-mode native` · 메뉴 5~13·20→2·23 | `--schedule --schedule-time "…"` · 메뉴 20→1·23 |
 | 업로드 | **지금** (쿼터 사용) | 예약 시각 이후 `--run-due` 가 실행될 때 |
 | 공개 | YouTube 가 지정 시각에 **자동 공개** | 업로드 즉시 (public/unlisted/private) |
 | PC 필요 | ❌ 없음 (YouTube 서버가 처리) | ✅ 그 시각 이후 `--run-due` 필요 |
@@ -326,7 +333,13 @@ python publish.py --video assets/shorts/unit01_shorts.mp4 --platforms yt \
   `native_schedules.json` 장부에 기록되어 `--schedules`·`--verify-schedules` 로 관리합니다.)
 - 메뉴 **20번 → 2) YouTube 예약 게시** 도 같은 흐름(미리보기 → 확인 → 업로드)입니다.
 - `--youtube-privacy` 는 쓰이지 않고(항상 비공개 → 공개), `--platforms` 는 `yt` 만 지정할 수 있습니다.
-  여러 영상을 한 번에 예약하는 `--batch`·`--auto-plan` 과는 함께 쓸 수 없습니다.
+- 예약 게시가 실패해도 **자동 수동 폴백(브라우저)은 열지 않습니다** — 그대로 다시 시도할 수 있습니다.
+  (직접 열려면 `--manual-fallback` 을 명시하세요.)
+- **여러 영상도 한 번에 예약**할 수 있습니다.
+  - `--batch N --publish-at "..." --plan-days 1` — 최신 N개를 지금 업로드하고 첫 시각부터 간격(일)으로 공개
+  - `--auto-plan N --plan-start "..." --plan-mode native --plan-days 1` — N일치를 생성해 같은 방식으로 예약
+  - 원클릭 메뉴 **12·13·23번**과 게시 메뉴(5~11번)에서도 게시 시점으로 **YouTube 예약 게시**를 고를 수 있습니다
+    (YouTube 만 예약하며, 함께 고른 Instagram·TikTok 은 선택에서 빠집니다).
 
 ### 5-2. 로컬 예약 — 그 시각에 이 PC 가 업로드
 
@@ -618,14 +631,22 @@ python publish.py --allow-repeat ...   # 기록을 무시하고 다시 게시
 원클릭 메뉴 **23번** 또는 `--auto-plan`으로 여러 날치 쇼츠를 한 번에 만들고 예약 게시까지 등록합니다. 종류를 고르지 않으면 **남은 콘텐츠가 많은 종류부터 돌려가며** 단어·숙어·빈도·퀴즈를 섞어 만듭니다. 테마·스타일·목소리·항목 수는 설정(메뉴 `25`)의 기본값을 따릅니다.
 
 ```bash
-# 5일치를 매일 19시에 올라가도록 생성 + 예약 등록
+# 5일치를 매일 19시에 올라가도록 생성 + 예약 등록 (YouTube 만 대상이면 YouTube 예약 게시가 기본)
 python publish.py --auto-plan 5 --plan-start "2026-10-01 19:00" --plan-days 1
+
+# 예약 방식을 명시 — native(지금 업로드·지정 시각 공개, PC 불필요) / local(그 시각 이 PC 가 업로드)
+python publish.py --auto-plan 5 --plan-start "2026-10-01 19:00" --plan-mode native
+python publish.py --auto-plan 5 --plan-start "2026-10-01 19:00" --plan-mode local --platforms yt,ig
 
 # 숙어 3편만 생성 (예약 없음)
 python publish.py --auto-plan 3 --plan-kind idioms
 ```
 
-생성이 끝나면 각 영상의 예약 ID·시각이 표시되고, 예약 시각에 `--run-due`(또는 메뉴 `22`·Windows 작업 스케줄러)를 실행하면 게시됩니다.
+- `--plan-mode auto`(기본)는 **YouTube 만 대상이면 native**, Instagram·TikTok 이 섞여 있으면 local 입니다.
+  native 는 YouTube 전용이라 `--platforms yt` 여야 하며, 업로드 쿼터(1건 1,600 units)를 지금 사용합니다.
+- `--dry-run` 을 붙이면 **영상은 생성하지만** 업로드·예약 저장 없이 계획만 보여 줍니다 (메뉴 23번도 먼저 묻습니다).
+- **native**: 생성 직후 각 영상을 비공개로 업로드하고 YouTube 가 지정 시각에 공개합니다 — `--run-due`·작업 스케줄러가 필요 없습니다.
+- **local**: 예약 ID·시각이 표시되고, 예약 시각에 `--run-due`(또는 메뉴 `22`·Windows 작업 스케줄러)를 실행하면 게시됩니다.
 
 ## 7-4. 사이트 유입 추적 (UTM·CTA)
 
@@ -658,6 +679,8 @@ python -m unittest test_publish -v
 ```
 
 - `parse_publish_at` — 과거·10분 이내 시각 거부, 로컬/ISO 입력, 시간대 부여
+- `plan_publish_times` — `--batch`·`--auto-plan` 의 영상별 공개 시각을 간격대로 계산
+- `resolve_plan_mode` — auto 는 YouTube 만이면 native, 다른 플랫폼이 섞이면 local
 - `build_youtube_body` — 예약일 때만 `private` + `publishAt`, 일반 업로드는 지정 공개 범위 유지
 - `due_schedules` — 도래한 로컬 예약만 선택, 시각이 깨진 항목은 건너뛰고 계속
 - `record_native_schedule`·`display_schedule_overview` — 같은 영상은 한 번만 기록, 공개 시각이 지난 항목 반환
