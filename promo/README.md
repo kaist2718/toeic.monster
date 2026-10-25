@@ -120,7 +120,7 @@ python make_shorts.py --kind sprint --words 7    # 30일 스프린트로 바로 
 14. **수동 게시 도우미** — 업로드 페이지를 열고 캡션을 클립보드에 복사
 15. **중복 게시 방지 기록 보기** — 사용한 단어·게시한 영상 기록 확인
 16. **중복 게시 방지 기록 초기화** — 전체 또는 UNIT·숙어·빈도·퀴즈·새 포맷 종류별로 기록 삭제
-17. **게시 이력 확인** — 최근 10건 표시 및 CSV 경로 안내
+17. **게시 이력 확인** — 최근 이력 표시(기본 10건, `promo.history_limit` 로 변경) 및 CSV 경로 안내
 18. **게시 이력 HTML 리포트** — 요약 통계와 함께 브라우저로 열기
 19. **게시 성과 수집·보고서·인사이트** — YouTube/Instagram 조회수·좋아요 수집, HTML 보고서, 종류별 성과·게시 시간대·추천 콘텐츠 인사이트
 
@@ -297,6 +297,8 @@ python publish.py --remove-task
 - `default_voice2`: 두 번째 TTS 목소리(남성). 예: `en_US-ryan-medium`(로컬) 또는 `Microsoft David Desktop`(Windows 내장). **빈 문자열이면 한 목소리만** 사용
 - `default_privacy`: YouTube 기본 공개 범위. 처음에는 `unlisted` 권장
 - `confirm_real_upload`: 실제 게시 전 확인 질문 사용 여부. 안전을 위해 `true` 권장
+- `manual_fallback`: 자동 게시가 실패하면 수동 게시 도우미(브라우저 + 캡션 복사)를 실행할지 여부(기본 `true`)
+- `history_limit`: `--history`·메뉴 **17번**에서 보여 줄 최근 이력 건수(1~100, 기본 10)
 - `youtube.api_key`: 성과 수집(`--stats`) 전용 Google Cloud **API 키**. 공개 데이터 조회라 OAuth 없이 사용 가능
 
 비밀번호·토큰은 화면에 출력하지 않으며 `config.json`과 `.secrets/`는 git에 포함되지 않습니다.
@@ -542,16 +544,16 @@ python make_shorts.py --kind sprint --words 7           # 30일 스프린트 DAY
 - **퀴즈 정답 위치 랜덤**: 퀴즈(`--paraphrase`)는 문제마다 보기 순서를 랜덤으로 섞어 정답이 항상 `A` 에 오지 않습니다(`--seed` 를 지정하면 같은 시드에서 같은 순서). 메타 파일이 이 순서를 그대로 저장하므로 영상·제목·설명이 일치하고, 설명의 `정답: B. …` 표기도 영상의 정답 위치와 같습니다.
 
 - **숙어 카드**: `--idioms` 를 주면 `data/idioms.js`(126선)에서 고릅니다. 숙어는 IPA·예문 발음이 없어 슬라이드에 **표현·뜻·예문·해석**만 들어가고, 상단 칩은 `TOEIC 빈출 숙어` + **목록 순번**입니다. 파일명은 첫 표현을 따 `idioms_take-advantage-of_shorts.mp4` 처럼 나와 배치끼리 덮어쓰지 않습니다(`--out` 으로 지정 가능).
-- **동의어 치환 퀴즈**: `--paraphrase` 를 주면 `data/extra.js` 의 paraphrase(200문제)에서 고릅니다. 한 문제가 **문제 슬라이드(문장 + 보기 A~D) → 정답 슬라이드(정답·해설·예문 해석)** 두 장이라, 3문제면 6장·약 36초입니다(`--words` 가 슬라이드 수를 두 배로 늘립니다). 문제 슬라이드는 영어 문장을, 정답 슬라이드는 정답 표현을 읽습니다. 파일명은 `quiz_expedite_shorts.mp4` 처럼 첫 표적 표현을 따릅니다.
+- **동의어 치환 퀴즈**: `--paraphrase` 를 주면 `data/extra.js` 의 paraphrase(200문제)에서 고릅니다. 한 문제가 **문제 슬라이드(문장 + 보기 A~D) → 정답 슬라이드(정답·해설·예문 해석)** 두 장이라, 3문제면 6장이며 인트로·아웃로까지 약 40초입니다(`--words` 가 슬라이드 수를 두 배로 늘립니다). 문제 슬라이드는 영어 문장을, 정답 슬라이드는 정답 표현을 읽습니다. 파일명은 `quiz_expedite_shorts.mp4` 처럼 첫 표적 표현을 따릅니다.
 - **로컬 낭독 기본**: 낭독은 **로컬 TTS** 로만 만듭니다 — 인터넷·API 가 필요 없습니다. `--engine auto`(기본)는 내려받은 **Piper**(ONNX) 음성이 있으면 그 목소리로, 없으면 **Windows 내장 SAPI** 로 만듭니다. `--engine piper` / `--engine windows` 로 강제할 수 있고, `--no-tts` 로 끄면 앰비언트 사운드로 대체됩니다. `--voice`/`--voice2` 에는 그 엔진의 음성 이름을 씁니다 — Piper 는 `en_US-amy-medium` 같은 이름, Windows 는 `Microsoft Zira Desktop` 같은 이름(예전 `en-US-JennyNeural` 처럼 언어·성별로 된 이름도 설치된 음성 중에서 고릅니다).
 - **두 목소리 기본**: 기본 설정은 첫 번째 **여성** 음성 후 두 번째 **남성** 음성이 같은 문장을 이어서 읽습니다(Windows 내장 엔진은 영국 여성 + 미국 남성 우선, Piper 를 내려받았다면 `config.json` 에 지정된 남녀 음성). Windows에 요청한 로캘 음성이 없으면 설치된 영어 음성 중 성별을 우선해 대체하며, 생성 로그에 실제 선택된 엔진·음성을 표시합니다. 예를 들어 영국 여성 음성이 없으면 미국 영어 여성(Zira)이, 미국 남성 음성이 없으면 설치된 다른 영어 남성(David)이 선택됩니다. 슬라이드 길이는 음성 길이에 맞춰 자동 연장됩니다 — 길게 느껴지면 `--words`를 줄이거나 `--single-voice`로 한 목소리만 쓰세요.
 - **목소리 선택**: 메뉴·기본 설정의 목소리 선택지는 **선택한 엔진의 음성**을 보여 줍니다. 엔진이 `auto`면 내려받은 로컬(Piper) 음성이 있으면 그 목록을, 없으면 **이 PC에 설치된 Windows 내장 음성**을 보여 주고(영어 음성이 앞에 오고, 설치 목록을 못 구하면 기본 후보를 보여 줍니다). `default_voice`와 `default_voice2`에는 해당 엔진의 음성 이름을 넣으면 되고, Windows 쪽은 예전 언어·성별 이름(`en-US-JennyNeural` 등)을 그대로 두어도 설치된 음성 중에서 대체해 고릅니다. Windows Narrator의 자연스러운 Jenny/Ryan 음성은 SAPI에 자동 노출되지 않으므로 SAPI 에서는 바로 쓸 수 있다고 보장되지 않습니다.
-- **TTS 설정 메뉴(31번)**: 원클릭 메뉴 **31. TTS 엔진·목소리 설정** 에서 엔진(auto/piper/windows)·첫·두 번째 목소리·Piper 음성 내려받기·테스트 재생을 한 자리에서 정합니다. 현재 엔진이 실제로 어떤 목소리로 낭독하는지도 함께 보여 주고, 내려받은 음성의 **성별 분류(여성/남성) 요약**도 같은 화면에 표시합니다. 저장하면 `config.json` 의 `promo.tts_engine`·`default_voice`·`default_voice2` 에 반영되고, 생성 메뉴(1~8)와 자동 준비(23번)가 그대로 씁니다.
+- **TTS 설정 메뉴(31번)**: 원클릭 메뉴 **31. TTS 엔진·목소리 설정** 에서 엔진(auto/piper/windows)·첫·두 번째 목소리·Piper 음성 내려받기·테스트 재생을 한 자리에서 정합니다. 현재 엔진이 실제로 어떤 목소리로 낭독하는지도 함께 보여 주고, 내려받은 음성의 **성별 분류(여성/남성) 요약**도 같은 화면에 표시합니다. 저장하면 `config.json` 의 `promo.tts_engine`·`default_voice`·`default_voice2` 에 반영되고, 생성 메뉴(1~10)와 자동 준비(23번)가 그대로 씁니다.
 - **미리 듣기(청취 비교)**: 메뉴 31 는 흐름 마지막에 「내려받은 다른 음성으로 미리 듣기」를, 음성 내려받기 메뉴는 내려받기 전 `preview` 입력(또는 내려받은 뒤 자동 질문)으로 **내려받은 모든 Piper 음성 목록**을 번호로 보여 주고, 고른 음성으로 샘플 문장을 즉시 합성·재생합니다. 샘플 문장은 원하는 영어 문장으로 바꿀 수 있습니다(Enter 기본 예문). 이름을 정확히 몰라도 앞글자로 입력하면 유일하게 맞는 음성이 재생되고, 여러 개면 후보를 알려 줍니다. 목록에서 `f`(여성만) · `m`(남성만) · `all`(전체) 로 **성별 필터**를 걸면 분류된 음성만 좁혀서 청취할 수 있습니다.
 - **TTS 샘플 일괄 생성(순서 비교)**: 목소리가 많아 구분하기 어려울 때 `python make_tts_samples.py` 를 실행하면 내려받은 **모든 Piper 음성 + Windows 내장(SAPI) 음성의 샘플을 TTS 순서대로** `assets/tts-samples/` 에 만들어 둡니다(순서: Piper 음성 → Windows 내장 음성, 영어 먼저). 파일명이 `01_en_GB-alan-low.wav` 처럼 **순번_음성 이름**이라 목록 순서 그대로 이어 들어볼 수 있고, `00_목록.txt`(순번·음성·성별 표)와 `재생목록.m3u`(순서대로 이어 듣기)도 함께 남습니다. `--text` 로 샘플 문장, `--only amy Zira` 처럼 일부 음성만, `--out` 으로 저장 폴더를 바꿀 수 있습니다.
 - **성별 구분(여성/남성)**: 내려받은 38개 영어 음성을 남/녀로 구분해 목소리 라벨(`미국 영어 · 여성 · medium · 60MB`)과 선택지에 함께 표시합니다. 판정은 **① 이름·기본 설정 힌트 → ② Piper 공식 MODEL_CARD → ③ 샘플 합성 후 F0(기본 주파수) 측정** 순서로 하고, 결과는 `assets/tts/voice_gender.json` 에 저장해 다음엔 즉시 표시합니다. `python publish.py --voice-gender` 로 전체 표를 보고 새로 측정할 수 있습니다. 경계 주파수(153Hz 부근)의 `en_US-kristin` 처럼 F0 만으로 헷갈리는 음성은 공식 MODEL_CARD 가 바로잡아 줍니다.
 - **단어와 문장 사이 휴지**: 낭독은 단어와 예문을 **각각 따로 합성한 뒤** 기본 0.4초 무음을 끼워 이어 붙입니다. 설치된 piper-tts 는 문장 사이 무음 기능이 없어 한 문자열로 합성하면 실측 **0초(오히려 -0.15초)** 로 붙어 읽었습니다. `--word-gap 0.6` 처럼 길이를 바꾸거나 `--word-gap 0` 으로 옛 동작으로 되돌릴 수 있고, 여성·남성 두 목소리 사이 0.4초(VOICE_GAP)는 그대로입니다.
-- **마지막 선택 저장**: 생성 메뉴(1~8)에서 기본값과 다르게 TTS 사용 여부·목소리를 고르면, 생성 전에 「선택한 TTS 설정을 다음부터 기본값으로 저장할까요?」(기본 예)를 물어봅니다. 저장하면 `config.json` 의 `default_tts`·`default_voice`·`default_voice2` 가 갱신되어 다음부터 그대로 씁니다. 그때그때 다르게 쓰려면 `n` 을 누르고, 값이 그대로면 묻지도 않습니다.
+- **마지막 선택 저장**: 생성 메뉴(1~10)에서 기본값과 다르게 TTS 사용 여부·목소리를 고르면, 생성 전에 「선택한 TTS 설정을 다음부터 기본값으로 저장할까요?」(기본 예)를 물어봅니다. 저장하면 `config.json` 의 `default_tts`·`default_voice`·`default_voice2` 가 갱신되어 다음부터 그대로 씁니다. 그때그때 다르게 쓰려면 `n` 을 누르고, 값이 그대로면 묻지도 않습니다.
 - **로컬 TTS(Piper) 설치·음성 내려받기**: `piper-tts` 는 `requirements.txt` 에 포함되어 `setup.bat` 실행으로 설치됩니다. 음성 모델은 `promo/assets/tts/` 에 내려받아야 합니다 — 메뉴 **31번**의 내려받기(`list` 입력 시 영어 음성 전체 목록) 또는
   ```bash
   python -m piper.download_voices en_US-amy-medium --download-dir promo/assets/tts
@@ -562,7 +564,7 @@ python make_shorts.py --kind sprint --words 7           # 30일 스프린트 DAY
 - **무음 방지**: TTS·음악이 실패하거나 없어도 부드러운 앰비언트 사운드가 들어갑니다. `--no-ambient`로 끌 수 있습니다.
 - **네모(□) 방지**: fontTools cmap으로 글리프 존재를 확인해, 한글 폰트(기본 마루부리)에 없는 IPA 기호 등은 자동으로 IPA 커버 폰트(Arial 등)로 대체합니다. 발음기호 알약(pill)의 폭·가운데 정렬도 폴백 글리프까지 계산해 그리므로 글자가 한쪽으로 쏠리지 않습니다.
 - **인트로·아웃로 기본 포함**: 첫 장에 「TOEIC 필수 어휘」 같은 브랜드 훅(기본 2.5초), 마지막 장에 사이트 유입 CTA 카드(기본 3초)가 자동으로 들어갑니다. `--no-intro`/`--no-outro` 로 끄거나 `--intro-sec`/`--outro-sec` 으로 길이를 바꿀 수 있습니다. 예상 길이가 Shorts 60초를 넘을 것 같으면 생성기가 미리 경고합니다.
-- **배경 테마·패턴 (번호 선택)**: 배경은 **테마(색 그라데이션 22종) × 패턴(무늬 15종)** 으로 조합합니다. 생성 메뉴(1~8)·기본 설정(25번)에서는 **번호를 눌러 선택**하고(예: `21` = neon, `11` = bokeh), `make_shorts.py` 에서는 `--bg 21 --pattern 11` 처럼 번호 또는 이름을 씁니다. `--list-bg` 로 전체 번호 목록을 확인할 수 있습니다. 패턴은 `circles`(은은한 원)·`rings`·`dots`·`grid`·`mesh`·`diagonal`·`stripes`·`waves`·`bokeh`·`glow`·`triangles`·`stars`·`confetti` 가 있고, `auto` 는 카드 스타일 기본값(classic 은 circles, 나머지는 없음), `none` 은 깔끔한 그라데이션만 씁니다. 랜덤 무늬(bokeh·stars 등)는 항상 같은 모양이 나옵니다. 기본값은 `config.json` 의 `promo.default_theme`·`default_pattern`·`default_style` 에 저장되고, 생성 메뉴에서 다르게 고르면 「다음부터 기본값으로 저장할까요?」로 갱신할 수 있습니다.
+- **배경 테마·패턴 (번호 선택)**: 배경은 **테마(색 그라데이션 22종) × 패턴(무늬 15종)** 으로 조합합니다. 생성 메뉴(1~10)·기본 설정(25번)에서는 **번호를 눌러 선택**하고(예: `21` = neon, `11` = bokeh), `make_shorts.py` 에서는 `--bg 21 --pattern 11` 처럼 번호 또는 이름을 씁니다. `--list-bg` 로 전체 번호 목록을 확인할 수 있습니다. 패턴은 `circles`(은은한 원)·`rings`·`dots`·`grid`·`mesh`·`diagonal`·`stripes`·`waves`·`bokeh`·`glow`·`triangles`·`stars`·`confetti` 가 있고, `auto` 는 카드 스타일 기본값(classic 은 circles, 나머지는 없음), `none` 은 깔끔한 그라데이션만 씁니다. 랜덤 무늬(bokeh·stars 등)는 항상 같은 모양이 나옵니다. 기본값은 `config.json` 의 `promo.default_theme`·`default_pattern`·`default_style` 에 저장되고, 생성 메뉴에서 다르게 고르면 「다음부터 기본값으로 저장할까요?」로 갱신할 수 있습니다.
 
 | 옵션 | 설명 |
 |---|---|
@@ -678,7 +680,13 @@ cd promo
 python -m unittest test_publish -v
 ```
 
-- `parse_publish_at` — 과거·10분 이내 시각 거부, 로컬/ISO 입력, 시간대 부여
+- `parse_publish_at` — 과거·10분 이내 시각 거부, 로컬/ISO 입력, 시간대 부여 (`parse_schedule_time` 은 끝의 `Z`(UTC)도 읽습니다)
+- Python 3.8 문법 호환 — 안내한 최소 버전(3.8)에서 import·실행이 되도록 소스를 `feature_version=(3,8)` 로 파싱해 확인 (f-string 따옴표 중첩·`Path.is_relative_to` 같은 3.9+ API 회귀 방지)
+- 혼동 어휘 빈칸 — 과거형·굴절형(complimented·devised·insured·rose)도 빈칸이 되어 20쌍 × 2문항이 모두 생성되는지 확인
+- 새 포맷 중복 방지 키 — 표시용 term(절 제목)이 겹쳐도 행마다 키가 유일한지(전략 가이드 79개) 확인
+- 게시 이력 리포트 — 제목의 HTML 이스케이프와 링크 칸 생성 (3.12 전용 f-string 문법 회귀 방지)
+- 영상 번호 선택 — 0·범위 밖 번호가 마지막 영상을 조용히 고르지 않는지 확인
+- 기본 목소리 — 모듈을 불러올 때 Windows 음성 목록(PowerShell)을 부르지 않고 필요할 때만 계산하는지, 옛 이름(`publish.DEFAULT_VOICE`) 접근도 그대로 동작하는지 확인
 - `plan_publish_times` — `--batch`·`--auto-plan` 의 영상별 공개 시각을 간격대로 계산
 - `resolve_plan_mode` — auto 는 YouTube 만이면 native, 다른 플랫폼이 섞이면 local
 - `build_youtube_body` — 예약일 때만 `private` + `publishAt`, 일반 업로드는 지정 공개 범위 유지

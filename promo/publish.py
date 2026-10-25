@@ -589,9 +589,41 @@ def _blank_speak(sentence: str) -> str:
     return sentence.replace(mark, "blank") if mark else sentence
 
 
+# 표제어가 문장에서 굴절된 형태(complimented · devised · insured)로 나오는 경우가 있어
+# 어미를 붙여 봅니다. 규칙 변화로 만들 수 없는 형태만 여기에 적습니다.
+IRREGULAR_WORD_FORMS = {
+    "rise": ("rose", "risen"),
+    "lie": ("lay", "lain"),
+    "bear": ("bore", "borne"),
+}
+
+
+def _word_forms(word: str) -> list[str]:
+    """표제어 하나로 문장에 나타날 수 있는 굴절 형태를 만듭니다."""
+    w = str(word or "").strip()
+    if not w:
+        return []
+    forms = [w, w + "s", w + "es", w + "ed", w + "d", w + "ing"]
+    if w.endswith("e"):
+        forms.append(w[:-1] + "ing")
+    if w.endswith("y") and len(w) > 1:
+        forms += [w[:-1] + "ies", w[:-1] + "ied"]
+    forms += list(IRREGULAR_WORD_FORMS.get(w.lower(), ()))
+    return forms
+
+
 def _blank_word(sentence: str, word: str) -> str:
-    """문장 속 표제어 첫 등장을 빈칸으로 바꿉니다(표제어가 없으면 빈 문자열)."""
-    m = re.search(r"\b" + re.escape(word) + r"\b", sentence, flags=re.I)
+    """문장 속 표제어(굴절형 포함) 첫 등장을 빈칸으로 바꿉니다(없으면 빈 문자열).
+
+    예전에는 표제어와 글자가 정확히 같을 때만 빈칸을 만들었습니다. 그래서
+    "The manager complimented her …" 처럼 과거형이 쓰인 예문은 통째로 빠져
+    혼동 어휘 20쌍 중 4문항이 영상에서 사라졌습니다.
+    """
+    forms = sorted({f for f in _word_forms(word) if f}, key=len, reverse=True)
+    if not forms:
+        return ""
+    pattern = r"\b(?:" + "|".join(re.escape(f) for f in forms) + r")\b"
+    m = re.search(pattern, sentence, flags=re.I)
     if not m:
         return ""
     return sentence[:m.start()] + BLANK + sentence[m.end():]
@@ -648,7 +680,7 @@ def _row(**kw) -> dict:
 
 
 def _load_confusables() -> list[dict]:
-    """혼동 어휘(CONFUSABLES) — 예문의 표제어를 빈칸으로 만든4지선다."""
+    """혼동 어휘(CONFUSABLES) — 예문의 표제어를 빈칸으로 만든 4지선다."""
     data = load_app_data_list("CONFUSABLES") or []
     words: list[str] = []
     for d in data:
@@ -965,7 +997,7 @@ KIND_SPECS: dict[str, dict] = {
         "label": "문법 빈칸", "chip": "TOEIC 문법 빈칸 퀴즈", "layout": "quiz2",
         "category": "TOEIC 문법 빈칸", "desc_label": "TOEIC 문법 빈칸 퀴즈", "unit_word": "문제",
         "tags": ("TOEIC문법", "문법퀴즈"), "match": "문법 빈칸", "link": "/",
-        "footer": "문법 교재·연습 문제 300여 개 — 홈에서 무료로 → {link}",
+        "footer": "문법 교재·연습 문제 230여 개 — 홈에서 무료로 → {link}",
     },
     "numbers": {
         "label": "숫자 듣기", "chip": "TOEIC 숫자 듣기 퀴즈", "layout": "quiz2",
@@ -1310,20 +1342,21 @@ def content_inventory() -> list[dict]:
 
     idioms = load_idioms() or []
     rows.append({"key": IDIOM_BUCKET, "label": "숙어", "total": len(idioms),
-                 "used": len(posted.get(IDIOM_BUCKET, []))})
+                 "used": min(len(posted.get(IDIOM_BUCKET, [])), len(idioms))})
 
     freq = load_frequency() or []
     rows.append({"key": FREQUENCY_BUCKET, "label": "빈도 어휘", "total": len(freq),
-                 "used": len(posted.get(FREQUENCY_BUCKET, []))})
+                 "used": min(len(posted.get(FREQUENCY_BUCKET, [])), len(freq))})
 
     paras = load_paraphrase() or []
     rows.append({"key": PARAPHRASE_BUCKET, "label": "동의어 치환", "total": len(paras),
-                 "used": len(posted.get(PARAPHRASE_BUCKET, []))})
+                 "used": min(len(posted.get(PARAPHRASE_BUCKET, [])), len(paras))})
 
     for kind, spec in KIND_SPECS.items():
         kind_rows = load_kind_rows(kind)
+        # 데이터가 줄어도 사용 수가 전체보다 커지지 않게 맞춥니다(단어 집계와 같은 규칙).
         rows.append({"key": kind, "label": spec["label"], "total": len(kind_rows),
-                     "used": len(posted.get(kind, []))})
+                     "used": min(len(posted.get(kind, [])), len(kind_rows))})
 
     for r in rows:
         r["remaining"] = max(0, r["total"] - r["used"])
@@ -1343,7 +1376,12 @@ def print_remaining(highlight: str | None = None) -> None:
     rows = content_inventory()
     log("\n📊 남은 콘텐츠 (중복 방지 기록 기준)")
     for r in rows:
-        mark = "   ← 이번" if highlight == r["key"] else ""
+        if highlight == r["key"]:
+            mark = "   ← 이번"
+        elif r["total"] and r["remaining"] == 0:
+            mark = "   ← 소진(초기화 필요)"
+        else:
+            mark = ""
         bar = remain_bar(r["used"], r["total"])
         log(f"   · {r['label']:<7} {r['used']:>4} / {r['total']:<4} 사용 · 남음 {r['remaining']:<4} {bar}{mark}")
     total = sum(r["total"] for r in rows)
@@ -1642,6 +1680,16 @@ def kind_title(kind: str, items: list) -> str:
     return brand_title(head, label)
 
 
+def kind_row_key(row: dict) -> str:
+    """새 포맷 행의 중복 방지 키 — 행의 key(가이드 slug 포함)를 우선 씁니다.
+
+    표시용 term 은 절 제목처럼 여러 가이드에서 겹칠 수 있어(예: "예문으로 확인하기" 가 8번),
+    term 으로 중복을 판단하면 같은 제목의 다른 절이 영원히 "이미 사용됨" 으로 빠집니다(79개 중 10개).
+    key 는 종류별로 유일합니다.
+    """
+    return str(row.get("key") or row.get("term") or "")
+
+
 def kind_row_item(kind: str, row: dict) -> dict:
     """통일된 행 → 사이드카와 같은 설명용 항목."""
     return {
@@ -1784,7 +1832,7 @@ def build_meta(cfg: dict, args) -> dict:
         pool = rows
         if rows and not getattr(args, "allow_repeat", False):
             used = posted_words_for_unit(kind)
-            remaining = [r for r in rows if normalize_word(r["term"]) not in used]
+            remaining = [r for r in rows if normalize_word(kind_row_key(r)) not in used]
             if remaining:
                 pool = remaining
         if pool:
@@ -1831,11 +1879,26 @@ def now_iso() -> str:
     return datetime.now().astimezone().isoformat(timespec="seconds")
 
 
+def relative_display(path: Path) -> str:
+    """promo 폴더 기준 상대 경로로 보여 줍니다(폴더 밖이면 그대로).
+
+    Path.is_relative_to 는 Python 3.9 부터라 3.8 에서는 쓸 수 없습니다 —
+    README 가 안내하는 최소 버전(3.8)에서도 실행되도록 여기서 직접 확인합니다.
+    """
+    try:
+        return str(path.relative_to(PROMO))
+    except ValueError:
+        return str(path)
+
+
 def parse_schedule_time(value: str) -> datetime:
     """ISO 또는 YYYY-MM-DD HH:MM 형식의 로컬 시간을 파싱합니다."""
     raw = value.strip()
     if not raw:
         raise ValueError("시간을 입력해 주세요. (YYYY-MM-DD HH:MM)")
+    # ISO 끝의 Z(UTC)는 Python 3.11 부터만 fromisoformat 이 읽습니다 — 3.8~3.10 에서도 받아 줍니다.
+    if raw[-1] in ("Z", "z"):
+        raw = raw[:-1] + "+00:00"
     try:
         parsed = datetime.fromisoformat(raw)
     except ValueError as exc:
@@ -1924,6 +1987,7 @@ NATIVE_STATUS_LABELS = {
     "scheduled": "예약됨 (YouTube 가 비공개로 보관 중)",
     "published": "공개됨",
     "missing": "YouTube 에서 찾을 수 없음 (삭제·비공개 전환)",
+    "canceled": "취소됨 (영상 삭제)",
 }
 
 
@@ -2702,6 +2766,12 @@ def youtube_error_message(exc: Exception) -> str:
             "   · 기본 할당량 10,000 units/일, 업로드 1건 = 1,600 units → 하루 약 6개입니다.\n"
             "   · 할당량은 태평양 표준시 자정에 초기화됩니다."
         ),
+        "insufficientPermissions": (
+            "이 토큰에는 이 작업에 필요한 권한이 없습니다. (insufficientPermissions)\n"
+            "   · 업로드 토큰은 공개 상태 조회(videos.list)·영상 삭제(videos.delete)를 할 수 없습니다.\n"
+            "   · python publish.py --youtube-login-full 로 읽기·삭제 권한을 따로 받으세요 (업로드 토큰은 그대로).\n"
+            "   · 또는 config.json 의 youtube.api_key 로 공개된 영상만 확인할 수 있습니다."
+        ),
     }
     for code, tip in tips.items():
         if code in blob:
@@ -3018,7 +3088,6 @@ def upload_youtube(video: Path, meta: dict, cfg: dict, dry_run: bool,
 
 
 def args_youtube_privacy(yt: dict) -> str:
-    global _yt_privacy_override
     if _yt_privacy_override:
         return _yt_privacy_override
     return yt.get("privacy", "public")
@@ -3062,11 +3131,13 @@ def refresh_youtube_descriptions(cfg: dict, *, video: Path | None = None,
         warn("게시 이력에서 YouTube 영상을 찾지 못했습니다. (--history 로 확인)")
         return
     plans: list[dict] = []
+    skipped: list[str] = []
     for t in targets:
         saved = load_video_meta(t["video"])
         if not saved:
             # 메타가 없으면 영상에 무엇이 들어갔는지 몰라 설명을 지어내면 어긋납니다 — 건너뜁니다.
-            warn(f"메타 없음 — 건너뜁니다: {t['video'].name} ({t['video_id']})")
+            # (예전 영상은 메타가 없어 수십 줄이 쌓이므로 마지막에 묶어서 알립니다.)
+            skipped.append(f"{t['video'].name} ({t['video_id']})")
             continue
         m_args = argparse.Namespace(video=str(t["video"]), unit=None, title=None, desc=None,
                                     platforms="auto", dry_run=True, youtube_privacy=None,
@@ -3076,6 +3147,10 @@ def refresh_youtube_descriptions(cfg: dict, *, video: Path | None = None,
         if meta.get("hashtags"):
             desc = f"{desc}\n\n{meta['hashtags']}" if desc else meta["hashtags"]
         plans.append({**t, "meta": meta, "new_desc": desc})
+    if skipped:
+        preview = ", ".join(skipped[:3]) + (f" … 외 {len(skipped) - 3}건" if len(skipped) > 3 else "")
+        warn(f"메타 없음 — 건너뜁니다({len(skipped)}건): {preview}")
+        log("   · 제목·설명은 영상 옆 메타(*.json)로 만들므로, 그 파일 없이는 영상 내용을 알 수 없습니다.")
     if not plans:
         warn("메타가 있는 영상이 없어 갱신할 수 없습니다.")
         return
@@ -3392,7 +3467,7 @@ def _voice_for_engine(engine: str, current: str, male: bool = False) -> str:
     if engine == "piper" and not piper_voice_path(current):
         return piper_default_voice(male=male) or current
     if engine == "windows" and current and not _looks_like_windows_voice(current):
-        return DEFAULT_VOICE2 if male else DEFAULT_VOICE
+        return default_voice2() if male else default_voice()
     return current
 
 
@@ -3539,10 +3614,14 @@ def choose_video_menu() -> Path | None:
     while True:
         raw = ask_menu("번호", "1")
         try:
-            idx = int(raw) - 1
-            return videos[idx]
-        except (ValueError, IndexError):
-            warn("목록에 있는 번호를 입력해 주세요.")
+            idx = int(raw)
+        except ValueError:
+            warn(f"1~{len(videos)} 사이 번호를 입력해 주세요.")
+            continue
+        # 0 이나 음수를 그대로 인덱스로 쓰면 목록의 마지막·앞 항목이 조용히 선택됩니다.
+        if 1 <= idx <= len(videos):
+            return videos[idx - 1]
+        warn(f"1~{len(videos)} 사이 번호를 입력해 주세요.")
 
 
 def run_batch_menu(cfg: dict) -> None:
@@ -3669,8 +3748,9 @@ def build_shorts_command(cfg: dict, kind: str, words: int) -> list[str] | None:
     if bool(promo.get("default_tts", False)):
         command.append("--tts")
         command.extend(["--engine", tts_engine_of(cfg)])
-        command.extend(["--voice", str(promo.get("default_voice", DEFAULT_VOICE) or DEFAULT_VOICE)])
-        voice2 = str(promo.get("default_voice2", DEFAULT_VOICE2) or "")
+        first = default_voice()
+        command.extend(["--voice", str(promo.get("default_voice", first) or first)])
+        voice2 = str(promo.get("default_voice2", default_voice2()) or "")
         if voice2:
             command.extend(["--voice2", voice2])
         else:
@@ -3968,13 +4048,24 @@ def run_menu_command(command: list[str]) -> bool:
     return result.returncode == 0
 
 
-def show_history_menu() -> None:
+def history_limit_of(cfg: dict | None, default: int = 10) -> int:
+    """보여 줄 최근 이력 건수 — config 의 promo.history_limit (1~100, 기본 10)."""
+    raw = (cfg or {}).get("promo", {}).get("history_limit", default)
+    try:
+        value = int(raw)
+    except (TypeError, ValueError):
+        return default
+    return min(100, max(1, value))
+
+
+def show_history_menu(cfg: dict | None = None) -> None:
     rows = read_history_rows()
     if not rows:
         log("게시 이력이 아직 없습니다.")
         return
-    log(f"\n게시 이력 {len(rows)}건 · {HISTORY_FILE.name}")
-    for row in rows[-10:][::-1]:
+    limit = history_limit_of(cfg)
+    log(f"\n게시 이력 {len(rows)}건 (최근 {min(limit, len(rows))}건) · {HISTORY_FILE.name}")
+    for row in rows[-limit:][::-1]:
         log(f"  {row.get('timestamp', '')} | {row.get('event', '')} | {row.get('status', '')} | "
             f"{row.get('platform', '')} | {row.get('title', '')[:45]}")
     log(f"전체 CSV 열기: {HISTORY_FILE}")
@@ -4148,7 +4239,7 @@ def write_history_report(open_after: bool = True) -> Path | None:
         f"<td>{esc_html(names.get(r.get('platform', ''), r.get('platform', '')))}</td>"
         f"<td>{esc_html(r.get('status', ''))}</td>"
         f"<td>{esc_html(r.get('title', ''))[:50]}</td>"
-        f"<td>{'<a href="' + esc_html(r.get('url', '')) + '" target="_blank" rel="noopener">링크</a>' if r.get('url') else ''}</td></tr>"
+        f"<td>{link_cell(esc_html(r.get('url', '')))}</td></tr>"
         for r in publishes[-100:][::-1])
     html = f"""<!DOCTYPE html>
 <html lang="ko">
@@ -4186,6 +4277,17 @@ def write_history_report(open_after: bool = True) -> Path | None:
 def esc_html(value: str) -> str:
     return (str(value).replace("&", "&amp;").replace("<", "&lt;")
             .replace(">", "&gt;").replace('"', "&quot;"))
+
+
+def link_cell(url: str) -> str:
+    """리포트 표의 링크 칸 — URL 이 없으면 빈 칸입니다.
+
+    f-string 안에 따옴표를 겹쳐 쓰면 Python 3.12 이상에서만 문법이 통과하므로
+    (README 는 3.8 이상을 안내합니다) 밖에서 만들어 넣습니다.
+    """
+    if not url:
+        return ""
+    return f'<a href="{url}" target="_blank" rel="noopener">링크</a>'
 
 
 # --------------------------------------------------------------------------- #
@@ -4960,11 +5062,28 @@ def _pick_default_voice(gender: str, cultures: tuple[str, ...], fallback: str) -
     return english[0][0] if english else fallback
 
 
-# 기본 목소리 — Windows 에 설치된 영어 음성에서 자동으로 고릅니다(첫 목소리는 영국 여성 우선,
-# 두 번째는 미국 남성 우선 → 없으면 다른 로캘의 같은 성별). 설치 목록을 못 구하면 아래 폴백 이름이 힌트로 쓰입니다.
-DEFAULT_VOICE = _pick_default_voice("Female", ("en-GB", "en-AU", "en-US"), "Microsoft Sonia Desktop")
-# 두 번째 목소리 — 쇼츠 기본값은 두 목소리라 설정을 비우면 한 목소리만 씁니다.
-DEFAULT_VOICE2 = _pick_default_voice("Male", ("en-US", "en-GB", "en-AU"), "Microsoft David Desktop")
+def default_voice() -> str:
+    """첫 번째 기본 목소리 — Windows 에 설치된 영어 음성에서 자동으로 고릅니다(영국 여성 우선).
+
+    모듈을 불러올 때가 아니라 필요할 때만 PowerShell 로 설치 목록을 읽습니다.
+    (예전에는 import 시점에 매번 불러 `--list-remaining` 같은 명령도 1초쯤 느렸습니다.)
+    설치 목록을 못 구하면 폴백 이름이 힌트로 쓰입니다.
+    """
+    return _pick_default_voice("Female", ("en-GB", "en-AU", "en-US"), "Microsoft Sonia Desktop")
+
+
+def default_voice2() -> str:
+    """두 번째 기본 목소리 — 미국 남성 우선(없으면 다른 로캘의 같은 성별)."""
+    return _pick_default_voice("Male", ("en-US", "en-GB", "en-AU"), "Microsoft David Desktop")
+
+
+def __getattr__(name: str) -> str:
+    """옛 코드·외부 스크립트가 `publish.DEFAULT_VOICE` 이름을 그대로 써도 되게 합니다(지연 평가)."""
+    if name == "DEFAULT_VOICE":
+        return default_voice()
+    if name == "DEFAULT_VOICE2":
+        return default_voice2()
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 def voice_label(name: str, engine: str = "auto") -> str:
@@ -5451,9 +5570,9 @@ MENU_TITLES: dict[str, str] = {num: title for num, title, _alias in MENU_ITEMS}
 # 메뉴 설명 — 검색 결과·선택 목록·도움말에서 무엇을 하는 메뉴인지 한 줄로 보여 줍니다.
 MENU_DESC: dict[str, str] = {
     "1":  "UNIT 단어로 쇼츠 mp4 생성 (테마·단어 개수 지정)",
-    "2":  "data/idioms.js 숙어 4개 단위로 쇼츠 생성",
-    "3":  "빈출 어휘 4개 단위로 쇼츠 생성",
-    "4":  "동의어 치환 4문제 퀴즈 쇼츠 생성",
+    "2":  "data/idioms.js 숙어 126선에서 골라 쇼츠 생성",
+    "3":  "data/extra.js 의 빈출 어휘 200선에서 골라 쇼츠 생성",
+    "4":  "동의어 치환 200문제에서 골라 문제·정답 2장 퀴즈 생성",
     "5":  "단어 쇼츠를 만들고 바로 게시까지 원스톱 진행",
     "6":  "숙어 쇼츠를 만들고 바로 게시까지 진행",
     "7":  "빈도 어휘 쇼츠를 만들고 바로 게시까지 진행",
@@ -5461,12 +5580,12 @@ MENU_DESC: dict[str, str] = {
     "9":  "혼동 어휘·문법·듣기 등 새 포맷 11종 중에서 골라 생성",
     "10": "새 포맷 11종 중에서 골라 만들고 바로 게시",
     "11": "assets/shorts 의 mp4 를 YouTube/Instagram/TikTok 에 게시 (YouTube 예약 게시 선택 가능)",
-    "12": "assets/shorts 의 최신 N개 영상을 순서대로 일괄 게시 (YouTube 예약 게시 = 간격 예약)",
+    "12": "assets/shorts 의 영상을 골라 순서대로 일괄 게시 (YouTube 예약 게시 = 간격 예약)",
     "13": "영상 재생·Shorts 요건을 점검한 뒤 게시 — YouTube 예약 게시 가능",
     "14": "브라우저 업로드 페이지 열기 + 캡션 복사 (수동 게시 폴백)",
     "15": "사용한 단어·게시한 영상 기록(중복 방지) 확인",
     "16": "중복 방지 기록을 비워 이미 쓴 항목을 다시 쓰기 가능하게 함",
-    "17": "최근 게시 이력 10건을 CSV 에서 확인",
+    "17": "최근 게시 이력(설정 promo.history_limit, 기본 10건)을 CSV 에서 확인",
     "18": "게시 이력 통계를 HTML 리포트로 생성",
     "19": "조회수 수집 · HTML 보고서 · 게시 시간대 인사이트",
     "20": "공개 시각 예약 — 로컬 예약(그 시각 업로드) 또는 YouTube 예약 게시(지금 업로드, 그 시각 공개)",
@@ -5902,9 +6021,9 @@ def interactive_menu(initial: str | None = None) -> None:
     if default_privacy not in ("public", "unlisted", "private"):
         default_privacy = "unlisted"
     default_tts = bool(promo_cfg.get("default_tts", False))
-    default_voice = str(promo_cfg.get("default_voice", DEFAULT_VOICE) or DEFAULT_VOICE)
-    # 빈 문자열이면 '두 번째 목소리 없음'을 뜻하므로 or DEFAULT_VOICE2 를 쓰지 않습니다.
-    default_voice2 = str(promo_cfg.get("default_voice2", DEFAULT_VOICE2) or "")
+    first_voice = str(promo_cfg.get("default_voice", default_voice()) or default_voice())
+    # 빈 문자열이면 '두 번째 목소리 없음'을 뜻하므로 or default_voice2() 를 쓰지 않습니다.
+    second_voice = str(promo_cfg.get("default_voice2", default_voice2()) or "")
     confirm_real_upload = bool(promo_cfg.get("confirm_real_upload", True))
     menu_default = default_menu_number(cfg)
     pending: list[str] = []   # 여러 메뉴를 쉼표·범위로 넣으면 남은 항목이 여기에 쌓입니다
@@ -5914,7 +6033,7 @@ def interactive_menu(initial: str | None = None) -> None:
     while True:
         print_interactive_menu(cfg)
         show_menu_summary(cfg, default_unit, default_words, default_theme, default_style,
-                          default_pattern, default_tts, default_voice)
+                          default_pattern, default_tts, first_voice)
         print_quota_status()   # 업로드 가능 시간 — 쿼터 잔량·초기화까지 남은 시간
         log(f"  ▶ Enter = {menu_default}. {short_menu_label(menu_default)} — "
             f"{MENU_DESC.get(menu_default, '')}")
@@ -6004,8 +6123,8 @@ def interactive_menu(initial: str | None = None) -> None:
             if default_privacy not in ("public", "unlisted", "private"):
                 default_privacy = "unlisted"
             default_tts = bool(promo_cfg.get("default_tts", False))
-            default_voice = str(promo_cfg.get("default_voice", DEFAULT_VOICE) or DEFAULT_VOICE)
-            default_voice2 = str(promo_cfg.get("default_voice2", DEFAULT_VOICE2) or "")
+            first_voice = str(promo_cfg.get("default_voice", default_voice()) or default_voice())
+            second_voice = str(promo_cfg.get("default_voice2", default_voice2()) or "")
             confirm_real_upload = bool(promo_cfg.get("confirm_real_upload", True))
             continue
         if action == "26":
@@ -6064,7 +6183,7 @@ def interactive_menu(initial: str | None = None) -> None:
             log(f"도래한 예약 {processed}건을 처리했습니다.")
             continue
         if action == "17":
-            show_history_menu()
+            show_history_menu(cfg)
             continue
         if action == "27":
             sub = choose_option("작업 스케줄러",
@@ -6128,9 +6247,9 @@ def interactive_menu(initial: str | None = None) -> None:
             tts_voice_menu(cfg)
             promo_cfg = cfg.get("promo", {})
             default_tts = bool(promo_cfg.get("default_tts", True))
-            default_voice = str(promo_cfg.get("default_voice", DEFAULT_VOICE) or DEFAULT_VOICE)
-            # 빈 문자열이면 '두 번째 목소리 없음'을 뜻합니다(오른쪽 or DEFAULT_VOICE2 를 쓰지 않음).
-            default_voice2 = str(promo_cfg.get("default_voice2", DEFAULT_VOICE2) or "")
+            first_voice = str(promo_cfg.get("default_voice", default_voice()) or default_voice())
+            # 빈 문자열이면 '두 번째 목소리 없음'을 뜻합니다(오른쪽 or default_voice2() 를 쓰지 않음).
+            second_voice = str(promo_cfg.get("default_voice2", default_voice2()) or "")
             continue
         if action == "16":
             pick = choose_option("초기화 대상",
@@ -6278,9 +6397,9 @@ def interactive_menu(initial: str | None = None) -> None:
                 command.append("--tts")
                 tts_engine = tts_engine_of(cfg)
                 command.extend(["--engine", tts_engine])
-                picked_voice = ask_voice("첫 번째 TTS 목소리 (여성)", default_voice, engine=tts_engine)
+                picked_voice = ask_voice("첫 번째 TTS 목소리 (여성)", first_voice, engine=tts_engine)
                 command.extend(["--voice", picked_voice])
-                picked_voice2 = ask_voice("두 번째 TTS 목소리 (남성)", default_voice2, allow_none=True,
+                picked_voice2 = ask_voice("두 번째 TTS 목소리 (남성)", second_voice, allow_none=True,
                                           engine=tts_engine)
                 if picked_voice2:
                     command.extend(["--voice2", picked_voice2])
@@ -6291,7 +6410,7 @@ def interactive_menu(initial: str | None = None) -> None:
             # 이번에 고른 TTS 설정을 다음부터 기본값으로 저장할지 묻습니다(메뉴 25·31 와 같은 자리에 저장).
             promo_now = cfg.setdefault("promo", {})
             tts_changed = bool(promo_now.get("default_tts", True)) != tts_on or (
-                tts_on and (picked_voice != default_voice or picked_voice2 != default_voice2))
+                tts_on and (picked_voice != first_voice or picked_voice2 != second_voice))
             if tts_changed and ask_yes_no("선택한 TTS 설정을 다음부터 기본값으로 저장할까요?", True):
                 engine_now = tts_engine_of(cfg)
                 promo_now["default_tts"] = bool(tts_on)
@@ -6309,8 +6428,8 @@ def interactive_menu(initial: str | None = None) -> None:
                 else:
                     ok(f"TTS 기본값을 저장했습니다: {CONFIG_FILE.name} · 낭독(TTS) 끔")
                 default_tts = bool(tts_on)
-                default_voice = str(promo_now.get("default_voice", default_voice) or default_voice)
-                default_voice2 = str(promo_now.get("default_voice2", default_voice2) or "")
+                first_voice = str(promo_now.get("default_voice", first_voice) or first_voice)
+                second_voice = str(promo_now.get("default_voice2", second_voice) or "")
             if ask_yes_no("배경음악을 추가할까요?(파일 경로 필요)", False):
                 music_path = ask_menu("배경음악 파일(mp3/wav) 경로")
                 if music_path:
@@ -6591,7 +6710,7 @@ def main() -> None:
             fail(f"취소할 예약을 찾지 못했습니다: {args.cancel_schedule}")
         return
     if args.history:
-        show_history_menu()
+        show_history_menu(cfg)
         return
     if args.refresh_desc:
         video = resolve_video(args) if args.video else None
@@ -6772,7 +6891,7 @@ def publish_single(cfg: dict, args, video: Path) -> None:
     log("=" * 62)
     log("🎬 toeic.monster 홍보 자동 배포" + ("  (dry-run 미리보기)" if args.dry_run else ""))
     log("=" * 62)
-    log(f"영상  : {video.relative_to(PROMO) if video.is_relative_to(PROMO) else video} ({size_mb:.1f}MB)")
+    log(f"영상  : {relative_display(video)} ({size_mb:.1f}MB)")
     log(f"제목  : {meta['title']}")
     if meta["desc"]:
         first = meta["desc"].splitlines()[0]
@@ -6877,7 +6996,7 @@ def publish_single(cfg: dict, args, video: Path) -> None:
             flag = ""
         if publish_at:
             flag += f' --platforms yt --publish-at "{publish_at}"'
-        log(f"예: python publish.py --video {video.relative_to(PROMO)}{flag}")
+        log(f"예: python publish.py --video {relative_display(video)}{flag}")
 
     bucket = meta.get("word_bucket")
     highlight = "unit" if isinstance(bucket, int) else (str(bucket) if bucket else None)

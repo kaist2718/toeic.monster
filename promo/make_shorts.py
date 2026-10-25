@@ -70,14 +70,14 @@ except ImportError:
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from publish import (  # noqa: E402
     DEFAULT_TTS_ENGINE,
-    DEFAULT_VOICE,
-    DEFAULT_VOICE2,
     FREQUENCY_BUCKET,
     KIND_SPECS,
     TTS_ENGINES,
     IDIOM_BUCKET,
     PARAPHRASE_BUCKET,
     POSTED_FILE,
+    default_voice,
+    default_voice2,
     fail,
     list_piper_voices,
     load_frequency,
@@ -98,6 +98,7 @@ from publish import (  # noqa: E402
     posted_words_for_unit,
     print_remaining,
     record_content_created,
+    relative_display,
     resolve_tts_engine,
     warn,
 )
@@ -116,6 +117,17 @@ def kind_layout(kind: str) -> str:
 def is_quiz_kind(kind: str) -> bool:
     """「문제 → 정답」 두 장 구조로 만드는 종류인지 여부."""
     return kind == "paraphrase" or kind_layout(kind) == "quiz2"
+
+
+def dedupe_key(item: list, kind: str) -> str:
+    """중복 방지 키 — 새 포맷은 행의 key(가이드 slug 포함)를 씁니다.
+
+    표시용 term 은 절 제목이라 여러 가이드에서 겹칠 수 있어(전략 가이드 79개 중 10개),
+    term 으로 기록하면 같은 제목의 다른 절이 이미 사용된 것으로 잘못 건너뛰어집니다.
+    """
+    if kind in KIND_SPECS and len(item) > 8 and isinstance(item[8], dict):
+        return str(item[8].get("key") or item[0])
+    return str(item[0])
 
 PROMO = Path(__file__).resolve().parent
 ROOT = PROMO.parent
@@ -245,6 +257,9 @@ ACCENT = {
     "neon":     (192, 132, 252),
     "graphite": (203, 213, 225),
 }
+# 지금 그리는 슬라이드의 액센트 색 — 렌더 함수가 테마를 받아 갱신합니다.
+# (draw_dots 처럼 인자로 받지 않는 도우미가 쓰므로 모듈 기본값을 둡니다.)
+ACCENT_THEME = ACCENT["blue"]
 
 # 배경 패턴 이름 — 순서가 곧 번호입니다(--list-bg · 메뉴 번호).
 PATTERN_NAMES = (
@@ -1077,7 +1092,7 @@ def render_idiom_slide(idx: int, total: int, rank: int, wd: list,
         draw_text_rich(draw, line, tr_font, (200, 210, 235), y=y, x=120)
         y += ly["tr_dy"]
 
-    # ── 쏘터 ──
+    # ── 푸터 ──
     foot_font = load_font(font_path, 44, bold=True)
     draw_text_rich(draw, "toeic.monster", foot_font, (255, 255, 255), y=1745)
     draw_dots(draw, total, idx)
@@ -1091,7 +1106,7 @@ def render_freq_slide(idx: int, total: int, rank: int, wd: list,
     상단 칩만 "TOEIC 빈출 어휘" + 목록 순번입니다.
 
     단어 카드(render_slide)와 내용은 같지만 칩 제목이 달라 함수를 나눴습니다.
-    (매일 도는 단어 영상이 빈도 작업으로 깨지지 않게 하려는 기존 밤침을 따릅니다.)
+    (매일 도는 단어 영상이 빈도 작업으로 깨지지 않게 하려는 기존 방침을 따릅니다.)
     """
     global ACCENT_THEME
     ACCENT_THEME = ACCENT[theme]
@@ -1910,10 +1925,10 @@ def main() -> None:
     engine_req = normalize_tts_engine(args.engine)
     first_engine = resolve_tts_engine(engine_req, args.voice or "")
     if not args.voice:
-        args.voice = piper_default_voice() if first_engine == "piper" else DEFAULT_VOICE
+        args.voice = piper_default_voice() if first_engine == "piper" else default_voice()
     engine = resolve_tts_engine(engine_req, args.voice)
     if not args.voice2:
-        args.voice2 = piper_default_voice(male=True) if engine == "piper" else DEFAULT_VOICE2
+        args.voice2 = piper_default_voice(male=True) if engine == "piper" else default_voice2()
 
     if args.tts:
         if engine == "piper":
@@ -2018,7 +2033,7 @@ def main() -> None:
         pool = items
         if not args.allow_repeat:
             used = posted_words_for_unit(bucket)
-            remaining = [w for w in items if normalize_word(w[0]) not in used]
+            remaining = [w for w in items if normalize_word(dedupe_key(w, kind)) not in used]
             if remaining:
                 if len(remaining) < len(items):
                     log(f"중복 방지: 이미 사용한 항목 {len(items) - len(remaining)}개를 제외하고 "
@@ -2256,13 +2271,13 @@ def main() -> None:
                       items=picked, voices=voices if args.tts else [],
                       quiz=extras)
         if not args.allow_repeat:
-            added = mark_words_posted(bucket, [w[0] for w in picked])
+            added = mark_words_posted(bucket, [dedupe_key(w, kind) for w in picked])
             if added:
                 log(f"🔁 중복 방지 기록: {source_label} 항목 {added}개 저장 ({POSTED_FILE.name})")
         # 이번에 만든 종류를 최근 이력에 남깁니다 — 다음 추천이 같은 종류에 몰리지 않게 합니다.
         record_content_created(bucket)
         print_remaining(HIGHLIGHT_KEY.get(kind))
-        rel = out.relative_to(PROMO)
+        rel = relative_display(out)
         if args.idioms:
             log(f"\n바로 배포: python publish.py --video {rel} --idioms --dry-run"
                 "  (제목·설명은 영상 옆 메타로 자동 생성됩니다)")
@@ -2279,7 +2294,6 @@ def main() -> None:
             log(f"\n바로 배포: python publish.py --video {rel} --unit {unit_no}"
                 + (" --dry-run 으로 먼저 확인!" if args.tts else " (--dry-run 으로 미리 확인 추천)"))
     finally:
-        import shutil
         shutil.rmtree(tmp, ignore_errors=True)
 
 

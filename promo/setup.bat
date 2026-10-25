@@ -1,4 +1,7 @@
 @echo off
+rem publish.py 가 한글로 안내를 출력하므로 콘솔 코드페이지를 UTF-8 로 맞춥니다
+rem (promo_center.bat 과 같은 이유 — 없으면 --check 결과가 깨져 보입니다).
+chcp 65001 >nul
 setlocal EnableExtensions
 pushd "%~dp0"
 
@@ -40,4 +43,4 @@ echo then run promo_center.bat.
 if exist config.json start "" notepad.exe "%CD%\config.json"
 pause
 popd
-exit /b 0
+exit /b 0

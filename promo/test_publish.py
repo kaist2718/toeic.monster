@@ -13,6 +13,7 @@
 
 from __future__ import annotations
 
+import ast
 import json
 import tempfile
 import unittest
@@ -23,6 +24,70 @@ from unittest import mock
 import publish
 
 PROMO = Path(__file__).resolve().parent
+SOURCES = ("publish.py", "make_shorts.py", "make_tts_samples.py", "test_publish.py")
+
+
+class PythonCompatibilityTest(unittest.TestCase):
+    """README 는 Python 3.8 이상을 안내합니다 — 3.8 문법으로도 읽혀야 실행이 됩니다."""
+
+    def test_sources_parse_with_python38_grammar(self):
+        for name in SOURCES:
+            source = (PROMO / name).read_text(encoding="utf-8")
+            with self.subTest(source=name):
+                ast.parse(source, filename=name, feature_version=(3, 8))
+
+    def test_no_python39_only_path_helpers(self):
+        # Path.is_relative_to 는 3.9 부터입니다 — 3.8 에서 AttributeError 가 납니다.
+        for name in ("publish.py", "make_shorts.py"):
+            source = (PROMO / name).read_text(encoding="utf-8")
+            self.assertNotIn(".is_relative_to(", source, f"{name}: 3.9+ 전용 API 사용")
+
+    def test_relative_display_handles_outside_paths(self):
+        inside = PROMO / "assets" / "shorts" / "x.mp4"
+        self.assertTrue(publish.relative_display(inside).endswith("x.mp4"))
+        outside = Path(tempfile.gettempdir()) / "outside.mp4"
+        self.assertEqual(publish.relative_display(outside), str(outside))
+
+
+class ConfusablesBlankTest(unittest.TestCase):
+    """혼동 어휘 빈칸 — 굴절형(complimented·devised)도 빈칸이 되어야 문항이 빠지지 않습니다."""
+
+    def test_inflected_forms_are_blanked(self):
+        cases = [("The manager complimented her on the presentation.", "compliment"),
+                 ("The team devised a new marketing strategy.", "devise"),
+                 ("The shipment is insured against damage.", "insure"),
+                 ("Sales rose sharply in the first quarter.", "rise")]
+        for sentence, word in cases:
+            with self.subTest(word=word):
+                blanked = publish._blank_word(sentence, word)
+                self.assertIn(publish.BLANK, blanked)
+                self.assertNotIn(word, blanked.lower().replace(publish.BLANK, ""))
+
+    def test_unknown_word_still_returns_empty(self):
+        self.assertEqual(publish._blank_word("Nothing here.", "compliment"), "")
+
+    def test_every_confusable_pair_yields_two_rows(self):
+        pairs = {str(d.get("pair", "")) for d in (publish.load_app_data_list("CONFUSABLES") or [])}
+        rows = publish.load_kind_rows("confusables")
+        self.assertEqual(len(rows), len(pairs) * 2, "쌍마다 양쪽 문항이 모두 만들어져야 합니다")
+
+
+class KindRowKeyTest(unittest.TestCase):
+    """새 포맷 중복 방지 키 — 표시용 term 이 겹쳐도 행마다 유일해야 합니다."""
+
+    def test_keys_are_unique_for_every_kind(self):
+        for kind in publish.KIND_LOADERS:
+            rows = publish.load_kind_rows(kind)
+            keys = [publish.normalize_word(publish.kind_row_key(r)) for r in rows]
+            with self.subTest(kind=kind):
+                self.assertEqual(len(keys), len(set(keys)), f"{kind} 중복 방지 키가 겹칩니다")
+
+    def test_duplicate_section_titles_are_distinguished(self):
+        # 전략 가이드에는 같은 절 제목("예문으로 확인하기")이 여러 가이드에 있습니다.
+        rows = publish.load_kind_rows("strategy")
+        same_title = [r for r in rows if r["term"] == "예문으로 확인하기"]
+        self.assertGreater(len(same_title), 1, "검증할 중복 제목 절이 데이터에 있어야 합니다")
+        self.assertEqual(len({publish.kind_row_key(r) for r in same_title}), len(same_title))
 
 
 class ParsePublishAtTest(unittest.TestCase):
@@ -128,6 +193,66 @@ class AutoPlanNativeTest(unittest.TestCase):
             publish.run_auto_plan(cfg, 1, "unit", start_at="2026-11-01 19:00",
                                   platforms="yt,ig", mode="native")
         upload.assert_not_called()
+
+
+class ScheduleParseZTest(unittest.TestCase):
+    """ISO 끝의 Z(UTC) — Python 3.11 이전에서도 읽히도록 직접 처리합니다."""
+
+    def test_trailing_z_is_accepted(self):
+        parsed = publish.parse_schedule_time("2026-11-01T10:00:00Z")
+        self.assertEqual(parsed.astimezone(publish.timezone.utc).hour, 10)
+
+
+class ReportHtmlTest(unittest.TestCase):
+    """게시 이력 리포트 — 링크 칸을 f-string 밖에서 만들어 3.8 에서도 실행돼야 합니다."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self._old = (publish.HISTORY_FILE, publish.REPORT_DIR, publish.PERF_FILE)
+        publish.HISTORY_FILE = Path(self.tmp.name) / "history.csv"
+        publish.REPORT_DIR = Path(self.tmp.name) / "reports"
+        publish.PERF_FILE = Path(self.tmp.name) / "performance.json"
+
+    def tearDown(self):
+        publish.HISTORY_FILE, publish.REPORT_DIR, publish.PERF_FILE = self._old
+        self.tmp.cleanup()
+
+    def test_report_escapes_html_and_renders_links(self):
+        publish.append_history(event="publish", status="success", platform="yt",
+                               video="v.mp4", title="<script>alert(1)</script>",
+                               url="https://youtu.be/abc")
+        publish.append_history(event="publish", status="failed", platform="yt",
+                               video="v.mp4", title="no link", url="")
+        out = publish.write_history_report(open_after=False)
+        self.assertIsNotNone(out)
+        html = out.read_text(encoding="utf-8")
+        self.assertIn('href="https://youtu.be/abc"', html)
+        self.assertNotIn("<script>", html, "제목의 HTML 은 이스케이프되어야 합니다")
+        self.assertIn("&lt;script&gt;", html)
+
+    def test_link_cell_without_url_is_empty(self):
+        self.assertEqual(publish.link_cell(""), "")
+
+
+class VideoMenuSelectionTest(unittest.TestCase):
+    """영상 번호 선택 — 0 이나 범위 밖 번호가 마지막 영상을 조용히 고르면 안 됩니다."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.videos = []
+        for name in ("a.mp4", "b.mp4"):
+            path = Path(self.tmp.name) / name
+            path.write_bytes(b"x" * 8)
+            self.videos.append(path)
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_zero_and_out_of_range_are_rejected(self):
+        # 0 → (예전에는 마지막 영상), 9 → 범위 밖, 그 다음 1 → 첫 영상.
+        with mock.patch.object(publish, "list_videos_menu", return_value=self.videos), \
+                mock.patch.object(publish, "ask_menu", side_effect=["0", "9", "1"]):
+            self.assertEqual(publish.choose_video_menu(), self.videos[0])
 
 
 class LocalScheduleTimeTest(unittest.TestCase):
@@ -366,6 +491,36 @@ class MenuAndDocsTest(unittest.TestCase):
         readme = (PROMO / "README.md").read_text(encoding="utf-8")
         self.assertIn("--schedules", readme)
         self.assertIn("--verify-schedules", readme)
+
+
+class DefaultVoiceTest(unittest.TestCase):
+    """기본 목소리는 필요할 때만 계산해야 하고(불러오기 속도), 옛 이름 접근도 계속 동작해야 합니다."""
+
+    def test_default_voice_is_lazy(self):
+        """`import publish` 만으로는 Windows 음성 목록을 읽지 않아야 합니다."""
+        source = (PROMO / "publish.py").read_text(encoding="utf-8")
+        tree = ast.parse(source)
+        module_level_calls = [
+            node for node in tree.body
+            if isinstance(node, ast.Assign)
+            and isinstance(node.value, ast.Call)
+            and any(token in ast.unparse(node.value.func) for token in ("default_voice", "_pick_default_voice"))
+        ]
+        self.assertEqual(module_level_calls, [], "기본 목소리를 모듈 수준에서 계산하면 실행마다 PowerShell 이 돕니다")
+
+    def test_default_voice_functions_return_strings(self):
+        for func in (publish.default_voice, publish.default_voice2):
+            value = func()
+            self.assertIsInstance(value, str)
+            self.assertTrue(value.strip(), f"{func.__name__} 가 빈 문자열을 돌려줬습니다")
+
+    def test_legacy_attribute_names_still_work(self):
+        for name in ("DEFAULT_VOICE", "DEFAULT_VOICE2"):
+            self.assertIsInstance(getattr(publish, name), str)
+
+    def test_unknown_attribute_raises(self):
+        with self.assertRaises(AttributeError):
+            publish.NOT_A_REAL_SETTING  # noqa: B018
 
 
 if __name__ == "__main__":
