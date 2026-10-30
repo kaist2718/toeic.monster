@@ -1,5 +1,5 @@
 /* toeic.monster Service Worker - 오프라인 학습 지원 */
-var CACHE_NAME = "toeic-monster-v20";
+var CACHE_NAME = "toeic-monster-v21";
 var CORE_ASSETS = [
   "./",
   "./index.html",
@@ -83,7 +83,7 @@ self.addEventListener("activate", function (event) {
   event.waitUntil(
     caches.keys().then(function (keys) {
       return Promise.all(
-        keys.filter(function (k) { return k !== CACHE_NAME; })
+        keys.filter(function (k) { return k.indexOf("toeic-monster-v") === 0 && k !== CACHE_NAME; })
             .map(function (k) { return caches.delete(k); })
       );
     }).then(function () {
@@ -111,37 +111,34 @@ self.addEventListener("fetch", function (event) {
   var accept = (req.headers.get("accept") || "");
   var isHTML = req.mode === "navigate" || accept.indexOf("text/html") !== -1;
 
+  // 캐시 갱신을 이벤트 수명에 묶어, 캐시 응답을 반환한 직후 워커가 종료되지 않게 합니다.
+  var cache = caches.open(CACHE_NAME);
+  var network = fetch(req);
+  event.waitUntil(network.then(function (response) {
+    if (response && response.status === 200 && (isHTML || response.type === "basic")) {
+      var copy = response.clone();
+      return cache.then(function (store) { return store.put(req, copy); });
+    }
+  }).catch(function () {
+    // 네트워크 또는 캐시 저장에 실패해도 페이지 응답은 별도로 처리합니다.
+  }));
+
   if (isHTML) {
-    event.respondWith(
-      fetch(req).then(function (response) {
-        if (response && response.status === 200) {
-          var copy = response.clone();
-          caches.open(CACHE_NAME).then(function (cache) { cache.put(req, copy); });
-        }
-        return response;
-      }).catch(function () {
-        return caches.match(req).then(function (cached) {
-          return cached || caches.match("./index.html");
-        }).then(function (cached) {
-          // 첫 방문부터 오프라인이면 캐시가 없으므로 유효한 실패 응답으로 마무리
-          // (undefined 를 respondWith 하면 TypeError 로 unhandled rejection 이 발생합니다)
-          return cached || Response.error();
+    event.respondWith(network.catch(function () {
+      return cache.then(function (store) {
+        return store.match(req).then(function (cached) {
+          return cached || store.match("./index.html");
         });
-      })
-    );
+      }).then(function (cached) {
+        return cached || Response.error();
+      });
+    }));
     return;
   }
 
-  event.respondWith(
-    caches.match(req).then(function (cached) {
-      var network = fetch(req).then(function (response) {
-        if (response && response.status === 200 && response.type === "basic") {
-          var copy = response.clone();
-          caches.open(CACHE_NAME).then(function (cache) { cache.put(req, copy); });
-        }
-        return response;
-      }).catch(function () { return cached || Response.error(); });
-      return cached || network;
-    })
-  );
+  event.respondWith(cache.then(function (store) {
+    return store.match(req);
+  }).then(function (cached) {
+    return cached || network.catch(function () { return Response.error(); });
+  }));
 });

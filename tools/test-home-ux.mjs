@@ -896,6 +896,61 @@ console.log("\n[9] 오늘의 챌린지 · 딥다이브 · 읽기 라이브러리
 }
 
 /* ------------------------------------------------------------------ */
+/* 서비스워커: 캐시 격리와 백그라운드 갱신 수명                         */
+/* ------------------------------------------------------------------ */
+
+console.log("\n[10] 서비스워커 캐시 격리·갱신");
+{
+  const handlers = {};
+  const deleted = [];
+  const entries = new Map([["https://toeic.monster/assets/app.js", { body: "cached" }], ["./index.html", { body: "home" }]]);
+  let resolvePut;
+  let written;
+  const store = {
+    match: async (key) => entries.get(typeof key === "string" ? key : key.url),
+    put: (key, value) => { written = [key.url, value]; return new Promise((resolve) => { resolvePut = resolve; }); },
+  };
+  const cacheName = read("sw.js").match(/var CACHE_NAME = "([^"]+)"/)[1];
+  const oldCacheName = "toeic-monster-v-test-old";
+  const caches = {
+    keys: async () => [oldCacheName, cacheName, "another-app-v1"],
+    delete: async (key) => { deleted.push(key); },
+    open: async () => store,
+  };
+  let offline = false;
+  const response = { status: 200, type: "basic", clone() { return { body: "fresh" }; } };
+  const self = { location: { origin: "https://toeic.monster" }, clients: { claim: async () => {} },
+    skipWaiting: async () => {}, addEventListener: (name, fn) => { handlers[name] = fn; } };
+  vm.runInNewContext(read("sw.js"), { self, caches, URL, Response, fetch: async () => {
+    if (offline) throw new Error("offline");
+    return response;
+  } });
+  let lifetime;
+  handlers.activate({ waitUntil(promise) { lifetime = promise; } });
+  await lifetime;
+  assert(deleted.length === 1 && deleted[0] === oldCacheName, "이전 사이트 캐시만 삭제하고 다른 앱 캐시는 보존합니다");
+
+  let reply;
+  handlers.fetch({ request: { method: "GET", url: "https://toeic.monster/assets/app.js", mode: "same-origin", headers: { get: () => "" } },
+    waitUntil(promise) { lifetime = promise; }, respondWith(promise) { reply = promise; } });
+  assert((await reply).body === "cached", "에셋은 캐시를 먼저 반환합니다");
+  await Promise.resolve();
+  await Promise.resolve();
+  let finished = false;
+  lifetime.then(() => { finished = true; });
+  await Promise.resolve();
+  assert(written && written[1].body === "fresh" && !finished, "백그라운드 갱신은 캐시 저장이 끝날 때까지 워커를 유지합니다");
+  resolvePut();
+  await lifetime;
+
+  offline = true;
+  handlers.fetch({ request: { method: "GET", url: "https://toeic.monster/unknown", mode: "navigate", headers: { get: () => "text/html" } },
+    waitUntil(promise) { lifetime = promise; }, respondWith(promise) { reply = promise; } });
+  assert((await reply).body === "home", "오프라인에서 방문하지 않은 페이지는 홈으로 폴백합니다");
+  await lifetime;
+}
+
+/* ------------------------------------------------------------------ */
 
 console.log(`\n${failures ? "❌" : "✅"} 홈 UI/UX 테스트 ${failures ? `실패 ${failures}건` : `통과 (${checks}건)`}`);
 process.exit(failures ? 1 : 0);

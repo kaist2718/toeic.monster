@@ -42,6 +42,19 @@ jobs:
       - name: 감사 · 테스트 · 빌드 · 생성물 검증
         run: npm run check:ci
 
+  # 사이트와 별개인 홍보 도구의 예약·게시·영상 생성 회귀도 푸시마다 확인합니다.
+  promo:
+    name: promo tests (Python 3.11)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      # 프레임 렌더 테스트에만 Pillow가 필요합니다. 게시 API 인증이나 업로드는 하지 않습니다.
+      - run: python -m pip install "Pillow>=10.0.0"
+      - run: python -m unittest discover -s promo -p 'test_*.py'
+
   # 외부 링크(공식 ETS 안내, British Council, ELLLO)는 상대 사이트 사정으로
   # 언제든 끊길 수 있으므로 실패해도 전체 CI 를 막지 않습니다.
   # 확인 시점: 주 1회 예약 실행 + 수동 실행(workflow_dispatch).
