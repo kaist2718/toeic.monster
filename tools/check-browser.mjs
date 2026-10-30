@@ -28,7 +28,6 @@
 
 import http from "node:http";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { spawn, execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -43,6 +42,7 @@ const MIME = {
   ".webmanifest": "application/manifest+json",
   ".xml": "application/xml",
   ".txt": "text/plain;charset=utf-8",
+  ".woff2": "font/woff2",
 };
 
 const problems = [];
@@ -70,7 +70,7 @@ const CANDIDATES = [
 const chromePath = CANDIDATES.find((p) => fs.existsSync(p));
 if (!chromePath) {
   console.log("ℹ️  Chrome 을 찾지 못해 브라우저 점검을 건너뜁니다 (CHROME_BIN 으로 지정할 수 있습니다).");
-  process.exit(0);
+  process.exit(process.argv.includes("--require-browser") ? 1 : 0);
 }
 
 /* ------------------------------------------------------------------ */
@@ -116,8 +116,8 @@ const sitePort = server.address().port;
 /** 점검 대상 주소 — 로컬 빌드 또는 배포된 사이트. */
 const BASE = LIVE ? LIVE_SITE : `http://127.0.0.1:${sitePort}`;
 
-const profile = path.join(os.tmpdir(), `toeic-browser-check-${process.pid}`);
-fs.rmSync(profile, { recursive: true, force: true });
+fs.mkdirSync(path.join(ROOT, ".cache"), { recursive: true });
+const profile = fs.mkdtempSync(path.join(ROOT, ".cache", "browser-check-"));
 const chrome = spawn(
   chromePath,
   [
@@ -1724,6 +1724,59 @@ try {
   check(fullAnswer.opts === 4, `TOEIC 풀 모의: 문항에 보기가 4개 나옵니다 (${fullAnswer.opts}개)`);
   check(fullAnswer.answered, "TOEIC 풀 모의: 답을 고르면 채점 피드백이 나옵니다");
 
+  // 배포본에서 서비스워커 설치 완료를 확인한 뒤 실제 네트워크를 끊고 홈과 자료를 엽니다.
+  // 라이브 사이트는 외부 환경 영향이 크므로 이 오프라인 검사는 로컬 배포본에서만 수행합니다.
+  if (!LIVE) {
+    await evaluate(`location.href = "/index.html"`);
+    let ready = false;
+    for (let i = 0; i < 80; i++) {
+      await wait(250);
+      ready = await evaluate(`!!navigator.serviceWorker.controller`);
+      if (ready) break;
+    }
+    check(ready, "오프라인: 서비스워커가 페이지를 제어합니다");
+    if (ready) {
+      const precached = await evaluate(`(async () => {
+        const keys = await caches.keys();
+        const name = keys.find(k => k.startsWith("toeic-monster-v"));
+        if (!name) return false;
+        const c = await caches.open(name);
+        return !!(await c.match("./index.html")) && !!(await c.match("./data/unit01.js")) && !!(await c.match("./grammar/"));
+      })()`);
+      check(precached, "오프라인: 홈·어휘 데이터·문법 허브가 캐시에 저장됩니다");
+      // DevTools의 오프라인 설정은 서비스워커의 fetch에 적용되지 않을 수 있습니다.
+      // 서버까지 중단해 모든 요청이 실제 장애 상태에서 처리되는지 확인합니다.
+      await new Promise((resolve) => { server.close(resolve); server.closeAllConnections(); });
+      await send("Network.emulateNetworkConditions", { offline: true, latency: 0, downloadThroughput: 0, uploadThroughput: 0 });
+      try {
+        await send("Page.navigate", { url: `${BASE}/index.html` });
+        let offlineHome = false;
+        for (let i = 0; i < 60; i++) {
+          await wait(250);
+          offlineHome = await evaluate(`!!document.getElementById("btnQuiz") && typeof window.VOCAB_UNITS === "object" && !!window.VOCAB_UNITS[1]`);
+          if (offlineHome) break;
+        }
+        check(offlineHome, "오프라인: 홈과 어휘 데이터를 다시 불러옵니다");
+        if (offlineHome) {
+          const graded = await evaluate(`(() => {
+            document.getElementById("btnQuiz").click();
+            document.getElementById("quizStart").click();
+            const opt = document.querySelector("#quizBox .quiz-opt");
+            if (!opt) return false;
+            opt.click();
+            return /정답|오답/.test((document.getElementById("quizFeedback") || {}).textContent || "");
+          })()`);
+          check(graded, "오프라인: 단어 퀴즈의 답을 채점합니다");
+        }
+        const hub = await evaluate(`fetch("/grammar/").then(r => r.ok && r.text()).then(t => typeof t === "string" && /문법/.test(t)).catch(() => false)`);
+        check(hub, "오프라인: 캐시된 문법 허브를 읽습니다");
+        const fallback = await evaluate(`fetch("/not-cached-offline", { headers: { Accept: "text/html" } }).then(async r => ({ ok: r.ok, text: await r.text() })).catch(e => ({ ok: false, text: String(e) }))`);
+        check(fallback.ok && fallback.text.includes("toeic.monster"), `오프라인: 캐시되지 않은 문서는 홈으로 대체됩니다 (${fallback.ok ? "응답 확인" : fallback.text.slice(0, 100)})`);
+      } finally {
+        await send("Network.emulateNetworkConditions", { offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
+      }
+    }
+  }
   await evaluate(`localStorage.clear()`);
 } finally {
   await shutdown();

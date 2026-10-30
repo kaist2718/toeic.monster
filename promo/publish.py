@@ -3780,6 +3780,26 @@ def run_auto_plan(cfg: dict, count: int, kind: str = "auto", *, start_at: str | 
     count = min(10, max(1, count))
     interval_days = max(1, interval_days)
 
+    # 예약 조건이 잘못된 경우 영상 생성과 콘텐츠 사용 기록부터 남기지 않습니다.
+    if start_at:
+        platform_list = resolve_platforms(cfg, platforms)
+        if not platform_list or any(p not in ("yt", "ig", "tt") for p in platform_list):
+            fail("예약 플랫폼은 yt, ig, tt 중에서 지정해야 합니다.")
+            return []
+        platforms = ",".join(platform_list)
+        plan_mode = resolve_plan_mode(platform_list, mode)
+        if plan_mode == "native" and platform_list != ["yt"]:
+            fail("YouTube 예약 게시는 YouTube 전용입니다 — --platforms yt 로 실행하거나 "
+                 "--plan-mode local(로컬 예약)을 쓰세요.")
+            return []
+        try:
+            first = parse_publish_at(start_at) if plan_mode == "native" else parse_schedule_time(start_at)
+            if plan_mode == "local" and first <= datetime.now().astimezone():
+                raise ValueError("예약 시간은 현재 시간보다 이후여야 합니다.")
+        except ValueError as exc:
+            fail(f"첫 예약 일시가 올바르지 않습니다: {exc}")
+            return []
+
     log("\n" + "=" * 62)
     label = ", ".join(KIND_LABELS.get(k, k) for k in (kind,) if k != "auto") if kind != "auto" else "자동(남은 콘텐츠 많은 순)"
     log(f"🗓️ 콘텐츠 자동 준비 — {count}개 · {label} · 항목 {words}개씩")
@@ -3792,9 +3812,9 @@ def run_auto_plan(cfg: dict, count: int, kind: str = "auto", *, start_at: str | 
         if kind == "auto":
             inv = {r["key"]: r for r in content_inventory()}
 
-            def remaining(k: str, inv=inv, planned=planned, words=words) -> int:
-                # 영상 하나가 소비하는 항목 수(words)까지 빼야 N일치를 넉넉히 잡을 수 있습니다.
-                return max(0, int(inv.get(k, {}).get("remaining", 0)) - planned.get(k, 0) * words)
+            def remaining(k: str, inv=inv) -> int:
+                # 생성기가 사용 기록을 바로 저장하므로 최신 재고에서 다시 빼지 않습니다.
+                return max(0, int(inv.get(k, {}).get("remaining", 0)))
 
             candidates = [k for k in AUTO_KINDS if remaining(k) > 0]
             if not candidates:
@@ -3810,13 +3830,14 @@ def run_auto_plan(cfg: dict, count: int, kind: str = "auto", *, start_at: str | 
         if command is None:
             warn("남은 단어가 있는 UNIT 이 없어 중단합니다.")
             break
+        # 같은 UNIT을 여러 번 생성해도 앞선 영상과 메타가 덮어써지지 않아야 합니다.
+        video = SHORTS_DIR / f"plan_{uuid.uuid4().hex}.mp4"
+        command.extend(["--out", str(video)])
         log(f"\n▶ [{n + 1}/{count}] {KIND_LABELS.get(pick, pick)} 쇼츠 생성")
-        started = time.time()
         if not run_menu_command(command):
             fail(f"{n + 1}번째 쇼츠 생성에 실패해 중단합니다.")
             break
-        video = newest_video_since(started)
-        if video is None:
+        if not video.is_file():
             fail("생성된 영상을 찾지 못했습니다.")
             break
         videos.append(video)
@@ -3832,20 +3853,16 @@ def run_auto_plan(cfg: dict, count: int, kind: str = "auto", *, start_at: str | 
         log("  또는 메뉴 23번에서 '예약 등록', 영상 하나씩은 메뉴 20번을 쓸 수 있습니다.")
         return videos
 
-    platforms = platforms or (",".join(resolve_platforms(cfg, "auto")) or "yt")
-    platform_list = [p.strip() for p in platforms.split(",") if p.strip()]
-    plan_mode = resolve_plan_mode(platform_list, mode)
-    if plan_mode == "native" and platform_list != ["yt"]:
-        fail("YouTube 예약 게시는 YouTube 전용입니다 — --platforms yt 로 실행하거나 "
-             "--plan-mode local(로컬 예약)을 쓰세요.")
-        return videos
     privacy = (privacy or str(promo.get("default_privacy", "unlisted"))).lower()
     if privacy not in ("public", "unlisted", "private"):
         privacy = "unlisted"
     try:
+        # 렌더링에 시간이 걸릴 수 있으므로 등록 직전에도 시각을 확인합니다.
         first = parse_publish_at(start_at) if plan_mode == "native" else parse_schedule_time(start_at)
+        if plan_mode == "local" and first <= datetime.now().astimezone():
+            raise ValueError("예약 시간은 현재 시간보다 이후여야 합니다.")
     except ValueError as exc:
-        fail(f"첫 예약 일시가 올바르지 않습니다: {exc}")
+        fail(f"영상 생성 후 첫 예약 일시가 올바르지 않습니다: {exc}")
         return videos
     ok(f"\n예약 게시 등록 — {len(videos)}건 · 플랫폼 {', '.join(platform_list)}"
        f" · {PLAN_MODE_LABELS[plan_mode]}")
@@ -4202,11 +4219,55 @@ def print_quota_status(now: datetime | None = None) -> dict:
     return st
 
 
+def schedule_report_rows(rows: list[dict], local: list[dict], native: list[dict],
+                         now: datetime | None = None) -> list[dict]:
+    """예약별 최근 플랫폼 결과를 묶습니다. dry-run은 실제 게시 결과가 아닙니다."""
+    now = now or datetime.now().astimezone()
+    report = []
+    for item in local:
+        sid = str(item.get("id") or "")
+        attempts = [r for r in rows if sid and r.get("schedule_id") == sid
+                    and r.get("event") == "publish" and r.get("status") != "dry-run"]
+        latest = {}
+        for row in attempts:
+            for platform in str(row.get("platform") or "").split(","):
+                if platform.strip():
+                    latest[platform.strip()] = row.get("status", "")
+        values = set(latest.values())
+        when = schedule_when(item)
+        status = str(item.get("status") or "scheduled")
+        if "failed" in values and ("success" in values or "skipped" in values):
+            status = "부분 성공"
+        elif status == "failed" or "failed" in values:
+            status = "실패"
+        elif status == "scheduled" and when is None:
+            status = "시각 오류"
+        elif status == "scheduled" and when <= now:
+            status = "실행 지연"
+        details = ", ".join(f"{p}: {s}" for p, s in latest.items()) or "게시 결과 없음"
+        messages = "; ".join(str(r.get("message")) for r in attempts if r.get("status") == "failed" and r.get("message"))
+        report.append({"kind": "로컬", "id": sid, "when": item.get("scheduled_at", ""),
+                       "status": status, "video": item.get("video", ""),
+                       "details": details + (" — " + messages if messages else "")})
+    for item in native:
+        when = schedule_when(item, "publish_at")
+        status = str(item.get("status") or "scheduled")
+        if status == "scheduled" and when is None:
+            status = "시각 오류"
+        elif status == "scheduled" and when <= now:
+            status = "공개 확인 필요"
+        report.append({"kind": "YouTube", "id": item.get("id", ""), "when": item.get("publish_at", ""),
+                       "status": status, "video": item.get("video", ""),
+                       "details": item.get("note", "") or "장부 기준 · 실제 공개 여부는 별도 확인"})
+    return report
+
+
 def write_history_report(open_after: bool = True) -> Path | None:
-    """게시 이력 CSV를 요약 통계와 함께 HTML 리포트로 만듭니다."""
+    """게시 이력과 예약별 실패·부분 성공을 HTML 리포트로 만듭니다."""
     rows = read_history_rows()
-    if not rows:
-        warn("게시 이력이 아직 없어 리포트를 만들 수 없습니다.")
+    schedules = schedule_report_rows(rows, load_schedules(), load_native_schedules())
+    if not rows and not schedules:
+        warn("게시 이력과 예약이 아직 없어 리포트를 만들 수 없습니다.")
         return None
     publishes = [r for r in rows if r.get("event") == "publish"]
     status_count: dict[str, int] = {}
@@ -4241,6 +4302,13 @@ def write_history_report(open_after: bool = True) -> Path | None:
         f"<td>{esc_html(r.get('title', ''))[:50]}</td>"
         f"<td>{link_cell(esc_html(r.get('url', '')))}</td></tr>"
         for r in publishes[-100:][::-1])
+    schedule_table = "".join(
+        f"<tr><td>{esc_html(r['kind'])}</td><td>{esc_html(r['id'])}</td>"
+        f"<td>{esc_html(r['when'])}</td><td>{esc_html(r['status'])}</td>"
+        f"<td>{esc_html(r['video'])}</td><td>{esc_html(r['details'])}</td></tr>"
+        for r in schedules)
+    attention = sum(r["status"] in ("부분 성공", "실패", "시각 오류", "실행 지연", "공개 확인 필요", "missing")
+                    for r in schedules)
     html = f"""<!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -4263,6 +4331,10 @@ def write_history_report(open_after: bool = True) -> Path | None:
 <div class="sub">생성: {now_iso()} · 총 {len(rows)}건 이벤트 중 게시 {len(publishes)}건</div>
 <div class="cards">{cards}</div>
 <ul>{plat}</ul>
+<h2>예약 현황 · 확인 필요 {attention}건</h2>
+<p>부분 성공은 동일 예약의 플랫폼별 최신 실제 실행 결과입니다. 미리보기는 제외하며 YouTube 공개 여부는 별도 확인이 필요합니다.</p>
+<table><thead><tr><th>방식</th><th>예약 ID</th><th>시각</th><th>상태</th><th>영상</th><th>상세</th></tr></thead><tbody>{schedule_table}</tbody></table>
+<h2>최근 게시 이력</h2>
 <table><thead><tr><th>시각</th><th>플랫폼</th><th>상태</th><th>제목</th><th>링크</th></tr></thead><tbody>{table_rows}</tbody></table>
 </body></html>"""
     REPORT_DIR.mkdir(parents=True, exist_ok=True)

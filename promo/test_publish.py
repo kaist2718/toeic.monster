@@ -176,16 +176,19 @@ class AutoPlanNativeTest(unittest.TestCase):
 
     def test_native_plan_uploads_each_video_with_staggered_publish_at(self):
         start = (datetime.now().astimezone() + timedelta(days=1)).replace(second=0, microsecond=0)
-        videos = [Path("a.mp4"), Path("b.mp4"), Path("c.mp4")]
         calls = []
         cfg = {"promo": {"default_words": 1}, "youtube": {"enabled": True}}
-        with mock.patch.object(publish, "build_shorts_command", return_value=["make"]), \
-                mock.patch.object(publish, "run_menu_command", return_value=True), \
-                mock.patch.object(publish, "newest_video_since", side_effect=videos), \
+        with tempfile.TemporaryDirectory() as td, \
+                mock.patch.object(publish, "SHORTS_DIR", Path(td)), \
+                mock.patch.object(publish, "build_shorts_command", side_effect=lambda *_: ["make"]), \
+                mock.patch.object(publish, "run_menu_command",
+                                  side_effect=lambda cmd: Path(cmd[cmd.index("--out") + 1]).write_bytes(b"video") > 0), \
                 mock.patch.object(publish, "publish_single",
                                   side_effect=lambda _cfg, args, _video: calls.append(args)):
-            publish.run_auto_plan(cfg, 3, "unit", start_at=start.strftime("%Y-%m-%d %H:%M"),
-                                  interval_days=2, platforms="yt", mode="native")
+            videos = publish.run_auto_plan(cfg, 3, "unit", start_at=start.strftime("%Y-%m-%d %H:%M"),
+                                           interval_days=2, platforms="yt", mode="native")
+            self.assertEqual(len(set(videos)), 3, "같은 UNIT 영상은 서로 다른 파일이어야 합니다")
+            self.assertTrue(all(video.is_file() for video in videos))
         self.assertEqual(len(calls), 3)
         self.assertEqual([c.publish_at for c in calls],
                          publish.plan_publish_times(start, 3, 2))
@@ -195,12 +198,46 @@ class AutoPlanNativeTest(unittest.TestCase):
 
     def test_native_plan_refuses_mixed_platforms(self):
         cfg = {"promo": {"default_words": 1}}
-        with mock.patch.object(publish, "build_shorts_command", return_value=["make"]), \
-                mock.patch.object(publish, "run_menu_command", return_value=True), \
-                mock.patch.object(publish, "newest_video_since", return_value=Path("a.mp4")), \
+        with mock.patch.object(publish, "run_menu_command") as generate, \
                 mock.patch.object(publish, "publish_single") as upload:
-            publish.run_auto_plan(cfg, 1, "unit", start_at="2026-11-01 19:00",
-                                  platforms="yt,ig", mode="native")
+            result = publish.run_auto_plan(cfg, 1, "unit", start_at="2026-11-01 19:00",
+                                           platforms="yt,ig", mode="native")
+        self.assertEqual(result, [])
+        generate.assert_not_called()
+        upload.assert_not_called()
+
+    def test_invalid_schedule_is_rejected_before_generation(self):
+        cfg = {"promo": {"default_words": 1}}
+        for when, platforms, mode in (("invalid", "yt", "native"),
+                                      ("2000-01-01 00:00", "yt", "local"),
+                                      ("2099-01-01 00:00", "invalid", "local")):
+            with self.subTest(when=when, platforms=platforms), \
+                    mock.patch.object(publish, "run_menu_command") as generate:
+                self.assertEqual(publish.run_auto_plan(cfg, 1, "unit", start_at=when,
+                                                      platforms=platforms, mode=mode), [])
+                generate.assert_not_called()
+
+    def test_auto_plan_does_not_double_count_used_inventory(self):
+        inventories = [[{"key": "unit", "remaining": 2}], [{"key": "unit", "remaining": 1}]]
+        with tempfile.TemporaryDirectory() as td, \
+                mock.patch.object(publish, "SHORTS_DIR", Path(td)), \
+                mock.patch.object(publish, "AUTO_KINDS", ("unit",)), \
+                mock.patch.object(publish, "content_inventory", side_effect=inventories), \
+                mock.patch.object(publish, "recent_content_history", return_value=[]), \
+                mock.patch.object(publish, "build_shorts_command", side_effect=lambda *_: ["make"]), \
+                mock.patch.object(publish, "run_menu_command",
+                                  side_effect=lambda cmd: Path(cmd[cmd.index("--out") + 1]).write_bytes(b"video") > 0):
+            videos = publish.run_auto_plan({"promo": {}}, 2, "auto", words=1)
+        self.assertEqual(len(videos), 2)
+
+    def test_successful_command_without_output_is_not_scheduled(self):
+        with tempfile.TemporaryDirectory() as td, \
+                mock.patch.object(publish, "SHORTS_DIR", Path(td)), \
+                mock.patch.object(publish, "build_shorts_command", return_value=["make"]), \
+                mock.patch.object(publish, "run_menu_command", return_value=True), \
+                mock.patch.object(publish, "publish_single") as upload:
+            result = publish.run_auto_plan({"promo": {}}, 1, "unit")
+        self.assertEqual(result, [])
         upload.assert_not_called()
 
 
@@ -217,13 +254,17 @@ class ReportHtmlTest(unittest.TestCase):
 
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
-        self._old = (publish.HISTORY_FILE, publish.REPORT_DIR, publish.PERF_FILE)
+        self._old = (publish.HISTORY_FILE, publish.REPORT_DIR, publish.PERF_FILE,
+                     publish.SCHEDULE_FILE, publish.NATIVE_SCHEDULE_FILE)
         publish.HISTORY_FILE = Path(self.tmp.name) / "history.csv"
         publish.REPORT_DIR = Path(self.tmp.name) / "reports"
         publish.PERF_FILE = Path(self.tmp.name) / "performance.json"
+        publish.SCHEDULE_FILE = Path(self.tmp.name) / "schedules.json"
+        publish.NATIVE_SCHEDULE_FILE = Path(self.tmp.name) / "native.json"
 
     def tearDown(self):
-        publish.HISTORY_FILE, publish.REPORT_DIR, publish.PERF_FILE = self._old
+        (publish.HISTORY_FILE, publish.REPORT_DIR, publish.PERF_FILE,
+         publish.SCHEDULE_FILE, publish.NATIVE_SCHEDULE_FILE) = self._old
         self.tmp.cleanup()
 
     def test_report_escapes_html_and_renders_links(self):
@@ -238,6 +279,27 @@ class ReportHtmlTest(unittest.TestCase):
         self.assertIn('href="https://youtu.be/abc"', html)
         self.assertNotIn("<script>", html, "제목의 HTML 은 이스케이프되어야 합니다")
         self.assertIn("&lt;script&gt;", html)
+
+    def test_schedule_report_shows_partial_failure_and_pending_native(self):
+        past = (datetime.now().astimezone() - timedelta(hours=1)).isoformat()
+        publish.save_schedules([{"id": "s1", "status": "failed", "scheduled_at": past,
+                                 "platforms": "yt,ig", "video": "<video>"}])
+        publish.save_native_schedules([{"id": "n1", "status": "scheduled", "publish_at": past}])
+        for platform, status in (("yt", "success"), ("ig", "failed"), ("ig", "dry-run")):
+            publish.append_history(event="publish", status=status, schedule_id="s1", platform=platform,
+                                   message="<error>" if status == "failed" else "")
+        html = publish.write_history_report(open_after=False).read_text(encoding="utf-8")
+        self.assertIn("부분 성공", html)
+        self.assertIn("yt: success, ig: failed", html)
+        self.assertIn("공개 확인 필요", html)
+        self.assertIn("&lt;video&gt;", html)
+        self.assertIn("&lt;error&gt;", html)
+        self.assertIn("확인 필요 2건", html)
+
+    def test_schedule_only_report_does_not_require_history(self):
+        publish.save_schedules([{"id": "s2", "status": "scheduled", "scheduled_at": "bad"}])
+        html = publish.write_history_report(open_after=False).read_text(encoding="utf-8")
+        self.assertIn("시각 오류", html)
 
     def test_link_cell_without_url_is_empty(self):
         self.assertEqual(publish.link_cell(""), "")
@@ -748,6 +810,23 @@ class PublishPathTest(unittest.TestCase):
         remaining, skipped = publish.filter_posted_platforms(copy, ["yt", "ig"])
         self.assertEqual(remaining, ["ig"], "같은 내용의 다른 파일명도 이미 게시한 것으로 봅니다")
         self.assertEqual(skipped, ["yt"])
+
+
+class VideoEncodingFailureTest(unittest.TestCase):
+    """인코딩 실패는 호출자에게 실패 종료 코드로 전달되어야 합니다."""
+
+    def test_failed_encoder_exits_nonzero(self):
+        import make_shorts
+        argv = ["make_shorts.py", "--unit", "1", "--index", "0", "--no-tts",
+                "--no-intro", "--no-outro", "--no-ambient"]
+        with mock.patch.object(sys, "argv", argv), \
+                mock.patch.object(make_shorts, "ensure_maruburi"), \
+                mock.patch.object(make_shorts, "render_slide", return_value=object()), \
+                mock.patch.object(make_shorts, "render_slide_frames", return_value=None), \
+                mock.patch.object(make_shorts, "run_ffmpeg", return_value=False):
+            with self.assertRaises(SystemExit) as exc:
+                make_shorts.main()
+        self.assertNotEqual(exc.exception.code, 0)
 
 
 class FrameRenderTest(unittest.TestCase):

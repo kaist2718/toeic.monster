@@ -19,13 +19,14 @@ npm run serve       # http://127.0.0.1:8000 에서 미리보기
 | --- | --- |
 | `npm run build` | 정적 페이지 전체 생성 + 홈 사전 렌더 (결과물은 커밋 대상) |
 | `npm run audit` | 콘텐츠·문구·사이트·접근성·본문 품질·밀도 감사 (빠진 파일·오타·번역 불일치·프리캐시 어긋남) |
+| `npm run review:content` | 학습 콘텐츠 사람 검수 현황 (미검수·승인·수정 필요·원본 변경) |
 | `npm test` | DOM 을 흉내 낸 홈 UX·TTS·문법/회화 퀴즈 테스트 |
 | `npm run verify` | 생성물이 소스와 어긋나지 않는지 확인 |
 | `npm run check:ci` | 위 네 가지를 한 번에 (CI 가 돌리는 것과 같습니다) |
 | `npm run check:browser` | 실제 브라우저로 100여 항목 점검 (로컬·배포 전용) |
 | `npm run check:live` | 배포된 사이트를 브라우저로 점검 (배포 워크플로가 돌리는 것) |
 | `npm run stage` | 배포본 `_site/` 구성 (공개할 파일만) |
-| `npm run check:staged` | `_site/` 를 브라우저로 점검 (배포본 그대로) |
+| `npm run check:staged` | `_site/` 를 브라우저로 점검 (학습 흐름·오프라인 폴백 포함) |
 | `npm run perf` | 첫 방문·재방문 전송량 · FCP/LCP · 캐시 적중 실측 (`--compare` 로 원본과 비교) |
 | `npm run audit:external` | 배포된 사이트의 색인·링크 점검 |
 
@@ -50,6 +51,24 @@ tools/              빌드·감사(콘텐츠·문구·구조·접근성)·점검
 promo/              홍보 영상·게시 도구 (사이트 배포 대상 아님)
 docs/               기획·점검 기록 (사이트 배포 대상 아님)
 ```
+
+## 학습 콘텐츠 사람 검수
+
+자동 감사는 번역이나 정답의 정확성을 보증하지 않습니다. 실제 검수자가 영어·한국어 번역,
+문항의 정답과 해설을 확인하고 검수 이력을 기록해야 합니다. 현재 이력은
+`docs/content-review-history.json` 에 보관하며, 빈 이력은 검수 완료를 뜻하지 않습니다.
+
+```bash
+npm run review:content
+node tools/content-review.mjs export .cache/content-review.json
+node tools/content-review.mjs record 'unit1:1' '<목록의 전체 hash>' '검수자 이름' approved '번역과 예문 확인'
+```
+
+내보낸 JSON의 `items`에는 원본 경로·내용·해시·검수 상태가 있습니다. 문제가 있으면
+`approved` 대신 `needs_changes`와 구체적인 메모를 기록하고 원본을 수정한 뒤 재검수합니다.
+내용이 바뀌면 기존 이력은 보존하되 상태가 `stale`로 바뀌므로 새 해시로 다시 검수해야 합니다.
+검수자는 실제 검수한 사람을 적고, 확인하지 않은 항목을 승인하지 마세요. 이 목록은 어휘·숙어,
+교재 예문과 연습문제, 일부 확장 문항이 대상이며 사이트의 모든 콘텐츠를 포함하지는 않습니다.
 
 ## 문의 폼 (Formspree)
 
@@ -114,7 +133,7 @@ IP 주소는 서버에서 원본을 저장하지 않고 매일 바뀌는 salt �
 ## 배포
 
 `main` 에 푸시하면 `.github/workflows/deploy.yml` 이 `check:ci` 를 통과한 뒤
-`_site/`(공개 목록만 담은 폴더)만 GitHub Pages 로 게시하고, 이어서 **배포된 주소**를
+`_site/`(공개 목록만 담은 폴더)만 GitHub Pages 로 게시하고, CI는 배포본을 실제 Chrome으로 열어 학습·오프라인 동작을 검사합니다. 이어서 **배포된 주소**를
 헤드리스 브라우저로 훑는 `smoke` 작업이 돕니다.
 `tools/`·`promo/`·`docs/`·`package.json` 은 배포본에 들어가지 않습니다.
 

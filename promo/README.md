@@ -529,6 +529,14 @@ pip install TikTokApi playwright
 playwright install chromium
 ```
 
+### 예약·게시 운영 리포트
+
+메뉴 **18번** 또는 `python publish.py --report`로 생성하는 `reports/publish_report.html`에서
+로컬 예약과 YouTube 예약 장부를 함께 확인합니다. 로컬 예약의 플랫폼별 최신 실제 결과로
+실패·부분 성공을 표시하고, 실행 지연·잘못된 시각·YouTube 공개 확인 필요 항목을 표시합니다.
+미리보기(dry-run)는 실제 성공으로 계산하지 않습니다. 장부의 상태는 실시간 조회가 아니므로
+YouTube 공개 여부는 `--verify-schedules`로 확인하세요.
+
 ### 6-1. 수동 게시 폴백
 
 자동 게시가 실패하면 **업로드 페이지를 자동으로 열고 캡션·해시태그를 클립보드에 복사**합니다. 영상 파일만 선택해 붙여넣으면 되므로 API 설정 없이도 바로 게시할 수 있습니다.

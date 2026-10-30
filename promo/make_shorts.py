@@ -2267,7 +2267,7 @@ def main() -> None:
         if not run_ffmpeg(["-framerate", str(FPS), "-i", str(tmp / "frame_%05d.jpg"),
                            "-c:v", "libx264", "-preset", "veryfast", "-crf", "20",
                            "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(silent)]):
-            return
+            sys.exit(1)
 
         # ── TTS·배경음악·앰비언트 병합 ──
         tts_wav = None
@@ -2279,19 +2279,19 @@ def main() -> None:
             tts_wav = tmp / "full_audio.wav"
             if not run_ffmpeg(["-f", "concat", "-safe", "0", "-i", str(concat_list),
                                "-c", "copy", str(tts_wav)]):
-                return
+                sys.exit(1)
         if tts_wav is None and music is None and not args.no_ambient:
             ambient = build_ambient(total_dur, tmp)
             if ambient is not None:
                 if not run_ffmpeg(["-i", str(silent), "-i", str(ambient),
                                    "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
                                    "-shortest", str(out)]):
-                    return
+                    sys.exit(1)
             elif not mix_final(silent, tts_wav, music, args.music_volume, out):
-                return
+                sys.exit(1)
         else:
             if not mix_final(silent, tts_wav, music, args.music_volume, out):
-                return
+                sys.exit(1)
 
         size_mb = out.stat().st_size / (1024 * 1024)
         ok(f"생성 완료: {out} ({size_mb:.1f}MB, {W}x{H})")

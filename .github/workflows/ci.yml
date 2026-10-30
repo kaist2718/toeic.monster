@@ -42,6 +42,20 @@ jobs:
       - name: 감사 · 테스트 · 빌드 · 생성물 검증
         run: npm run check:ci
 
+  # 배포본에서 실제 학습 흐름과 서비스워커 오프라인 폴백을 검사합니다.
+  browser:
+    name: staged browser and offline
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22.x"
+      - name: 배포본 구성
+        run: npm run stage
+      - name: Chrome 학습 흐름·오프라인 검사
+        run: node tools/check-browser.mjs --site-root _site --require-browser
+
   # 사이트와 별개인 홍보 도구의 예약·게시·영상 생성 회귀도 푸시마다 확인합니다.
   promo:
     name: promo tests (Python 3.11)
