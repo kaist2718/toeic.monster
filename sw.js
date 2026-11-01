@@ -1,5 +1,5 @@
 /* toeic.monster Service Worker - 오프라인 학습 지원 */
-var CACHE_NAME = "toeic-monster-v21";
+var CACHE_NAME = "toeic-monster-v22";
 var CORE_ASSETS = [
   "./",
   "./index.html",
@@ -36,7 +36,12 @@ var CORE_ASSETS = [
   "./grammar/cheatsheet.html",
   // 회화 교재도 문법 교재와 같은 정적 페이지라 허브를 함께 담아 둡니다.
   "./conversation/",
-  "./conversation/index.html"
+  "./conversation/index.html",
+  // 푸터가 모든 페이지에서 부르는 안내 페이지 — 오프라인 첫 방문에도 열리게 담아 둡니다.
+  // (없으면 문서 요청이 홈으로 대체되어 "사이트 소개"를 눌렀는데 앱이 뜹니다.)
+  "./about.html",
+  "./privacy.html",
+  "./terms.html"
 ];
 
 // 어휘 데이터. index.html 이 첫 화면에서 바로 내려받는 파일들이라
@@ -99,7 +104,12 @@ self.addEventListener("message", function (event) {
 
 // 요청 전략
 //  - HTML 문서(페이지 이동): 네트워크 우선 → 새 배포가 즉시 반영, 오프라인이면 캐시 폴백
-//  - 그 외 에셋: stale-while-revalidate → 캐시를 즉시 응답하고 백그라운드에서 갱신
+//  - 앱 셸(assets/app.js · app.css · data/*.js): **네트워크 우선**.
+//    이 파일들은 캐시 우선(stale-while-revalidate)이면 배포 직후 첫 로드에서
+//    **새 index.html + 캐시된 옛 app.js/데이터**가 섞여 화면이 깨질 수 있습니다.
+//    (문서는 네트워크 우선인데 이 파일들만 캐시 우선이면 두 버전이 겹칩니다.)
+//    오프라인에서는 그대로 캐시로 폴백하므로 학습은 계속됩니다.
+//  - 그 밖의 에셋(아이콘·서체·공용 CSS): stale-while-revalidate → 즉시 응답 후 갱신
 //  - 본문 서체: 다른 에셋과 같습니다 — 이제 우리 도메인 파일이라 아래 경로로 처리됩니다
 self.addEventListener("fetch", function (event) {
   var req = event.request;
@@ -110,24 +120,30 @@ self.addEventListener("fetch", function (event) {
 
   var accept = (req.headers.get("accept") || "");
   var isHTML = req.mode === "navigate" || accept.indexOf("text/html") !== -1;
+  // 앱 셸 = 문서가 실행에 직접 쓰는 스크립트·스타일. 버전이 섞이면 화면이 깨집니다.
+  var isShell = /\/assets\/(app\.js|app\.css)$/.test(url.pathname) ||
+                /\/data\/(app-data|idioms|extra|unit\d{2}|grammar-(basic|intermediate|advanced)|conversation-(basic|intermediate|advanced))\.js$/.test(url.pathname);
 
   // 캐시 갱신을 이벤트 수명에 묶어, 캐시 응답을 반환한 직후 워커가 종료되지 않게 합니다.
   var cache = caches.open(CACHE_NAME);
   var network = fetch(req);
-  event.waitUntil(network.then(function (response) {
+  function storeCopy(response) {
     if (response && response.status === 200 && (isHTML || response.type === "basic")) {
       var copy = response.clone();
       return cache.then(function (store) { return store.put(req, copy); });
     }
-  }).catch(function () {
+  }
+  event.waitUntil(network.then(storeCopy).catch(function () {
     // 네트워크 또는 캐시 저장에 실패해도 페이지 응답은 별도로 처리합니다.
   }));
 
-  if (isHTML) {
+  // 문서와 앱 셸은 네트워크 우선 — 실패하면(오프라인) 캐시로 폴백합니다.
+  if (isHTML || isShell) {
     event.respondWith(network.catch(function () {
       return cache.then(function (store) {
         return store.match(req).then(function (cached) {
-          return cached || store.match("./index.html");
+          // 문서는 캐시에 없으면 홈으로 대체하고, 셸은 오류로 둡니다(홈 HTML 을 JS 로 쓰면 실행 오류).
+          return cached || (isHTML ? store.match("./index.html") : null);
         });
       }).then(function (cached) {
         return cached || Response.error();

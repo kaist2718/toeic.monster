@@ -4,12 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>개인정보처리방침 - toeic.monster</title>
+<meta name="description" content="toeic.monster 의 개인정보처리방침 — 수집하는 개인정보가 없고, 학습 기록은 브라우저에만 저장되며, 방문 통계는 쿠키 없이 익명으로 집계합니다.">
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#3b5bdb">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="icon" href="icon-192.png" type="image/png" sizes="192x192">
 <!-- iOS 홈 화면은 SVG 아이콘을 쓰지 않으므로 PNG 를 따로 지정합니다(tools/make-icons.py 로 생성). -->
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
+<!-- 본문 서체 — 다른 페이지와 같은 자체 호스팅 서브셋(아래 @font-face 가 부릅니다). -->
+<link rel="preload" as="font" type="font/woff2" href="assets/fonts/pretendard-variable.woff2" crossorigin>
 <!-- 방문자 분석 (자체 호스팅 — 쿠키 미사용, 익명 통계). 설정은 assets/analytics.js 한 곳에서 정합니다. -->
 <script defer src="assets/analytics.js"></script>
 <script>
@@ -27,6 +30,7 @@
   })();
 </script>
 <style>
+  @font-face{font-family:"Pretendard Variable";src:url("assets/fonts/pretendard-variable.woff2") format("woff2-variations"),url("assets/fonts/pretendard-variable.woff2") format("woff2");font-weight:45 920;font-style:normal;font-display:swap}
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: "Pretendard Variable", Pretendard, "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;

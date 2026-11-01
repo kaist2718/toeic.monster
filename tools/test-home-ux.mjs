@@ -930,10 +930,13 @@ console.log("\n[10] 서비스워커 캐시 격리·갱신");
   await lifetime;
   assert(deleted.length === 1 && deleted[0] === oldCacheName, "이전 사이트 캐시만 삭제하고 다른 앱 캐시는 보존합니다");
 
+  // 앱 셸(app.js·app.css·data/*.js)은 네트워크 우선입니다 — 문서는 네트워크 우선인데
+  // 스크립트만 캐시 우선이면 배포 직후 새 HTML + 옛 스크립트가 섞여 화면이 깨집니다.
   let reply;
   handlers.fetch({ request: { method: "GET", url: "https://toeic.monster/assets/app.js", mode: "same-origin", headers: { get: () => "" } },
     waitUntil(promise) { lifetime = promise; }, respondWith(promise) { reply = promise; } });
-  assert((await reply).body === "cached", "에셋은 캐시를 먼저 반환합니다");
+  const shell = await reply;
+  assert(shell === response && shell.clone().body === "fresh", "앱 셸은 네트워크 응답을 먼저 씁니다");
   await Promise.resolve();
   await Promise.resolve();
   let finished = false;
@@ -942,6 +945,13 @@ console.log("\n[10] 서비스워커 캐시 격리·갱신");
   assert(written && written[1].body === "fresh" && !finished, "백그라운드 갱신은 캐시 저장이 끝날 때까지 워커를 유지합니다");
   resolvePut();
   await lifetime;
+
+  // 그 밖의 에셋(아이콘·서체·공용 CSS)은 캐시를 먼저 반환하고 뒤에서 갱신합니다.
+  entries.set("https://toeic.monster/icon.svg", { body: "cached-icon" });
+  reply = null;
+  handlers.fetch({ request: { method: "GET", url: "https://toeic.monster/icon.svg", mode: "same-origin", headers: { get: () => "" } },
+    waitUntil(promise) { lifetime = promise; }, respondWith(promise) { reply = promise; } });
+  assert((await reply).body === "cached-icon", "그 밖의 에셋은 캐시를 먼저 반환합니다");
 
   offline = true;
   handlers.fetch({ request: { method: "GET", url: "https://toeic.monster/unknown", mode: "navigate", headers: { get: () => "text/html" } },

@@ -26,6 +26,9 @@
 <link rel="icon" href="icon-192.png" type="image/png" sizes="192x192">
 <!-- iOS 홈 화면은 SVG 아이콘을 쓰지 않으므로 PNG 를 따로 지정합니다(tools/make-icons.py 로 생성). -->
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
+<!-- 본문 서체 — 다른 페이지와 같은 자체 호스팅 서브셋. 아래 <style> 의 @font-face 가 이 파일을 씁니다.
+     (선언만 하고 파일을 부르지 않으면 시스템 글꼴로 떨어져 이 페이지만 다르게 보입니다.) -->
+<link rel="preload" as="font" type="font/woff2" href="assets/fonts/pretendard-variable.woff2" crossorigin>
 <!-- 방문자 분석 (자체 호스팅 — 쿠키 미사용, 익명 통계). 설정은 assets/analytics.js 한 곳에서 정합니다. -->
 <script defer src="assets/analytics.js"></script>
 <script type="application/ld+json">
@@ -100,6 +103,7 @@
   })();
 </script>
 <style>
+  @font-face{font-family:"Pretendard Variable";src:url("assets/fonts/pretendard-variable.woff2") format("woff2-variations"),url("assets/fonts/pretendard-variable.woff2") format("woff2");font-weight:45 920;font-style:normal;font-display:swap}
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: "Pretendard Variable", Pretendard, "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;

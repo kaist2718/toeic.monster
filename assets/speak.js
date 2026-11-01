@@ -9,8 +9,10 @@
  *   페이지가 <head> 에서 `defer` 로 불러 옵니다. defer 는 문서 파싱이 끝난 뒤 실행되므로
  *   버튼(.gex-speak)이 모두 만들어진 다음에 붙습니다.
  *
- * index.html 의 TTS 설정(목소리·속도·언어)을 localStorage 로 공유해서,
+ * index.html 의 TTS 설정(켜기/끄기·목소리·속도·언어)을 localStorage 로 공유해서,
  * 앱에서 고른 목소리가 교재 페이지에서도 그대로 쓰입니다.
+ * 앱에서 발음 듣기를 꺼 두었으면(localStorage 의 toeic1000_tts = off) 교재 페이지의 🔊 도 감춥니다 —
+ * 꺼 둔 설정을 무시하고 소리를 내면 사용자가 직접 끈 이유(조용한 곳 등)를 침해합니다.
  */
 (function () {
   function eachButton(fn) {
@@ -22,20 +24,33 @@
     eachButton(function (b) { b.hidden = true; });
     return;
   }
-  var VOICE_URI = "", LANG = "en-US", RATE = 0.95;
+  // 기본 속도는 앱(assets/app.js 의 TTS_RATE)과 같은 값으로 맞춥니다.
+  var VOICE_URI = "", LANG = "en-US", RATE = 0.85, ENABLED = true;
   try {
+    // 앱의 기본값과 맞춥니다(앱은 저장값이 "off" 일 때만 끕니다).
+    ENABLED = localStorage.getItem("toeic1000_tts") !== "off";
     VOICE_URI = localStorage.getItem("toeic1000_ttsvoice") || "";
     LANG = localStorage.getItem("toeic1000_ttslang") || "en-US";
     var savedRate = parseFloat(localStorage.getItem("toeic1000_ttsrate"));
-    if (savedRate) RATE = savedRate;
+    // 앱과 같은 허용 범위만 받아들입니다(손상된 값이 너무 느리거나 빠른 재생이 되지 않게).
+    if (savedRate && savedRate > 0.3 && savedRate < 2) RATE = savedRate;
   } catch (e) {}
+
+  // 발음 듣기를 꺼 두었으면 동작하지 않는 버튼을 남기지 않습니다.
+  if (!ENABLED) {
+    eachButton(function (b) { b.hidden = true; });
+    return;
+  }
 
   function norm(s) { return String(s || "").replace(/_/g, "-").toLowerCase(); }
   function listVoices() { try { return synth.getVoices() || []; } catch (e) { return []; } }
-  // 저장된 목소리가 없거나 기기에 없으면 영어 음성으로 자동 대체합니다.
+  // 저장된 목소리가 없거나 기기에 없으면 같은 언어(en-GB/en-US 등)를 먼저 찾고,
+  // 그것도 없으면 아무 영어 음성으로 대체합니다.
+  // (en-GB 를 골라 둔 사용자가 첫 영어 음성인 en-US 로 바뀌어 들리던 문제를 막습니다.)
   function pickVoice() {
-    var v = listVoices(), i;
+    var v = listVoices(), i, want = norm(LANG);
     for (i = 0; i < v.length; i++) if (v[i].voiceURI === VOICE_URI) return v[i];
+    for (i = 0; i < v.length; i++) if (norm(v[i].lang) === want) return v[i];
     for (i = 0; i < v.length; i++) if (norm(v[i].lang).indexOf("en") === 0) return v[i];
     return null;
   }
