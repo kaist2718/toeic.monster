@@ -17,6 +17,7 @@ import argparse
 import ast
 import io
 import json
+import random
 import sys
 import tempfile
 import types
@@ -342,6 +343,192 @@ class WeeklyWizardTest(unittest.TestCase):
         self.videos[0].with_suffix(".json").unlink()
         _, _, upload = self.run_wizard(iter([True, False, False, False, False]))
         upload.assert_not_called()
+
+
+class QuickTenScheduleTest(unittest.TestCase):
+    """준비된 영상 선택, 하루 두 번 예약 및 중단 시 중복 방지."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.videos = [Path(self.tmp.name) / f"v{i}.mp4" for i in range(10)]
+        for i, video in enumerate(self.videos):
+            video.write_bytes(f"video{i}".encode())
+            video.with_suffix(".json").write_text(json.dumps({"kind": "frequency", "items": [
+                {"term": f"word{i}", "meaning": "뜻", "example": "Example."}]}), encoding="utf-8")
+        self.cfg = {"youtube": {"enabled": True}}
+        self.first = (datetime.now().astimezone() + timedelta(days=1)).replace(hour=8, minute=0, second=0, microsecond=0)
+        self.second = self.first.replace(hour=20)
+
+    def run_quick(self, count=10, confirm=True, upload=None, check=None,
+                  mutate=None, posted=None, videos=None, cfg=None, quota=None):
+        """새 흐름 — 묻지 않고 최신순 자동 선택, 내일부터 오전 8시대에 하루 2편."""
+        # 실제 게시 이력에 의존하지 않도록 한도 상태를 고정합니다(한도 테스트만 따로 넘김).
+        quota = quota or {"used": 0, "max": 6, "remaining": 6, "units_used": 0,
+                          "units_total": 10000,
+                          "reset_at": datetime.now().astimezone() + timedelta(hours=8),
+                          "last_upload": None, "recent_24h": 0, "channel_unlock_at": None}
+        upload = upload or mock.Mock(
+            side_effect=lambda _cfg, args, video: {"yt": f"https://youtu.be/{video.stem}"})
+        def ask_confirm(*_args):
+            if mutate:
+                mutate()
+            return confirm
+        checks: list[int] = []
+        def verified(_cfg, ids):
+            # 영상 이름이 아니라 실제 업로드 순서로 예약 시각을 돌려줍니다(파일명 규칙 무관).
+            when = upload.call_args_list[len(checks)].args[1].publish_at
+            checks.append(1)
+            return {ids[0]: {"privacy": "private", "publish_at": when}}, True
+        with mock.patch.object(publish, "list_videos_menu", return_value=videos or self.videos), \
+                mock.patch.object(publish, "youtube_quota_status", return_value=quota), \
+                mock.patch.object(publish, "ask_yes_no", side_effect=ask_confirm) as confirm_mock, \
+                mock.patch.object(publish, "posted_platforms", side_effect=posted or (lambda _v: {})), \
+                mock.patch.object(publish, "load_full_youtube_credentials", return_value=object()), \
+                mock.patch.object(publish, "probe_video_info", return_value={"width": 1080, "height": 1920, "duration": 60}), \
+                mock.patch.object(publish, "publish_single", upload), \
+                mock.patch.object(publish, "fetch_youtube_status", side_effect=check or verified):
+            publish.quick_ten_schedule_menu(cfg or self.cfg, count)
+        return upload, confirm_mock
+
+    def test_automatically_picks_ten_videos_two_per_day(self):
+        upload, confirm = self.run_quick()
+        self.assertEqual(upload.call_count, 10, "사용자가 고르지 않아도 10편을 자동 선별해야 합니다")
+        slots = publish.QUICK_SCHEDULE_SLOTS
+        day = (datetime.now().astimezone() + timedelta(days=1)).date()
+        expected = [publish.publish_at_iso(datetime.fromisoformat(
+            f"{day + timedelta(days=i // 2)}T{slots[i % len(slots)]}").astimezone())
+            for i in range(10)]
+        self.assertEqual([call.args[1].publish_at for call in upload.call_args_list], expected)
+        self.assertTrue(all(not call.args[1].allow_repeat and not call.args[1].manual_fallback
+                            for call in upload.call_args_list))
+        confirm.assert_called_once()
+
+    def test_newest_first_and_count_limit(self):
+        videos = []
+        for i in range(25):
+            video = Path(self.tmp.name) / f"many{i}.mp4"
+            video.write_bytes(f"many{i}".encode())
+            video.with_suffix(".json").write_text(json.dumps({"kind": "frequency", "items": [
+                {"term": f"w{i}", "meaning": "뜻", "example": "Example."}]}), encoding="utf-8")
+            videos.append(video)
+        upload, _ = self.run_quick(videos=videos)
+        self.assertEqual(upload.call_count, 10)
+        self.assertEqual([call.args[2] for call in upload.call_args_list], videos[:10],
+                         "목록 순서(최신순) 그대로 10편만 골라야 합니다")
+
+    def test_posted_missing_meta_and_duplicate_content_are_skipped(self):
+        posted = lambda v: {"yt": {}} if v in self.videos[:3] else {}
+        upload, _ = self.run_quick(posted=posted)
+        self.assertEqual(upload.call_count, 7)
+        self.assertEqual(upload.call_args_list[0].args[2], self.videos[3])
+
+    def test_missing_meta_and_same_content_are_skipped(self):
+        self.videos[0].with_suffix(".json").unlink()
+        self.videos[1].write_bytes(self.videos[2].read_bytes())
+        upload, _ = self.run_quick()
+        self.assertEqual(upload.call_count, 8)
+        uploaded = [c.args[2] for c in upload.call_args_list]
+        self.assertNotIn(self.videos[0], uploaded, "메타 없는 영상은 제외")
+        self.assertNotIn(self.videos[2], uploaded, "중복 내용은 뒤쪽(최신순)을 제외")
+        self.assertIn(self.videos[1], uploaded)
+
+    def test_all_posted_means_no_upload(self):
+        self.run_quick(posted=lambda _v: {"yt": {}})[0].assert_not_called()
+
+    def test_broken_items_are_skipped_by_quality_gate(self):
+        self.videos[0].with_suffix(".json").write_text(json.dumps({"kind": "grammar", "items": [
+            {"term": "q", "question": "빈칸?", "example": "He ____ home.", "meaning": "went",
+             "options": ["went", "went", "go", "goes"], "translation": "과거형"}]}),
+            encoding="utf-8")
+        upload, _ = self.run_quick()
+        self.assertEqual(upload.call_count, 9)
+        self.assertEqual(upload.call_args_list[0].args[2], self.videos[1])
+
+    def test_failure_or_unconfirmed_status_stops_after_first(self):
+        upload, _ = self.run_quick(upload=mock.Mock(return_value={"yt": None}))
+        self.assertEqual(upload.call_count, 1)
+        upload = mock.Mock(return_value={"yt": "https://youtu.be/v0"})
+        check = mock.Mock(return_value=({}, True))
+        self.assertEqual(self.run_quick(upload=upload, check=check)[0].call_count, 1)
+        check.assert_called_once()
+
+    def test_partial_success_stops_on_failure(self):
+        upload = mock.Mock(side_effect=[{"yt": "https://youtu.be/v0"}, {"yt": None}])
+        check = mock.Mock(return_value=({"v0": {"privacy": "private",
+                          "publish_at": publish.publish_at_iso(self.first)}}, True))
+        self.assertEqual(self.run_quick(upload=upload, check=check)[0].call_count, 2)
+        check.assert_called_once()
+
+    def test_cancel_and_changed_file_do_not_upload(self):
+        self.run_quick(confirm=False)[0].assert_not_called()
+        video = self.videos[0]
+        before = video.read_bytes()
+        self.run_quick(mutate=lambda v=video: v.write_bytes(b"changed"))[0].assert_not_called()
+        video.write_bytes(before)
+
+    def test_one_click_when_confirmation_is_disabled(self):
+        cfg = {"youtube": {"enabled": True}, "promo": {"confirm_real_upload": False}}
+        upload, confirm = self.run_quick(cfg=cfg)
+        self.assertEqual(upload.call_count, 10)
+        confirm.assert_not_called()
+
+    def test_quota_exhausted_warns_and_can_cancel(self):
+        now = datetime.now().astimezone()
+        exhausted = {"used": 10, "max": 6, "remaining": 0, "units_used": 16000,
+                     "units_total": 10000, "reset_at": now + timedelta(hours=3),
+                     "last_upload": now - timedelta(hours=2), "recent_24h": 10,
+                     "channel_unlock_at": now + timedelta(hours=22)}
+        self.run_quick(confirm=False, quota=exhausted)[0].assert_not_called()
+        self.assertEqual(self.run_quick(confirm=True, quota=exhausted)[0].call_count, 10)
+
+    def test_dates_and_times_are_automatic(self):
+        """날짜·시각을 묻지 않고 내일부터 매일 08:00·08:15 로 예약합니다."""
+        upload, confirm = self.run_quick()
+        times = [publish.parse_schedule_time(c.args[1].publish_at)
+                 for c in upload.call_args_list]
+        self.assertEqual([t.strftime("%H:%M") for t in times], ["08:00", "08:15"] * 5)
+        tomorrow = (datetime.now().astimezone() + timedelta(days=1)).date()
+        self.assertEqual([t.date() for t in times],
+                         [tomorrow + timedelta(days=i // 2) for i in range(10)])
+        confirm.assert_called_once()
+
+
+class QuizQualityGateTest(unittest.TestCase):
+    """검토 없이 게시할 수 있도록 문항 자체를 자동 점검합니다."""
+
+    def item(self, options, answer, why="해설", example="He ____ home."):
+        return {"term": "q", "question": "빈칸?", "example": example,
+                "meaning": answer, "options": options, "translation": why}
+
+    def test_clean_item_passes(self):
+        self.assertEqual(publish.sidecar_item_problems(
+            [self.item(["went", "go", "goes", "gone"], "went")]), [])
+
+    def test_duplicate_missing_or_wrong_answer_are_reported(self):
+        cases = {
+            "보기 4개 아님": self.item(["a", "a", "b", "c"], "a"),
+            "정답 불일치": self.item(["a", "b", "c", "d"], "z"),
+            "해설 없음": self.item(["a", "b", "c", "d"], "a", why=""),
+        }
+        for expected, item in cases.items():
+            with self.subTest(expected=expected):
+                self.assertTrue(any(expected in p for p in
+                                    publish.sidecar_item_problems([item])), expected)
+
+    def test_generation_keeps_only_clean_items(self):
+        import make_shorts as shorts
+        def row(key, opts, answer, why="해설"):
+            q = {"term": key, "question": "빈칸?", "sentence": "He ____ home.", "note": "",
+                 "opts": opts, "a": answer, "why": why, "tag": "1과", "key": key}
+            return [key, "", "", answer, "He ____ home.", why, "", 1, q]
+        pool = [row(f"ok{i}", ["a", "b", "c", "d"], "a") for i in range(6)]
+        pool += [row("dup", ["a", "a", "b", "c"], "a"),
+                 row("wrong", ["a", "b", "c", "d"], "z"),
+                 row("nowhy", ["a", "b", "c", "d"], "a", why="")]
+        picked = shorts.select_content(pool, "grammar", 4, random.Random(1))
+        self.assertEqual(len(picked), 4)
+        self.assertTrue(all(shorts.quiz_item_ok(w) for w in picked))
 
 
 class MultiVideoPlanTest(unittest.TestCase):
@@ -670,7 +857,10 @@ class NativeScheduleLedgerTest(unittest.TestCase):
     def test_cancel_without_full_token_keeps_ledger(self):
         item = publish.record_native_schedule(video_id="keep", video="a.mp4", title="t",
                                               publish_at=self.iso(3))
-        self.assertFalse(publish.cancel_native_schedule(item["id"], {}))
+        # 이 PC 에 읽기·삭제 토큰이 있어도 '토큰 없음' 상황을 재현합니다 —
+        # 실제 토큰 유무에 따라 삭제 요청이 나가면 테스트가 환경에 의존하게 됩니다.
+        with mock.patch.object(publish, "load_full_youtube_credentials", return_value=None):
+            self.assertFalse(publish.cancel_native_schedule(item["id"], {}))
         self.assertEqual(publish.load_native_schedules()[0]["status"], "scheduled")
 
     def test_cancel_unknown_id_is_safe(self):
@@ -1132,6 +1322,49 @@ class PiperModelCacheTest(unittest.TestCase):
             for voice in ("en_US-amy-low", "en_US-ryan-high", "en_US-third"):
                 self.shorts._synthesize_piper("hi", voice, self.root / f"{voice}.wav")
             self.assertLessEqual(len(cache), self.shorts.PIPER_MODEL_CACHE)
+
+
+class ShortsAuditTest(unittest.TestCase):
+    """메뉴 33 — 영상별 예약 가능/제외 사유 점검(업로드 없음)."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.dir = Path(self.tmp.name)
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def make_video(self, name, meta=None):
+        video = self.dir / name
+        video.write_bytes(b"video")
+        if meta is not None:
+            video.with_suffix(".json").write_text(json.dumps(meta), encoding="utf-8")
+        return video
+
+    def audit(self, videos, info=None, posted=None):
+        info = info or {"width": 1080, "height": 1920, "duration": 60}
+        with mock.patch.object(publish, "list_videos_menu", return_value=videos), \
+                mock.patch.object(publish, "posted_platforms", side_effect=posted or (lambda _v: {})), \
+                mock.patch.object(publish, "probe_video_info", return_value=info):
+            return publish.audit_shorts({})
+
+    def test_splits_ready_and_blocked(self):
+        good = self.make_video("good.mp4", {"kind": "frequency", "items": [
+            {"term": "equipment", "meaning": "장비", "example": "The equipment is new."}]})
+        bad = self.make_video("bad.mp4")  # 메타 없음 → 제외
+        result = self.audit([good, bad])
+        self.assertEqual(result["total"], 2)
+        self.assertEqual([row["video"].name for row in result["ready"]], ["good.mp4"])
+        self.assertEqual([video.name for video, _ in result["blocked"]], ["bad.mp4"])
+        self.assertIn("메타 없음", result["blocked"][0][1])
+
+    def test_flags_bad_ratio_and_already_posted(self):
+        video = self.make_video("wide.mp4", {"kind": "frequency", "items": [
+            {"term": "equipment", "meaning": "장비", "example": "The equipment is new."}]})
+        narrow = self.audit([video], info={"width": 1920, "height": 1080, "duration": 60})
+        self.assertIn("9:16 아님", narrow["blocked"][0][1])
+        posted = self.audit([video], posted=lambda _v: {"yt": "https://youtu.be/x"})
+        self.assertIn("이미 게시", posted["blocked"][0][1])
 
 
 if __name__ == "__main__":

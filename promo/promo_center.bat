@@ -81,14 +81,16 @@ echo  toeic.monster 홍보 원클릭 센터 - 사용법
 echo  =================================================================
 echo    promo_center.bat                 원클릭 메뉴 열기 (기본)
 echo    promo_center.bat setup           처음 설치 - 의존성 설치 + 설정 점검
-echo    promo_center.bat menu-list       번호 순(1~32) 메뉴 목록·설명 보기
+echo    promo_center.bat menu-list       번호 순(1~33) 메뉴 목록·설명 보기
 echo    promo_center.bat 5               메뉴 5 바로 실행
 echo    promo_center.bat 1-4             메뉴 1~4 를 순서대로 실행 (17,18 도 가능)
 echo    promo_center.bat 31              TTS 엔진/목소리 설정 (내려받기, 미리 듣기)
-echo    promo_center.bat 32              주간 제작 마법사 (검토 후 YouTube 예약)
+echo    promo_center.bat 32              최신 영상 10편 자동 예약 (하루 2편, 목록 선택 없음)
+echo    promo_center.bat 33              제작 품질 점검 (영상별 예약 가능/제외 사유)
 echo    promo_center.bat check           설정 / 의존성 / 폴더 상태 점검
 echo    promo_center.bat verify          배포 전 검증 (재생 + 메타 확인 후 게시)
 echo    promo_center.bat report          게시 이력 HTML 리포트
+echo    promo_center.bat audit           폴더 전체 영상 게시 준비 점검 (업로드 없음)
 echo    promo_center.bat list-remaining  종류별 남은 콘텐츠 수량
 echo    promo_center.bat quota           YouTube 업로드 가능 시간·쿼터 잔량
 echo    promo_center.bat list-posted     중복 게시 방지 기록

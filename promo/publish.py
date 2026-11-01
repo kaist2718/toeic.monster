@@ -1687,9 +1687,21 @@ def kind_title(kind: str, items: list) -> str:
     elif kind == "dictation":
         head = "들리는 문장을 써 보세요"
     elif kind == "confusables":
-        head = f"{head} 빈칸에 들어갈 말은?"
+        # 쌍 이름(affect / effect)은 보기에 둘 다 있어 정답을 좁힙니다 — 중립 문구를 씁니다.
+        # 다만 모든 영상이 같은 문구면 피드에서 구분되지 않으므로(메뉴 33 이 잡아냅니다),
+        # 첫 항목으로 고정 배정해 영상끼리 제목이 겹치지 않게 합니다.
+        variants = ("혼동 어휘 빈칸에 들어갈 말은?", "혼동 어휘, 뜻으로 구분하기",
+                    "헷갈리는 혼동 어휘 3초 퀴즈", "혼동 어휘, 예문으로 구분하기")
+        seed = str(first.get("term") or first.get("tag") or "")
+        head = variants[sum(map(ord, seed)) % len(variants)]
     elif kind == "grammar":
-        head = f"{head} 빈칸 퀴즈"
+        # 문제 주제로 제목을 바꿔 영상끼리 구분되게 합니다(전부 같은 제목이면 클릭률이 떨어짐).
+        topic = re.sub(r"^\d+\s*과\s*", "", str(first.get("tag") or "").strip()) or "문법"
+        head = f"{topic} 3초 퀴즈"
+    elif kind == "drill":
+        # title_head 가 정답 단어(예: Despite)라 제목에 그대로 쓰면 정답이 드러납니다.
+        topic = str(first.get("tag") or "").strip() or "전치사·연결어"
+        head = "전치사 3초 퀴즈" if topic == "전치사" else f"{topic} 연결어 3초 퀴즈"
     elif kind == "traps":
         head = f"{head} 알맞은 응답은?"
     elif kind == "wordparts":
@@ -2824,7 +2836,7 @@ def build_youtube_body(meta: dict, yt: dict, privacy: str,
         status["publishAt"] = publish_at
     return {
         "snippet": {
-            "title": meta["title"],
+            "title": str(meta["title"])[:100],   # YouTube 제목 상한(100자초과 시 업로드 거부)
             "description": desc,
             "tags": tags[:500],
             "categoryId": str(yt.get("category_id", "27")),  # 27 = Education
@@ -3985,6 +3997,270 @@ def auto_plan_menu(cfg: dict) -> None:
                   mode=schedule_mode, dry_run=dry_run)
 
 
+# 오답 보기로 쓰면 안 되는 형태 — 실제로 없는 단어·비문(데이터에서 발견된 것 + 구조 규칙).
+IMPLAUSIBLE_OPTIONS = {
+    "furnituring", "furnitures", "a furniture", "a copies", "copies two",
+    "musts", "musting", "carefuly", "their's", "hardness", "a informations",
+}
+_DETERMINERS = {"their", "our", "your", "his", "her", "its", "my", "it", "he", "she", "they"}
+_MASS_NOUNS = {"means", "series", "species", "news", "analysis", "basis", "headquarters"}
+
+
+def implausible_option(opt: str) -> str:
+    """오답 보기가 실제로 쓰이지 않는 형태인지 — 이유 문자열(쓸 수 있으면 빈 문자열)."""
+    text = " ".join(str(opt or "").split())
+    low = text.lower()
+    if not low:
+        return "빈 보기"
+    if low in IMPLAUSIBLE_OPTIONS:
+        return "실제로 쓰지 않는 형태"
+    if re.search(r"\d", low):
+        return "숫자 포함"
+    tokens = low.split()
+    if (len(tokens) == 2 and tokens[0] in ("a", "an") and tokens[1].endswith("s")
+            and tokens[1] not in _MASS_NOUNS):
+        return "관사 + 복수형"
+    if low.endswith("'s") and low[:-2] in _DETERMINERS:
+        return "소유격 중복"
+    return ""
+
+
+def sidecar_item_problems(items: list) -> list[str]:
+    """영상 메타의 문항을 자동 점검합니다 — 검토 없이 게시해도 되는 최소 조건.
+
+    보기 4개(중복 없음)·정답이 보기에 포함·해설·문제 본문이 모두 있어야 합니다.
+    """
+    problems: list[str] = []
+    for i, it in enumerate(items, 1):
+        opts = [str(o).strip() for o in (it.get("options") or []) if str(o).strip()]
+        answer = str(it.get("meaning") or "").strip()
+        body = str(it.get("example") or "").strip() or str(it.get("question") or "").strip()
+        if len(opts) != 4 or len(set(opts)) != 4:
+            problems.append(f"{i}번 보기 4개 아님")
+        elif answer not in opts:
+            problems.append(f"{i}번 정답 불일치")
+        if not str(it.get("translation") or "").strip():
+            problems.append(f"{i}번 해설 없음")
+        if not body:
+            problems.append(f"{i}번 문제 없음")
+        for opt in opts:
+            reason = implausible_option(opt)
+            if reason:
+                problems.append(f"{i}번 보기 '{opt}' {reason}")
+    return problems
+
+
+def audit_shorts(cfg: dict) -> dict:
+    """게시 준비 상태를 영상별로 점검합니다 — 업로드·수정 없이 읽기만 합니다.
+
+    반환: {"total", "ready": [{video, info, title}], "blocked": [(video, [사유])]}
+    메뉴 32 가 쓰는 규칙(메타·문항·규격·중복·이미 게시)을 그대로 재사용합니다.
+    """
+    videos = list_videos_menu()
+    ready: list[dict] = []
+    blocked: list[tuple[Path, list[str]]] = []
+    for video in videos:
+        reasons: list[str] = []
+        title = ""
+        try:
+            saved = load_video_meta(video)
+            if not saved or not saved.get("items"):
+                reasons.append("메타 없음")
+            else:
+                kind = str(saved.get("kind") or "")
+                if kind in KIND_SPECS or kind == "paraphrase":
+                    reasons.extend(sidecar_item_problems(saved["items"])[:2])
+                    title = kind_title(kind, saved["items"])
+                else:
+                    title = str((saved["items"][0] or {}).get("term") or "")
+            if "yt" in posted_platforms(video):
+                reasons.append("이미 게시")
+        except (OSError, KeyError, TypeError):
+            reasons.append("메타 읽기 실패")
+        info = probe_video_info(video)
+        ratio = (info["width"] / info["height"]) if info["height"] else 0.0
+        if not 0.52 <= ratio <= 0.60:
+            reasons.append("9:16 아님")
+        if not 0 < info["duration"] <= 180:
+            reasons.append("길이 확인 불가")
+        if reasons:
+            blocked.append((video, reasons))
+        else:
+            ready.append({"video": video, "info": info, "title": title})
+    return {"total": len(videos), "ready": ready, "blocked": blocked}
+
+
+def quality_audit_menu(cfg: dict) -> None:
+    """메뉴 33: 폴더 전체의 게시 준비 상태를 점검합니다(업로드·수정 없음)."""
+    result = audit_shorts(cfg)
+    ready, blocked = result["ready"], result["blocked"]
+    log("\n🔍 제작 품질 점검 — 업로드·수정 없이 읽기만 합니다")
+    log(f"   · 폴더 {result['total']}편 · 예약 가능 {len(ready)}편 · 제외 {len(blocked)}편")
+    if ready:
+        log("\n  ✅ 예약 가능 (최신순 최대 10편)")
+        for row in ready[:10]:
+            log(f"    - {row['video'].name} · {row['info']['duration']:.0f}초 · {row['title'][:48]}")
+        if len(ready) > 10:
+            log(f"    - … 외 {len(ready) - 10}편")
+        counts: dict[str, int] = {}
+        for row in ready[:10]:
+            if row["title"]:
+                counts[row["title"]] = counts.get(row["title"], 0) + 1
+        if any(n > 1 for n in counts.values()):
+            warn("같은 제목의 영상이 있습니다 — 자동 예약 시 구분이 어렵습니다")
+    if blocked:
+        reasons: dict[str, int] = {}
+        for _video, items in blocked:
+            for reason in items:
+                reasons[reason] = reasons.get(reason, 0) + 1
+        log("\n  ⛔ 제외 사유")
+        for reason, count in sorted(reasons.items(), key=lambda kv: -kv[1])[:6]:
+            log(f"    - {reason}: {count}편")
+    log("\n  · 문제가 있는 영상은 목록에서만 빠지고 파일은 그대로 남습니다.")
+    log("  · 바로 예약하려면 메뉴 32 → 10편 자동 예약을 실행하세요.")
+
+
+# 자동 예약 기본 슬롯 — 하루 2편을 모두 오전 8시대에 올립니다(같은 분에 겹치지 않게 15분 차이).
+QUICK_SCHEDULE_SLOTS = ("08:00", "08:15")
+
+
+def quick_ten_schedule_menu(cfg: dict, count: int = 10) -> None:
+    """최신 영상을 자동으로 최대 10편 골라 매일 오전 8시대에 2편씩 예약합니다.
+
+    폴더의 영상 수십 개를 눈으로 고르지 않도록 게시 가능한 영상만 최신순으로 자동
+    선택하고, 요약(3편 + 총 개수)만 보여 줍니다. 날짜·시각도 묻지 않고 내일부터
+    08:00·08:15 로 예약합니다. 이미 올렸거나 문항·규격이 맞지 않는 영상은 빠집니다.
+    """
+    count = max(1, min(10, int(count)))
+    if not cfg.get("youtube", {}).get("enabled", True):
+        warn("YouTube가 비활성화되어 있습니다 — 메뉴 25에서 설정하세요.")
+        return
+    videos = list_videos_menu()
+    if not videos:
+        warn("assets/shorts 폴더에 mp4 영상이 없습니다.")
+        return
+    log(f"\n📅 자동 예약 — 최신 영상에서 최대 {count}편을 자동으로 골라 하루 2편씩 예약합니다")
+    rows = []
+    skipped = 0
+    fingerprints = set()
+    for video in videos:
+        if len(rows) >= count:
+            break
+        try:
+            fingerprint = video_fingerprint(video)
+            meta_fingerprint = video_fingerprint(video.with_suffix(".json"))
+            if fingerprint in fingerprints:
+                raise ValueError("선택한 다른 영상과 내용이 같습니다")
+            if "yt" in posted_platforms(video):
+                raise ValueError("이미 YouTube 게시 이력에 있습니다")
+            saved = load_video_meta(video)
+            if not saved or not saved.get("items"):
+                raise ValueError("영상 메타가 없거나 비어 있습니다")
+            # 검토 없이 예약해도 되도록 문항 자체를 자동 점검합니다(보기 4개·정답 1개·해설).
+            kind_name = str(saved.get("kind") or "")
+            if kind_name in KIND_SPECS or kind_name == "paraphrase":
+                problems = sidecar_item_problems(saved["items"])
+                if problems:
+                    raise ValueError("문항 점검 실패 — " + ", ".join(problems[:2]))
+            args = argparse.Namespace(video=str(video), unit=None, title=None, desc=None,
+                                      platforms="yt", dry_run=True, youtube_privacy=None,
+                                      allow_repeat=False)
+            meta = build_meta(cfg, args)
+            info = probe_video_info(video)
+            if not info["height"] or not 0.52 <= info["width"] / info["height"] <= 0.60 or not 0 < info["duration"] <= 180:
+                raise ValueError("영상 규격 또는 길이를 확인할 수 없거나 Shorts 범위를 벗어났습니다")
+            fingerprints.add(fingerprint)
+            rows.append({"video": video, "meta": meta, "fingerprint": fingerprint,
+                         "meta_fingerprint": meta_fingerprint, "info": info})
+        except (OSError, ValueError):
+            # 게시할 수 없는 영상은 조용히 건너뛰고 다음 후보를 봅니다(사용자가 고르지 않음).
+            skipped += 1
+            continue
+    if not rows:
+        warn("지금 예약할 수 있는 영상이 없습니다 — 모두 게시했거나 메타·규격이 맞지 않습니다.")
+        log("   · 새로 만들려면 메뉴 32 → '새로 만들고 개별 검토 후 예약' 또는 메뉴 23 을 쓰세요.")
+        return
+    log(f"  · 폴더 {len(videos)}편 중 {len(rows)}편 자동 선택 · 제외 {skipped}편")
+    for row in rows[:3]:
+        log(f"    - {row['video'].name} · {row['info']['duration']:.0f}초 · {row['meta']['title']}")
+    if len(rows) > 3:
+        log(f"    - … 외 {len(rows) - 3}편 (같은 규칙으로 예약)")
+    if not load_full_youtube_credentials(cfg):
+        warn("실제 예약 상태 확인을 위해 먼저 python publish.py --youtube-login-full 을 실행하세요.")
+        return
+    # 날짜·시각 모두 자동 — 내일부터 매일 오전 8시대(08:00·08:15)에 두 편씩 공개합니다.
+    first_day = (datetime.now().astimezone() + timedelta(days=1)).date()
+    slots = " · ".join(QUICK_SCHEDULE_SLOTS)
+    times = [publish_at_iso(datetime.fromisoformat(
+        f"{first_day + timedelta(days=i // 2)}T{QUICK_SCHEDULE_SLOTS[i % len(QUICK_SCHEDULE_SLOTS)]}"
+    ).astimezone()) for i in range(len(rows))]
+    log(f"\n📋 예약 계획 — {first_day:%m/%d}부터 매일 {slots} · {len(rows)}편")
+    for row, when in zip(rows[:3], times[:3]):
+        log(f"  · {when[11:16]} | {row['video'].name} | {row['info']['duration']:.0f}초 | "
+            f"{row['meta']['title'][:46]}")
+    if len(rows) > 3:
+        log(f"  · … 외 {len(rows) - 3}편")
+    log("문항(보기 4개·정답·해설)·규격·중복을 자동 점검해 통과한 영상만 골랐습니다.")
+    log("업로드 한도·API 할당량은 YouTube 응답에 따라 달라지며, 실패·확인 불가 시 즉시 중단합니다.")
+    # 지난 이력으로 한도를 먼저 알려 줍니다 — 한도로 전부 거절되는 헛수고를 줄입니다.
+    quota = youtube_quota_status()
+    now_local = datetime.now().astimezone()
+    unlock = quota.get("channel_unlock_at")
+    if unlock and unlock > now_local:
+        warn(f"채널 24시간 업로드 한도가 아직 남아 있을 수 있습니다 — 추정 해제 "
+             f"{unlock.astimezone():%m/%d %H:%M} · 최근 24시간 {quota['recent_24h']}건 업로드")
+    if quota["remaining"] <= 0:
+        warn(f"API 업로드 한도도 소진으로 추정됩니다 — 초기화 {quota['reset_at'].astimezone():%m/%d %H:%M}")
+        if not ask_yes_no("그래도 지금 업로드를 시도할까요?", False):
+            log("업로드를 취소했습니다. 한도가 풀린 뒤 메뉴 32를 다시 실행하세요.")
+            return
+    # 설정에서 확인 질문을 끄면(config promo.confirm_real_upload=false) 완전 원클릭으로 진행합니다.
+    if bool(cfg.get("promo", {}).get("confirm_real_upload", True)) and not ask_yes_no(
+            f"{len(rows)}편을 지금 업로드하고 {first_day:%m/%d}부터 매일 {slots} 에 공개할까요?",
+            False):
+        log("예약을 취소했습니다.")
+        return
+
+    completed = []
+    for row, when in zip(rows, times):
+        video = row["video"]
+        try:
+            parse_publish_at(when)
+            if (video_fingerprint(video) != row["fingerprint"] or
+                    video_fingerprint(video.with_suffix(".json")) != row["meta_fingerprint"]):
+                raise ValueError("확인 후 영상 또는 메타가 변경되었습니다")
+            args = argparse.Namespace(video=str(video), unit=None, title=row["meta"]["title"],
+                                      desc=row["meta"]["desc"], platforms="yt", dry_run=False,
+                                      youtube_privacy=None, allow_repeat=False,
+                                      manual_fallback=False, publish_at=when)
+            result = publish_single(cfg, args, video)
+            url = result.get("yt")
+            if not url or url in ("manual", "dry-run"):
+                raise ValueError("업로드 실패 또는 중복")
+            video_id = url.rsplit("/", 1)[-1]
+            checked = fetch_youtube_status(cfg, [video_id])
+            actual = checked[0].get(video_id) if checked and checked[1] else None
+            if (not actual or actual.get("privacy") != "private" or not actual.get("publish_at")
+                    or parse_schedule_time(actual["publish_at"]) != parse_schedule_time(when)):
+                raise ValueError(f"업로드된 영상의 예약 상태를 확인하지 못했습니다: {url}")
+            completed.append((video, when, url))
+        except Exception as exc:
+            fail(f"{video.name}: {exc} — 이후 업로드를 중단합니다.")
+            quota = youtube_quota_status()
+            hint = []
+            if quota.get("channel_unlock_at"):
+                hint.append(f"채널 한도 해제 추정 {quota['channel_unlock_at'].astimezone():%m/%d %H:%M}")
+            hint.append(f"API 쿼터 초기화 {quota['reset_at'].astimezone():%m/%d %H:%M}")
+            warn(" · ".join(hint) + " — 그 뒤 다시 실행하세요.")
+            warn("해당 영상의 실제 상태를 YouTube Studio에서 확인한 뒤 재시도하세요.")
+            break
+    log(f"\n📋 예약 확인: {len(completed)}편 / 선택 {len(rows)}편")
+    for video, when, url in completed:
+        log(f"  · {when} | {video.name} | {url}")
+    for row, when in zip(rows[len(completed):], times[len(completed):]):
+        log(f"  · 미처리 또는 확인 필요: {when} | {row['video'].name}")
+
+
 def weekly_wizard_menu(cfg: dict) -> None:
     """영상별 명시적 승인 후에만 YouTube 예약 업로드합니다."""
     log("\n📅 주간 제작 마법사 — 생성 → 개별 검토 → 승인 → YouTube 예약")
@@ -4336,8 +4612,8 @@ def print_quota_status(now: datetime | None = None) -> dict:
         return when.astimezone().strftime("%Y-%m-%d %H:%M")
 
     log("\n⏱ YouTube 업로드 가능 시간 (게시 이력 기준 추정)")
-    log(f"   · API 쿼터: 오늘 {st['used']}건 사용 / 약 {st['max']}건 · "
-        f"{st['units_used']:,} / {st['units_total']:,} units · 남음 {st['remaining']}건")
+    log(f"   · API 쿼터(추정): 오늘 업로드 {st['used']}건 · 기준 {st['max']}건/일 "
+        f"({st['units_used']:,} / {st['units_total']:,} units) · 남음 {st['remaining']}건")
     if st["remaining"] > 0:
         log(f"   · 지금 업로드 가능 — {st['remaining']}건 더 올릴 수 있습니다")
     else:
@@ -5774,7 +6050,8 @@ MENU_ITEMS: list[tuple[str, str, tuple[str, ...]]] = [
     ("29", "남은 콘텐츠 수량 보기",          ("잔여", "수량", "remaining", "남은")),
     ("30", "게시된 영상 YouTube 설명 갱신",   ("설명", "제목", "refresh", "youtube")),
     ("31", "TTS 엔진·목소리 설정 (내려받기·미리 듣기)", ("tts", "음성", "목소리", "piper", "미리듣기")),
-    ("32", "주간 제작 마법사", ("주간", "일주일", "마법사", "weekly", "검토", "예약")),
+    ("32", "쇼츠 제작·10편 예약 마법사", ("주간", "일주일", "마법사", "weekly", "검토", "예약", "10편")),
+    ("33", "제작 품질 점검", ("품질", "점검", "audit", "검사", "제작", "준비", "상태")),
 ]
 # 목록·검색·표시 순서를 항상 번호 순으로 맞춰 둡니다(번호를 고치면 여기까지 자동 정렬).
 MENU_ITEMS.sort(key=lambda item: int(item[0]))
@@ -5812,10 +6089,11 @@ MENU_DESC: dict[str, str] = {
     "29": "종류별 콘텐츠 사용/전체/남음 수량 표로 확인",
     "30": "게시된 YouTube 영상의 제목·설명을 새 형식으로 갱신",
     "31": "TTS 엔진·목소리 선택, Piper 음성 내려받기·미리 듣기",
-    "32": "7일치 생성 → 영상별 검토·승인 → YouTube 날짜별 예약",
+    "32": "최신 영상 10편 자동 예약(하루 2편) 또는 새로 만들어 개별 검토·예약",
+    "33": "폴더 전체 영상의 게시 준비 상태·제외 사유를 업로드 없이 점검",
 }
 MAX_RECENT_MENUS = 5   # 메뉴 상단에 보여 줄 최근 사용 메뉴 수
-# 번호가 위에서 아래로 1 → 32 로 이어지도록 그룹을 순서대로 묶습니다.
+# 번호가 위에서 아래로 1 → 33 로 이어지도록 그룹을 순서대로 묶습니다.
 MENU_GROUPS: list[tuple[str, list[str]]] = [
     ("🎬 쇼츠 만들기",          ["1", "2", "3", "4"]),
     ("🚀 만들고 바로 게시",      ["5", "6", "7", "8"]),
@@ -5823,7 +6101,7 @@ MENU_GROUPS: list[tuple[str, list[str]]] = [
     ("📤 게시·이력·성과",       ["11", "12", "13", "14", "15", "16", "17", "18", "19"]),
     ("🗓 예약·자동 준비",        ["20", "21", "22", "23"]),
     ("⚙️ 설정·점검·도구",        ["24", "25", "26", "27", "28", "29", "30", "31"]),
-    ("📅 주간 제작",             ["32"]),
+    ("📅 자동 예약·제작",        ["32", "33"]),
 ]
 # 메뉴 번호 체계 버전 — 2: 표시 순서와 번호를 1 → 31 로 재정렬 (2026-10).
 # 이전 버전 config 의 default_menu 는 구 번호라, 처음 메뉴를 열 때 migrate_menu_numbers 가 새 번호로 바꿉니다.
@@ -6441,7 +6719,17 @@ def interactive_menu(initial: str | None = None) -> None:
             auto_plan_menu(cfg)
             continue
         if action == "32":
-            weekly_wizard_menu(cfg)
+            mode = choose_option(
+                "쇼츠 마법사",
+                [("quick", "10편 자동 예약 — 최신 영상 자동 선택, 하루 2편 (권장)"),
+                 ("weekly", "새로 만들고 개별 검토 후 예약")], "quick")
+            if mode == "quick":
+                quick_ten_schedule_menu(cfg)
+            else:
+                weekly_wizard_menu(cfg)
+            continue
+        if action == "33":
+            quality_audit_menu(cfg)
             continue
         if action == "30":
             keep_title = not ask_yes_no("제목도 함께 갱신할까요?", True)
@@ -6810,7 +7098,7 @@ def main() -> None:
     ap.add_argument("--menu-run", metavar="메뉴",
                     help="메뉴를 바로 실행 — 번호·범위·키워드 모두 가능 (예: --menu-run 5 · 1-4 · 예약)")
     ap.add_argument("--menu-list", action="store_true",
-                    help="번호 순(1~32)으로 원클릭 메뉴 목록만 출력하고 종료")
+                    help="번호 순(1~33)으로 원클릭 메뉴 목록만 출력하고 종료")
     ap.add_argument("--non-interactive", action="store_true", help=argparse.SUPPRESS)
     ap.add_argument("--no-pause", "--nopause", action="store_true", help=argparse.SUPPRESS)
     # ↑ BAT 전달용 안전 플래그: publish.py 는 무시하고, promo_center.bat 가 마지막
@@ -6867,6 +7155,8 @@ def main() -> None:
     ap.add_argument("--remove-task", action="store_true", help="Windows 작업 스케줄러 등록 해제")
     ap.add_argument("--verify", action="store_true",
                     help="배포 전 영상 검증 실행 (재생·Shorts 요건 점검 후 게시)")
+    ap.add_argument("--audit", action="store_true",
+                    help="폴더 전체 영상의 게시 준비 상태·제외 사유 점검 (업로드·수정 없음)")
     ap.add_argument("--youtube-setup", action="store_true",
                     help="YouTube 상태 진단 후 필요한 단계만 진행 (OAuth 파일 없으면 설정 안내)")
     ap.add_argument("--youtube-guide", action="store_true",
@@ -7026,6 +7316,9 @@ def main() -> None:
         return
     if args.remove_task:
         remove_scheduled_task()
+        return
+    if args.audit:
+        quality_audit_menu(cfg)
         return
     if args.verify:
         verify_video_menu(cfg)

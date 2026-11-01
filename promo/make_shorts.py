@@ -969,6 +969,32 @@ def render_vocab_hook(term: str, kind: str, theme: str, font_path: str | None,
     return img
 
 
+def render_quiz_hook(count: int, theme: str, font_path: str | None, style: str = "classic",
+                     pattern: str = "auto") -> Image.Image:
+    """퀴즈 첫 1.5초 후킹 — 무엇을 하는 영상인지 먼저 알려 이탈을 줄입니다."""
+    global ACCENT_THEME
+    ACCENT_THEME = ACCENT[theme]
+    ly = LAYOUT.get(style, LAYOUT["classic"])
+    top, bottom = THEMES[theme]
+    img = vertical_gradient((W, H), top, bottom)
+    draw = ImageDraw.Draw(img, "RGBA")
+    draw_pattern(draw, pattern_for_style(pattern, ly["deco"]), ACCENT_THEME)
+
+    chip = load_font(font_path, 44, bold=True)
+    draw_pill(draw, W // 2, 360, f"{count}문제 · 정답 해설 포함", chip, (255, 255, 255), (0, 0, 0, 75))
+
+    big = load_font(font_path, 132, bold=True)
+    draw_text_rich(draw, "3초 안에", big, ACCENT_THEME, y=700)
+    draw_text_rich(draw, "정답 고르기", big, (255, 255, 255), y=880)
+
+    sub = load_font(font_path, 54, bold=False)
+    draw_text_rich(draw, "틀려도 됩니다 — 해설로 바로 잡습니다", sub, (215, 225, 250), y=1120)
+
+    foot = load_font(font_path, 44, bold=True)
+    draw_text_rich(draw, "toeic.monster", foot, (255, 255, 255), y=1745)
+    return img
+
+
 def render_outro_slide(theme: str, font_path: str | None,
                        pattern: str = "auto") -> Image.Image:
     """아웃로 슬라이드 — 사이트 유입 CTA(구독·팔로우·사이트 방문)."""
@@ -1357,17 +1383,17 @@ def render_quiz_question(idx: int, total: int, rank: int, q: dict,
                 draw_text_rich(draw, line, note_font, ACCENT_THEME, y=y + 40)
                 y += 82
 
-    # ── 보기 A~D ──
-    y = max(y + 60, 940.0)
+    # ── 보기 A~D — 문장과 보기 사이 빈 공간을 줄이고 글자를 키웁니다 ──
+    y = max(y + 36, 860.0)
     letters = "ABCD"
     for oi, opt in enumerate(q["opts"][:4]):
         label = f"{letters[oi]}. {opt}"
-        opt_font = load_font(font_path, 48, bold=True)
-        while text_width(draw, label, opt_font) > W - 300 and opt_font.size > 30:
+        opt_font = load_font(font_path, 54, bold=True)
+        while text_width(draw, label, opt_font) > W - 280 and opt_font.size > 32:
             opt_font = load_font(font_path, opt_font.size - 4, bold=True)
-        draw.rounded_rectangle([110, y, W - 110, y + 124], radius=30, fill=(255, 255, 255, 28))
-        draw_text_rich(draw, label, opt_font, (255, 255, 255), y=y + 32, x=160)
-        y += 146
+        draw.rounded_rectangle([100, y, W - 100, y + 148], radius=32, fill=(255, 255, 255, 30))
+        draw_text_rich(draw, label, opt_font, (255, 255, 255), y=y + 40, x=150)
+        y += 168
 
     # ── 푸터 ──
     foot_font = load_font(font_path, 44, bold=True)
@@ -1427,6 +1453,11 @@ def render_quiz_answer(idx: int, total: int, rank: int, q: dict,
         tr_font = load_font(font_path, 38, bold=False)
         tr_lines = wrap_phrases(tr, "", tr_font, W - 200, draw)
         draw_quiz_lines(draw, tr_lines[:3], "", tr_font, y + 34, 56, (200, 210, 235), (200, 210, 235))
+
+    # ── 다음 동작 안내 — 정답 화면 하단 빈 공간을 학습 행동으로 채웁니다 ──
+    cta_font = load_font(font_path, 46, bold=True)
+    cta = "다음 문제 ▶" if idx + 2 < total else "전체 문제 무료 → toeic.monster"
+    draw_pill(draw, W // 2, 1560, cta, cta_font, (255, 255, 255), (0, 0, 0, 85))
 
     # ── 푸터 ──
     foot_font = load_font(font_path, 44, bold=True)
@@ -1747,9 +1778,13 @@ def probe_duration(path: Path) -> float:
     return 0.0
 
 
+# 한국어 해설 낭독 — Windows 에 'Microsoft Heami'(ko-KR) 가 있으면 켭니다.
+KO_VOICE_CANDIDATES = ("Microsoft Heami Desktop", "Microsoft Heami")
+
+
 def build_audio(word: str, en_ex: str, voices: list[str], slide_dur: float, tmp: Path, i: int,
                 engine: str = "auto", word_gap: float = WORD_GAP,
-                think_sec: float = 0.0) -> tuple[Path, float]:
+                think_sec: float = 0.0, ko_text: str = "") -> tuple[Path, float]:
     """목소리별 TTS 를 만들어 차례로 이어 붙이고 슬라이드 길이에 맞춘 wav 로 변환합니다.
 
     단어와 예문은 각각 따로 합성한 뒤 word_gap 초의 무음을 끼워 붙입니다 —
@@ -1776,6 +1811,18 @@ def build_audio(word: str, en_ex: str, voices: list[str], slide_dur: float, tmp:
             if pi == len(paths) - 1 and not last_voice:
                 trailing += VOICE_GAP      # 앞 목소리 → 다음 목소리 사이 휴지
             segments.append((path, trailing))
+    ko = " ".join(str(ko_text or "").split())
+    if ko:
+        # 해설은 한국어 목소리로 — 귀만으로도 이해할 수 있게 합니다(실패해도 영상은 만듭니다).
+        last_exc: Exception | None = None
+        for name in KO_VOICE_CANDIDATES:
+            try:
+                segments.append((tts_speak(ko, name, tmp / f"tts_ko_{i}.wav", "windows"), 0.0))
+                break
+            except Exception as exc:   # 음성이 없으면 조용히 영문 낭독만 남깁니다
+                last_exc = exc
+        else:
+            warn(f"한국어 해설 음성을 만들지 못했습니다({last_exc}) — 영문 낭독만 사용합니다")
 
     # 휴지까지 더해 실제 음성 길이를 어림한다.
     audio_len = sum(probe_duration(p) + pad for p, pad in segments)
@@ -1837,18 +1884,22 @@ def mix_final(silent: Path, tts_wav: Path | None, music: Path | None,
     if tts_wav is not None and music is not None:
         fc = (f"[1:a]volume=1.0[voice];"
               f"[2:a]volume={music_volume},afade=t=in:st=0:d=1[bg];"
-              f"[voice][bg]amix=inputs=2:duration=first:dropout_transition=3[aout]")
+              "[voice][bg]amix=inputs=2:duration=first:dropout_transition=3,"
+              "loudnorm=I=-14:TP=-1.5:LRA=11[aout]")
         return run_ffmpeg(["-i", str(silent), "-i", str(tts_wav), "-i", str(music),
                            "-filter_complex", fc, "-map", "0:v", "-map", "[aout]",
                            "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-shortest", str(out)])
     if music is not None:
         dur = probe_duration(silent) or 10.0
         fc = (f"[1:a]volume={music_volume},afade=t=in:st=0:d=1,"
-              f"afade=t=out:st={max(0.0, dur - 1.5):.2f}:d=1.5[aout]")
+              f"afade=t=out:st={max(0.0, dur - 1.5):.2f}:d=1.5,"
+              "loudnorm=I=-14:TP=-1.5:LRA=11[aout]")
         return run_ffmpeg(["-i", str(silent), "-stream_loop", "-1", "-i", str(music),
                            "-filter_complex", fc, "-map", "0:v", "-map", "[aout]",
                            "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-t", f"{dur:.2f}", str(out)])
+    # 모바일에서 잘 들리도록 −14 LUFS 로 정규화합니다(측정값 -23dB 수준이었음).
     return run_ffmpeg(["-i", str(silent), "-i", str(tts_wav),
+                       "-af", "loudnorm=I=-14:TP=-1.5:LRA=11",
                        "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-shortest", str(out)])
 
 
@@ -1901,10 +1952,33 @@ def build_ambient(dur: float, tmp: Path) -> Path | None:
 
 
 # ---------------------------------------------------------------- main ----
+def quiz_item_ok(item: list) -> bool:
+    """검토 없이 게시해도 되는 문항인지 — 보기 4개(중복 없음)·정답 1개·해설·문제 본문."""
+    if len(item) < 9 or not isinstance(item[8], dict):
+        return False
+    q = item[8]
+    opts = [str(o).strip() for o in (q.get("opts") or []) if str(o).strip()]
+    answer = str(q.get("a") or "").strip()
+    body = str(q.get("sentence") or "").strip() or str(q.get("note") or "").strip()
+    try:   # 오답 보기가 실제로 쓰는 형태인지도 확인합니다(규칙은 publish 한 곳에 있습니다).
+        from publish import implausible_option
+        if any(implausible_option(o) for o in opts):
+            return False
+    except ImportError:   # 단독 실행 시에는 보기·정답·해설만 확인합니다
+        pass
+    return (bool(answer) and len(opts) == 4 and len(set(opts)) == 4
+            and opts.count(answer) == 1 and bool(str(q.get("why") or "").strip()) and bool(body))
+
+
 def select_content(pool: list, kind: str, count: int, rng: random.Random) -> list:
     """스프린트는 하루씩 순서대로, 문법 여러 문제는 같은 주제로 묶습니다."""
     if kind == "sprint":
         return sorted(pool, key=lambda w: int(re.search(r"\d+", str(w[0])).group()))[:1]
+    if is_quiz_kind(kind):
+        # 보기·정답·해설이 온전한 문항만 씁니다 — 사용자가 문항을 검토하지 않아도 되도록.
+        clean = [w for w in pool if quiz_item_ok(w)]
+        if clean:
+            pool = clean
     first = rng.choice(pool)
     if kind == "grammar" and len(first) > 8:
         topic = first[8].get("tag")
@@ -2159,7 +2233,8 @@ def main() -> None:
     slide_count = len(picked) * (2 if is_quiz_kind(kind) else 1)
     intro_sec = 0.0 if args.no_intro else max(0.0, args.intro_sec)
     outro_sec = 0.0 if args.no_outro else max(0.0, args.outro_sec)
-    hook_sec = 1.5 if not intro_sec and kind in ("unit", "idioms", "frequency") else 0.0
+    hook_sec = 1.5 if not intro_sec and (
+        kind in ("unit", "idioms", "frequency") or is_quiz_kind(kind)) else 0.0
     total_dur = slide_count * args.slide_sec + intro_sec + hook_sec + outro_sec
     if args.out:
         out = Path(args.out)
@@ -2237,6 +2312,7 @@ def main() -> None:
         # 퀴즈는 한 문제가 문제·정답 두 장이라 picked 와 길이가 다릅니다.
         # (그림, (낭독할 낱말, 낭독할 문장), 기본 길이) — say 가 None 이면 무음 슬라이드(인트로·아웃로).
         plan: list[tuple[Image.Image, tuple[str, str] | None, float]] = []
+        ko_texts: dict[int, str] = {}   # 슬라이드 번호 → 한국어 해설(정답 화면에만)
         try:
             if intro_sec:
                 if kind == "unit":
@@ -2249,8 +2325,11 @@ def main() -> None:
                 plan.append((render_intro_slide(intro_sub, args.bg, args.font, kind, args.pattern),
                              None, intro_sec))
             if hook_sec:
-                plan.append((render_vocab_hook(str(picked[0][0]), kind, args.bg, args.font, args.pattern),
-                             None, hook_sec))
+                hook = (render_quiz_hook(len(picked), args.bg, args.font, args.style, args.pattern)
+                        if is_quiz_kind(kind)
+                        else render_vocab_hook(str(picked[0][0]), kind, args.bg, args.font,
+                                                args.pattern))
+                plan.append((hook, None, hook_sec))
             if is_quiz_kind(kind):
                 for i, w in enumerate(picked):
                     q = w[8]
@@ -2263,6 +2342,7 @@ def main() -> None:
                     plan.append((render_quiz_answer(i * 2 + 1, slide_count, w[7], q, args.bg, args.font,
                                                    args.style, args.pattern),
                                  say_a, args.slide_sec))
+                    ko_texts[len(plan) - 1] = str(q.get("why") or "")
             elif kind_layout(kind) == "list1":
                 for i, w in enumerate(picked):
                     r = w[8]
@@ -2303,7 +2383,8 @@ def main() -> None:
                     try:
                         question_slide = is_quiz_kind(kind) and (si - (1 if intro_sec else 0)) % 2 == 0
                         wav, dur = build_audio(say[0], say[1], voices, base_dur, tmp, si, engine,
-                                                args.word_gap, 3.0 if question_slide else 0.0)
+                                                args.word_gap, 3.0 if question_slide else 0.0,
+                                                ko_text=ko_texts.get(si, ""))
                         if dur > base_dur:
                             log(f"   · {say[0]}: 음성 {dur - 0.8:.1f}초 → 슬라이드 연장")
                     except Exception as exc:
