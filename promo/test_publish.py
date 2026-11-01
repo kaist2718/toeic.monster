@@ -58,6 +58,125 @@ class PythonCompatibilityTest(unittest.TestCase):
         self.assertEqual(publish.relative_display(outside), str(outside))
 
 
+class ShortsContentUpgradeTest(unittest.TestCase):
+    """새 제작의 문제·정답·연재 및 게시 메타 일관성."""
+
+    def setUp(self):
+        import make_shorts
+        import random
+        self.shorts = make_shorts
+        self.random = random
+
+    def test_listening_titles_do_not_reveal_answers_even_for_old_sidecars(self):
+        for kind in ("numbers", "dictation"):
+            for row in publish.load_kind_rows(kind):
+                item = publish.kind_row_item(kind, row)
+                item["title_head"] = item["meaning"]  # 기존 사이드카의 정답 제목
+                title = publish.kind_title(kind, [item])
+                self.assertNotIn(item["meaning"], title)
+        item = {"term": "implement", "meaning": "carry out"}
+        self.assertNotIn(item["meaning"], publish.quiz_title([item]))
+
+    def test_all_quiz_options_use_the_same_order_in_sidecar_and_description(self):
+        for kind in ("numbers", "traps", "grammar", "confusables"):
+            rows = publish.load_kind_rows(kind)
+            picked = [[r["term"], "", "", r["meaning"], r["example"], r["translation"], "", i, r]
+                      for i, r in enumerate(rows[:8])]
+            self.shorts.shuffle_quiz_options(picked, self.random.Random(17))
+            self.assertGreater(len({w[8]["opts"].index(w[8]["a"]) for w in picked}), 1)
+            for w in picked:
+                r = w[8]
+                item = publish.kind_row_item(kind, r)
+                desc = publish.quiz_desc([item], "https://example.com", kind)
+                letter = "ABCD"[r["opts"].index(r["a"])]
+                self.assertIn(f"정답: {letter}. {r['a']}", desc)
+                with tempfile.TemporaryDirectory() as td:
+                    out = Path(td) / "video.mp4"
+                    self.shorts.write_sidecar(out, kind=kind, unit_no=None, items=[w], voices=[],
+                                              quiz=[{"options": r["opts"]}])
+                    saved = json.loads(out.with_suffix(".json").read_text(encoding="utf-8"))
+                    self.assertEqual(saved["items"][0]["options"], r["opts"])
+
+    def test_sprint_is_one_day_and_in_order(self):
+        rows = publish.load_kind_rows("sprint")
+        items = [[r["term"], "", "", "", "", "", "", i, r] for i, r in enumerate(rows)]
+        self.assertEqual(self.shorts.select_content(items, "sprint", 7, self.random.Random(2))[0][0], "DAY 1")
+        remaining = [w for w in items if w[0] not in ("DAY 1", "DAY 2")]
+        picked = self.shorts.select_content(remaining, "sprint", 7, self.random.Random(3))
+        self.assertEqual([w[0] for w in picked], ["DAY 3"])
+        self.assertGreaterEqual(len(rows[0]["bullets"]), 2)
+
+    def test_grammar_group_stays_on_one_topic(self):
+        rows = publish.load_kind_rows("grammar")
+        items = [[r["term"], "", "", "", "", "", "", i, r] for i, r in enumerate(rows)]
+        picked = self.shorts.select_content(items, "grammar", 5, self.random.Random(4))
+        self.assertEqual(len({w[8]["tag"] for w in picked}), 1)
+
+    def test_listening_requires_audio(self):
+        for kind in ("numbers", "minimal", "dictation"):
+            argv = ["make_shorts.py", "--kind", kind, "--no-tts", "--dry-run"]
+            with self.subTest(kind=kind), mock.patch.object(sys, "argv", argv), \
+                    mock.patch.object(self.shorts, "ensure_maruburi"):
+                with self.assertRaises(SystemExit) as exc:
+                    self.shorts.main()
+                self.assertIn("음성이 필요", str(exc.exception))
+
+    def test_quiz_audio_leaves_thinking_time_after_speech(self):
+        with tempfile.TemporaryDirectory() as td, \
+                mock.patch.object(self.shorts, "tts_speak", return_value=Path(td) / "speech.wav"), \
+                mock.patch.object(self.shorts, "probe_duration", return_value=5.0), \
+                mock.patch.object(self.shorts.subprocess, "run") as run:
+            def fake_run(cmd, **kwargs):
+                Path(cmd[-1]).write_bytes(b"wav")
+                return types.SimpleNamespace(returncode=0, stderr=b"")
+            run.side_effect = fake_run
+            _, duration = self.shorts.build_audio("", "hello", ["voice"], 6, Path(td), 0,
+                                                   think_sec=3)
+            self.assertEqual(duration, 8)
+
+    def test_auto_plan_uses_new_setting_and_allows_override(self):
+        cfg = {"promo": {"default_words": 5}}
+        calls = []
+        def build(_cfg, _kind, words):
+            calls.append(words)
+            return None
+        with mock.patch.object(publish, "build_shorts_command", side_effect=build):
+            publish.run_auto_plan(cfg, 1, kind="unit")
+            cfg["promo"]["default_focus_words"] = 2
+            publish.run_auto_plan(cfg, 1, kind="unit")
+            publish.run_auto_plan(cfg, 1, kind="unit", words=5)
+        self.assertEqual(calls, [1, 2, 5])
+
+    def test_auto_plan_menu_passes_config_to_scheduling(self):
+        cfg = {"promo": {"default_focus_words": 2, "default_privacy": "unlisted"}}
+        when = datetime.now().astimezone() + timedelta(days=1)
+        with mock.patch.object(publish, "ask_int", side_effect=[2, 2, 1]), \
+                mock.patch.object(publish, "choose_option", side_effect=["unit", "s", "native"]), \
+                mock.patch.object(publish, "choose_platforms_menu", return_value="yt"), \
+                mock.patch.object(publish, "ask_publish_at", return_value=when), \
+                mock.patch.object(publish, "ask_yes_no", return_value=True), \
+                mock.patch.object(publish, "run_auto_plan") as plan:
+            publish.auto_plan_menu(cfg)
+        self.assertEqual(plan.call_args.kwargs["words"], 2)
+        self.assertEqual(plan.call_args.kwargs["privacy"], "unlisted")
+        self.assertTrue(plan.call_args.kwargs["dry_run"])
+
+    def test_profile_cta_and_no_false_zero(self):
+        args = argparse.Namespace(title=None, desc=None, unit=1, video=None, allow_repeat=True)
+        with mock.patch.object(publish, "sidecar_for", return_value=None):
+            meta = publish.build_meta({}, args)
+        self.assertIn("채널 프로필", meta["desc"])
+        with tempfile.TemporaryDirectory() as td, \
+                mock.patch.object(publish, "HISTORY_FILE", Path(td) / "history.csv"), \
+                mock.patch.object(publish, "REPORT_DIR", Path(td) / "reports"), \
+                mock.patch.object(publish, "PERF_FILE", Path(td) / "missing.json"), \
+                mock.patch.object(publish, "SCHEDULE_FILE", Path(td) / "schedules.json"), \
+                mock.patch.object(publish, "NATIVE_SCHEDULE_FILE", Path(td) / "native.json"):
+            publish.append_history(event="publish", status="success", platform="yt", video="v.mp4")
+            html = publish.write_history_report(open_after=False).read_text(encoding="utf-8")
+            self.assertIn("미수집", html)
+
+
 class ConfusablesBlankTest(unittest.TestCase):
     """혼동 어휘 빈칸 — 굴절형(complimented·devised)도 빈칸이 되어야 문항이 빠지지 않습니다."""
 

@@ -5,7 +5,7 @@
   "hashtags": ["toeic", "토익", "토익단어", "영어공부", "toeicmonster", "vocabulary", "토익보카", "토익공부"],
   "promo": {
     "default_unit": 1,
-    "default_words": 5,
+    "default_focus_words": 1,
     "default_theme": "blue",
     "default_pattern": "auto",
     "default_style": "classic",
