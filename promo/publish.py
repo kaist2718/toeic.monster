@@ -3985,6 +3985,115 @@ def auto_plan_menu(cfg: dict) -> None:
                   mode=schedule_mode, dry_run=dry_run)
 
 
+def weekly_wizard_menu(cfg: dict) -> None:
+    """영상별 명시적 승인 후에만 YouTube 예약 업로드합니다."""
+    log("\n📅 주간 제작 마법사 — 생성 → 개별 검토 → 승인 → YouTube 예약")
+    log("생성만 해도 콘텐츠 사용 이력이 기록됩니다. 승인하지 않은 영상도 파일은 유지됩니다.")
+    if not cfg.get("youtube", {}).get("enabled", True):
+        warn("YouTube가 비활성화되어 있습니다 — 메뉴 25에서 설정하세요.")
+        return
+    count = ask_int("만들 영상 수(1~10)", 7, 1, 10)
+    kind = choose_option("콘텐츠 종류", [("auto", "자동 배합"), ("unit", "UNIT 단어"),
+                         ("idioms", "숙어"), ("frequency", "빈도 어휘"),
+                         ("paraphrase", "동의어 치환")]
+                         + [(k, s["label"]) for k, s in KIND_SPECS.items()], "auto")
+    words = ask_int("영상당 항목 수(스프린트는 항상 1)", 1, 1, 10)
+    if not ask_yes_no(f"{count}편을 생성할까요? 사용 이력이 기록됩니다", False):
+        log("생성을 취소했습니다.")
+        return
+    videos = run_auto_plan(cfg, count, kind, words=words)
+    if not videos:
+        return
+    if len(videos) < count:
+        warn(f"{count}편 중 {len(videos)}편만 생성되었습니다. 만들어진 영상만 검토합니다.")
+
+    approved = []
+    for index, video in enumerate(videos, 1):
+        log(f"\n──── 검토 {index}/{len(videos)}: {video.name} ────")
+        try:
+            fingerprint = video_fingerprint(video)
+            meta_fingerprint = video_fingerprint(video.with_suffix(".json"))
+        except OSError as exc:
+            warn(f"영상 또는 메타를 읽을 수 없어 제외합니다: {exc}")
+            continue
+        saved = load_video_meta(video)
+        if not saved or not saved.get("items"):
+            warn("영상 메타가 없거나 비어 있어 검토할 수 없습니다. 이 영상은 제외합니다.")
+            continue
+        args = argparse.Namespace(video=str(video), unit=None, title=None, desc=None,
+                                  platforms="yt", dry_run=True, youtube_privacy=None,
+                                  allow_repeat=False)
+        meta = build_meta(cfg, args)
+        info = probe_video_info(video)
+        log(f"제목: {meta['title']}")
+        log(f"영상: {relative_display(video)} · {info['width']}x{info['height']} · {info['duration']:.1f}초")
+        log("설명·문제·정답:\n" + meta["desc"])
+        log("해시태그: " + meta["hashtags"])
+        if ask_yes_no("이 영상을 기본 플레이어로 열까요?", True):
+            open_path(video)
+        if ask_yes_no("영상·음성·정답·자막을 확인했고 예약 대상으로 승인할까요?", False):
+            try:
+                if (video_fingerprint(video) != fingerprint or
+                        video_fingerprint(video.with_suffix(".json")) != meta_fingerprint):
+                    warn("검토 중 영상 또는 메타가 변경되어 제외합니다.")
+                    continue
+            except OSError as exc:
+                warn(f"영상 또는 메타를 읽을 수 없어 제외합니다: {exc}")
+                continue
+            approved.append({"video": video, "meta": meta, "fingerprint": fingerprint,
+                             "meta_fingerprint": meta_fingerprint})
+        else:
+            log("승인하지 않아 예약 대상에서 제외했습니다. 파일은 유지됩니다.")
+    if not approved:
+        log("승인된 영상이 없어 예약하지 않습니다.")
+        return
+
+    default_start = (datetime.now().astimezone() + timedelta(days=1)).strftime("%Y-%m-%d") + " 19:00"
+    first = ask_publish_at("첫 공개 시각(YYYY-MM-DD HH:MM)", default_start)
+    if first is None:
+        return
+    interval = ask_int("공개 간격(일)", 1, 1, 30)
+    times = plan_publish_times(first, len(approved), interval)
+    log("\n📋 예약 계획 — YouTube에 지금 비공개 업로드, 지정된 날짜에 공개")
+    for row, when in zip(approved, times):
+        log(f"  · {when} | {row['meta']['title']} | {row['video'].name}")
+    print_quota_status()
+    log("YouTube 쿼터·채널 업로드 제한을 확인하세요. 실패 시 이후 영상은 예약하지 않습니다.")
+    if not ask_yes_no(f"승인한 {len(approved)}편을 지금 YouTube에 업로드해 예약할까요?", False):
+        log("예약을 취소했습니다. 생성된 파일은 유지됩니다.")
+        return
+
+    completed = []
+    for row, when in zip(approved, times):
+        video = row["video"]
+        try:
+            parse_publish_at(when)  # 검토·업로드 시간이 오래 걸린 경우 재확인
+            if (video_fingerprint(video) != row["fingerprint"] or
+                    video_fingerprint(video.with_suffix(".json")) != row["meta_fingerprint"]):
+                raise ValueError("검토 후 영상 또는 메타가 변경되었습니다")
+            args = argparse.Namespace(video=str(video), unit=None, title=row["meta"]["title"],
+                                      desc=row["meta"]["desc"], platforms="yt", dry_run=False,
+                                      youtube_privacy=None, allow_repeat=False,
+                                      manual_fallback=False, publish_at=when)
+            result = publish_single(cfg, args, video)
+        except Exception as exc:
+            fail(f"{video.name}: 예약 중단 — {exc}")
+            warn("업로드 상태가 불확실할 수 있습니다. 재시도 전 YouTube Studio에서 확인하세요.")
+            break
+        url = result.get("yt")
+        if not url or url in ("manual", "dry-run"):
+            fail(f"{video.name}: 업로드 실패 또는 중복으로 중단합니다.")
+            break
+        completed.append((video, when, url))
+    log(f"\n📋 처리 결과: 업로드 {len(completed)}편 / 승인 {len(approved)}편")
+    for video, when, url in completed:
+        log(f"  · 업로드됨: {video.name} · {when} · {url}")
+    for row, when in zip(approved[len(completed):], times[len(completed):]):
+        log(f"  · 미처리 또는 확인 필요: {row['video'].name} · {when}")
+    log("업로드 접수와 실제 예약 공개 상태는 다를 수 있습니다. YouTube Studio 또는 메뉴 21에서 확인하세요.")
+    log("영상 파일은 유지됩니다. 중단된 항목은 YouTube Studio에서 업로드 여부 확인 후 메뉴 12에서 재예약하세요.")
+
+
 def probe_video_info(video: Path) -> dict:
     """ffprobe로 해상도·길이·크기를 가져옵니다. (실패 시 안전한 기본값)"""
     info = {"width": 0, "height": 0, "duration": 0.0, "size_mb": 0.0}
@@ -5579,7 +5688,7 @@ def configure_menu(cfg: dict) -> dict:
     promo["default_style"] = choose_style(str(promo.get("default_style", "classic")))
     if promo["default_style"] not in styles:
         promo["default_style"] = "classic"
-    # Enter 를 눌렀을 때 바로 실행할 기본 메뉴 번호 (원클릭 센터 1~31)
+    # Enter 를 눌렀을 때 바로 실행할 기본 메뉴 번호
     current_menu = str(promo.get("default_menu", "") or "").strip() or "11"
     if current_menu not in MENU_TITLES:
         current_menu = "11"
@@ -5624,7 +5733,7 @@ def open_path(path: Path) -> None:
 
 
 # --------------------------------------------------------------------------- #
-# 원클릭 메뉴 — 표시·선택 도우미 (메뉴 31개를 그룹/키워드/복수 선택으로 다룸)
+# 원클릭 메뉴 — 표시·선택 도우미 (메뉴 32개를 그룹/키워드/복수 선택으로 다룸)
 # --------------------------------------------------------------------------- #
 # (번호, 제목, 검색 별칭) — 목록 출력·키워드 검색·오입력 제안이 여기서 한 번에 나옵니다.
 MENU_ITEMS: list[tuple[str, str, tuple[str, ...]]] = [
@@ -5665,6 +5774,7 @@ MENU_ITEMS: list[tuple[str, str, tuple[str, ...]]] = [
     ("29", "남은 콘텐츠 수량 보기",          ("잔여", "수량", "remaining", "남은")),
     ("30", "게시된 영상 YouTube 설명 갱신",   ("설명", "제목", "refresh", "youtube")),
     ("31", "TTS 엔진·목소리 설정 (내려받기·미리 듣기)", ("tts", "음성", "목소리", "piper", "미리듣기")),
+    ("32", "주간 제작 마법사", ("주간", "일주일", "마법사", "weekly", "검토", "예약")),
 ]
 # 목록·검색·표시 순서를 항상 번호 순으로 맞춰 둡니다(번호를 고치면 여기까지 자동 정렬).
 MENU_ITEMS.sort(key=lambda item: int(item[0]))
@@ -5702,9 +5812,10 @@ MENU_DESC: dict[str, str] = {
     "29": "종류별 콘텐츠 사용/전체/남음 수량 표로 확인",
     "30": "게시된 YouTube 영상의 제목·설명을 새 형식으로 갱신",
     "31": "TTS 엔진·목소리 선택, Piper 음성 내려받기·미리 듣기",
+    "32": "7일치 생성 → 영상별 검토·승인 → YouTube 날짜별 예약",
 }
 MAX_RECENT_MENUS = 5   # 메뉴 상단에 보여 줄 최근 사용 메뉴 수
-# 번호가 위에서 아래로 1 → 31 로 이어지도록 그룹을 순서대로 묶습니다.
+# 번호가 위에서 아래로 1 → 32 로 이어지도록 그룹을 순서대로 묶습니다.
 MENU_GROUPS: list[tuple[str, list[str]]] = [
     ("🎬 쇼츠 만들기",          ["1", "2", "3", "4"]),
     ("🚀 만들고 바로 게시",      ["5", "6", "7", "8"]),
@@ -5712,6 +5823,7 @@ MENU_GROUPS: list[tuple[str, list[str]]] = [
     ("📤 게시·이력·성과",       ["11", "12", "13", "14", "15", "16", "17", "18", "19"]),
     ("🗓 예약·자동 준비",        ["20", "21", "22", "23"]),
     ("⚙️ 설정·점검·도구",        ["24", "25", "26", "27", "28", "29", "30", "31"]),
+    ("📅 주간 제작",             ["32"]),
 ]
 # 메뉴 번호 체계 버전 — 2: 표시 순서와 번호를 1 → 31 로 재정렬 (2026-10).
 # 이전 버전 config 의 default_menu 는 구 번호라, 처음 메뉴를 열 때 migrate_menu_numbers 가 새 번호로 바꿉니다.
@@ -6328,6 +6440,9 @@ def interactive_menu(initial: str | None = None) -> None:
         if action == "23":
             auto_plan_menu(cfg)
             continue
+        if action == "32":
+            weekly_wizard_menu(cfg)
+            continue
         if action == "30":
             keep_title = not ask_yes_no("제목도 함께 갱신할까요?", True)
             only = ask_menu("대상 영상 파일명 일부 (Enter=전체)", "")
@@ -6695,7 +6810,7 @@ def main() -> None:
     ap.add_argument("--menu-run", metavar="메뉴",
                     help="메뉴를 바로 실행 — 번호·범위·키워드 모두 가능 (예: --menu-run 5 · 1-4 · 예약)")
     ap.add_argument("--menu-list", action="store_true",
-                    help="번호 순(1~31)으로 원클릭 메뉴 목록만 출력하고 종료")
+                    help="번호 순(1~32)으로 원클릭 메뉴 목록만 출력하고 종료")
     ap.add_argument("--non-interactive", action="store_true", help=argparse.SUPPRESS)
     ap.add_argument("--no-pause", "--nopause", action="store_true", help=argparse.SUPPRESS)
     # ↑ BAT 전달용 안전 플래그: publish.py 는 무시하고, promo_center.bat 가 마지막
@@ -6959,8 +7074,8 @@ def main() -> None:
     publish_single(cfg, args, video)
 
 
-def publish_single(cfg: dict, args, video: Path) -> None:
-    """영상 하나를 지정 플랫폼에 게시하고 이력을 남깁니다. (--dry-run 지원)"""
+def publish_single(cfg: dict, args, video: Path) -> dict[str, str | None]:
+    """영상 하나를 게시하고 플랫폼별 결과를 반환합니다. (--dry-run 지원)"""
     global _yt_privacy_override
     # 메뉴(12·13 등)는 publish_single 을 직접 부르므로, 화면에서 고른 공개 범위를
     # 여기서 반영해야 합니다. (main 은 이미 전역값을 넣어 두었습니다.)
@@ -6978,7 +7093,7 @@ def publish_single(cfg: dict, args, video: Path) -> None:
             warn(f"{video.name}: 이미 게시한 플랫폼 {', '.join(p.upper() for p in already)} — 건너뜁니다.")
         if not remaining:
             warn("같은 숏폼을 다시 게시하지 않습니다. 정말 다시 올리려면 --allow-repeat 을 사용하세요.")
-            return
+            return {}
         platforms = remaining
 
     fallback = getattr(args, "manual_fallback", None)
@@ -7110,6 +7225,7 @@ def publish_single(cfg: dict, args, video: Path) -> None:
                      else kind_arg if kind_arg in KIND_SPECS
                      else "unit" if getattr(args, "unit", None) else None)
     print_remaining(highlight)
+    return dict(results)
 
 
 _yt_privacy_override: str | None = None

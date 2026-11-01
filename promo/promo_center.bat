@@ -81,10 +81,11 @@ echo  toeic.monster 홍보 원클릭 센터 - 사용법
 echo  =================================================================
 echo    promo_center.bat                 원클릭 메뉴 열기 (기본)
 echo    promo_center.bat setup           처음 설치 - 의존성 설치 + 설정 점검
-echo    promo_center.bat menu-list       번호 순(1~31) 메뉴 목록·설명 보기
+echo    promo_center.bat menu-list       번호 순(1~32) 메뉴 목록·설명 보기
 echo    promo_center.bat 5               메뉴 5 바로 실행
 echo    promo_center.bat 1-4             메뉴 1~4 를 순서대로 실행 (17,18 도 가능)
 echo    promo_center.bat 31              TTS 엔진/목소리 설정 (내려받기, 미리 듣기)
+echo    promo_center.bat 32              주간 제작 마법사 (검토 후 YouTube 예약)
 echo    promo_center.bat check           설정 / 의존성 / 폴더 상태 점검
 echo    promo_center.bat verify          배포 전 검증 (재생 + 메타 확인 후 게시)
 echo    promo_center.bat report          게시 이력 HTML 리포트

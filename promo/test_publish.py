@@ -258,6 +258,92 @@ class ParsePublishAtTest(unittest.TestCase):
                          "초 단위(HH:MM:SS)와 시간대 오프셋이 있어야 합니다")
 
 
+class WeeklyWizardTest(unittest.TestCase):
+    """생성 후 명시적으로 승인한 영상만 예약하고 실패 시 중단합니다."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self.tmp.name)
+        self.videos = [self.root / f"v{i}.mp4" for i in range(3)]
+        for i, video in enumerate(self.videos):
+            video.write_bytes(f"video{i}".encode())
+            video.with_suffix(".json").write_text(json.dumps({"kind": "frequency", "items": [
+                {"term": f"word{i}", "meaning": "뜻", "example": "Example."}]}), encoding="utf-8")
+        self.cfg = {"youtube": {"enabled": True}}
+        self.start = (datetime.now().astimezone() + timedelta(days=1)).replace(second=0, microsecond=0)
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def run_wizard(self, answers, upload=None, after_review=None):
+        upload = upload or mock.Mock(return_value={"yt": "https://youtu.be/abc"})
+        def yes_no(prompt, default=True):
+            answer = next(answers)
+            if after_review:
+                after_review(prompt)
+            return answer
+        with mock.patch.object(publish, "ask_int", side_effect=[3, 1, 1]), \
+                mock.patch.object(publish, "choose_option", return_value="frequency"), \
+                mock.patch.object(publish, "ask_yes_no", side_effect=yes_no), \
+                mock.patch.object(publish, "ask_publish_at", return_value=self.start), \
+                mock.patch.object(publish, "run_auto_plan", return_value=self.videos) as generate, \
+                mock.patch.object(publish, "probe_video_info", return_value={"width": 1080, "height": 1920, "duration": 15}), \
+                mock.patch.object(publish, "open_path") as player, \
+                mock.patch.object(publish, "print_quota_status"), \
+                mock.patch.object(publish, "publish_single", upload):
+            publish.weekly_wizard_menu(self.cfg)
+        return generate, player, upload
+
+    def test_only_approved_videos_are_scheduled_at_daily_intervals(self):
+        # 생성 승인, 각 영상 재생/승인, 최종 예약 승인
+        answers = iter([True, True, True, False, False, True, True, True])
+        generate, player, upload = self.run_wizard(answers)
+        generate.assert_called_once_with(self.cfg, 3, "frequency", words=1)
+        self.assertEqual(player.call_count, 2)
+        self.assertEqual([c.args[2] for c in upload.call_args_list], [self.videos[0], self.videos[2]])
+        self.assertEqual([c.args[1].publish_at for c in upload.call_args_list],
+                         publish.plan_publish_times(self.start, 2, 1))
+        for call in upload.call_args_list:
+            self.assertFalse(call.args[1].dry_run)
+            self.assertFalse(call.args[1].manual_fallback)
+            self.assertEqual(call.args[1].platforms, "yt")
+
+    def test_no_approval_or_final_confirmation_means_no_upload(self):
+        for answers in ([True, False, False, False, False, False, False],
+                        [True, False, True, False, False, False, False, False]):
+            with self.subTest(answers=answers):
+                _, _, upload = self.run_wizard(iter(answers))
+                upload.assert_not_called()
+
+    def test_failure_stops_subsequent_uploads(self):
+        upload = mock.Mock(side_effect=[{"yt": "https://youtu.be/first"}, {"yt": None}])
+        _, _, result = self.run_wizard(iter([True, False, True, False, True, False, True, True]), upload)
+        self.assertEqual(result.call_count, 2)
+
+    def test_modified_video_or_sidecar_stops_before_upload(self):
+        for suffix in (".mp4", ".json"):
+            def modify(prompt):
+                if "지금 YouTube" in prompt:
+                    self.videos[0].with_suffix(suffix).write_bytes(b"changed")
+            with self.subTest(suffix=suffix):
+                _, _, upload = self.run_wizard(iter([True, False, True, False, False, False, False, True]),
+                                               after_review=modify)
+                upload.assert_not_called()
+                if suffix == ".mp4":
+                    self.videos[0].write_bytes(b"video0")
+
+    def test_generation_cancel_and_missing_meta_are_safe(self):
+        with mock.patch.object(publish, "ask_int", side_effect=[3, 1]), \
+                mock.patch.object(publish, "choose_option", return_value="auto"), \
+                mock.patch.object(publish, "ask_yes_no", return_value=False), \
+                mock.patch.object(publish, "run_auto_plan") as generate:
+            publish.weekly_wizard_menu(self.cfg)
+            generate.assert_not_called()
+        self.videos[0].with_suffix(".json").unlink()
+        _, _, upload = self.run_wizard(iter([True, False, False, False, False]))
+        upload.assert_not_called()
+
+
 class MultiVideoPlanTest(unittest.TestCase):
     """여러 영상 예약 — 공개 시각 간격과 예약 방식 선택."""
 
