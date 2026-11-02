@@ -85,7 +85,7 @@ echo    promo_center.bat menu-list       번호 순(1~33) 메뉴 목록·설명 
 echo    promo_center.bat 5               메뉴 5 바로 실행
 echo    promo_center.bat 1-4             메뉴 1~4 를 순서대로 실행 (17,18 도 가능)
 echo    promo_center.bat 31              TTS 엔진/목소리 설정 (내려받기, 미리 듣기)
-echo    promo_center.bat 32              최신 영상 10편 자동 예약 (하루 2편, 목록 선택 없음)
+echo    promo_center.bat 32              10편 새로 제작(배경·무늬·목소리 다르게) 후 자동 예약
 echo    promo_center.bat 33              제작 품질 점검 (영상별 예약 가능/제외 사유)
 echo    promo_center.bat check           설정 / 의존성 / 폴더 상태 점검
 echo    promo_center.bat verify          배포 전 검증 (재생 + 메타 확인 후 게시)

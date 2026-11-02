@@ -299,7 +299,7 @@ class WeeklyWizardTest(unittest.TestCase):
         # 생성 승인, 각 영상 재생/승인, 최종 예약 승인
         answers = iter([True, True, True, False, False, True, True, True])
         generate, player, upload = self.run_wizard(answers)
-        generate.assert_called_once_with(self.cfg, 3, "frequency", words=1)
+        generate.assert_called_once_with(self.cfg, 3, "frequency", words=1, vary_looks=True)
         self.assertEqual(player.call_count, 2)
         self.assertEqual([c.args[2] for c in upload.call_args_list], [self.videos[0], self.videos[2]])
         self.assertEqual([c.args[1].publish_at for c in upload.call_args_list],
@@ -631,6 +631,83 @@ class AutoPlanNativeTest(unittest.TestCase):
             result = publish.run_auto_plan({"promo": {}}, 1, "unit")
         self.assertEqual(result, [])
         upload.assert_not_called()
+
+
+class VariedLookTest(unittest.TestCase):
+    """메뉴 32 — 영상마다 배경·무늬·목소리가 달라야 합니다."""
+
+    WINDOWS_VOICES = [("Microsoft Zira Desktop", "en-US", "Female"),
+                      ("Microsoft David Desktop", "en-US", "Male"),
+                      ("Microsoft Hazel Desktop", "en-GB", "Female"),
+                      ("Microsoft George Desktop", "en-GB", "Male")]
+
+    def test_themes_patterns_and_us_uk_voice_pairs_do_not_repeat(self):
+        with mock.patch.object(publish, "list_windows_voices", return_value=self.WINDOWS_VOICES), \
+                mock.patch.object(publish, "list_piper_voices", return_value=[]):
+            looks = publish.varied_looks({"promo": {"default_tts": True,
+                                                   "tts_engine": "windows"}}, 10)
+            self.assertEqual(len({look["theme"] for look in looks}), 10)
+            self.assertEqual(len({look["pattern"] for look in looks}), 10)
+            self.assertGreater(len({(look["voice"], look["voice2"]) for look in looks}), 1)
+            for look in looks:
+                self.assertEqual({publish.voice_accent(look["voice"]),
+                                  publish.voice_accent(look["voice2"])}, {"US", "GB"})
+
+    def test_build_shorts_command_applies_per_video_look(self):
+        cfg = {"promo": {"default_theme": "blue", "default_pattern": "auto",
+                         "default_style": "classic", "default_tts": True,
+                         "default_voice": "Microsoft Hazel Desktop",
+                         "default_voice2": "Microsoft David Desktop"}}
+        look = {"theme": "neon", "pattern": "bokeh", "style": "modern",
+                "tts": True, "engine": "windows",
+                "voice": "Microsoft Zira Desktop", "voice2": "Microsoft Hazel Desktop"}
+        command = publish.build_shorts_command(cfg, "frequency", 1, look)
+        joined = " ".join(command)
+        self.assertIn("--bg neon", joined)
+        self.assertIn("--pattern bokeh", joined)
+        self.assertIn("--voice Microsoft Zira Desktop", joined)
+        self.assertIn("--voice2 Microsoft Hazel Desktop", joined)
+
+    def test_varied_menu_generates_then_schedules_only_new_videos(self):
+        looks = [{"theme": "neon", "pattern": "bokeh", "voice": "a", "voice2": "b"},
+                 {"theme": "mint", "pattern": "waves", "voice": "a", "voice2": "b"},
+                 {"theme": "gold", "pattern": "grid", "voice": "c", "voice2": "d"}]
+        videos = [Path(f"v{i}.mp4") for i in range(3)]
+        with mock.patch.object(publish, "ask_int", return_value=3), \
+                mock.patch.object(publish, "ask_yes_no", return_value=True), \
+                mock.patch.object(publish, "varied_looks", return_value=looks), \
+                mock.patch.object(publish, "run_auto_plan", return_value=videos) as plan, \
+                mock.patch.object(publish, "quick_ten_schedule_menu") as quick:
+            publish.varied_ten_schedule_menu({"youtube": {"enabled": True}, "promo": {}})
+        self.assertTrue(plan.call_args.kwargs["vary_looks"])
+        quick.assert_called_once_with({"youtube": {"enabled": True}, "promo": {}}, 3,
+                                      videos=videos)
+
+
+class EnglishOnlyTtsTest(unittest.TestCase):
+    """TTS — 한국어 낭독 없이 미국식·영국식 영어만 읽어야 합니다."""
+
+    def test_audio_reads_each_english_voice_once_without_korean(self):
+        import make_shorts as shorts
+        spoken = []
+
+        def fake_tts(text, voice, out, engine="auto"):
+            spoken.append(voice)
+            Path(out).write_bytes(b"wav")
+            return Path(out)
+
+        def fake_run(cmd, **kwargs):
+            Path(cmd[-1]).write_bytes(b"wav")
+            return types.SimpleNamespace(returncode=0, stderr=b"")
+
+        voices = ["Microsoft Zira Desktop", "Microsoft Hazel Desktop"]
+        with tempfile.TemporaryDirectory() as td, \
+                mock.patch.object(shorts, "tts_speak", side_effect=fake_tts), \
+                mock.patch.object(shorts, "probe_duration", return_value=1.0), \
+                mock.patch.object(shorts.subprocess, "run", side_effect=fake_run):
+            shorts.build_audio("word", "Example sentence.", voices, 6, Path(td), 0)
+        self.assertEqual(spoken, [voices[0]] * 2 + [voices[1]] * 2)
+        self.assertFalse(any("Heami" in voice for voice in spoken))
 
 
 class ScheduleParseZTest(unittest.TestCase):

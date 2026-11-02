@@ -3759,12 +3759,95 @@ def next_unit_with_remaining() -> int | None:
     return best if best_n > 0 else None
 
 
-def build_shorts_command(cfg: dict, kind: str, words: int) -> list[str] | None:
-    """make_shorts.py 실행 명령 — config 의 기본값(테마·패턴·스타일·목소리)을 그대로 씁니다."""
+def voice_accent(name: str) -> str:
+    """목소리의 영어 억양 — "US"(미국식) / "GB"(영국식) / 모르면 빈 문자열."""
+    text = str(name or "").strip()
+    if text.startswith("en_US-") or text.startswith("en-US-"):
+        return "US"
+    if text.startswith("en_GB-") or text.startswith("en-GB-"):
+        return "GB"
+    for voice, culture, _gender in list_windows_voices():
+        if voice != text:
+            continue
+        culture = culture.lower()
+        if culture.startswith("en-us"):
+            return "US"
+        if culture.startswith("en-gb"):
+            return "GB"
+    return ""
+
+
+def _accent_voices(engine: str) -> tuple[list[str], list[str]]:
+    """엔진에서 쓸 수 있는 (미국식 목소리, 영국식 목소리) 목록."""
+    if normalize_tts_engine(engine) == "piper":
+        voices = list_piper_voices()
+    else:
+        voices = [name for name, culture, _gender in list_windows_voices()
+                  if culture.lower().startswith("en")]
+    return ([v for v in voices if voice_accent(v) == "US"],
+            [v for v in voices if voice_accent(v) == "GB"])
+
+
+def us_uk_voice_pair(engine: str = "auto", index: int = 0) -> tuple[str, str, str]:
+    """미국식 1회 + 영국식 1회 목소리 쌍 — (미국식, 영국식, 실제 엔진).
+
+    요청 엔진에 두 억양이 모두 없으면 Windows 내장 → Piper 순서로 찾습니다.
+    찾지 못하면 ("", "", 요청 엔진) 을 돌려줍니다.
+    """
+    requested = resolve_tts_engine(engine, "")
+    for candidate in (requested, "windows", "piper"):
+        us, gb = _accent_voices(candidate)
+        if us and gb:
+            return (us[index % len(us)],
+                    gb[(index + index // len(us)) % len(gb)],
+                    candidate)
+    return "", "", requested
+
+
+def varied_looks(cfg: dict, count: int, tts: bool | None = None) -> list[dict]:
+    """영상마다 겹치지 않는 배경 테마·무늬와 미국식·영국식 목소리 쌍을 만듭니다."""
     promo = cfg.get("promo", {})
-    theme = str(promo.get("default_theme", "blue")).lower()
-    style = str(promo.get("default_style", "classic")).lower()
-    pattern = str(promo.get("default_pattern", "auto")).lower() or "auto"
+    count = max(1, int(count))
+    themes = [name for name, _label in make_theme_choices()]
+    patterns = [name for name, _label in make_pattern_choices()
+                if name not in ("auto", "none")]
+    if not themes:
+        themes = ["blue"]
+    if not patterns:
+        patterns = ["circles"]
+    default_theme = str(promo.get("default_theme", "blue")).lower()
+    rest = [name for name in themes if name != default_theme]
+    random.shuffle(rest)
+    ordered = ([default_theme] if default_theme in themes else []) + rest
+    random.shuffle(patterns)
+    tts_on = bool(promo.get("default_tts", False)) if tts is None else bool(tts)
+    looks: list[dict] = []
+    for index in range(count):
+        look = {"theme": ordered[index % len(ordered)],
+                "pattern": patterns[index % len(patterns)],
+                "style": str(promo.get("default_style", "classic")).lower()}
+        if tts_on:
+            us, gb, engine = us_uk_voice_pair(tts_engine_of(cfg), index)
+            if us and gb:
+                look.update(tts=True, engine=engine, voice=us, voice2=gb)
+            else:
+                look.update(tts=True, engine=resolve_tts_engine(tts_engine_of(cfg), ""),
+                            voice=str(promo.get("default_voice") or default_voice()),
+                            voice2=str(promo.get("default_voice2") or default_voice2()))
+        else:
+            look["tts"] = False
+        looks.append(look)
+    return looks
+
+
+def build_shorts_command(cfg: dict, kind: str, words: int,
+                         look: dict | None = None) -> list[str] | None:
+    """make_shorts.py 실행 명령 — look 이 있으면 배경·목소리를 영상별로 덮어씁니다."""
+    promo = cfg.get("promo", {})
+    look = look or {}
+    theme = str(look.get("theme") or promo.get("default_theme", "blue")).lower()
+    style = str(look.get("style") or promo.get("default_style", "classic")).lower()
+    pattern = str(look.get("pattern") or promo.get("default_pattern", "auto")).lower() or "auto"
     command = [sys.executable, str(PROMO / "make_shorts.py"),
                "--words", str(words), "--bg", theme, "--style", style, "--pattern", pattern]
     if kind == "idioms":
@@ -3780,12 +3863,14 @@ def build_shorts_command(cfg: dict, kind: str, words: int) -> list[str] | None:
         if unit is None:
             return None
         command.extend(["--unit", str(unit)])
-    if bool(promo.get("default_tts", False)):
+    tts_on = bool(look["tts"]) if "tts" in look else bool(promo.get("default_tts", False))
+    if tts_on:
         command.append("--tts")
-        command.extend(["--engine", tts_engine_of(cfg)])
-        first = default_voice()
-        command.extend(["--voice", str(promo.get("default_voice", first) or first)])
-        voice2 = str(promo.get("default_voice2", default_voice2()) or "")
+        command.extend(["--engine", str(look.get("engine") or tts_engine_of(cfg))])
+        voice = str(look.get("voice") or promo.get("default_voice") or default_voice())
+        if voice:
+            command.extend(["--voice", voice])
+        voice2 = str(look.get("voice2") or promo.get("default_voice2", default_voice2()) or "")
         if voice2:
             command.extend(["--voice2", voice2])
         else:
@@ -3798,7 +3883,8 @@ def build_shorts_command(cfg: dict, kind: str, words: int) -> list[str] | None:
 def run_auto_plan(cfg: dict, count: int, kind: str = "auto", *, start_at: str | None = None,
                   interval_days: int = 1, words: int | None = None,
                   platforms: str | None = None, privacy: str | None = None,
-                  mode: str | None = None, dry_run: bool = False) -> list[Path]:
+                  mode: str | None = None, dry_run: bool = False,
+                  vary_looks: bool = False) -> list[Path]:
     """N일치 쇼츠를 자동 생성하고, 시작 시각이 있으면 예약 게시까지 등록합니다.
 
     kind=auto 는 종류를 돌려가며 섞어 만듭니다(남은 콘텐츠가 많은 종류 우선).
@@ -3842,6 +3928,8 @@ def run_auto_plan(cfg: dict, count: int, kind: str = "auto", *, start_at: str | 
 
     videos: list[Path] = []
     planned: dict[str, int] = {}
+    # vary_looks: 영상마다 배경 테마·무늬·목소리를 겹치지 않게 돌려 씁니다(메뉴 32).
+    looks = varied_looks(cfg, count) if vary_looks else []
     for n in range(count):
         pick = kind
         if kind == "auto":
@@ -3862,7 +3950,9 @@ def run_auto_plan(cfg: dict, count: int, kind: str = "auto", *, start_at: str | 
             pick = min(candidates,
                        key=lambda k: (planned.get(k, 0), rotation_rank(k, hist), -remaining(k)))
         planned[pick] = planned.get(pick, 0) + 1
-        command = build_shorts_command(cfg, pick, words)
+        look = looks[n] if n < len(looks) else None
+        command = (build_shorts_command(cfg, pick, words, look) if look is not None
+                   else build_shorts_command(cfg, pick, words))
         if command is None:
             warn("남은 단어가 있는 UNIT 이 없어 중단합니다.")
             break
@@ -3870,6 +3960,9 @@ def run_auto_plan(cfg: dict, count: int, kind: str = "auto", *, start_at: str | 
         video = SHORTS_DIR / f"plan_{uuid.uuid4().hex}.mp4"
         command.extend(["--out", str(video)])
         log(f"\n▶ [{n + 1}/{count}] {KIND_LABELS.get(pick, pick)} 쇼츠 생성")
+        if look is not None:
+            voice = " + ".join(v for v in (look.get("voice"), look.get("voice2")) if v)
+            log(f"   배경 {look['theme']} · 무늬 {look['pattern']} · 목소리 {voice or '설정값'}")
         if not run_menu_command(command):
             fail(f"{n + 1}번째 쇼츠 생성에 실패해 중단합니다.")
             break
@@ -4124,7 +4217,8 @@ def quality_audit_menu(cfg: dict) -> None:
 QUICK_SCHEDULE_SLOTS = ("08:00", "08:15")
 
 
-def quick_ten_schedule_menu(cfg: dict, count: int = 10) -> None:
+def quick_ten_schedule_menu(cfg: dict, count: int = 10, *,
+                            videos: list[Path] | None = None) -> None:
     """최신 영상을 자동으로 최대 10편 골라 매일 오전 8시대에 2편씩 예약합니다.
 
     폴더의 영상 수십 개를 눈으로 고르지 않도록 게시 가능한 영상만 최신순으로 자동
@@ -4135,7 +4229,7 @@ def quick_ten_schedule_menu(cfg: dict, count: int = 10) -> None:
     if not cfg.get("youtube", {}).get("enabled", True):
         warn("YouTube가 비활성화되어 있습니다 — 메뉴 25에서 설정하세요.")
         return
-    videos = list_videos_menu()
+    videos = list(videos) if videos is not None else list_videos_menu()
     if not videos:
         warn("assets/shorts 폴더에 mp4 영상이 없습니다.")
         return
@@ -4261,6 +4355,40 @@ def quick_ten_schedule_menu(cfg: dict, count: int = 10) -> None:
         log(f"  · 미처리 또는 확인 필요: {when} | {row['video'].name}")
 
 
+def varied_ten_schedule_menu(cfg: dict, count: int = 10) -> None:
+    """메뉴 32-1: 영상마다 배경·무늬·목소리를 다르게 만들어 10편을 자동 예약합니다."""
+    promo = cfg.get("promo", {})
+    if not cfg.get("youtube", {}).get("enabled", True):
+        warn("YouTube가 비활성화되어 있습니다 — 메뉴 25에서 설정하세요.")
+        return
+    count = max(1, min(10, int(count)))
+    try:
+        words = min(10, max(1, int(promo.get("default_focus_words", 1) or 1)))
+    except (TypeError, ValueError):
+        words = 1
+    looks = varied_looks(cfg, count, tts=True)
+    log(f"\n🎬 새로 제작 + 자동 예약 — {count}편 · 영상마다 배경·무늬·목소리를 다르게 만듭니다")
+    for i, look in enumerate(looks[:5], 1):
+        voice = " + ".join(v for v in (look.get("voice"), look.get("voice2")) if v)
+        log(f"  {i:2d}. 테마 {look['theme']:<9} · 무늬 {look['pattern']:<9} · 목소리 {voice or '설정값'}")
+    if len(looks) > 5:
+        log(f"  … 외 {len(looks) - 5}편 (같은 규칙으로 서로 겹치지 않게)")
+    if not all(look.get("voice") and look.get("voice2") for look in looks):
+        warn("미국식·영국식 음성을 모두 찾지 못했습니다 — 메뉴 31에서 Piper 음성 또는 "
+             "Windows 영어 음성을 확인하세요.")
+    log("  · 만들어진 영상은 문항·규격·중복 점검을 통과한 것만 내일부터 매일 "
+        "08:00·08:15 에 2편씩 공개합니다.")
+    if not ask_yes_no(f"{count}편을 새로 만들까요? 사용 이력이 기록됩니다", True):
+        log("생성을 취소했습니다.")
+        return
+    videos = run_auto_plan(cfg, count, "auto", words=words, vary_looks=True)
+    if not videos:
+        return
+    if len(videos) < count:
+        warn(f"{count}편 중 {len(videos)}편만 만들어졌습니다 — 만들어진 영상만 예약합니다.")
+    quick_ten_schedule_menu(cfg, len(videos), videos=videos)
+
+
 def weekly_wizard_menu(cfg: dict) -> None:
     """영상별 명시적 승인 후에만 YouTube 예약 업로드합니다."""
     log("\n📅 주간 제작 마법사 — 생성 → 개별 검토 → 승인 → YouTube 예약")
@@ -4277,7 +4405,7 @@ def weekly_wizard_menu(cfg: dict) -> None:
     if not ask_yes_no(f"{count}편을 생성할까요? 사용 이력이 기록됩니다", False):
         log("생성을 취소했습니다.")
         return
-    videos = run_auto_plan(cfg, count, kind, words=words)
+    videos = run_auto_plan(cfg, count, kind, words=words, vary_looks=True)
     if not videos:
         return
     if len(videos) < count:
@@ -6089,7 +6217,7 @@ MENU_DESC: dict[str, str] = {
     "29": "종류별 콘텐츠 사용/전체/남음 수량 표로 확인",
     "30": "게시된 YouTube 영상의 제목·설명을 새 형식으로 갱신",
     "31": "TTS 엔진·목소리 선택, Piper 음성 내려받기·미리 듣기",
-    "32": "최신 영상 10편 자동 예약(하루 2편) 또는 새로 만들어 개별 검토·예약",
+    "32": "10편을 배경·무늬·목소리(미국식+영국식) 다르게 제작해 예약 또는 최신 영상 자동 예약",
     "33": "폴더 전체 영상의 게시 준비 상태·제외 사유를 업로드 없이 점검",
 }
 MAX_RECENT_MENUS = 5   # 메뉴 상단에 보여 줄 최근 사용 메뉴 수
@@ -6721,9 +6849,12 @@ def interactive_menu(initial: str | None = None) -> None:
         if action == "32":
             mode = choose_option(
                 "쇼츠 마법사",
-                [("quick", "10편 자동 예약 — 최신 영상 자동 선택, 하루 2편 (권장)"),
-                 ("weekly", "새로 만들고 개별 검토 후 예약")], "quick")
-            if mode == "quick":
+                [("vary", "10편 새로 제작 → 자동 예약 — 배경·무늬·목소리(미국식+영국식) 모두 다르게 (권장)"),
+                 ("quick", "10편 자동 예약 — 이미 만든 최신 영상, 하루 2편"),
+                 ("weekly", "새로 만들고 개별 검토 후 예약 — 배경·무늬·목소리도 다르게")], "vary")
+            if mode == "vary":
+                varied_ten_schedule_menu(cfg)
+            elif mode == "quick":
                 quick_ten_schedule_menu(cfg)
             else:
                 weekly_wizard_menu(cfg)

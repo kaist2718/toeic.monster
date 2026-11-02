@@ -20,8 +20,9 @@ Ken Burns 줌 효과와 슬라이드 간 크로스페이드, 선택적으로 영
   python make_shorts.py --idioms --words 5           # 숙어 126선에서 5개 (→ assets/shorts/idioms_*_shorts.mp4)
   python make_shorts.py --idioms --index 0 --bg mint # 숙어 목록의 특정 순번만
 
-음성 기본값은 **두 목소리**입니다 — 먼저 여성, 이어서 남성이 같은 단어·예문을 읽습니다. 음성 길이가
+음성 기본값은 **두 목소리**입니다 — 같은 단어·예문을 **미국식 한 번, 영국식 한 번** 읽습니다. 음성 길이가
 약 2배가 되므로 슬라이드가 자동으로 늘어납니다. --single-voice 나 --voice2 none 으로 한 목소리만 쓸 수 있습니다.
+한국어 설명·해설 낭독은 넣지 않습니다.
 
 낭독 엔진(--engine)은 세 가지입니다.
   auto   : 내려받은 로컬(Piper) 음성이 있으면 로컬, 없으면 Windows 내장 (기본)
@@ -102,6 +103,8 @@ from publish import (  # noqa: E402
     record_content_created,
     relative_display,
     resolve_tts_engine,
+    us_uk_voice_pair,
+    voice_accent,
     warn,
 )
 
@@ -1778,13 +1781,9 @@ def probe_duration(path: Path) -> float:
     return 0.0
 
 
-# 한국어 해설 낭독 — Windows 에 'Microsoft Heami'(ko-KR) 가 있으면 켭니다.
-KO_VOICE_CANDIDATES = ("Microsoft Heami Desktop", "Microsoft Heami")
-
-
 def build_audio(word: str, en_ex: str, voices: list[str], slide_dur: float, tmp: Path, i: int,
                 engine: str = "auto", word_gap: float = WORD_GAP,
-                think_sec: float = 0.0, ko_text: str = "") -> tuple[Path, float]:
+                think_sec: float = 0.0) -> tuple[Path, float]:
     """목소리별 TTS 를 만들어 차례로 이어 붙이고 슬라이드 길이에 맞춘 wav 로 변환합니다.
 
     단어와 예문은 각각 따로 합성한 뒤 word_gap 초의 무음을 끼워 붙입니다 —
@@ -1811,19 +1810,6 @@ def build_audio(word: str, en_ex: str, voices: list[str], slide_dur: float, tmp:
             if pi == len(paths) - 1 and not last_voice:
                 trailing += VOICE_GAP      # 앞 목소리 → 다음 목소리 사이 휴지
             segments.append((path, trailing))
-    ko = " ".join(str(ko_text or "").split())
-    if ko:
-        # 해설은 한국어 목소리로 — 귀만으로도 이해할 수 있게 합니다(실패해도 영상은 만듭니다).
-        last_exc: Exception | None = None
-        for name in KO_VOICE_CANDIDATES:
-            try:
-                segments.append((tts_speak(ko, name, tmp / f"tts_ko_{i}.wav", "windows"), 0.0))
-                break
-            except Exception as exc:   # 음성이 없으면 조용히 영문 낭독만 남깁니다
-                last_exc = exc
-        else:
-            warn(f"한국어 해설 음성을 만들지 못했습니다({last_exc}) — 영문 낭독만 사용합니다")
-
     # 휴지까지 더해 실제 음성 길이를 어림한다.
     audio_len = sum(probe_duration(p) + pad for p, pad in segments)
     dur = max(slide_dur, audio_len + max(0.8, think_sec))  # 질문 낭독 뒤 답할 시간을 확보
@@ -2092,6 +2078,18 @@ def main() -> None:
     engine = resolve_tts_engine(engine_req, args.voice)
     if not args.voice2:
         args.voice2 = piper_default_voice(male=True) if engine == "piper" else default_voice2()
+    # 두 목소리를 쓰면 미국식 1회 + 영국식 1회 — 같은 억양이면 반대 억양 음성으로 바꿉니다.
+    if args.tts and not args.single_voice:
+        us, gb, pair_engine = us_uk_voice_pair(engine)
+        if us and gb:
+            accents = (voice_accent(args.voice), voice_accent(args.voice2))
+            if pair_engine != engine or accents not in (("US", "GB"), ("GB", "US")):
+                if pair_engine != engine:
+                    log(f"미국식·영국식 목소리를 함께 쓰기 위해 TTS 엔진을 {pair_engine} 로 바꿉니다.")
+                engine = pair_engine
+                args.voice, args.voice2 = us, gb
+        else:
+            warn("미국식·영국식 음성을 함께 찾지 못했습니다 — 설치된 음성으로 낭독합니다.")
 
     if args.tts:
         if engine == "piper":
@@ -2290,11 +2288,13 @@ def main() -> None:
     if args.tts:
         engine_label = ("로컬 Piper TTS · 오프라인(인터넷 불필요)" if engine == "piper"
                         else "Windows 내장 TTS(SAPI) · 네트워크 불필요")
-        log(f"음성  : {engine_label} (엔진 {engine} · {' + '.join(voices)})")
+        accent = " · ".join(f"{v} [{voice_accent(v) or '?'}]" for v in voices)
+        log(f"음성  : {engine_label} (엔진 {engine} · {accent})")
     else:
         log("음성  : 없음 (--no-tts 로 끔)")
     if args.tts and len(voices) > 1:
-        log(f"        {len(voices)}개 목소리가 같은 문장을 이어 읽습니다 — 음성이 약 2배라 슬라이드가 길어집니다")
+        log(f"        {len(voices)}개 목소리가 같은 문장을 미국식·영국식으로 한 번씩 읽습니다"
+            " — 음성이 약 2배라 슬라이드가 길어집니다")
         log("        짧게 만들려면 --words 를 줄이거나 --single-voice 로 한 목소리만 쓰세요")
     if music:
         log(f"배경음악: {music} (볼륨 {args.music_volume:g})")
@@ -2312,7 +2312,6 @@ def main() -> None:
         # 퀴즈는 한 문제가 문제·정답 두 장이라 picked 와 길이가 다릅니다.
         # (그림, (낭독할 낱말, 낭독할 문장), 기본 길이) — say 가 None 이면 무음 슬라이드(인트로·아웃로).
         plan: list[tuple[Image.Image, tuple[str, str] | None, float]] = []
-        ko_texts: dict[int, str] = {}   # 슬라이드 번호 → 한국어 해설(정답 화면에만)
         try:
             if intro_sec:
                 if kind == "unit":
@@ -2342,7 +2341,6 @@ def main() -> None:
                     plan.append((render_quiz_answer(i * 2 + 1, slide_count, w[7], q, args.bg, args.font,
                                                    args.style, args.pattern),
                                  say_a, args.slide_sec))
-                    ko_texts[len(plan) - 1] = str(q.get("why") or "")
             elif kind_layout(kind) == "list1":
                 for i, w in enumerate(picked):
                     r = w[8]
@@ -2383,8 +2381,7 @@ def main() -> None:
                     try:
                         question_slide = is_quiz_kind(kind) and (si - (1 if intro_sec else 0)) % 2 == 0
                         wav, dur = build_audio(say[0], say[1], voices, base_dur, tmp, si, engine,
-                                                args.word_gap, 3.0 if question_slide else 0.0,
-                                                ko_text=ko_texts.get(si, ""))
+                                                args.word_gap, 3.0 if question_slide else 0.0)
                         if dur > base_dur:
                             log(f"   · {say[0]}: 음성 {dur - 0.8:.1f}초 → 슬라이드 연장")
                     except Exception as exc:
