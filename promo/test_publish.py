@@ -269,7 +269,8 @@ class WeeklyWizardTest(unittest.TestCase):
         for i, video in enumerate(self.videos):
             video.write_bytes(f"video{i}".encode())
             video.with_suffix(".json").write_text(json.dumps({"kind": "frequency", "items": [
-                {"term": f"word{i}", "meaning": "뜻", "example": "Example."}]}), encoding="utf-8")
+                {"term": f"word{i}", "meaning": "뜻", "example": "Example.",
+                 "translation": "예문."}]}), encoding="utf-8")
         self.cfg = {"youtube": {"enabled": True}}
         self.start = (datetime.now().astimezone() + timedelta(days=1)).replace(second=0, microsecond=0)
 
@@ -355,7 +356,8 @@ class QuickTenScheduleTest(unittest.TestCase):
         for i, video in enumerate(self.videos):
             video.write_bytes(f"video{i}".encode())
             video.with_suffix(".json").write_text(json.dumps({"kind": "frequency", "items": [
-                {"term": f"word{i}", "meaning": "뜻", "example": "Example."}]}), encoding="utf-8")
+                {"term": f"word{i}", "meaning": "뜻", "example": "Example.",
+                 "translation": "예문."}]}), encoding="utf-8")
         self.cfg = {"youtube": {"enabled": True}}
         self.first = (datetime.now().astimezone() + timedelta(days=1)).replace(hour=8, minute=0, second=0, microsecond=0)
         self.second = self.first.replace(hour=20)
@@ -410,12 +412,24 @@ class QuickTenScheduleTest(unittest.TestCase):
             video = Path(self.tmp.name) / f"many{i}.mp4"
             video.write_bytes(f"many{i}".encode())
             video.with_suffix(".json").write_text(json.dumps({"kind": "frequency", "items": [
-                {"term": f"w{i}", "meaning": "뜻", "example": "Example."}]}), encoding="utf-8")
+                {"term": f"w{i}", "meaning": "뜻", "example": "Example.",
+                 "translation": "예문."}]}), encoding="utf-8")
             videos.append(video)
         upload, _ = self.run_quick(videos=videos)
         self.assertEqual(upload.call_count, 10)
         self.assertEqual([call.args[2] for call in upload.call_args_list], videos[:10],
                          "목록 순서(최신순) 그대로 10편만 골라야 합니다")
+
+    def test_duplicate_titles_are_skipped(self):
+        # 다른 영상이어도 제목이 같으면 피드에서 구분되지 않으므로 한 배치에 한 번만 올립니다.
+        self.videos[1].with_suffix(".json").write_text(json.dumps({"kind": "frequency", "items": [
+            {"term": "word0", "meaning": "뜻", "example": "Example.",
+             "translation": "예문."}]}), encoding="utf-8")
+        upload, _ = self.run_quick()
+        self.assertEqual(upload.call_count, 9)
+        uploaded = [c.args[2] for c in upload.call_args_list]
+        self.assertIn(self.videos[0], uploaded)
+        self.assertNotIn(self.videos[1], uploaded)
 
     def test_posted_missing_meta_and_duplicate_content_are_skipped(self):
         posted = lambda v: {"yt": {}} if v in self.videos[:3] else {}
@@ -682,6 +696,8 @@ class VariedLookTest(unittest.TestCase):
                 mock.patch.object(publish, "quick_ten_schedule_menu") as quick:
             publish.varied_ten_schedule_menu({"youtube": {"enabled": True}, "promo": {}})
         self.assertTrue(plan.call_args.kwargs["vary_looks"])
+        # 미리 보여 준 테마·무늬·목소리 목록을 그대로 넘겨, 실제 생성과 표가 어긋나지 않게 합니다.
+        self.assertIs(plan.call_args.kwargs["looks"], looks)
         quick.assert_called_once_with({"youtube": {"enabled": True}, "promo": {}}, 3,
                                       videos=videos)
 
@@ -693,6 +709,34 @@ class VariedLookTest(unittest.TestCase):
                 mock.patch.object(publish, "run_auto_plan") as plan:
             publish.varied_ten_schedule_menu({"youtube": {"enabled": True}, "promo": {}})
         plan.assert_not_called()
+
+
+class ShortsCardQualityTest(unittest.TestCase):
+    """카드 예문 줄바꿈과 게시 전 내용 점검 — 단어가 중간에서 잘리거나 빈 카드가 올라가지 않게 합니다."""
+
+    def test_layout_words_keeps_words_whole(self):
+        import make_shorts as shorts
+        lines = shorts.layout_words("The new design enhances the product's appeal.",
+                                    lambda s: len(s) * 10, 100)
+        self.assertEqual(lines, ["The new", "design", "enhances", "the", "product's", "appeal."])
+        self.assertIn("product's", lines)
+
+    def test_layout_words_splits_only_words_longer_than_line(self):
+        import make_shorts as shorts
+        lines = shorts.layout_words("employees", lambda s: len(s) * 10, 40)
+        self.assertEqual("".join(lines), "employees")
+        self.assertTrue(all(len(line) <= 4 for line in lines))
+
+    def test_content_problems_find_empty_card_fields(self):
+        items = [{"term": "word", "meaning": "뜻", "example": "", "translation": ""}]
+        problems = publish.sidecar_content_problems(items, "unit")
+        self.assertTrue(any("예문" in p for p in problems))
+        self.assertTrue(any("해석" in p for p in problems))
+        self.assertEqual(publish.sidecar_content_problems(items, "grammar"), [])
+
+    def test_content_problems_accept_complete_card(self):
+        items = [{"term": "word", "meaning": "뜻", "example": "Example.", "translation": "예문."}]
+        self.assertEqual(publish.sidecar_content_problems(items, "frequency"), [])
 
 
 class EnglishOnlyTtsTest(unittest.TestCase):
@@ -1011,9 +1055,13 @@ class YouTubeBodyTest(unittest.TestCase):
         self.assertEqual(body["snippet"]["description"], "#toeic #토익")
 
     def test_tags_are_capped_at_youtube_limit(self):
+        # YouTube 상한은 태그 개수가 아니라 전체 500자입니다.
         yt = {"tags": [f"tag{i}" for i in range(600)], "category_id": "27"}
         body = publish.build_youtube_body(self.META, yt, "public")
-        self.assertEqual(len(body["snippet"]["tags"]), 500)
+        tags = body["snippet"]["tags"]
+        self.assertLessEqual(sum(len(t) for t in tags) + max(0, len(tags) - 1), 500)
+        self.assertTrue(tags)
+        self.assertNotIn("tag599", tags)
 
     def test_category_and_language_are_set(self):
         body = publish.build_youtube_body(self.META, self.YT, "public")
@@ -1450,7 +1498,8 @@ class ShortsAuditTest(unittest.TestCase):
 
     def test_splits_ready_and_blocked(self):
         good = self.make_video("good.mp4", {"kind": "frequency", "items": [
-            {"term": "equipment", "meaning": "장비", "example": "The equipment is new."}]})
+            {"term": "equipment", "meaning": "장비", "example": "The equipment is new.",
+             "translation": "그 장비는 새것이다."}]})
         bad = self.make_video("bad.mp4")  # 메타 없음 → 제외
         result = self.audit([good, bad])
         self.assertEqual(result["total"], 2)
@@ -1460,7 +1509,8 @@ class ShortsAuditTest(unittest.TestCase):
 
     def test_flags_bad_ratio_and_already_posted(self):
         video = self.make_video("wide.mp4", {"kind": "frequency", "items": [
-            {"term": "equipment", "meaning": "장비", "example": "The equipment is new."}]})
+            {"term": "equipment", "meaning": "장비", "example": "The equipment is new.",
+             "translation": "그 장비는 새것이다."}]})
         narrow = self.audit([video], info={"width": 1920, "height": 1080, "duration": 60})
         self.assertIn("9:16 아님", narrow["blocked"][0][1])
         posted = self.audit([video], posted=lambda _v: {"yt": "https://youtu.be/x"})

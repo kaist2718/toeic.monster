@@ -2827,7 +2827,18 @@ def build_youtube_body(meta: dict, yt: dict, privacy: str,
     if meta["hashtags"]:
         desc = f"{desc}\n\n{meta['hashtags']}" if desc else meta["hashtags"]
 
-    tags = list(yt.get("tags", [])) + [t.lstrip("#") for t in meta["hashtags"].split() if t.lstrip("#")]
+    # YouTube 태그 상한은 개수가 아니라 **전체 500자**입니다 — 넘으면 업로드가 거부됩니다.
+    tags: list[str] = []
+    used = 0
+    for raw in list(yt.get("tags", [])) + [t.lstrip("#") for t in meta["hashtags"].split() if t.lstrip("#")]:
+        tag = str(raw).strip()
+        if not tag:
+            continue
+        need = len(tag) + (1 if tags else 0)
+        if used + need > 500:
+            break
+        tags.append(tag)
+        used += need
     status = {
         "privacyStatus": "private" if publish_at else privacy,
         "selfDeclaredMadeForKids": False,
@@ -2838,7 +2849,7 @@ def build_youtube_body(meta: dict, yt: dict, privacy: str,
         "snippet": {
             "title": str(meta["title"])[:100],   # YouTube 제목 상한(100자초과 시 업로드 거부)
             "description": desc,
-            "tags": tags[:500],
+            "tags": tags,
             "categoryId": str(yt.get("category_id", "27")),  # 27 = Education
             "defaultLanguage": "ko",
         },
@@ -3884,7 +3895,7 @@ def run_auto_plan(cfg: dict, count: int, kind: str = "auto", *, start_at: str | 
                   interval_days: int = 1, words: int | None = None,
                   platforms: str | None = None, privacy: str | None = None,
                   mode: str | None = None, dry_run: bool = False,
-                  vary_looks: bool = False) -> list[Path]:
+                  vary_looks: bool = False, looks: list[dict] | None = None) -> list[Path]:
     """N일치 쇼츠를 자동 생성하고, 시작 시각이 있으면 예약 게시까지 등록합니다.
 
     kind=auto 는 종류를 돌려가며 섞어 만듭니다(남은 콘텐츠가 많은 종류 우선).
@@ -3929,7 +3940,8 @@ def run_auto_plan(cfg: dict, count: int, kind: str = "auto", *, start_at: str | 
     videos: list[Path] = []
     planned: dict[str, int] = {}
     # vary_looks: 영상마다 배경 테마·무늬·목소리를 겹치지 않게 돌려 씁니다(메뉴 32).
-    looks = varied_looks(cfg, count) if vary_looks else []
+    # 메뉴에서 미리 보여 준 목록을 넘기면 같은 값으로 만들고, 없을 때만 새로 뽑습니다.
+    plan_looks = list(looks) if looks else (varied_looks(cfg, count) if vary_looks else [])
     for n in range(count):
         pick = kind
         if kind == "auto":
@@ -3950,7 +3962,7 @@ def run_auto_plan(cfg: dict, count: int, kind: str = "auto", *, start_at: str | 
             pick = min(candidates,
                        key=lambda k: (planned.get(k, 0), rotation_rank(k, hist), -remaining(k)))
         planned[pick] = planned.get(pick, 0) + 1
-        look = looks[n] if n < len(looks) else None
+        look = plan_looks[n] if n < len(plan_looks) else None
         command = (build_shorts_command(cfg, pick, words, look) if look is not None
                    else build_shorts_command(cfg, pick, words))
         if command is None:
@@ -4143,6 +4155,22 @@ def sidecar_item_problems(items: list) -> list[str]:
     return problems
 
 
+def sidecar_content_problems(items: list, kind: str) -> list[str]:
+    """단어·숙어·빈도 카드의 필수 내용을 점검합니다 — 빈 뜻·예문·해석은 카드가 비어 보입니다."""
+    if kind not in ("unit", "idioms", "frequency"):
+        return []
+    problems: list[str] = []
+    fields = (("term", "표제어"), ("meaning", "뜻"), ("example", "예문"), ("translation", "해석"))
+    for i, it in enumerate(items, 1):
+        if not isinstance(it, dict):
+            problems.append(f"{i}번 항목 형식 오류")
+            continue
+        for key, label in fields:
+            if not str(it.get(key) or "").strip():
+                problems.append(f"{i}번 {label} 없음")
+    return problems
+
+
 def audit_shorts(cfg: dict) -> dict:
     """게시 준비 상태를 영상별로 점검합니다 — 업로드·수정 없이 읽기만 합니다.
 
@@ -4166,6 +4194,7 @@ def audit_shorts(cfg: dict) -> dict:
                     title = kind_title(kind, saved["items"])
                 else:
                     title = str((saved["items"][0] or {}).get("term") or "")
+                reasons.extend(sidecar_content_problems(saved["items"], kind)[:2])
             if "yt" in posted_platforms(video):
                 reasons.append("이미 게시")
         except (OSError, KeyError, TypeError):
@@ -4237,6 +4266,7 @@ def quick_ten_schedule_menu(cfg: dict, count: int = 10, *,
     rows = []
     skipped = 0
     fingerprints = set()
+    titles: set[str] = set()
     for video in videos:
         if len(rows) >= count:
             break
@@ -4256,14 +4286,22 @@ def quick_ten_schedule_menu(cfg: dict, count: int = 10, *,
                 problems = sidecar_item_problems(saved["items"])
                 if problems:
                     raise ValueError("문항 점검 실패 — " + ", ".join(problems[:2]))
+            content_problems = sidecar_content_problems(saved["items"], kind_name)
+            if content_problems:
+                raise ValueError("내용 점검 실패 — " + ", ".join(content_problems[:2]))
             args = argparse.Namespace(video=str(video), unit=None, title=None, desc=None,
                                       platforms="yt", dry_run=True, youtube_privacy=None,
                                       allow_repeat=False)
             meta = build_meta(cfg, args)
+            # 같은 제목이 연달아 올라가면 피드에서 구분되지 않습니다 — 한 배치에서는 한 번만 씁니다.
+            title = str(meta.get("title") or "")
+            if title in titles:
+                raise ValueError("이미 고른 영상과 제목이 같습니다")
             info = probe_video_info(video)
             if not info["height"] or not 0.52 <= info["width"] / info["height"] <= 0.60 or not 0 < info["duration"] <= 180:
                 raise ValueError("영상 규격 또는 길이를 확인할 수 없거나 Shorts 범위를 벗어났습니다")
             fingerprints.add(fingerprint)
+            titles.add(title)
             rows.append({"video": video, "meta": meta, "fingerprint": fingerprint,
                          "meta_fingerprint": meta_fingerprint, "info": info})
         except (OSError, ValueError):
@@ -4392,7 +4430,7 @@ def varied_ten_schedule_menu(cfg: dict, count: int = 10) -> None:
     if not ask_yes_no(f"{count}편을 새로 만들까요? 사용 이력이 기록됩니다", True):
         log("생성을 취소했습니다.")
         return
-    videos = run_auto_plan(cfg, count, "auto", words=words, vary_looks=True)
+    videos = run_auto_plan(cfg, count, "auto", words=words, vary_looks=True, looks=looks)
     if not videos:
         return
     if len(videos) < count:

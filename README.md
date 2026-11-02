@@ -22,7 +22,7 @@ npm run serve       # http://127.0.0.1:8000 에서 미리보기
 | `npm run review:content` | 학습 콘텐츠 사람 검수 현황 (미검수·승인·수정 필요·원본 변경) |
 | `npm test` | DOM 을 흉내 낸 홈 UX·TTS·문법/회화 퀴즈 테스트 |
 | `npm run verify` | 생성물이 소스와 어긋나지 않는지 확인 |
-| `npm run check:ci` | 위 네 가지를 한 번에 (CI 가 돌리는 것과 같습니다) |
+| `npm run check:ci` | 위 네 가지 + promo 파이썬 테스트를 한 번에 (CI 가 돌리는 것과 같습니다 · Python 3.8+ 필요) |
 | `npm run check:browser` | 실제 브라우저로 100여 항목 점검 (로컬·배포 전용) |
 | `npm run check:live` | 배포된 사이트를 브라우저로 점검 (배포 워크플로가 돌리는 것) |
 | `npm run stage` | 배포본 `_site/` 구성 (공개할 파일만) |

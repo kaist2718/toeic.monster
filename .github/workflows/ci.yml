@@ -18,8 +18,8 @@ permissions:
   contents: read
 
 jobs:
-  # 감사 3종(콘텐츠·문구·사이트) + TTS 회귀 테스트 + 빌드 + 생성물 커밋 누락 감지
-  # 이 저장소는 외부 의존성이 0개라 npm install 단계가 필요 없습니다.
+  # 감사 6종 + 사이트 테스트 5종 + promo 파이썬 테스트 + 빌드 + 생성물 커밋 누락 감지
+  # 사이트는 외부 의존성이 0개라 npm install 단계가 필요 없고, promo 테스트만 Python 을 씁니다.
   check:
     name: check (Node ${{ matrix.node }})
     runs-on: ubuntu-latest
@@ -35,6 +35,11 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: ${{ matrix.node }}
+
+      # check:ci 의 test 단계가 promo/test_publish.py 를 함께 돌립니다(Pillow 없으면 렌더 테스트만 건너뜀).
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
 
       # check      = audit:content + audit:text + audit:site + test + build
       # verify     = units/ · guides/ · grammar/ · sitemap.xml 이 HEAD와 달라지면 실패

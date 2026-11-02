@@ -872,10 +872,10 @@ def render_slide(idx: int, total: int, unit_no: int, unit_info: dict, wd: list,
     lbl = "TOEIC 예문"
     draw_text_rich(draw, lbl, label_font, (255, 255, 255, 190), y=ly["label_y"], x=120)
     en_font = load_font(font_path, 50, bold=False)
-    en_lines = wrap_text(en_ex, en_font, W - 240, draw)
+    en_lines = wrap_words(en_ex, en_font, W - 240, draw)
     while len(en_lines) > 5 and en_font.size > 30:
         en_font = load_font(font_path, en_font.size - 4, bold=False)
-        en_lines = wrap_text(en_ex, en_font, W - 240, draw)
+        en_lines = wrap_words(en_ex, en_font, W - 240, draw)
     y = ly["en_y"]
     for line in en_lines[:5]:
         draw_text_rich(draw, line, en_font, (255, 255, 255), y=y, x=120)
@@ -1035,24 +1035,37 @@ def slug(text: str, limit: int = 28) -> str:
     return s[:limit].strip("-") or "idioms"
 
 
-def wrap_words(text: str, font, max_width: int, draw) -> list[str]:
-    """단어 경계에서 줄을 나눕니다.
+def layout_words(text: str, measure, max_width: int) -> list[str]:
+    """단어 경계에서 줄을 나눕니다 — 한 단어가 폭을 넘을 때만 그 단어를 쪼갭니다.
 
-    공용 wrap_text 는 글자 단위로 잘라 표현이 단어 중간에서 끊깁니다(예: "take advanta/ge of").
-    숙어는 덩어리로 읽혀야 뜻이 남으므로 표현 줄에만 이 함수를 씁니다.
+    공용 wrap_text 는 글자 단위라 예문의 "employees" 가 "emp" / "loyees." 처럼 끊깁니다.
+    읽는 문장(카드 예문·숙어 표현)은 이 함수로 나눠 단어가 중간에서 잘리지 않게 합니다.
     """
     lines: list[str] = []
-    cur = ""
-    for word in str(text).split():
-        test = f"{cur} {word}".strip()
-        if cur and text_width(draw, test, font) > max_width:
+    for para in str(text).split("\n"):
+        cur = ""
+        for word in para.split():
+            test = f"{cur} {word}".strip()
+            if cur and measure(test) > max_width:
+                lines.append(cur)
+                cur = word
+            else:
+                cur = test
+            # 공백 없이 폭보다 긴 단어만 글자 단위로 나눕니다(마지막 수단).
+            while cur and measure(cur) > max_width:
+                cut = len(cur) - 1
+                while cut > 1 and measure(cur[:cut]) > max_width:
+                    cut -= 1
+                lines.append(cur[:cut].strip())
+                cur = cur[cut:].strip()
+        if cur:
             lines.append(cur)
-            cur = word
-        else:
-            cur = test
-    if cur:
-        lines.append(cur)
-    return lines
+    return [line for line in lines if line]
+
+
+def wrap_words(text: str, font, max_width: int, draw) -> list[str]:
+    """단어 경계에서 줄을 나눕니다 — 숙어 표현과 카드 예문에 씁니다."""
+    return layout_words(text, lambda value: text_width(draw, value, font), max_width)
 
 
 def render_idiom_slide(idx: int, total: int, rank: int, wd: list,
@@ -1127,10 +1140,10 @@ def render_idiom_slide(idx: int, total: int, rank: int, wd: list,
     label_font = load_font(font_path, 34, bold=True)
     draw_text_rich(draw, "TOEIC 예문", label_font, (255, 255, 255, 190), y=ly["label_y"], x=120)
     en_font = load_font(font_path, 50, bold=False)
-    en_lines = wrap_text(en_ex, en_font, W - 240, draw)
+    en_lines = wrap_words(en_ex, en_font, W - 240, draw)
     while len(en_lines) > 5 and en_font.size > 30:
         en_font = load_font(font_path, en_font.size - 4, bold=False)
-        en_lines = wrap_text(en_ex, en_font, W - 240, draw)
+        en_lines = wrap_words(en_ex, en_font, W - 240, draw)
     y = ly["en_y"]
     for line in en_lines[:5]:
         draw_text_rich(draw, line, en_font, (255, 255, 255), y=y, x=120)
@@ -1236,10 +1249,10 @@ def render_freq_slide(idx: int, total: int, rank: int, wd: list,
     label_font = load_font(font_path, 34, bold=True)
     draw_text_rich(draw, "TOEIC 예문", label_font, (255, 255, 255, 190), y=ly["label_y"], x=120)
     en_font = load_font(font_path, 50, bold=False)
-    en_lines = wrap_text(en_ex, en_font, W - 240, draw)
+    en_lines = wrap_words(en_ex, en_font, W - 240, draw)
     while len(en_lines) > 5 and en_font.size > 30:
         en_font = load_font(font_path, en_font.size - 4, bold=False)
-        en_lines = wrap_text(en_ex, en_font, W - 240, draw)
+        en_lines = wrap_words(en_ex, en_font, W - 240, draw)
     y = ly["en_y"]
     for line in en_lines[:5]:
         draw_text_rich(draw, line, en_font, (255, 255, 255), y=y, x=120)
@@ -1895,7 +1908,8 @@ def mix_final(silent: Path, tts_wav: Path | None, music: Path | None,
               "loudnorm=I=-14:TP=-1.5:LRA=11[aout]")
         return run_ffmpeg(["-i", str(silent), "-i", str(tts_wav), "-i", str(music),
                            "-filter_complex", fc, "-map", "0:v", "-map", "[aout]",
-                           "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-shortest", str(out)])
+                           "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
+                           "-ar", "48000", "-ac", "2", "-shortest", str(out)])
     if music is not None:
         dur = probe_duration(silent) or 10.0
         fc = (f"[1:a]volume={music_volume},afade=t=in:st=0:d=1,"
@@ -1903,11 +1917,13 @@ def mix_final(silent: Path, tts_wav: Path | None, music: Path | None,
               "loudnorm=I=-14:TP=-1.5:LRA=11[aout]")
         return run_ffmpeg(["-i", str(silent), "-stream_loop", "-1", "-i", str(music),
                            "-filter_complex", fc, "-map", "0:v", "-map", "[aout]",
-                           "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-t", f"{dur:.2f}", str(out)])
+                           "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
+                           "-ar", "48000", "-ac", "2", "-t", f"{dur:.2f}", str(out)])
     # 모바일에서 잘 들리도록 −14 LUFS 로 정규화합니다(측정값 -23dB 수준이었음).
     return run_ffmpeg(["-i", str(silent), "-i", str(tts_wav),
                        "-af", "loudnorm=I=-14:TP=-1.5:LRA=11",
-                       "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-shortest", str(out)])
+                       "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
+                       "-ar", "48000", "-ac", "2", "-shortest", str(out)])
 
 
 def write_sidecar(out: Path, *, kind: str, unit_no: int | None, items: list[list],
