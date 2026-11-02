@@ -512,9 +512,9 @@ function wordItem(w) {
   const [word, ipa, kpron, mean, ex, exKo, exPron] = w;
   // 영어 단어·발음기호·예문에는 lang="en" 을 붙여 화면 낭독기가 영어로 읽게 합니다.
   return `      <li>
-        <div class="w-row"><span class="w-word" lang="en">${esc(word)}</span><span class="w-ipa" lang="en">${esc(ipa)}</span><span class="w-kr">${esc(kpron)}</span></div>
+        <div class="w-row"><span class="w-word" lang="en">${esc(word)}</span>${speakBtn(word, "단어")}<span class="w-ipa" lang="en">${esc(ipa)}</span><span class="w-kr">${esc(kpron)}</span></div>
         <p class="w-mean">${esc(mean)}</p>
-        <p class="w-ex" lang="en">${esc(ex)}</p>
+        <p class="w-ex" lang="en">${esc(ex)}${speakBtn(ex)}</p>
         <p class="w-expron">${esc(exPron || "")}</p>
         <p class="w-exko">${esc(exKo)}</p>
       </li>`;
@@ -646,7 +646,7 @@ function buildUnitPage(u, words, prev, next, allUnits) {
   </nav>
 
   <h1>UNIT ${u.id} ${esc(u.title)}<span class="lvl ${LEVEL_CLASS[u.level] || "lvl-mid"}">${LEVEL_ICON[u.level] || "🟡"} ${esc(u.level)}</span></h1>
-  <p class="lead">${esc(u.sub)} · 총 ${n}개 단어</p>
+  <p class="lead">${esc(u.sub)} · 총 ${n}개 단어 · 단어와 예문을 🔊로 들을 수 있습니다</p>
   <a class="cta" href="../?unit=${u.id}">🃏 이 유닛을 암기 카드·퀴즈로 학습하기</a>
 
   <h2 class="sec">UNIT ${u.id} 필수 단어 ${n}개</h2>
@@ -659,7 +659,8 @@ ${words.map(wordItem).join("\n")}
   </nav>
 ${allUnits && allUnits.length ? unitJumpList(allUnits, u.id) : ""}`;
 
-  return { file, html: page({ title, description, canonical, ld, body }) };
+  // 단어·예문 옆 🔊 버튼이 있으므로 공용 낭독 스크립트를 함께 부릅니다.
+  return { file, html: page({ title, description, canonical, ld, body, speak: true }) };
 }
 
 /* ------------------------------------------------------------------ */
@@ -825,9 +826,9 @@ function buildIdiomsPage(idioms, units) {
   const items = idioms
     .map(
       (it) => `      <li>
-        <div class="w-row"><span class="w-word" lang="en">${esc(it[0])}</span></div>
+        <div class="w-row"><span class="w-word" lang="en">${esc(it[0])}</span>${speakBtn(it[0], "표현")}</div>
         <p class="w-mean">${esc(it[1])}</p>
-        <p class="w-ex" lang="en">${esc(it[2])}</p>
+        <p class="w-ex" lang="en">${esc(it[2])}${speakBtn(it[2])}</p>
         <p class="w-exko">${esc(it[3])}</p>
       </li>`,
     )
@@ -853,7 +854,7 @@ ${items}
   </nav>
 ${units && units.length ? unitJumpList(units, -1, `📚 단어장 유닛 바로 가기 (${units.length}개)`) : ""}`;
 
-  return { file: "units/idioms.html", html: page({ title, description, canonical, ld, body }) };
+  return { file: "units/idioms.html", html: page({ title, description, canonical, ld, body, speak: true }) };
 }
 
 /* ------------------------------------------------------------------ */

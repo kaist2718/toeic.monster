@@ -240,6 +240,9 @@ function checkBooks(books, fileLabel, kindLabel) {
   const allChapterTitles = [];
   books.forEach((b) => {
     const where = `${fileLabel}[${b && b.id ? b.id : "?"}]`;
+    // 한 교재 안에서 같은 문제 문장이 두 번 나오면 연습량을 착각하게 됩니다(다른 과·같은 과 모두).
+    // 문법·회화가 같은 문제를 쓰는 것은 다른 교재이므로 허용합니다 — 교재 단위로만 봅니다.
+    const questionTexts = new Map();
     if (!b || !b.id || !b.title || !Array.isArray(b.chapters) || !b.chapters.length) {
       fail(`${where}: 교재 형식이 불완전합니다(id·title·chapters 필수).`);
       return;
@@ -291,6 +294,14 @@ function checkBooks(books, fileLabel, kindLabel) {
         if (!q.q || !q.why) fail(`${cw} 연습 ${qi + 1}: 문제·해설이 필요합니다.`);
         if (!Array.isArray(q.opts) || q.opts.length < 2) fail(`${cw} 연습 ${qi + 1}: 보기가 2개 미만입니다.`);
         if (dupes(q.opts || []).length) fail(`${cw} 연습 ${qi + 1}: 보기에 중복 항목이 있습니다.`);
+        const questionText = String(q.q || "").replace(/\s+/g, " ").trim();
+        if (questionText) {
+          if (questionTexts.has(questionText)) {
+            fail(`${cw} 연습 ${qi + 1}: 같은 교재의 ${questionTexts.get(questionText)} 연습과 문제 문장이 같습니다 — ${questionText}`);
+          } else {
+            questionTexts.set(questionText, cw);
+          }
+        }
       });
     });
   });

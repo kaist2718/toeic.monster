@@ -620,7 +620,7 @@ window.CONVERSATION_BOOKS.push({
         { q: "A: We can only accept September. — B: ____", opts: ["I understand the target is September. What if we hit it in two phases instead?", "September is impossible.", "We will not sign.", "Change your plan."], a: "I understand the target is September. What if we hit it in two phases instead?", why: "목표를 인정하고 수단을 바꾸자고 제안하는 것이 역제안의 기본입니다." },
         { q: "선택지 자체를 바꾸는 역제안 표현은?", opts: ["Choose A or B.", "What if we hit it in two phases instead?", "There is no other way.", "You must decide."], a: "What if we hit it in two phases instead?", why: "What if we ~? 는 상대의 목표를 인정하면서 수단을 바꾸자고 제안하는 표현입니다." },
         { q: "상대의 진짜 제약을 드러내는 질문은?", opts: ["Why not?", "What's driving the deadline?", "Who decided this?", "Is that final?"], a: "What's driving the deadline?", why: "그 조건을 만든 원인을 물으면 협상할 여지가 있는지 드러납니다." },
-        { q: "상대의 결정 부담을 낮추는 표현은?", opts: ["Decide now.", "We can start with a trial, then decide on the full roll-out.", "This is all or nothing.", "There is no going back."], a: "We can start with a trial, then decide on the full roll-out.", why: "되돌릴 수 있고 부담이 작은 제안이 승낙 가능성을 높입니다." }
+        { q: "가격과 일정 중 무엇이 더 중요한지 먼저 묻는 표현은?", opts: ["Which matters more, price or timing?", "What is the price?", "When is the deadline?", "Is that final?"], a: "Which matters more, price or timing?", why: "우선순위를 먼저 확인하면 어느 조건을 조정할지 정할 수 있습니다." }
       ]
     },
     {
@@ -1041,8 +1041,8 @@ window.CONVERSATION_BOOKS.push({
         { q: "담화 표지를 잘못 쓰는 경우는?", opts: ["Well, Look, I mean 을 한 문장에 몰아 쓰기", "표지를 하나만 쓰기", "결론 앞에 표지를 두기", "표지를 내려 읽기"], a: "Well, Look, I mean 을 한 문장에 몰아 쓰기", why: "표지는 한 번에 하나만 쓰는 것이 자연스럽습니다." },
         { q: "A: What do you think of the plan? — B: ____", opts: ["Well, it depends on the timeline.", "Anyway, the plan.", "Look, whatever.", "See, no."], a: "Well, it depends on the timeline.", why: "Well 로 시간을 벌고 핵심 조건을 말하면 자연스럽게 이어집니다." },
         { q: "바로 답하기 어려울 때 시간을 버는 표현은?", opts: ["Well, it depends.", "Look, decide now.", "Anyway, whatever.", "I mean, no."], a: "Well, it depends.", why: "Well 은 무례하지 않게 생각할 시간을 버는 담화 표지입니다." },
-        { q: "핵심 결론을 강조하는 표현은?", opts: ["By the way, ~", "The bottom line is ~", "In other words, ~", "For instance, ~"], a: "The bottom line is ~", why: "핵심 결론을 강조하며 마무리할 때 쓰는 표현입니다." },
-        { q: "설명을 시작하며 개수를 먼저 알리는 표현은?", opts: ["There are two things I want to cover.", "I will explain everything.", "Listen carefully.", "This is complicated."], a: "There are two things I want to cover.", why: "개수를 먼저 알리면 듣는 사람이 구조를 잡고 따라올 수 있습니다." }
+        { q: "앞의 내용을 한 문장으로 정리하며 마무리하는 표지는?", opts: ["To sum up, ~", "For instance, ~", "On the other hand, ~", "By the way, ~"], a: "To sum up, ~", why: "To sum up 은 지금까지의 내용을 요약할 때 씁니다." },
+        { q: "다음 항목으로 자연스럽게 넘어가는 표지는?", opts: ["Which brings me to ~", "To sum up ~", "For instance ~", "In other words ~"], a: "Which brings me to ~", why: "Which brings me to ~ 는 앞의 내용을 다음 항목과 연결합니다." }
       ]
     },
     {

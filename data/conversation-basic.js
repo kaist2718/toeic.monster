@@ -414,7 +414,7 @@ window.CONVERSATION_BOOKS.push({
         { q: "A: What time is it? — B: ____", opts: ["It's half past nine.", "I'm half past nine.", "It half past nine.", "They are half past nine."], a: "It's half past nine.", why: "시각은 It's 로 시작합니다." },
         { q: "약속이 5월 어느 날에 잡혔습니다. 알맞은 표현은?", opts: ["on May", "in May", "at May", "to May"], a: "in May", why: "월 앞에는 in 을 씁니다. 특정 날짜가 정해지면 on May fifth 처럼 on 을 씁니다." },
         { q: "오전 9시 30분을 일상 회화에서 가장 흔히 읽는 방식은?", opts: ["half past nine only", "nine thirty", "nine and half", "thirty nine"], a: "nine thirty", why: "일상에서는 nine thirty 처럼 숫자만 읽는 쪽이 흔합니다. half past nine 은 격식 표현입니다." },
-        { q: "A: What time is it? — B: ____", opts: ["I'm three.", "It's three o'clock.", "It has three.", "Three is it."], a: "It's three o'clock.", why: "시각을 말할 때는 It's + 시각 형태를 씁니다." }
+        { q: "A: How long does the trip take? — B: ____", opts: ["It takes twenty minutes.", "It is twenty minutes ago.", "I take twenty minutes.", "They take twenty minute."], a: "It takes twenty minutes.", why: "걸리는 시간은 It takes + 시간으로 답합니다." }
       ]
     },
     {

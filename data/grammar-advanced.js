@@ -965,7 +965,7 @@ window.GRAMMAR_BOOKS.push({
       practice: [
         { q: "The coordinator ____ the reports on the first Monday of each month.", opts: ["reviews usually", "usually reviews", "reviews usual", "usual reviews"], a: "usually reviews", why: "빈도 부사 usually 는 일반동사 앞에 둡니다." },
         { q: "The board will ____ approve the revised budget after the audit.", opts: ["probable", "probably", "probability", "probablely"], a: "probably", why: "조동사 will 뒤, 본동사 앞에 태도 부사 probably 가 옵니다." },
-        { q: "Only after the inspection ____ the safety issues clear.", opts: ["became", "did become", "becoming", "become"], a: "did become", why: "Only + 부사구가 문두에 오면 주절이 도치되고 과거이므로 did become 을 씁니다." },
+        { q: "The report was delayed not because of the budget ____ because of the missing data.", opts: ["but", "and", "or", "so"], a: "but", why: "not A but B 구문으로, 예산이 아니라 다른 원인임을 강조합니다." },
         { q: "The workshop covers both budgeting ____ forecasting for new managers.", opts: ["and", "or", "but", "nor"], a: "and", why: "both 와 짝을 이루는 병렬 접속사는 and 입니다." },
         { q: "We provided the new staff with ____ covering every safety procedure.", opts: ["a manual", "manuals is", "that manual", "a manual is"], a: "a manual", why: "with 뒤에는 명사구가 와야 하므로 목적어 자리에 명사 a manual 을 둡니다." },
         { q: "The samples ____ below 20 degrees at all times.", opts: ["must store", "must be stored", "must storing", "store"], a: "must be stored", why: "샘플은 보관되는 대상이고 절차를 설명하는 문맥이므로 수동태가 맞습니다." },
