@@ -36,10 +36,13 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
 
-      # check:ci 의 test 단계가 promo/test_publish.py 를 함께 돌립니다(Pillow 없으면 렌더 테스트만 건너뜀).
+      # check:ci 의 test 단계가 promo/test_publish.py 를 함께 돌립니다.
+      # Pillow 가 없으면 TTS·렌더 가드 테스트가 Pillow 오류로 먼저 멈추므로 함께 설치합니다.
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+
+      - run: python -m pip install "Pillow>=10.0.0"
 
       # check      = audit:content + audit:text + audit:site + test + build
       # verify     = units/ · guides/ · grammar/ · sitemap.xml 이 HEAD와 달라지면 실패
