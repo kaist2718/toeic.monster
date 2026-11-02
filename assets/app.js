@@ -6390,7 +6390,14 @@
     try { key = decodeURIComponent(String(hash || "").replace(/^#/, "")).trim(); } catch (e) { key = ""; }
     if (!key) return false;
     var cfg = HASH_TARGETS[key];
-    var sec = document.querySelector('.home-section[aria-label="' + (cfg ? cfg.section : key) + '"]');
+    // 해시는 주소창에서 누구나 바꿀 수 있으므로 선택자 문자열에 넣지 않습니다.
+    // 따옴표·대괄호가 들어오면 querySelector 가 예외를 던져 앱 초기화·뒤로가기가 멈춥니다.
+    var label = cfg ? cfg.section : key;
+    var sec = null;
+    var sections = document.querySelectorAll(".home-section");
+    for (var si = 0; si < sections.length; si++) {
+      if (sections[si].getAttribute("aria-label") === label) { sec = sections[si]; break; }
+    }
     if (!sec) return false;
     if (activeView !== "homeView") showHome();
     var conv = !!(cfg && cfg.book === "conversation");

@@ -6010,10 +6010,10 @@ def tts_settings_flow(cfg: dict, *, full: bool = False) -> dict:
             download_piper_voice_menu()
     # 엔진에 맞지 않는 예전 목소리 이름이 있으면 그 엔진의 기본값을 제안합니다.
     promo["default_voice"] = ask_voice(
-        "첫 번째 TTS 목소리 (여성)",
+        "첫 번째 TTS 목소리",
         _voice_for_engine(engine, str(promo.get("default_voice", "") or "")), engine=engine)
     promo["default_voice2"] = ask_voice(
-        "두 번째 TTS 목소리 (남성)",
+        "두 번째 TTS 목소리 (미국식·영국식 쌍으로 자동 보정)",
         _voice_for_engine(engine, str(promo.get("default_voice2", "") or ""), male=True),
         allow_none=True, engine=engine)
     if promo.get("default_voice2") and promo["default_voice2"] == promo.get("default_voice"):
@@ -7082,9 +7082,9 @@ def interactive_menu(initial: str | None = None) -> None:
                 command.append("--tts")
                 tts_engine = tts_engine_of(cfg)
                 command.extend(["--engine", tts_engine])
-                picked_voice = ask_voice("첫 번째 TTS 목소리 (여성)", first_voice, engine=tts_engine)
+                picked_voice = ask_voice("첫 번째 TTS 목소리", first_voice, engine=tts_engine)
                 command.extend(["--voice", picked_voice])
-                picked_voice2 = ask_voice("두 번째 TTS 목소리 (남성)", second_voice, allow_none=True,
+                picked_voice2 = ask_voice("두 번째 TTS 목소리 (미국식·영국식 쌍으로 자동 보정)", second_voice, allow_none=True,
                                           engine=tts_engine)
                 if picked_voice2:
                     command.extend(["--voice2", picked_voice2])

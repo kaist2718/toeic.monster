@@ -896,6 +896,31 @@ console.log("\n[9] 오늘의 챌린지 · 딥다이브 · 읽기 라이브러리
 }
 
 /* ------------------------------------------------------------------ */
+/* 해시 딥링크: 주소에 특수문자가 와도 앱이 멈추지 않는다               */
+/* ------------------------------------------------------------------ */
+
+console.log("\n[9-1] 해시 딥링크 안전성");
+{
+  const code = slice("  function goToHash(hash) {", "  function applyLevelQuery()", html, "goToHash");
+  let scrolled = null;
+  let shown = 0;
+  const section = { getAttribute: (name) => (name === "aria-label" ? "학습 자료 허브" : null) };
+  const doc = { querySelectorAll: () => [section] };
+  const goToHash = new Function(
+    "document", "HASH_TARGETS", "activeView", "showHome", "scrollToEl",
+    `${code}\n  return goToHash;`,
+  )(doc, { "resource-hub": { section: "학습 자료 허브" } }, "homeView",
+    () => { shown++; }, (el) => { scrolled = el; });
+
+  let threw = false;
+  try { goToHash('#x"]'); } catch (e) { threw = true; }
+  assert(!threw, "따옴표·대괄호가 든 해시에도 예외가 나지 않습니다");
+  assert(goToHash("#resource-hub") === true && scrolled === section,
+    "정상 해시는 해당 섹션으로 이동합니다");
+  assert(shown === 0, "이미 홈 화면이면 showHome 을 다시 부르지 않습니다");
+}
+
+/* ------------------------------------------------------------------ */
 /* 서비스워커: 캐시 격리와 백그라운드 갱신 수명                         */
 /* ------------------------------------------------------------------ */
 

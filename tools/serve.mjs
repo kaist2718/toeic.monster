@@ -21,7 +21,7 @@
  *   개발 중이라면 개발자도구 → Application → Service Workers 에서
  *   "Update on reload" 를 켜 두세요. 화면에서도 걸리면 "Unregister" 로 등록을 해제하면 됩니다.
  *
- * 실행:  node tools/serve.mjs                 (http://localhost:8000)
+ * 실행:  node tools/serve.mjs                 (http://127.0.0.1:8000)
  *        node tools/serve.mjs --port 5000
  *        node tools/serve.mjs --open          (기본 브라우저로 열기)
  * 종료:  Ctrl+C
@@ -162,7 +162,9 @@ for (let i = 0; i < 20; i++) {
   }
 }
 
-const url = `http://localhost:${port}/`;
+// 서버는 127.0.0.1 에만 바인딩합니다 — localhost 는 IPv6(::1)로 먼저 풀리는 환경에서
+// 연결이 거절될 수 있으므로, 실제로 열어 둔 주소와 같은 호스트를 안내·실행에 씁니다.
+const url = `http://${HOST}:${port}/`;
 
 console.log("");
 console.log("▲ toeic.monster 로컬 미리보기");
