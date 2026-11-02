@@ -676,6 +676,8 @@ class VariedLookTest(unittest.TestCase):
         with mock.patch.object(publish, "ask_int", return_value=3), \
                 mock.patch.object(publish, "ask_yes_no", return_value=True), \
                 mock.patch.object(publish, "varied_looks", return_value=looks), \
+                mock.patch.object(publish, "load_full_youtube_credentials", return_value=object()), \
+                mock.patch.object(publish, "youtube_quota_status", return_value={"remaining": 6}), \
                 mock.patch.object(publish, "run_auto_plan", return_value=videos) as plan, \
                 mock.patch.object(publish, "quick_ten_schedule_menu") as quick:
             publish.varied_ten_schedule_menu({"youtube": {"enabled": True}, "promo": {}})
@@ -683,9 +685,30 @@ class VariedLookTest(unittest.TestCase):
         quick.assert_called_once_with({"youtube": {"enabled": True}, "promo": {}}, 3,
                                       videos=videos)
 
+    def test_varied_menu_stops_before_generation_without_full_login(self):
+        looks = [{"theme": "neon", "pattern": "bokeh", "voice": "a", "voice2": "b"}]
+        with mock.patch.object(publish, "ask_int", return_value=1), \
+                mock.patch.object(publish, "varied_looks", return_value=looks), \
+                mock.patch.object(publish, "load_full_youtube_credentials", return_value=None), \
+                mock.patch.object(publish, "run_auto_plan") as plan:
+            publish.varied_ten_schedule_menu({"youtube": {"enabled": True}, "promo": {}})
+        plan.assert_not_called()
+
 
 class EnglishOnlyTtsTest(unittest.TestCase):
     """TTS — 한국어 낭독 없이 미국식·영국식 영어만 읽어야 합니다."""
+
+    def test_voice2_none_keeps_single_voice(self):
+        import make_shorts as shorts
+        with mock.patch.object(shorts, "us_uk_voice_pair", return_value=("us", "gb", "piper")):
+            self.assertEqual(shorts.enforce_us_uk("gb", "none", False, "piper"),
+                             ("gb", "none", "piper"))
+            self.assertEqual(shorts.enforce_us_uk("gb", "off", False, "piper"),
+                             ("gb", "off", "piper"))
+            self.assertEqual(shorts.enforce_us_uk("en_GB-alan-low", "en_US-amy-low", False, "piper"),
+                             ("en_GB-alan-low", "en_US-amy-low", "piper"))
+            self.assertEqual(shorts.enforce_us_uk("us", "us", False, "piper"),
+                             ("us", "gb", "piper"))
 
     def test_audio_reads_each_english_voice_once_without_korean(self):
         import make_shorts as shorts

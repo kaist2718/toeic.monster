@@ -60,7 +60,7 @@ python publish.py --video assets/shorts/unit01_shorts.mp4 --unit 1 --youtube-pri
 
 **다음 단계**
 
-- 일주일치 만들고 검토 후 예약 → 메뉴 **32. 주간 제작 마법사** (기본 7편 · 승인한 영상만 YouTube 예약 게시) → [7-3](#7-3-콘텐츠-자동-준비-하루치n일치)
+- 일주일치 만들고 검토 후 예약 → 메뉴 **32. 쇼츠 제작·10편 예약 마법사** (개별 검토 방식 · 승인한 영상만 YouTube 예약 게시) → [7-3](#7-3-콘텐츠-자동-준비-하루치n일치)
 - PC 가 꺼져 있어도 정시 공개 → `--publish-at` (YouTube 예약 게시) → [5. 예약 게시](#5-예약-게시-두-가지-방식)
 - 목소리·테마 바꾸기 → 메뉴 **31** (TTS) · **25** (기본값) → [7. 쇼츠 생성](#7-쇼츠-생성)
 
@@ -189,7 +189,7 @@ python make_shorts.py --kind sprint              # 다음 DAY 1편을 순서대�
 
 📅 **쇼츠 제작·예약**
 
-32. **쇼츠 제작·10편 예약 마법사** — 영상마다 **배경 테마·무늬·목소리(미국식+영국식)** 를 다르게 만들어 10편을 자동 예약하거나, 이미 만든 최신 영상을 예약합니다. 새로 만들 때는 문항·규격·중복을 자동 점검하고, `promo.confirm_real_upload` 가 `false` 면 확인 없이 원클릭으로 진행합니다.
+32. **쇼츠 제작·10편 예약 마법사** — 영상마다 **배경 테마·무늬·목소리(미국식+영국식)** 를 다르게 만들어 10편을 자동 예약하거나, 이미 만든 최신 영상을 예약합니다. 새로 만들 때는 문항·규격·중복을 자동 점검하고, 생성 전에 YouTube 전체 로그인과 API 쿼터 잔량을 먼저 확인합니다. `promo.confirm_real_upload` 가 `false` 면 업로드 전 확인 질문만 생략됩니다.
 33. **제작 품질 점검** — 폴더 전체 영상을 업로드 없이 훑어 **예약 가능·제외**를 나누고, 제외 사유(메타 없음·9:16 아님·이미 게시·문항 오류)를 편수로 묶어 보여 줍니다. 예약 전에 “왜 10편이 안 채워지는지” 바로 알 수 있고, `python publish.py --audit` 로도 같게 실행됩니다
 
 > **메뉴 번호 변경 안내 (2026-10)**: 표시 순서와 번호를 일치시키기 위해 재정렬했습니다 — 새 포맷 2종이 `30·31` 에서 `9·10` 이 되고, 그 뒤의 메뉴는 각각 2 씩 밀렸습니다(구 `9~29` → 새 `11~31`). 예를 들어 기존 쇼츠 게시는 구 `9` → 새 `11`, TTS 설정은 구 `29` → 새 `31` 입니다. 오래된 메모·스크립트의 번호와 `config.json` 의 `default_menu`(기본 `11` = 기존 쇼츠 게시)를 이 규칙에 맞게 확인하세요. 재정렬 전에 만든 `config.json` 은 처음 메뉴를 열 때 **자동으로** `default_menu` 를 새 번호로 바꾸고 한 번 안내합니다.
@@ -343,8 +343,8 @@ python publish.py --remove-task
 - `default_menu`: 메뉴에서 Enter 를 눌렀을 때 바로 실행할 기본 메뉴 번호(1~33, 기본 `11` = 기존 쇼츠 게시). 원클릭 메뉴 **25번(설정 편집)** 에서 바꿀 수 있음
 - `default_tts`: TTS 기본 선택 여부
 - `tts_engine`: 낭독 TTS 엔진 — `auto`(기본, 내려받은 로컬 Piper 음성이 있으면 Piper 없으면 Windows) / `piper` / `windows`. 터미널 메뉴 **31번**에서 바꿀 수 있음
-- `default_voice`: 첫 번째 TTS 목소리(여성 역할). 엔진이 `piper`면 `en_US-amy-medium` 같은 로컬 음성 이름, `windows`면 `Microsoft Hazel Desktop` 같은 Windows 내장 음성 이름. 생성 시 번호로 바꿀 수 있음
-- `default_voice2`: 두 번째 TTS 목소리(남성). 예: `en_US-ryan-medium`(로컬) 또는 `Microsoft David Desktop`(Windows 내장). **빈 문자열이면 한 목소리만** 사용
+- `default_voice`: 첫 번째 TTS 목소리. 엔진이 `piper`면 `en_US-amy-medium` 같은 로컬 음성 이름, `windows`면 `Microsoft Hazel Desktop` 같은 Windows 내장 음성 이름. 두 목소리를 쓰면 `default_voice2`와 함께 **미국식·영국식**이 되도록 생성 시 자동 보정됨
+- `default_voice2`: 두 번째 TTS 목소리. 예: `en_US-ryan-medium`(로컬) 또는 `Microsoft David Desktop`(Windows 내장). **빈 문자열이면 한 목소리만** 사용
 - `default_privacy`: YouTube 기본 공개 범위. 처음에는 `unlisted` 권장
 - `confirm_real_upload`: 실제 게시 전 확인 질문 사용 여부. 안전을 위해 `true` 권장
 - `manual_fallback`: 자동 게시가 실패하면 수동 게시 도우미(브라우저 + 캡션 복사)를 실행할지 여부(기본 `true`)
@@ -368,9 +368,9 @@ python publish.py --remove-task
 - 9:16이 아니거나 길이가 0~180초를 벗어난 영상
 - 문항 자동 점검 실패 — 보기가 4개가 아니거나 중복, 정답이 보기에 없음, 해설·문제 본문 없음
 
-선택 결과는 **3편만 요약**해 보여 주고(`… 외 N편`), 실제 업로드 전에 한 번 확인합니다. `config.json` 의 `promo.confirm_real_upload` 를 `false` 로 두면 이 확인도 생략되어 완전 원클릭으로 진행됩니다.
+선택 결과는 **3편만 요약**해 보여 주고(`… 외 N편`), 실제 업로드 전에 한 번 확인합니다. `config.json` 의 `promo.confirm_real_upload` 를 `false` 로 두면 이 확인만 생략됩니다 — 방식 선택과 생성 확인은 남습니다.
 
-- `python publish.py --youtube-login-full` 로 읽기 권한을 먼저 준비해야 합니다(업로드 후 실제 비공개·예약 시각 조회에 필요).
+- `python publish.py --youtube-login-full` 로 읽기 권한을 먼저 준비해야 합니다(업로드 후 실제 비공개·예약 시각 조회에 필요). 메뉴 32는 **10편을 만들기 전에** 이 로그인과 API 쿼터 잔량을 확인하고, 준비되지 않았으면 생성을 시작하지 않습니다. 쿼터가 소진된 것으로 보이면 그래도 만들지 물어봅니다(기본 아니오).
 - 업로드마다 YouTube 에서 **비공개 상태와 publishAt 일치**를 조회하고, 어긋나거나 실패하면 그 자리에서 중단합니다. 자동 재시도는 하지 않습니다.
 - 업로드 한도·API 할당량은 YouTube가 결정하며 10편 전부 성공을 보장하지 않습니다. 중단되면 해당 영상이 실제로 올라갔는지 **YouTube Studio에서 확인한 뒤** 메뉴 32를 다시 실행하세요.
 - 이미 만든 영상 자동 예약은 새 영상을 만들지 않습니다. 만들면서 예약하려면 첫 번째 방식(새로 제작 → 자동 예약)이나 주간 제작 마법사를 쓰세요.
@@ -604,8 +604,8 @@ python make_shorts.py --unit 1 --pattern confetti     # 패턴만 바꾸기 (테
 # 배경음악 추가 (볼륨 0.2, TTS와 함께 쓰면 음성 위에 깔림)
 python make_shorts.py --unit 1 --music assets/music/calm.mp3 --music-volume 0.2
 
-# 목소리: 기본은 여성 + 남성 두 목소리(설치된 Windows 음성 또는 내려받은 로컬 Piper 음성)
-python make_shorts.py --unit 1 --single-voice            # 여성 하나만
+# 목소리: 기본은 미국식 + 영국식 두 목소리(설치된 Windows 음성 또는 내려받은 로컬 Piper 음성)
+python make_shorts.py --unit 1 --single-voice            # 한 목소리만
 python make_shorts.py --unit 1 --voice2 "Microsoft David Desktop"  # 두 번째 목소리를 지정
 python make_shorts.py --unit 1 --engine piper --voice en_US-amy-medium --voice2 en_US-ryan-medium  # 로컬 TTS 강제
 
@@ -628,7 +628,7 @@ python make_shorts.py --kind strategy --words 5 --bg mint   # 전략 카드 1장
 python make_shorts.py --kind sprint                     # 사용하지 않은 다음 DAY 한 편
 ```
 
-- **생성 속도(실측 · 5단어 · 1080×1920 · 30fps)**: 처음에는 **91초**, 지금은 같은 영상을 **35초**에 만듭니다(`--no-tts`는 52초 → 21초). 두 곳이 병목이었습니다 — ① 프레임마다 1080×1920 리샘플(Ken Burns)이 전체의 65%를 차지해 **최대 8스레드 병렬 렌더링**으로 바꿨고(프레임 결과는 바이트 단위로 동일합니다), ② 두 목소리가 슬라이드마다 여성·남성 Piper 모델을 번갈아 다시 읽어 **모델 캐시를 1개 → 2개**로 늘렸습니다. 느린 PC에서도 프레임끼리 결과가 같으므로 생성되는 영상은 동일합니다.
+- **생성 속도(실측 · 5단어 · 1080×1920 · 30fps)**: 처음에는 **91초**, 지금은 같은 영상을 **35초**에 만듭니다(`--no-tts`는 52초 → 21초). 두 곳이 병목이었습니다 — ① 프레임마다 1080×1920 리샘플(Ken Burns)이 전체의 65%를 차지해 **최대 8스레드 병렬 렌더링**으로 바꿨고(프레임 결과는 바이트 단위로 동일합니다), ② 두 목소리가 슬라이드마다 서로 다른 Piper 모델을 번갈아 다시 읽어 **모델 캐시를 1개 → 2개**로 늘렸습니다. 느린 PC에서도 프레임끼리 결과가 같으므로 생성되는 영상은 동일합니다.
 
 `9:16 / 1080×1920 / 30fps` 영상을 만들며, **기본 폰트는 네이버 마루부리(Maru Buri)** 입니다 — `promo/fonts/MaruBuri-Regular.otf` · `MaruBuri-Bold.otf` 를 쓰고, 파일이 없으면 배포처에서 한 번 내려받은 뒤 씁니다(내려받지 못하면 맑은 고딕 등 시스템 한글 폰트로 내려가며 경고를 남깁니다). 마루부리에 없는 IPA 기호는 기존 폴백 폰트(Arial 등)로 그려 □가 생기지 않습니다. `--font` 로 다른 폰트를 지정할 수 있고, 생성 전 `--dry-run`으로 계획을 확인할 수 있습니다.
 
@@ -678,10 +678,10 @@ python make_shorts.py --kind sprint                     # 사용하지 않은 �
 | `--words` | 영상에 넣을 항목 수 (기본 1). 퀴즈는 문제 수이고 슬라이드는 2배; 스프린트는 항상 DAY 1개 |
 | `--word-gap` | 단어와 예문 사이 무음 초 (기본 0.4, 0 이면 붙여 읽기) |
 | `--out` | 출력 mp4 경로 (기본: `assets/shorts/unitNN_shorts.mp4` · 숙어 `idioms_<표현>_shorts.mp4` · 빈도 `frequency_<표제어>_shorts.mp4` · 퀴즈 `quiz_<표현>_shorts.mp4`) |
-| `--voice` | 첫 번째 TTS 목소리 (기본: 엔진 자동 선택 — 내려받은 Piper 음성 또는 Windows 내장 영국 여성) |
-| `--voice2` | 두 번째 TTS 목소리 (기본: 엔진 자동 선택 — 내려받은 Piper 음성 또는 Windows 내장 미국 남성). `none`이면 한 목소리만 |
+| `--voice` | 첫 번째 TTS 목소리 (두 목소리를 쓰면 `--voice2`와 함께 미국식·영국식 쌍으로 자동 보정) |
+| `--voice2` | 두 번째 TTS 목소리 (기본: 엔진 자동 선택). `none`이면 한 목소리만 |
 | `--engine` | 낭독 TTS 엔진: `auto`(기본, 로컬 우선) / `piper`(로컬 Piper · 오프라인) / `windows`(내장 SAPI) |
-| `--single-voice` | 한 목소리만 쓰기 (기본은 여성 + 남성 두 목소리) |
+| `--single-voice` | 한 목소리만 쓰기 (기본은 미국식 + 영국식 두 목소리) |
 | `--no-ambient` | 기본 앰비언트 사운드 끄기 (무음 영상) |
 | `--no-intro` / `--intro-sec` | 인트로 슬라이드 끄기 / 길이 초 (기본 0, 어휘 질문 화면은 유지) |
 | `--no-outro` / `--outro-sec` | 아웃로(CTA) 슬라이드 끄기 / 길이 초 (기본 3.0) |

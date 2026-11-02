@@ -15,7 +15,7 @@ Ken Burns 줌 효과와 슬라이드 간 크로스페이드, 선택적으로 영
   python make_shorts.py --list-bg                      # 배경 테마·패턴 번호 목록
   python make_shorts.py --unit 2 --words 3 --dry-run # 계획만 출력
   python make_shorts.py --unit 1 --allow-repeat      # 이미 쓴 단어도 다시 사용
-  python make_shorts.py --unit 1 --single-voice      # 여성 목소리 하나만
+  python make_shorts.py --unit 1 --single-voice      # 한 목소리만
   python make_shorts.py --unit 1 --voice2 none       # 두 번째 목소리 끄기
   python make_shorts.py --idioms --words 5           # 숙어 126선에서 5개 (→ assets/shorts/idioms_*_shorts.mp4)
   python make_shorts.py --idioms --index 0 --bg mint # 숙어 목록의 특정 순번만
@@ -1693,7 +1693,7 @@ def tts_speak(text: str, voice: str, out: Path, engine: str = "auto") -> Path:
 
 
 # 로컬 Piper — 음성 모델을 한 번만 올려 놓고 슬라이드마다 재사용합니다 (매번 올리면 슬라이드당 1~2초 손해).
-PIPER_MODEL_CACHE = 2   # 동시에 올려 둘 Piper 모델 수 — 기본 설정(여성+남성)이 번갈아 읽으므로 2
+PIPER_MODEL_CACHE = 2   # 동시에 올려 둘 Piper 모델 수 — 기본 설정(두 목소리)이 번갈아 읽으므로 2
 _PIPER_SESSIONS: dict[str, object] = {}
 _PIPER_FALLBACK_WARNED: set[str] = set()
 
@@ -1733,7 +1733,7 @@ def _synthesize_piper(text: str, voice: str, out: Path) -> Path:
     else:
         session = PiperVoice.load(key)
         # 메모리 보호 — 두 목소리(기본 설정)는 계속 올려 두고, 그보다 많으면 오래된 것부터 내립니다.
-        # 예전에는 한 개만 남겨서 슬라이드마다 여성·남성 모델을 번갈아 다시 읽었습니다(실측 37초 손해).
+        # 예전에는 한 개만 남겨서 슬라이드마다 두 목소리 모델을 번갈아 다시 읽었습니다(실측 37초 손해).
         while len(_PIPER_SESSIONS) >= PIPER_MODEL_CACHE:
             _PIPER_SESSIONS.pop(next(iter(_PIPER_SESSIONS)))
         _PIPER_SESSIONS[key] = session
@@ -1749,7 +1749,7 @@ def _synthesize_piper(text: str, voice: str, out: Path) -> Path:
 def resolve_voices(voice: str, voice2: str, single: bool) -> list[str]:
     """실제로 쓸 목소리 목록을 돌려줍니다.
 
-    기본은 첫 목소리 + 두 번째 목소리(남성)입니다.
+    기본은 첫 목소리 + 두 번째 목소리(미국식·영국식)입니다.
     --single-voice 이거나 두 번째가 none/off 이거나 같은 목소리면 하나만 씁니다.
     """
     voices = [voice]
@@ -1757,6 +1757,27 @@ def resolve_voices(voice: str, voice2: str, single: bool) -> list[str]:
     if not single and second and second.lower() not in ("none", "off", "-") and second != voice:
         voices.append(second)
     return voices
+
+
+def enforce_us_uk(voice: str, voice2: str, single: bool, engine: str,
+                  tts: bool = True) -> tuple[str, str, str]:
+    """두 목소리를 미국식 1회 + 영국식 1회로 맞춥니다 — (첫 목소리, 둘째, 엔진).
+
+    --single-voice 나 --voice2 none/off 처럼 한 목소리만 쓰는 설정은 그대로 둡니다.
+    두 억양을 함께 쓸 수 없는 환경이면 설치된 음성을 그대로 돌려줍니다.
+    """
+    if not tts or single or (voice2 or "").strip().lower() in ("none", "off", "-"):
+        return voice, voice2, engine
+    us, gb, pair_engine = us_uk_voice_pair(engine)
+    if not (us and gb):
+        warn("미국식·영국식 음성을 함께 찾지 못했습니다 — 설치된 음성으로 낭독합니다.")
+        return voice, voice2, engine
+    accents = (voice_accent(voice), voice_accent(voice2))
+    if pair_engine == engine and accents in (("US", "GB"), ("GB", "US")):
+        return voice, voice2, engine
+    if pair_engine != engine:
+        log(f"미국식·영국식 목소리를 함께 쓰기 위해 TTS 엔진을 {pair_engine} 로 바꿉니다.")
+    return us, gb, pair_engine
 
 
 def probe_duration(path: Path) -> float:
@@ -1890,7 +1911,9 @@ def mix_final(silent: Path, tts_wav: Path | None, music: Path | None,
 
 
 def write_sidecar(out: Path, *, kind: str, unit_no: int | None, items: list[list],
-                  voices: list[str], quiz: list[dict] | None = None) -> None:
+                  voices: list[str], quiz: list[dict] | None = None,
+                  theme: str | None = None, pattern: str | None = None,
+                  style: str | None = None) -> None:
     """영상 옆에 항목 메타(`<이름>.json`)를 남깁니다.
 
     publish.py 가 이 파일을 읽어 제목·설명을 만듭니다. 이게 없으면 게시 단계가 남은 목록에서
@@ -1903,6 +1926,9 @@ def write_sidecar(out: Path, *, kind: str, unit_no: int | None, items: list[list
         "items": [{"term": w[0], "ipa": w[1], "meaning": w[3], "example": w[4], "translation": w[5]}
                   for w in items],
         "voices": voices,
+        "theme": theme or "",
+        "pattern": pattern or "",
+        "style": style or "",
         "created_at": now_iso(),
     }
     if quiz:
@@ -2019,11 +2045,11 @@ def main() -> None:
                     choices=[key for key, _label in TTS_ENGINES],
                     help="TTS 엔진: auto(로컬 우선·없으면 Windows) / piper(로컬 Piper, 오프라인) / windows(내장 SAPI)")
     ap.add_argument("--voice", default=None,
-                    help="첫 번째 TTS 목소리 — 여성 (기본: 엔진에 맞는 자동 선택)")
+                    help="첫 번째 TTS 목소리 (두 목소리를 쓰면 미국식·영국식 쌍으로 자동 보정)")
     ap.add_argument("--voice2", default=None,
-                    help="두 번째 TTS 목소리 — 남성 (기본: 엔진에 맞는 자동 선택). none 이면 하나만 사용")
+                    help="두 번째 TTS 목소리 (기본: 엔진에 맞는 자동 선택). none 이면 하나만 사용")
     ap.add_argument("--single-voice", action="store_true",
-                    help="한 목소리만 쓰기 (기본은 여성 + 남성 두 목소리)")
+                    help="한 목소리만 쓰기 (기본은 미국식 + 영국식 두 목소리)")
     ap.add_argument("--music", help="배경음악 오디오 파일(mp3/wav) 경로 (선택)")
     ap.add_argument("--music-volume", type=float, default=0.15, help="배경음악 볼륨 0~1 (기본 0.15)")
     ap.add_argument("--no-ambient", action="store_true",
@@ -2078,18 +2104,9 @@ def main() -> None:
     engine = resolve_tts_engine(engine_req, args.voice)
     if not args.voice2:
         args.voice2 = piper_default_voice(male=True) if engine == "piper" else default_voice2()
-    # 두 목소리를 쓰면 미국식 1회 + 영국식 1회 — 같은 억양이면 반대 억양 음성으로 바꿉니다.
-    if args.tts and not args.single_voice:
-        us, gb, pair_engine = us_uk_voice_pair(engine)
-        if us and gb:
-            accents = (voice_accent(args.voice), voice_accent(args.voice2))
-            if pair_engine != engine or accents not in (("US", "GB"), ("GB", "US")):
-                if pair_engine != engine:
-                    log(f"미국식·영국식 목소리를 함께 쓰기 위해 TTS 엔진을 {pair_engine} 로 바꿉니다.")
-                engine = pair_engine
-                args.voice, args.voice2 = us, gb
-        else:
-            warn("미국식·영국식 음성을 함께 찾지 못했습니다 — 설치된 음성으로 낭독합니다.")
+    # 두 목소리를 쓰면 미국식 1회 + 영국식 1회 — 한 목소리 설정(--voice2 none)은 그대로 둡니다.
+    args.voice, args.voice2, engine = enforce_us_uk(
+        args.voice, args.voice2, args.single_voice, engine, args.tts)
 
     if args.tts:
         if engine == "piper":
@@ -2445,7 +2462,7 @@ def main() -> None:
         write_sidecar(out, kind=kind,
                       unit_no=None if kind != "unit" else unit_no,
                       items=picked, voices=voices if args.tts else [],
-                      quiz=extras)
+                      quiz=extras, theme=args.bg, pattern=args.pattern, style=args.style)
         if not args.allow_repeat:
             added = mark_words_posted(bucket, [dedupe_key(w, kind) for w in picked])
             if added:

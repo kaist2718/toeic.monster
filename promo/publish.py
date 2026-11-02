@@ -4274,7 +4274,7 @@ def quick_ten_schedule_menu(cfg: dict, count: int = 10, *,
         warn("지금 예약할 수 있는 영상이 없습니다 — 모두 게시했거나 메타·규격이 맞지 않습니다.")
         log("   · 새로 만들려면 메뉴 32 → '새로 만들고 개별 검토 후 예약' 또는 메뉴 23 을 쓰세요.")
         return
-    log(f"  · 폴더 {len(videos)}편 중 {len(rows)}편 자동 선택 · 제외 {skipped}편")
+    log(f"  · 대상 {len(videos)}편 중 {len(rows)}편 자동 선택 · 제외 {skipped}편")
     for row in rows[:3]:
         log(f"    - {row['video'].name} · {row['info']['duration']:.0f}초 · {row['meta']['title']}")
     if len(rows) > 3:
@@ -4376,6 +4376,17 @@ def varied_ten_schedule_menu(cfg: dict, count: int = 10) -> None:
     if not all(look.get("voice") and look.get("voice2") for look in looks):
         warn("미국식·영국식 음성을 모두 찾지 못했습니다 — 메뉴 31에서 Piper 음성 또는 "
              "Windows 영어 음성을 확인하세요.")
+    # 10편을 만든 뒤에야 로그인·쿼터 문제를 알게 되면 시간을 버립니다 — 먼저 확인합니다.
+    if not load_full_youtube_credentials(cfg):
+        warn("실제 예약 상태 확인을 위해 먼저 python publish.py --youtube-login-full 을 실행하세요.")
+        return
+    quota = youtube_quota_status()
+    if int(quota.get("remaining", 0)) <= 0:
+        warn("API 업로드 한도가 소진된 것으로 보입니다 — "
+             f"초기화 {quota['reset_at'].astimezone():%m/%d %H:%M}. "
+             "10편을 만든 뒤 업로드하지 못할 수 있습니다.")
+        if not ask_yes_no("그래도 지금 만들까요?", False):
+            return
     log("  · 만들어진 영상은 문항·규격·중복 점검을 통과한 것만 내일부터 매일 "
         "08:00·08:15 에 2편씩 공개합니다.")
     if not ask_yes_no(f"{count}편을 새로 만들까요? 사용 이력이 기록됩니다", True):

@@ -108,7 +108,7 @@ node tools/content-review.mjs record 'unit1:1' '<목록의 전체 hash>' '검수
 ## 방문 분석 (자체 호스팅 · visitor-analytics)
 
 방문자 수·유입 경로·국가를 보려면 **`assets/analytics.js`** 가 있습니다.
-홈·정적 페이지 126개·404 가 **이 파일 하나**를 함께 받아 씁니다(생성기는 `tools/build-pages.mjs`).
+홈·정적 페이지·404 가 **이 파일 하나**를 함께 받아 씁니다(생성기는 `tools/build-pages.mjs`).
 이 파일은 **로더**이고, 실제 수집 코드는 아래 `TRACKER` 가 가리키는 **자체 호스팅 분석 서버**에서
 한 번 더 내려받습니다. 대시보드: https://visitor-analytics-a5bp.onrender.com
 (이전에는 Umami Cloud → Counter.dev 를 썼습니다.)
