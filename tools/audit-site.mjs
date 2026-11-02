@@ -1080,24 +1080,37 @@ if (CHECK_EXTERNAL && externalUrls.length) {
     accept: "text/html,application/xhtml+xml,*/*;q=0.8",
     "accept-language": "ko-KR,ko;q=0.9,en;q=0.8",
   };
-  const check = async (url) => {
+  // 한 번의 fetch 실패는 사이트 쪽 일시 차단·연결 끊김일 수 있습니다.
+  // HEAD → GET, 그래도 실패하면 잠시 뒤 GET 한 번 더 — 진짜 404 는 그대로 실패로 남깁니다.
+  const request = async (url, method) => {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 15000);
     try {
-      let res = await fetch(url, { method: "HEAD", redirect: "follow", headers, signal: ctrl.signal });
-      if (res.status === 405 || res.status === 403) {
-        res = await fetch(url, { method: "GET", redirect: "follow", headers, signal: ctrl.signal });
-      }
-      if (!res.ok) fail(`외부 링크 응답 ${res.status}: ${url} (${[...external.get(url)].join(", ")})`);
-      return res.status;
-    } catch (e) {
-      fail(
-        `외부 링크 확인 실패: ${url} — ${e.message}\n` +
-          "     → 이 환경에서 막혔을 수 있습니다(브라우저로 직접 열어 확인해 보세요).",
-      );
-      return 0;
+      return await fetch(url, { method, redirect: "follow", headers, signal: ctrl.signal });
     } finally {
       clearTimeout(timer);
+    }
+  };
+  const check = async (url) => {
+    const pages = [...external.get(url)].join(", ");
+    try {
+      let res = await request(url, "HEAD");
+      if (res.status === 405 || res.status === 403 || res.status >= 500) res = await request(url, "GET");
+      if (!res.ok) fail(`외부 링크 응답 ${res.status}: ${url} (${pages})`);
+      return res.status;
+    } catch (first) {
+      try {
+        await new Promise((resolve) => setTimeout(resolve, 800));
+        const res = await request(url, "GET");
+        if (!res.ok) fail(`외부 링크 응답 ${res.status}: ${url} (${pages})`);
+        return res.status;
+      } catch (e) {
+        fail(
+          `외부 링크 확인 실패: ${url} — ${e.message}\n` +
+            "     → 이 환경에서 막혔을 수 있습니다(브라우저로 직접 열어 확인해 보세요).",
+        );
+        return 0;
+      }
     }
   };
   const results = [];
