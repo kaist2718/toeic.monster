@@ -20,6 +20,7 @@
     "audit:external": "node tools/audit-site.mjs --external",
     "test": "node tools/test-home-ux.mjs && node tools/test-tts-voice.mjs && node tools/test-grammar-quiz.mjs && node tools/test-conversation-quiz.mjs && node tools/test-content-review.mjs && npm run test:promo",
     "test:promo": "python -m unittest discover -s promo -p \"test_*.py\"",
+    "setup:promo": "python -m pip install -r promo/requirements.txt",
     "check:browser": "node tools/check-browser.mjs",
     "measure": "node tools/measure-home.mjs",
     "perf": "node tools/measure-perf.mjs",

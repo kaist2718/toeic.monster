@@ -33,6 +33,15 @@ try:
 except ImportError:  # Pillow 는 requirements 필수지만, 없으면 그 테스트만 건너뜁니다.
     Image = None  # type: ignore[assignment]
 
+# make_shorts.main() 은 인자 검증보다 먼저 Pillow 설치를 확인하고 끝납니다.
+# Pillow 없이 돌리면 검증하려던 규칙 대신 "Pillow 미설치" 메시지를 보게 되므로,
+# 그런 테스트는 실패가 아니라 건너뜀으로 남겨 원인을 분명히 합니다.
+PILLOW_REQUIRED = unittest.skipUnless(
+    Image is not None,
+    "Pillow 미설치 — `python -m pip install -r promo/requirements.txt` "
+    '(또는 `python -m pip install "Pillow>=10.0.0"`) 후 다시 실행하세요',
+)
+
 PROMO = Path(__file__).resolve().parent
 SOURCES = ("publish.py", "make_shorts.py", "make_tts_samples.py", "test_publish.py")
 
@@ -113,6 +122,7 @@ class ShortsContentUpgradeTest(unittest.TestCase):
         picked = self.shorts.select_content(items, "grammar", 5, self.random.Random(4))
         self.assertEqual(len({w[8]["tag"] for w in picked}), 1)
 
+    @PILLOW_REQUIRED
     def test_listening_requires_audio(self):
         for kind in ("numbers", "minimal", "dictation"):
             argv = ["make_shorts.py", "--kind", kind, "--no-tts", "--dry-run"]
@@ -1358,6 +1368,7 @@ class PublishPathTest(unittest.TestCase):
 class VideoEncodingFailureTest(unittest.TestCase):
     """인코딩 실패는 호출자에게 실패 종료 코드로 전달되어야 합니다."""
 
+    @PILLOW_REQUIRED
     def test_failed_encoder_exits_nonzero(self):
         import make_shorts
         argv = ["make_shorts.py", "--unit", "1", "--index", "0", "--no-tts",

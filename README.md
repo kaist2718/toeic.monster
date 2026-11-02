@@ -20,7 +20,7 @@ npm run serve       # http://127.0.0.1:8000 에서 미리보기
 | `npm run build` | 정적 페이지 전체 생성 + 홈 사전 렌더 (결과물은 커밋 대상) |
 | `npm run audit` | 콘텐츠·문구·사이트·접근성·본문 품질·밀도 감사 (빠진 파일·오타·번역 불일치·프리캐시 어긋남) |
 | `npm run review:content` | 학습 콘텐츠 사람 검수 현황 (미검수·승인·수정 필요·원본 변경) |
-| `npm test` | DOM 을 흉내 낸 홈 UX·TTS·문법/회화 퀴즈 테스트 |
+| `npm test` | DOM 을 흉내 낸 홈 UX·TTS·문법/회화 퀴즈 테스트 + promo 파이썬 테스트 |
 | `npm run verify` | 생성물이 소스와 어긋나지 않는지 확인 |
 | `npm run check:ci` | 위 네 가지 + promo 파이썬 테스트를 한 번에 (CI 가 돌리는 것과 같습니다 · Python 3.8+ 필요) |
 | `npm run check:browser` | 실제 브라우저로 100여 항목 점검 (로컬·배포 전용) |
@@ -31,6 +31,10 @@ npm run serve       # http://127.0.0.1:8000 에서 미리보기
 | `npm run audit:external` | 배포된 사이트의 색인·링크 점검 |
 
 `npm run build` 뒤에는 생성물을 함께 커밋해야 `npm run verify` 가 통과합니다.
+
+`npm test` 의 마지막 단계(promo 테스트)는 Python 3.8+ 를 쓰고, 영상 프레임 검사에 Pillow 가 필요합니다.
+처음 한 번 `npm run setup:promo`(`python -m pip install -r promo/requirements.txt`)를 실행하세요.
+Pillow 가 없어도 나머지 테스트는 돌지만, Pillow 가 필요한 프레임·인자 검증 테스트는 이유와 함께 건너뜁니다.
 
 ## 구조
 
