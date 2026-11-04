@@ -5,7 +5,7 @@
  * 콘텐츠를 추가한 뒤 아래를 자동 점검합니다.
  *   1) data/*.js 어휘·숙어·확장 콘텐츠의 형식과 중복
  *   2) 앱 소스(index.html + assets/app.js) 안의 학습 배열(콜로케이션·혼동어휘·문법 팁 등)과
- *      문법 교재(grammar)의 중복·형식
+ *      문법·회화 교재의 중복·형식(과 간 예문 중복 포함)
  *   3) 정답이 보기에 없는 문항(오타성 버그)
  *   4) data/extra.js 와 index.html 배열 사이의 중복 항목
  *   5) 사이트에 표기한 어휘 총량과 실제 데이터 수 일치 여부
@@ -231,7 +231,7 @@ if (freqLens[0] === 8) {
 // 4-3-1. 단계별 교재(문법·회화)
 // 두 시리즈가 **같은 데이터 구조**를 씁니다(summary → points → mistakes → practice).
 // 그래서 검증 규칙도 한 함수로 묶어, 한쪽만 느슨해지는 일이 없게 합니다.
-function checkBooks(books, fileLabel, kindLabel) {
+function checkBooks(books, fileLabel, kindLabel, exampleOwners) {
   const ids = dupes(books.map((b) => b && b.id));
   if (ids.length) fail(`${fileLabel}: 교재 id가 중복입니다 — ${ids.join(", ")}`);
   const levels = dupes(books.map((b) => b && b.level));
@@ -277,6 +277,17 @@ function checkBooks(books, fileLabel, kindLabel) {
         }
         (p.examples || []).forEach((e, ei) => {
           if (!e.en || !e.ko) fail(`${cw} ${kindLabel} ${pi + 1} 예문 ${ei + 1}: en·ko 가 필요합니다.`);
+          // 같은 과 안에서 실전 대화가 표현을 다시 쓰는 것은 의도된 구성이므로 허용하고,
+          // 서로 다른 과에서 같은 예문이 반복되면 새 예문을 만들도록 실패로 알립니다.
+          const exampleText = String(e.en || "").toLowerCase().replace(/\s+/g, " ").trim();
+          if (exampleText) {
+            const owner = exampleOwners.get(exampleText);
+            if (owner && owner !== cw) {
+              fail(`${cw} ${kindLabel} ${pi + 1} 예문 ${ei + 1}: 다른 과(${owner})와 같은 예문입니다 — ${e.en}`);
+            } else if (!owner) {
+              exampleOwners.set(exampleText, cw);
+            }
+          }
         });
         // 개념 하나에 표도 예문도 없으면 읽을 거리가 없습니다.
         if (!p.table && !(p.examples || []).length && !p.note) {
@@ -309,8 +320,10 @@ function checkBooks(books, fileLabel, kindLabel) {
   if (crossChapter.length) fail(`${fileLabel}: 과 제목이 중복입니다 — ${crossChapter.join(", ")}`);
 }
 
-checkBooks(grammar, "data/grammar-*.js", "개념");
-checkBooks(conversation, "data/conversation-*.js", "표현");
+const grammarExamples = new Map();
+const conversationExamples = new Map();
+checkBooks(grammar, "data/grammar-*.js", "개념", grammarExamples);
+checkBooks(conversation, "data/conversation-*.js", "표현", conversationExamples);
 
 // 4-4. index.html 배열
 const ARRAYS = [

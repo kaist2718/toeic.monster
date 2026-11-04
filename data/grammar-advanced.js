@@ -909,7 +909,7 @@ window.GRAMMAR_BOOKS.push({
           body: "문장 앞에는 이미 알고 있는 정보를 주제로 두고, 뒤에는 새로운 정보를 초점으로 둡니다. 이 원리 때문에 수동태와 도치가 자연스럽게 쓰입니다. 글을 쓸 때는 앞 문장의 끝 단어가 다음 문장의 앞부분으로 이어지도록 구성합니다.",
           examples: [
             { en: "The brochure was designed by an outside agency.", ko: "그 안내서는 외부 대행사가 디자인했습니다." },
-            { en: "Among the proposals was a plan to shorten the approval process.", ko: "제안들 중에는 승인 절차를 줄이는 계획이 있었습니다." },
+            { en: "What the client wanted was a simpler interface.", ko: "고객이 원한 것은 더 단순한 인터페이스였습니다." },
             { en: "The new hire was trained by the same supervisor who trained me.", ko: "새 직원은 저를 교육한 같은 관리자에게 교육을 받았습니다." }
           ]
         },
@@ -931,7 +931,7 @@ window.GRAMMAR_BOOKS.push({
           body: "강조할 요소를 문장 앞으로 옮기면 초점이 이동합니다. 목적어를 문두에 두면 대조의 뜻이 생기고, 부정어가 문두에 오면 도치가 함께 일어납니다. 이 장치는 문어체에서 리듬을 만들 때 특히 유용합니다.",
           examples: [
             { en: "This proposal the board rejected without discussion.", ko: "이 제안을 이사회는 논의 없이 거부했습니다." },
-            { en: "Only after the audit did the errors become clear.", ko: "감사 이후에야 오류가 분명해졌습니다." },
+            { en: "Her presentation the committee praised without reservation.", ko: "그녀의 발표를 위원회는 주저 없이 칭찬했습니다." },
             { en: "Such was the demand that the stock sold out in a day.", ko: "수요가 워낙 커서 재고가 하루 만에 팔렸습니다." }
           ]
         },

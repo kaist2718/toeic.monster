@@ -860,7 +860,7 @@ window.GRAMMAR_BOOKS.push({
           h: "비교급 — than",
           body: "두 대상을 비교할 때는 비교급 뒤에 than을 씁니다. 비교 대상이 반복되면 that of, those of로 대신합니다.",
           examples: [
-            { en: "This model is cheaper than the previous one.", ko: "이 모델은 이전 모델보다 저렴합니다." },
+            { en: "The new process is more efficient than the old one.", ko: "새 공정은 이전 공정보다 더 효율적입니다." },
             { en: "Our response time is shorter than that of our competitors.", ko: "우리 응답 시간은 경쟁사보다 짧습니다." }
           ],
           note: "비교 대상이 명사일 때는 that of(단수), those of(복수)로 받습니다."
