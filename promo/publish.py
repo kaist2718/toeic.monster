@@ -3815,8 +3815,13 @@ def us_uk_voice_pair(engine: str = "auto", index: int = 0) -> tuple[str, str, st
     return "", "", requested
 
 
+# 영상마다 배경색을 자동으로 조금씩 돌리는 색상 회전(도).
+# 테마가 같아도(예: blue) 영상마다 다른 색감이 나므로 10편이 서로 구분됩니다.
+LOOK_HUE_STEPS = (0, 18, -18, 36, -36, 54, -54, 72, -72, 90)
+
+
 def varied_looks(cfg: dict, count: int, tts: bool | None = None) -> list[dict]:
-    """영상마다 겹치지 않는 배경 테마·무늬와 미국식·영국식 목소리 쌍을 만듭니다."""
+    """영상마다 겹치지 않는 배경 테마·배경색·무늬와 미국식·영국식 목소리 쌍을 만듭니다."""
     promo = cfg.get("promo", {})
     count = max(1, int(count))
     themes = [name for name, _label in make_theme_choices()]
@@ -3836,6 +3841,7 @@ def varied_looks(cfg: dict, count: int, tts: bool | None = None) -> list[dict]:
     for index in range(count):
         look = {"theme": ordered[index % len(ordered)],
                 "pattern": patterns[index % len(patterns)],
+                "hue": LOOK_HUE_STEPS[index % len(LOOK_HUE_STEPS)],
                 "style": str(promo.get("default_style", "classic")).lower()}
         if tts_on:
             us, gb, engine = us_uk_voice_pair(tts_engine_of(cfg), index)
@@ -3861,6 +3867,13 @@ def build_shorts_command(cfg: dict, kind: str, words: int,
     pattern = str(look.get("pattern") or promo.get("default_pattern", "auto")).lower() or "auto"
     command = [sys.executable, str(PROMO / "make_shorts.py"),
                "--words", str(words), "--bg", theme, "--style", style, "--pattern", pattern]
+    # 배경색 자동 변경 — 같은 테마에서도 영상마다 색상 회전을 다르게 줍니다.
+    try:
+        hue = int(look.get("hue") or 0)
+    except (TypeError, ValueError):
+        hue = 0
+    if hue:
+        command.extend(["--hue-shift", str(hue)])
     if kind == "idioms":
         command.append("--idioms")
     elif kind == "frequency":
@@ -4171,45 +4184,270 @@ def sidecar_content_problems(items: list, kind: str) -> list[str]:
     return problems
 
 
+# --------------------------------------------------- 쇼츠 품질 검증 ----
+# 메뉴 32 는 만든 직후, 메뉴 33 은 폴더 전체를 이 기준으로 점검합니다.
+# 점검은 업로드·수정을 하지 않으며, 통과하지 못한 영상은 예약에서 제외합니다.
+SHORTS_QC_REPORT = PROMO / "reports" / "shorts_qc.json"
+QC_REQUIRED_ITEMS = 3       # 메뉴 32 기본 문항(카드) 수
+QC_AUDIO_MIN_DB = -55.0     # 이보다 조용하면 사실상 무음으로 봅니다
+QC_MIN_FILE_MB = 0.05       # 0바이트·껍데기 파일을 거릅니다
+
+
+def _media_exe() -> str:
+    """ffmpeg 실행 경로 — imageio-ffmpeg 로 설치한 바이너리를 우선 씁니다."""
+    try:
+        import imageio_ffmpeg
+        return imageio_ffmpeg.get_ffmpeg_exe()
+    except Exception:
+        return "ffmpeg"
+
+
+def probe_mean_volume(video: Path) -> float | None:
+    """오디오 평균 음량(dB) — ffmpeg volumedetect. 실패하면 None."""
+    try:
+        r = subprocess.run([_media_exe(), "-hide_banner", "-nostats", "-i", str(video),
+                            "-af", "volumedetect", "-f", "null", "-"],
+                           capture_output=True, text=True)
+        m = re.search(r"mean_volume:\s*(-?[\d.]+)\s*dB", r.stderr or "")
+        return float(m.group(1)) if m else None
+    except Exception:
+        return None
+
+
+def qc_shorts_video(video: Path, *, expect_items: int | None = None,
+                    strict: bool = False) -> dict:
+    """영상 한 편의 콘텐츠 품질을 점검합니다(파일 수정·업로드 없음).
+
+    strict=True(메뉴 32 — 방금 만든 영상)는 미국식+영국식 음성과 오디오,
+    요청한 문항 수를 모두 요구합니다. strict=False(메뉴 33 — 폴더 전체)는
+    메타·규격을 중심으로 보고 음성·배경은 경고로 남깁니다.
+    """
+    row = {"video": video, "title": "", "score": 0, "grade": "F",
+           "checks": [], "blockers": [], "warnings": [], "info": {}, "meta": {},
+           "kind": "", "item_count": 0, "theme": "", "pattern": "", "hue": 0,
+           "voices": [], "accents": []}
+
+    def check(label, weight, ok, detail="", hard=False, blocker=""):
+        row["checks"].append({"label": label, "weight": weight, "ok": bool(ok),
+                              "detail": detail, "hard": bool(hard)})
+        if ok:
+            return
+        message = blocker or (f"{label} — {detail}" if detail and detail != label else (detail or label))
+        if hard:
+            row["blockers"].append(message)
+        else:
+            row["warnings"].append(message)
+
+    try:
+        size_mb = video.stat().st_size / (1024 * 1024)
+    except OSError:
+        size_mb = 0.0
+    check("영상 파일", 5, size_mb >= QC_MIN_FILE_MB, f"{size_mb:.1f}MB",
+          hard=True, blocker="영상 파일 없음")
+
+    try:
+        saved = load_video_meta(video) or {}
+    except (OSError, ValueError):
+        saved = {}
+    row["meta"] = saved
+    items = [it for it in (saved.get("items") or []) if isinstance(it, dict)]
+    kind = str(saved.get("kind") or "")
+    row.update(kind=kind, item_count=len(items),
+               theme=str(saved.get("theme") or ""),
+               pattern=str(saved.get("pattern") or ""),
+               hue=int(saved.get("hue") or 0),
+               voices=[str(v) for v in (saved.get("voices") or [])])
+    row["accents"] = sorted({voice_accent(v) for v in row["voices"] if voice_accent(v)})
+
+    check("메타", 15, bool(items), "메타 없음" if not items else f"항목 {len(items)}개",
+          hard=True, blocker="메타 없음")
+
+    if expect_items is not None:
+        check("문항 수", 10, len(items) == expect_items, f"{len(items)}개",
+              hard=True, blocker=f"문항 {len(items)}개 (요청 {expect_items}개)")
+
+    quiz_like = kind == "paraphrase" or KIND_SPECS.get(kind, {}).get("layout") == "quiz2"
+    content_problems = sidecar_item_problems(items) if quiz_like else []
+    content_problems += sidecar_content_problems(items, kind)
+    if not quiz_like:
+        for i, it in enumerate(items, 1):
+            if not str(it.get("term") or "").strip():
+                content_problems.append(f"{i}번 표제어 없음")
+            elif not str(it.get("meaning") or "").strip():
+                content_problems.append(f"{i}번 뜻 없음")
+    check("문항·내용", 20, not content_problems,
+          ", ".join(dict.fromkeys(content_problems))[:120],
+          hard=True, blocker="문항·내용 점검 실패")
+
+    accents = set(row["accents"])
+    accents_ok = {"US", "GB"} <= accents
+    check("미국식+영국식 음성", 15, accents_ok,
+          "US+GB" if accents_ok else ("음성 정보 없음" if not accents else "+".join(sorted(accents))),
+          hard=strict, blocker="미국식+영국식 음성 아님")
+
+    info = probe_video_info(video)
+    row["info"] = info
+    has_audio = info.get("has_audio")
+    if has_audio is False:
+        check("오디오", 10, False, "오디오 없음", hard=strict, blocker="오디오 없음")
+    else:
+        mean_db = probe_mean_volume(video) if has_audio else None
+        if mean_db is not None and mean_db <= QC_AUDIO_MIN_DB:
+            check("오디오", 10, False, f"{mean_db:.0f}dB", hard=strict, blocker="오디오 무음")
+        else:
+            check("오디오", 10, True, f"{mean_db:.0f}dB" if mean_db is not None else "확인 불가")
+
+    ratio = (info["width"] / info["height"]) if info.get("height") else 0.0
+    check("9:16 규격", 10, 0.52 <= ratio <= 0.60,
+          f"{info.get('width', 0)}x{info.get('height', 0)}", hard=True, blocker="9:16 아님")
+    duration = float(info.get("duration") or 0.0)
+    check("길이", 5, 0 < duration <= 180, f"{duration:.0f}초",
+          hard=True, blocker="길이 확인 불가")
+
+    background_ok = bool(row["theme"]) and bool(row["pattern"])
+    check("배경 테마·무늬", 10, background_ok,
+          f"{row['theme']} / {row['pattern']} / {row['hue']:+d}°" if background_ok else "배경 정보 없음")
+
+    try:
+        already = "yt" in posted_platforms(video)
+    except (OSError, ValueError):
+        already = False
+    check("게시 이력", 5, not already, "이미 게시", hard=True, blocker="이미 게시")
+
+    if kind in KIND_SPECS or kind == "paraphrase":
+        try:
+            row["title"] = kind_title(kind, items)
+        except (KeyError, TypeError, IndexError):
+            row["title"] = ""
+    else:
+        row["title"] = " · ".join(str(it.get("term") or "") for it in items[:3])
+
+    total = sum(c["weight"] for c in row["checks"])
+    passed = sum(c["weight"] for c in row["checks"] if c["ok"])
+    row["score"] = round(100 * passed / total) if total else 0
+    if row["blockers"]:
+        row["grade"] = "F"
+    elif row["score"] >= 90:
+        row["grade"] = "A"
+    elif row["score"] >= 80:
+        row["grade"] = "B"
+    elif row["score"] >= 70:
+        row["grade"] = "C"
+    else:
+        row["grade"] = "D"
+    return row
+
+
+def verify_shorts_batch(videos: list[Path], *, expect_items: int | None = None,
+                        strict: bool = False) -> dict:
+    """여러 영상을 한 묶음으로 점검합니다 — 배경·제목이 겹치는 영상도 걸러냅니다."""
+    rows = [qc_shorts_video(video, expect_items=expect_items, strict=strict)
+            for video in videos]
+    seen_colors: dict[tuple, str] = {}
+    seen_patterns: dict[str, str] = {}
+    seen_titles: dict[str, str] = {}
+    for row in rows:
+        color = (row["theme"], row["hue"])
+        if color in seen_colors and seen_colors[color] != row["video"].name:
+            row["warnings"].append(f"배경색 중복 — {seen_colors[color]}")
+        else:
+            seen_colors[color] = row["video"].name
+        if row["pattern"] in seen_patterns:
+            row["warnings"].append(f"배경 무늬 중복 — {seen_patterns[row['pattern']]}")
+        else:
+            seen_patterns[row["pattern"]] = row["video"].name
+        title = row["title"].strip()
+        if title:
+            if title in seen_titles:
+                message = f"제목 중복 — {seen_titles[title]}"
+                (row["blockers"] if strict else row["warnings"]).append(message)
+            else:
+                seen_titles[title] = row["video"].name
+    for row in rows:
+        if row["blockers"]:
+            row["grade"] = "F"
+    return {"total": len(rows), "rows": rows,
+            "passed": [row["video"] for row in rows if not row["blockers"]],
+            "blocked": [(row["video"], row["blockers"]) for row in rows if row["blockers"]],
+            "average": round(sum(row["score"] for row in rows) / len(rows)) if rows else 0,
+            "expect_items": expect_items, "strict": strict}
+
+
+def print_shorts_qc(result: dict) -> None:
+    """품질 검증 결과 — 영상별 점수·등급과 제외 사유를 보기 좋게 출력합니다."""
+    log("\n🔬 쇼츠 콘텐츠 품질 검증 — 업로드·수정 없이 자동 점검합니다")
+    log(f"   · 점검 {result['total']}편 · 통과 {len(result['passed'])}편"
+        f" · 제외 {len(result['blocked'])}편 · 평균 {result['average']}점")
+    for row in result["rows"][:12]:
+        mark = "⛔" if row["blockers"] else "✅"
+        voices = "+".join(row["accents"]) or "-"
+        log(f"    {mark} {row['grade']} {row['score']:3d}점 · {row['video'].name}"
+            f" · {row['item_count']}문항 · 음성 {voices}"
+            f" · {row['theme'] or '-'}/{row['pattern'] or '-'}"
+            f" · {float(row['info'].get('duration') or 0):.0f}초")
+        if row["blockers"]:
+            log(f"       ⛔ {', '.join(row['blockers'])[:140]}")
+        elif row["warnings"]:
+            log(f"       ⚠️ {', '.join(row['warnings'])[:140]}")
+    if len(result["rows"]) > 12:
+        log(f"    … 외 {len(result['rows']) - 12}편")
+    if result["blocked"]:
+        reasons: dict[str, int] = {}
+        for _video, items in result["blocked"]:
+            for reason in items:
+                key = reason.split(" — ", 1)[0]
+                reasons[key] = reasons.get(key, 0) + 1
+        log("\n   ⛔ 제외 사유")
+        for reason, count in sorted(reasons.items(), key=lambda kv: -kv[1])[:6]:
+            log(f"    - {reason}: {count}편")
+    log("   · 기준: 메타·문항·9:16·길이(≤180초)·오디오·미국식+영국식 음성·배경 정보·중복")
+    if result["blocked"]:
+        log("   · 제외된 영상은 파일을 그대로 두고 예약에서만 뺍니다 — 메뉴 33에서 다시 확인할 수 있습니다.")
+
+
+def write_shorts_qc_report(result: dict) -> Path | None:
+    """품질 검증 결과를 JSON 리포트로 남깁니다 — 제작 품질 추이를 확인할 수 있습니다."""
+    payload = {
+        "generated_at": now_iso(),
+        "total": result["total"],
+        "passed": len(result["passed"]),
+        "blocked": len(result["blocked"]),
+        "average": result["average"],
+        "expect_items": result["expect_items"],
+        "rows": [{
+            "video": row["video"].name, "grade": row["grade"], "score": row["score"],
+            "title": row["title"], "kind": row["kind"], "item_count": row["item_count"],
+            "theme": row["theme"], "pattern": row["pattern"], "hue": row["hue"],
+            "voices": row["voices"], "accents": row["accents"],
+            "duration": round(float(row["info"].get("duration") or 0), 2),
+            "blockers": row["blockers"], "warnings": row["warnings"],
+        } for row in result["rows"]],
+    }
+    try:
+        SHORTS_QC_REPORT.parent.mkdir(parents=True, exist_ok=True)
+        SHORTS_QC_REPORT.write_text(json.dumps(payload, ensure_ascii=False, indent=2),
+                                    encoding="utf-8")
+        return SHORTS_QC_REPORT
+    except OSError as exc:
+        warn(f"품질 검증 리포트를 저장하지 못했습니다: {exc}")
+        return None
+
+
 def audit_shorts(cfg: dict) -> dict:
     """게시 준비 상태를 영상별로 점검합니다 — 업로드·수정 없이 읽기만 합니다.
 
-    반환: {"total", "ready": [{video, info, title}], "blocked": [(video, [사유])]}
-    메뉴 32 가 쓰는 규칙(메타·문항·규격·중복·이미 게시)을 그대로 재사용합니다.
+    반환: {"total", "ready": [{video, info, title, score, grade, warnings}],
+           "blocked": [(video, [사유])], "average"}
+    메뉴 32·33 이 같은 품질 기준을 씁니다.
     """
     videos = list_videos_menu()
-    ready: list[dict] = []
-    blocked: list[tuple[Path, list[str]]] = []
-    for video in videos:
-        reasons: list[str] = []
-        title = ""
-        try:
-            saved = load_video_meta(video)
-            if not saved or not saved.get("items"):
-                reasons.append("메타 없음")
-            else:
-                kind = str(saved.get("kind") or "")
-                if kind in KIND_SPECS or kind == "paraphrase":
-                    reasons.extend(sidecar_item_problems(saved["items"])[:2])
-                    title = kind_title(kind, saved["items"])
-                else:
-                    title = str((saved["items"][0] or {}).get("term") or "")
-                reasons.extend(sidecar_content_problems(saved["items"], kind)[:2])
-            if "yt" in posted_platforms(video):
-                reasons.append("이미 게시")
-        except (OSError, KeyError, TypeError):
-            reasons.append("메타 읽기 실패")
-        info = probe_video_info(video)
-        ratio = (info["width"] / info["height"]) if info["height"] else 0.0
-        if not 0.52 <= ratio <= 0.60:
-            reasons.append("9:16 아님")
-        if not 0 < info["duration"] <= 180:
-            reasons.append("길이 확인 불가")
-        if reasons:
-            blocked.append((video, reasons))
-        else:
-            ready.append({"video": video, "info": info, "title": title})
-    return {"total": len(videos), "ready": ready, "blocked": blocked}
+    batch = verify_shorts_batch(videos, strict=False)
+    ready = [{"video": row["video"], "info": row["info"], "title": row["title"],
+              "score": row["score"], "grade": row["grade"], "warnings": row["warnings"]}
+             for row in batch["rows"] if not row["blockers"]]
+    blocked = [(row["video"], row["blockers"]) for row in batch["rows"] if row["blockers"]]
+    return {"total": len(videos), "ready": ready, "blocked": blocked,
+            "average": batch["average"]}
 
 
 def quality_audit_menu(cfg: dict) -> None:
@@ -4217,11 +4455,15 @@ def quality_audit_menu(cfg: dict) -> None:
     result = audit_shorts(cfg)
     ready, blocked = result["ready"], result["blocked"]
     log("\n🔍 제작 품질 점검 — 업로드·수정 없이 읽기만 합니다")
-    log(f"   · 폴더 {result['total']}편 · 예약 가능 {len(ready)}편 · 제외 {len(blocked)}편")
+    log(f"   · 폴더 {result['total']}편 · 예약 가능 {len(ready)}편 · 제외 {len(blocked)}편"
+        f" · 평균 {result.get('average', 0)}점")
     if ready:
         log("\n  ✅ 예약 가능 (최신순 최대 10편)")
         for row in ready[:10]:
-            log(f"    - {row['video'].name} · {row['info']['duration']:.0f}초 · {row['title'][:48]}")
+            warnings = len(row.get("warnings") or [])
+            log(f"    - {row.get('grade', '-')} {row.get('score', 0):3d}점 · {row['video'].name}"
+                f" · {row['info']['duration']:.0f}초 · {row['title'][:40]}"
+                + (f" · 경고 {warnings}" if warnings else ""))
         if len(ready) > 10:
             log(f"    - … 외 {len(ready) - 10}편")
         counts: dict[str, int] = {}
@@ -4400,15 +4642,20 @@ def varied_ten_schedule_menu(cfg: dict, count: int = 10) -> None:
         warn("YouTube가 비활성화되어 있습니다 — 메뉴 25에서 설정하세요.")
         return
     count = max(1, min(10, int(count)))
+    # 영상 한 편에 넣을 문제(카드) 수 — 기본 3문제. 짧게 만들려면 1~2로 줄입니다.
     try:
-        words = min(10, max(1, int(promo.get("default_focus_words", 1) or 1)))
+        default_items = min(5, max(1, int(promo.get("default_focus_words", QC_REQUIRED_ITEMS)
+                                        or QC_REQUIRED_ITEMS)))
     except (TypeError, ValueError):
-        words = 1
+        default_items = QC_REQUIRED_ITEMS
+    words = ask_int("영상당 문제(카드) 수(1~5, 권장 3)", max(default_items, QC_REQUIRED_ITEMS), 1, 5)
     looks = varied_looks(cfg, count, tts=True)
-    log(f"\n🎬 새로 제작 + 자동 예약 — {count}편 · 영상마다 배경·무늬·목소리를 다르게 만듭니다")
+    log(f"\n🎬 새로 제작 + 자동 예약 — {count}편 · 영상마다 배경·배경색·무늬·목소리를 다르게 만듭니다")
+    log(f"  · 영상당 {words}문제(카드) · 미국식+영국식 각각 낭독 · 생성 직후 품질 검증")
     for i, look in enumerate(looks[:5], 1):
         voice = " + ".join(v for v in (look.get("voice"), look.get("voice2")) if v)
-        log(f"  {i:2d}. 테마 {look['theme']:<9} · 무늬 {look['pattern']:<9} · 목소리 {voice or '설정값'}")
+        log(f"  {i:2d}. 테마 {look['theme']:<9} · 색상 {look.get('hue', 0):+3d}°"
+            f" · 무늬 {look['pattern']:<9} · 목소리 {voice or '설정값'}")
     if len(looks) > 5:
         log(f"  … 외 {len(looks) - 5}편 (같은 규칙으로 서로 겹치지 않게)")
     if not all(look.get("voice") and look.get("voice2") for look in looks):
@@ -4425,8 +4672,8 @@ def varied_ten_schedule_menu(cfg: dict, count: int = 10) -> None:
              "10편을 만든 뒤 업로드하지 못할 수 있습니다.")
         if not ask_yes_no("그래도 지금 만들까요?", False):
             return
-    log("  · 만들어진 영상은 문항·규격·중복 점검을 통과한 것만 내일부터 매일 "
-        "08:00·08:15 에 2편씩 공개합니다.")
+    log("  · 생성한 영상은 문항·규격·오디오·미국식+영국식 음성·배경 중복을 자동 검증하고, "
+        "통과한 것만 내일부터 매일 08:00·08:15 에 2편씩 공개합니다.")
     if not ask_yes_no(f"{count}편을 새로 만들까요? 사용 이력이 기록됩니다", True):
         log("생성을 취소했습니다.")
         return
@@ -4434,8 +4681,20 @@ def varied_ten_schedule_menu(cfg: dict, count: int = 10) -> None:
     if not videos:
         return
     if len(videos) < count:
-        warn(f"{count}편 중 {len(videos)}편만 만들어졌습니다 — 만들어진 영상만 예약합니다.")
-    quick_ten_schedule_menu(cfg, len(videos), videos=videos)
+        warn(f"{count}편 중 {len(videos)}편만 만들어졌습니다 — 만들어진 영상만 검증합니다.")
+    # ── 콘텐츠 품질 검증 — 방금 만든 영상만 엄격 기준으로 점검합니다. ──
+    batch = verify_shorts_batch(videos, expect_items=words, strict=True)
+    print_shorts_qc(batch)
+    report = write_shorts_qc_report(batch)
+    if report:
+        log(f"   · 검증 리포트 저장: {relative_display(report)}")
+    passed = list(batch["passed"])
+    if not passed:
+        fail("품질 검증을 통과한 영상이 없습니다 — 메뉴 33에서 원인을 확인한 뒤 다시 제작하세요.")
+        return
+    if len(passed) < len(videos):
+        warn(f"{len(videos)}편 중 {len(passed)}편만 품질 기준을 통과했습니다 — 통과한 영상만 예약합니다.")
+    quick_ten_schedule_menu(cfg, len(passed), videos=passed)
 
 
 def weekly_wizard_menu(cfg: dict) -> None:
@@ -4548,20 +4807,32 @@ def weekly_wizard_menu(cfg: dict) -> None:
 
 
 def probe_video_info(video: Path) -> dict:
-    """ffprobe로 해상도·길이·크기를 가져옵니다. (실패 시 안전한 기본값)"""
-    info = {"width": 0, "height": 0, "duration": 0.0, "size_mb": 0.0}
+    """ffprobe로 해상도·길이·크기·프레임·오디오 유무를 가져옵니다. (실패 시 안전한 기본값)"""
+    info = {"width": 0, "height": 0, "duration": 0.0, "size_mb": 0.0,
+            "fps": 0.0, "has_audio": None}
     try:
         info["size_mb"] = video.stat().st_size / (1024 * 1024)
     except OSError:
         pass
     try:
-        r = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0",
-                            "-show_entries", "stream=width,height:format=duration",
+        r = subprocess.run(["ffprobe", "-v", "error",
+                            "-show_entries", "stream=codec_type,width,height,r_frame_rate"
+                                              ":format=duration",
                             "-of", "json", str(video)], capture_output=True, text=True)
         data = json.loads(r.stdout)
-        if data.get("streams"):
-            info["width"] = int(data["streams"][0]["width"])
-            info["height"] = int(data["streams"][0]["height"])
+        streams = data.get("streams") or []
+        video_stream = next((s for s in streams if s.get("codec_type") == "video"), None)
+        if video_stream:
+            info["width"] = int(video_stream.get("width") or 0)
+            info["height"] = int(video_stream.get("height") or 0)
+            rate = str(video_stream.get("r_frame_rate") or "")
+            if "/" in rate:
+                num, _, den = rate.partition("/")
+                try:
+                    info["fps"] = float(num) / float(den or 1)
+                except (TypeError, ValueError, ZeroDivisionError):
+                    info["fps"] = 0.0
+        info["has_audio"] = any(s.get("codec_type") == "audio" for s in streams)
         if data.get("format", {}).get("duration"):
             info["duration"] = float(data["format"]["duration"])
     except Exception:
@@ -6227,7 +6498,7 @@ MENU_ITEMS: list[tuple[str, str, tuple[str, ...]]] = [
     ("29", "남은 콘텐츠 수량 보기",          ("잔여", "수량", "remaining", "남은")),
     ("30", "게시된 영상 YouTube 설명 갱신",   ("설명", "제목", "refresh", "youtube")),
     ("31", "TTS 엔진·목소리 설정 (내려받기·미리 듣기)", ("tts", "음성", "목소리", "piper", "미리듣기")),
-    ("32", "쇼츠 제작·10편 예약 마법사", ("주간", "일주일", "마법사", "weekly", "검토", "예약", "10편")),
+    ("32", "쇼츠 제작·품질 검증·예약 마법사", ("주간", "일주일", "마법사", "weekly", "검토", "예약", "10편", "품질", "검증", "3문제")),
     ("33", "제작 품질 점검", ("품질", "점검", "audit", "검사", "제작", "준비", "상태")),
 ]
 # 목록·검색·표시 순서를 항상 번호 순으로 맞춰 둡니다(번호를 고치면 여기까지 자동 정렬).
@@ -6266,7 +6537,7 @@ MENU_DESC: dict[str, str] = {
     "29": "종류별 콘텐츠 사용/전체/남음 수량 표로 확인",
     "30": "게시된 YouTube 영상의 제목·설명을 새 형식으로 갱신",
     "31": "TTS 엔진·목소리 선택, Piper 음성 내려받기·미리 듣기",
-    "32": "10편을 배경·무늬·목소리(미국식+영국식) 다르게 제작해 예약 또는 최신 영상 자동 예약",
+    "32": "10편을 배경·배경색·무늬·목소리(미국식+영국식) 다르게 3문제씩 제작하고 품질 검증 후 예약",
     "33": "폴더 전체 영상의 게시 준비 상태·제외 사유를 업로드 없이 점검",
 }
 MAX_RECENT_MENUS = 5   # 메뉴 상단에 보여 줄 최근 사용 메뉴 수
@@ -6898,9 +7169,9 @@ def interactive_menu(initial: str | None = None) -> None:
         if action == "32":
             mode = choose_option(
                 "쇼츠 마법사",
-                [("vary", "10편 새로 제작 → 자동 예약 — 배경·무늬·목소리(미국식+영국식) 모두 다르게 (권장)"),
+                [("vary", "10편 새로 제작 → 품질 검증 → 자동 예약 — 3문제·배경/색상/무늬/목소리 모두 다르게 (권장)"),
                  ("quick", "10편 자동 예약 — 이미 만든 최신 영상, 하루 2편"),
-                 ("weekly", "새로 만들고 개별 검토 후 예약 — 배경·무늬·목소리도 다르게")], "vary")
+                 ("weekly", "새로 만들고 개별 검토 후 예약 — 3문제·배경/색상/무늬/목소리도 다르게")], "vary")
             if mode == "vary":
                 varied_ten_schedule_menu(cfg)
             elif mode == "quick":

@@ -672,6 +672,7 @@ class VariedLookTest(unittest.TestCase):
                                                    "tts_engine": "windows"}}, 10)
             self.assertEqual(len({look["theme"] for look in looks}), 10)
             self.assertEqual(len({look["pattern"] for look in looks}), 10)
+            self.assertEqual(len({look["hue"] for look in looks}), 10)
             self.assertGreater(len({(look["voice"], look["voice2"]) for look in looks}), 1)
             for look in looks:
                 self.assertEqual({publish.voice_accent(look["voice"]),
@@ -682,13 +683,14 @@ class VariedLookTest(unittest.TestCase):
                          "default_style": "classic", "default_tts": True,
                          "default_voice": "Microsoft Hazel Desktop",
                          "default_voice2": "Microsoft David Desktop"}}
-        look = {"theme": "neon", "pattern": "bokeh", "style": "modern",
+        look = {"theme": "neon", "pattern": "bokeh", "hue": 36, "style": "modern",
                 "tts": True, "engine": "windows",
                 "voice": "Microsoft Zira Desktop", "voice2": "Microsoft Hazel Desktop"}
         command = publish.build_shorts_command(cfg, "frequency", 1, look)
         joined = " ".join(command)
         self.assertIn("--bg neon", joined)
         self.assertIn("--pattern bokeh", joined)
+        self.assertIn("--hue-shift 36", joined)
         self.assertIn("--voice Microsoft Zira Desktop", joined)
         self.assertIn("--voice2 Microsoft Hazel Desktop", joined)
 
@@ -703,9 +705,16 @@ class VariedLookTest(unittest.TestCase):
                 mock.patch.object(publish, "load_full_youtube_credentials", return_value=object()), \
                 mock.patch.object(publish, "youtube_quota_status", return_value={"remaining": 6}), \
                 mock.patch.object(publish, "run_auto_plan", return_value=videos) as plan, \
+                mock.patch.object(publish, "verify_shorts_batch",
+                                  return_value={"passed": videos, "blocked": [], "rows": [],
+                                                "total": 3, "average": 100}), \
+                mock.patch.object(publish, "print_shorts_qc"), \
+                mock.patch.object(publish, "write_shorts_qc_report", return_value=None), \
                 mock.patch.object(publish, "quick_ten_schedule_menu") as quick:
             publish.varied_ten_schedule_menu({"youtube": {"enabled": True}, "promo": {}})
         self.assertTrue(plan.call_args.kwargs["vary_looks"])
+        # 영상당 문제 3개가 기본 — 메뉴 32 가 만든 영상을 그대로 검증·예약합니다.
+        self.assertEqual(plan.call_args.kwargs["words"], 3)
         # 미리 보여 준 테마·무늬·목소리 목록을 그대로 넘겨, 실제 생성과 표가 어긋나지 않게 합니다.
         self.assertIs(plan.call_args.kwargs["looks"], looks)
         quick.assert_called_once_with({"youtube": {"enabled": True}, "promo": {}}, 3,
@@ -747,6 +756,15 @@ class ShortsCardQualityTest(unittest.TestCase):
     def test_content_problems_accept_complete_card(self):
         items = [{"term": "word", "meaning": "뜻", "example": "Example.", "translation": "예문."}]
         self.assertEqual(publish.sidecar_content_problems(items, "frequency"), [])
+
+    def test_background_hue_shift_changes_gradient_without_recursing(self):
+        import make_shorts as shorts
+        top, bottom = shorts.THEMES["blue"]
+        self.assertEqual(shorts.theme_colors("blue"), (top, bottom))
+        with mock.patch.object(shorts, "HUE_SHIFT", 24):
+            self.assertEqual(shorts.theme_colors("blue"),
+                             (shorts.shift_hue(top, 24), shorts.shift_hue(bottom, 24)))
+            self.assertNotEqual(shorts.accent_color("blue"), shorts.ACCENT["blue"])
 
 
 class EnglishOnlyTtsTest(unittest.TestCase):
@@ -1495,7 +1513,7 @@ class ShortsAuditTest(unittest.TestCase):
 
     def make_video(self, name, meta=None):
         video = self.dir / name
-        video.write_bytes(b"video")
+        video.write_bytes(b"v" * 70000)   # 품질 검증의 최소 파일 크기(0.05MB) 통과
         if meta is not None:
             video.with_suffix(".json").write_text(json.dumps(meta), encoding="utf-8")
         return video
@@ -1526,6 +1544,80 @@ class ShortsAuditTest(unittest.TestCase):
         self.assertIn("9:16 아님", narrow["blocked"][0][1])
         posted = self.audit([video], posted=lambda _v: {"yt": "https://youtu.be/x"})
         self.assertIn("이미 게시", posted["blocked"][0][1])
+
+
+class ShortsQualityTest(unittest.TestCase):
+    """메뉴 32 — 생성 직후 콘텐츠 품질 검증(점수·등급·제외)."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.dir = Path(self.tmp.name)
+
+    def make_video(self, name="qc.mp4", *, items=3, voices=None, theme="neon", hue=36):
+        video = self.dir / name
+        video.write_bytes(b"v" * 70000)
+        meta = {"kind": "paraphrase", "theme": theme, "pattern": "bokeh", "hue": hue,
+                "voices": voices if voices is not None else ["en_US-amy-medium", "en_GB-alan-medium"],
+                "items": []}
+        for i in range(items):
+            meta["items"].append({
+                "term": f"target{i}", "meaning": "postpone",
+                "example": "The plan was put off.", "translation": "계획이 미뤄졌다.",
+                "question": "밑줄 친 표현과 가장 가까운 것은?",
+                "options": ["postpone", "delay", "cancel", "accept"],
+                "ko": "해설", "tag": "test", "title_head": f"문제 {i}",
+            })
+        video.with_suffix(".json").write_text(json.dumps(meta, ensure_ascii=False), encoding="utf-8")
+        return video
+
+    def qc(self, video, *, info=None, volume=-18.0, **kwargs):
+        info = info or {"width": 1080, "height": 1920, "duration": 45, "has_audio": True}
+        with mock.patch.object(publish, "probe_video_info", return_value=info), \
+                mock.patch.object(publish, "probe_mean_volume", return_value=volume), \
+                mock.patch.object(publish, "posted_platforms", return_value={}):
+            return publish.qc_shorts_video(video, **kwargs)
+
+    def test_complete_three_question_video_passes_strict(self):
+        row = self.qc(self.make_video(), expect_items=3, strict=True)
+        self.assertEqual(row["blockers"], [])
+        self.assertEqual(row["score"], 100)
+        self.assertEqual(row["grade"], "A")
+        self.assertEqual(row["item_count"], 3)
+        self.assertEqual(row["accents"], ["GB", "US"])
+
+    def test_incomplete_video_is_blocked_with_reasons(self):
+        video = self.make_video(items=2, voices=["en_US-amy-medium"])
+        info = {"width": 1920, "height": 1080, "duration": 45, "has_audio": False}
+        row = self.qc(video, info=info, expect_items=3, strict=True)
+        self.assertIn("문항 2개 (요청 3개)", row["blockers"])
+        self.assertIn("미국식+영국식 음성 아님", row["blockers"])
+        self.assertIn("오디오 없음", row["blockers"])
+        self.assertIn("9:16 아님", row["blockers"])
+        self.assertEqual(row["grade"], "F")
+
+    def test_batch_flags_duplicate_background(self):
+        first = self.make_video("a.mp4", theme="neon", hue=36)
+        second = self.make_video("b.mp4", theme="neon", hue=36)
+        info = {"width": 1080, "height": 1920, "duration": 45, "has_audio": True}
+        with mock.patch.object(publish, "probe_video_info", return_value=info), \
+                mock.patch.object(publish, "probe_mean_volume", return_value=-18.0), \
+                mock.patch.object(publish, "posted_platforms", return_value={}):
+            result = publish.verify_shorts_batch([first, second], expect_items=3, strict=True)
+        self.assertEqual(result["total"], 2)
+        self.assertTrue(any("배경색 중복" in w for w in result["rows"][1]["warnings"]))
+
+    def test_report_records_scores(self):
+        row = self.qc(self.make_video(), expect_items=3, strict=True)
+        target = self.dir / "shorts_qc.json"
+        with mock.patch.object(publish, "SHORTS_QC_REPORT", target):
+            path = publish.write_shorts_qc_report({
+                "total": 1, "rows": [row], "passed": [row["video"]], "blocked": [],
+                "average": row["score"], "expect_items": 3, "strict": True})
+        self.assertTrue(path.is_file())
+        saved = json.loads(target.read_text(encoding="utf-8"))
+        self.assertEqual(saved["average"], 100)
+        self.assertEqual(saved["rows"][0]["accents"], ["GB", "US"])
 
 
 if __name__ == "__main__":

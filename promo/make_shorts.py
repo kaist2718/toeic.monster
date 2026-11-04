@@ -12,6 +12,7 @@ Ken Burns 줌 효과와 슬라이드 간 크로스페이드, 선택적으로 영
   python make_shorts.py --unit 3 --words 7 --tts     # 7개 + 영어 음성(Windows 내장 TTS)
   python make_shorts.py --unit 5 --seed 42 --bg purple
   python make_shorts.py --unit 5 --bg 12 --pattern 11  # 배경 테마·패턴을 번호로 선택
+  python make_shorts.py --unit 5 --bg blue --hue-shift 24  # 같은 테마에서 배경색을 자동으로 돌림
   python make_shorts.py --list-bg                      # 배경 테마·패턴 번호 목록
   python make_shorts.py --unit 2 --words 3 --dry-run # 계획만 출력
   python make_shorts.py --unit 1 --allow-repeat      # 이미 쓴 단어도 다시 사용
@@ -44,6 +45,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import colorsys
 import json
 import math
 import os
@@ -268,6 +270,33 @@ ACCENT = {
 # 지금 그리는 슬라이드의 액센트 색 — 렌더 함수가 테마를 받아 갱신합니다.
 # (draw_dots 처럼 인자로 받지 않는 도우미가 쓰므로 모듈 기본값을 둡니다.)
 ACCENT_THEME = ACCENT["blue"]
+# 영상마다 배경색을 조금씩 자동으로 바꾸는 색상 회전(도) — 메뉴 32 가 --hue-shift 로 넘깁니다.
+# 테마 이름이 같아도(예: blue) 영상마다 다른 색감이 나오므로 10편이 서로 구분됩니다.
+HUE_SHIFT = 0
+
+
+def shift_hue(color, degrees: float):
+    """RGB 색의 색상(H)만 degrees 만큼 돌립니다 — 밝기·채도는 그대로 둡니다."""
+    if not degrees:
+        return tuple(color[:3])
+    r, g, b = (max(0, min(255, int(c))) / 255.0 for c in color[:3])
+    h, l, s = colorsys.rgb_to_hls(r, g, b)
+    h = (h + float(degrees) / 360.0) % 1.0
+    r, g, b = colorsys.hls_to_rgb(h, l, s)
+    return (int(round(r * 255)), int(round(g * 255)), int(round(b * 255)))
+
+
+def theme_colors(theme: str) -> tuple[tuple[int, int, int], tuple[int, int, int]]:
+    """테마의 (위, 아래) 그라데이션 색 — HUE_SHIFT 가 있으면 색상만 돌립니다."""
+    top, bottom = THEMES[theme]
+    if HUE_SHIFT:
+        return shift_hue(top, HUE_SHIFT), shift_hue(bottom, HUE_SHIFT)
+    return top, bottom
+
+
+def accent_color(theme: str):
+    """테마 액센트 색 — 배경과 같은 색상 회전을 적용해 카드가 어긋나지 않게 합니다."""
+    return shift_hue(ACCENT[theme], HUE_SHIFT) if HUE_SHIFT else ACCENT[theme]
 
 # 배경 패턴 이름 — 순서가 곧 번호입니다(--list-bg · 메뉴 번호).
 PATTERN_NAMES = (
@@ -800,9 +829,9 @@ def render_slide(idx: int, total: int, unit_no: int, unit_info: dict, wd: list,
                  theme: str, font_path: str | None, style: str = "classic",
                  pattern: str = "auto") -> Image.Image:
     global ACCENT_THEME
-    ACCENT_THEME = ACCENT[theme]
+    ACCENT_THEME = accent_color(theme)
     ly = LAYOUT.get(style, LAYOUT["classic"])
-    top, bottom = THEMES[theme]
+    top, bottom = theme_colors(theme)
     img = vertical_gradient((W, H), top, bottom)
     draw = ImageDraw.Draw(img, "RGBA")
     draw_pattern(draw, pattern_for_style(pattern, ly["deco"]), ACCENT_THEME)
@@ -925,8 +954,8 @@ def render_intro_slide(subtitle: str, theme: str, font_path: str | None,
                        kind: str = "unit", pattern: str = "auto") -> Image.Image:
     """인트로 슬라이드 — 첫 1초 안에 '무엇을 배우는지' 알려 주는 브랜드 훅."""
     global ACCENT_THEME
-    ACCENT_THEME = ACCENT[theme]
-    top, bottom = THEMES[theme]
+    ACCENT_THEME = accent_color(theme)
+    top, bottom = theme_colors(theme)
     img = vertical_gradient((W, H), top, bottom)
     draw = ImageDraw.Draw(img, "RGBA")
     draw_pattern(draw, pattern_for_style(pattern, True), ACCENT_THEME)
@@ -955,8 +984,8 @@ def render_vocab_hook(term: str, kind: str, theme: str, font_path: str | None,
                       pattern: str = "auto") -> Image.Image:
     """첫 화면에 실제 항목을 질문으로 제시하고 답은 다음 카드에서 공개합니다."""
     global ACCENT_THEME
-    ACCENT_THEME = ACCENT[theme]
-    top, bottom = THEMES[theme]
+    ACCENT_THEME = accent_color(theme)
+    top, bottom = theme_colors(theme)
     img = vertical_gradient((W, H), top, bottom)
     draw = ImageDraw.Draw(img, "RGBA")
     draw_pattern(draw, pattern_for_style(pattern, True), ACCENT_THEME)
@@ -976,9 +1005,9 @@ def render_quiz_hook(count: int, theme: str, font_path: str | None, style: str =
                      pattern: str = "auto") -> Image.Image:
     """퀴즈 첫 1.5초 후킹 — 무엇을 하는 영상인지 먼저 알려 이탈을 줄입니다."""
     global ACCENT_THEME
-    ACCENT_THEME = ACCENT[theme]
+    ACCENT_THEME = accent_color(theme)
     ly = LAYOUT.get(style, LAYOUT["classic"])
-    top, bottom = THEMES[theme]
+    top, bottom = theme_colors(theme)
     img = vertical_gradient((W, H), top, bottom)
     draw = ImageDraw.Draw(img, "RGBA")
     draw_pattern(draw, pattern_for_style(pattern, ly["deco"]), ACCENT_THEME)
@@ -1002,8 +1031,8 @@ def render_outro_slide(theme: str, font_path: str | None,
                        pattern: str = "auto") -> Image.Image:
     """아웃로 슬라이드 — 사이트 유입 CTA(구독·팔로우·사이트 방문)."""
     global ACCENT_THEME
-    ACCENT_THEME = ACCENT[theme]
-    top, bottom = THEMES[theme]
+    ACCENT_THEME = accent_color(theme)
+    top, bottom = theme_colors(theme)
     img = vertical_gradient((W, H), top, bottom)
     draw = ImageDraw.Draw(img, "RGBA")
     draw_pattern(draw, pattern_for_style(pattern, True), ACCENT_THEME)
@@ -1077,10 +1106,10 @@ def render_idiom_slide(idx: int, total: int, rank: int, wd: list,
     두었습니다(매일 도는 단어 영상이 숙어 쪽 손질로 깨지지 않게).
     """
     global ACCENT_THEME
-    ACCENT_THEME = ACCENT[theme]
+    ACCENT_THEME = accent_color(theme)
     ly = IDIOM_LAYOUT.get(style, IDIOM_LAYOUT["classic"])
     deco = LAYOUT.get(style, LAYOUT["classic"])
-    top, bottom = THEMES[theme]
+    top, bottom = theme_colors(theme)
     img = vertical_gradient((W, H), top, bottom)
     draw = ImageDraw.Draw(img, "RGBA")
     draw_pattern(draw, pattern_for_style(pattern, deco["deco"]), ACCENT_THEME)
@@ -1177,9 +1206,9 @@ def render_freq_slide(idx: int, total: int, rank: int, wd: list,
     (매일 도는 단어 영상이 빈도 작업으로 깨지지 않게 하려는 기존 방침을 따릅니다.)
     """
     global ACCENT_THEME
-    ACCENT_THEME = ACCENT[theme]
+    ACCENT_THEME = accent_color(theme)
     ly = LAYOUT.get(style, LAYOUT["classic"])
-    top, bottom = THEMES[theme]
+    top, bottom = theme_colors(theme)
     img = vertical_gradient((W, H), top, bottom)
     draw = ImageDraw.Draw(img, "RGBA")
     draw_pattern(draw, pattern_for_style(pattern, ly["deco"]), ACCENT_THEME)
@@ -1367,9 +1396,9 @@ def render_quiz_question(idx: int, total: int, rank: int, q: dict,
                          pattern: str = "auto") -> Image.Image:
     """동의어 치환 문제 슬라이드 — 문장 속 표적 표현을 강조하고 보기 4개를 붙입니다."""
     global ACCENT_THEME
-    ACCENT_THEME = ACCENT[theme]
+    ACCENT_THEME = accent_color(theme)
     ly = LAYOUT.get(style, LAYOUT["classic"])
-    top, bottom = THEMES[theme]
+    top, bottom = theme_colors(theme)
     img = vertical_gradient((W, H), top, bottom)
     draw = ImageDraw.Draw(img, "RGBA")
     draw_pattern(draw, pattern_for_style(pattern, ly["deco"]), ACCENT_THEME)
@@ -1423,9 +1452,9 @@ def render_quiz_answer(idx: int, total: int, rank: int, q: dict,
                        pattern: str = "auto") -> Image.Image:
     """정답·해설 슬라이드 — 정답 표현과 왜 그런지를 보여 줍니다."""
     global ACCENT_THEME
-    ACCENT_THEME = ACCENT[theme]
+    ACCENT_THEME = accent_color(theme)
     ly = LAYOUT.get(style, LAYOUT["classic"])
-    top, bottom = THEMES[theme]
+    top, bottom = theme_colors(theme)
     img = vertical_gradient((W, H), top, bottom)
     draw = ImageDraw.Draw(img, "RGBA")
     draw_pattern(draw, pattern_for_style(pattern, ly["deco"]), ACCENT_THEME)
@@ -1491,9 +1520,9 @@ def render_list_slide(idx: int, total: int, rank: int, item: dict,
     퀴즈가 아닌 「읽고 저장」형이라 한 항목당 슬라이드 한 장입니다.
     """
     global ACCENT_THEME
-    ACCENT_THEME = ACCENT[theme]
+    ACCENT_THEME = accent_color(theme)
     ly = LAYOUT.get(style, LAYOUT["classic"])
-    top, bottom = THEMES[theme]
+    top, bottom = theme_colors(theme)
     img = vertical_gradient((W, H), top, bottom)
     draw = ImageDraw.Draw(img, "RGBA")
     draw_pattern(draw, pattern_for_style(pattern, ly["deco"]), ACCENT_THEME)
@@ -1929,7 +1958,7 @@ def mix_final(silent: Path, tts_wav: Path | None, music: Path | None,
 def write_sidecar(out: Path, *, kind: str, unit_no: int | None, items: list[list],
                   voices: list[str], quiz: list[dict] | None = None,
                   theme: str | None = None, pattern: str | None = None,
-                  style: str | None = None) -> None:
+                  style: str | None = None, hue: int | None = None) -> None:
     """영상 옆에 항목 메타(`<이름>.json`)를 남깁니다.
 
     publish.py 가 이 파일을 읽어 제목·설명을 만듭니다. 이게 없으면 게시 단계가 남은 목록에서
@@ -1945,6 +1974,7 @@ def write_sidecar(out: Path, *, kind: str, unit_no: int | None, items: list[list
         "theme": theme or "",
         "pattern": pattern or "",
         "style": style or "",
+        "hue": int(hue or 0),
         "created_at": now_iso(),
     }
     if quiz:
@@ -2044,6 +2074,8 @@ def main() -> None:
                     help="배경 테마 — 이름 또는 번호 (기본 blue, 목록은 --list-bg)")
     ap.add_argument("--pattern", default="auto",
                     help="배경 패턴 — 이름 또는 번호 (기본 auto — 카드 스타일 기본값, 목록은 --list-bg)")
+    ap.add_argument("--hue-shift", type=int, default=0, metavar="DEG",
+                    help="배경·액센트 색상 회전(도, -180~180) — 같은 테마라도 영상마다 다른 배경색이 됩니다(기본 0)")
     ap.add_argument("--style", default="classic",
                     help="카드 스타일 — 이름 또는 번호 (1=classic 2=modern 3=minimal)")
     ap.add_argument("--list-bg", action="store_true",
@@ -2103,6 +2135,10 @@ def main() -> None:
     if not style:
         sys.exit(f"지원하지 않는 카드 스타일입니다: {args.style!r} — 1=classic 2=modern 3=minimal")
     args.style = style
+    # 배경색 자동 변경 — 영상별 색상 회전을 전역으로 적용합니다(테마·액센트·무늬 모두 같은 기준).
+    global HUE_SHIFT
+    HUE_SHIFT = max(-180, min(180, int(args.hue_shift or 0)))
+    args.hue_shift = HUE_SHIFT
 
     if not _PIL_OK:
         sys.exit("Pillow 미설치 — promo_center.bat setup (또는 pip install -r requirements.txt) 을 먼저 실행하세요")
@@ -2317,7 +2353,8 @@ def main() -> None:
         warn("1분 초과 Shorts는 저작권 클레임이 있으면 차단될 수 있습니다 — 음원 권리를 확인하세요.")
     log(f"출력  : {out} ({W}x{H}, 9:16 세로)")
     log(f"배경  : 테마 {args.bg} ({THEME_LABELS.get(args.bg, '')}) · 패턴 {args.pattern}"
-        f" ({PATTERN_LABELS.get(args.pattern, '')}) · 스타일 {args.style}")
+        f" ({PATTERN_LABELS.get(args.pattern, '')}) · 스타일 {args.style}"
+        + (f" · 색상 {args.hue_shift:+d}°" if args.hue_shift else ""))
     if args.tts:
         engine_label = ("로컬 Piper TTS · 오프라인(인터넷 불필요)" if engine == "piper"
                         else "Windows 내장 TTS(SAPI) · 네트워크 불필요")
@@ -2478,7 +2515,8 @@ def main() -> None:
         write_sidecar(out, kind=kind,
                       unit_no=None if kind != "unit" else unit_no,
                       items=picked, voices=voices if args.tts else [],
-                      quiz=extras, theme=args.bg, pattern=args.pattern, style=args.style)
+                      quiz=extras, theme=args.bg, pattern=args.pattern, style=args.style,
+                      hue=args.hue_shift)
         if not args.allow_repeat:
             added = mark_words_posted(bucket, [dedupe_key(w, kind) for w in picked])
             if added:
