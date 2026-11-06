@@ -1,4 +1,5 @@
 {
+  "id": "/",
   "name": "toeic.monster - TOEIC 보카 1000",
   "short_name": "toeic.monster",
   "description": "TOEIC 필수 어휘 1,000개를 발음·예문으로 외우는 무료 학습 사이트. 암기 카드, 퀴즈, 실전 시험 모드, 오답노트까지.",
@@ -10,6 +11,37 @@
   "background_color": "#f6f7fb",
   "theme_color": "#3b5bdb",
   "categories": ["education", "productivity"],
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "주제별 단어장 — 30개 유닛",
+      "short_name": "단어장",
+      "description": "주제별 TOEIC 단어 1,000개를 암기 카드와 퀴즈로 학습",
+      "url": "./units/",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "빈출 어휘 200선",
+      "short_name": "빈출 어휘",
+      "description": "시험 빈도순으로 먼저 외울 200단어",
+      "url": "./units/frequency.html",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "문법 교재 — 기초·중급·고급",
+      "short_name": "문법",
+      "description": "36과 문법 교재와 연습 288문항",
+      "url": "./grammar/",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "회화 교재 — 기초·중급·고급",
+      "short_name": "회화",
+      "description": "36과 회화 교재와 연습 288문항",
+      "url": "./conversation/",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ],
   "icons": [
     {
       "src": "icon.svg",

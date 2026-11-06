@@ -401,6 +401,32 @@ if (has("manifest.webmanifest")) {
       fail("manifest.webmanifest: PNG 아이콘이 없습니다 — iOS·설치형 앱은 SVG 만으로는 아이콘을 못 씁니다.");
     }
     if (icons.length) note(`manifest 아이콘 ${icons.length}개 (${[...sizes].join(", ")})`);
+
+    // 홈 화면 바로가기(shortcuts) — 앱을 길게 눌렀을 때 뜨는 지름길입니다.
+    // url 이 사이트 밖을 가리키거나 대상 파일이 없으면 조용히 빈 화면이 열리므로 여기서 막습니다.
+    const shortcuts = Array.isArray(manifest.shortcuts) ? manifest.shortcuts : [];
+    if (shortcuts.length) {
+      if (shortcuts.length < 2 || shortcuts.length > 4) {
+        fail(`manifest.webmanifest: 바로가기는 2~4개가 적당합니다 — ${shortcuts.length}개`);
+      }
+      const seenUrls = new Set();
+      for (const cut of shortcuts) {
+        if (!cut || !cut.name || !cut.url) {
+          fail("manifest.webmanifest: name·url 이 없는 바로가기가 있습니다.");
+          continue;
+        }
+        if (cut.url.includes("://") || cut.url.startsWith("//")) {
+          fail(`manifest.webmanifest: 바로가기 url 은 사이트 상대 경로여야 합니다 — ${cut.url}`);
+          continue;
+        }
+        if (seenUrls.has(cut.url)) fail(`manifest.webmanifest: 바로가기 url 중복 — ${cut.url}`);
+        seenUrls.add(cut.url);
+        const target = cut.url.replace(/^(\.\/|\/)+/, "");
+        const file = !target || target.endsWith("/") ? `${target}index.html` : target;
+        if (!has(file)) fail(`manifest.webmanifest: 바로가기 대상이 없습니다 — ${cut.url} (${file})`);
+      }
+      note(`manifest 바로가기 ${shortcuts.length}개 (${shortcuts.map((s) => s.short_name || s.name).join(" · ")})`);
+    }
   }
 }
 

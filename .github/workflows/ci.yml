@@ -39,7 +39,7 @@ jobs:
 
       # check:ci 의 test 단계가 promo/test_publish.py 를 함께 돌립니다.
       # Pillow 가 없으면 프레임 렌더·인자 검증 테스트가 건너뛰어져 검증이 약해지므로,
-      # CI 에서는 설치해 135개 테스트를 모두 실행합니다.
+      # CI 에서는 설치해 promo 테스트를 건너뜀 없이 모두 실행합니다.
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
