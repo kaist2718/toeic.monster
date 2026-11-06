@@ -1806,14 +1806,18 @@ def enforce_us_uk(voice: str, voice2: str, single: bool, engine: str,
     """두 목소리를 미국식 1회 + 영국식 1회로 맞춥니다 — (첫 목소리, 둘째, 엔진).
 
     --single-voice 나 --voice2 none/off 처럼 한 목소리만 쓰는 설정은 그대로 둡니다.
-    두 억양을 함께 쓸 수 없는 환경이면 설치된 음성을 그대로 돌려줍니다.
+    두 억양을 함께 쓸 수 없는 환경이면 한쪽 억양만 든 영상이 올라가지 않도록 생성을
+    중단합니다(미국식·영국식이 한 영상에 모두 들어가는 것을 보장).
     """
     if not tts or single or (voice2 or "").strip().lower() in ("none", "off", "-"):
         return voice, voice2, engine
     us, gb, pair_engine = us_uk_voice_pair(engine)
     if not (us and gb):
-        warn("미국식·영국식 음성을 함께 찾지 못했습니다 — 설치된 음성으로 낭독합니다.")
-        return voice, voice2, engine
+        # 한쪽 억양만 들어간 영상은 메뉴 32에서 예약되지 않습니다 — 만들기 전에 멈춥니다.
+        fail("미국식·영국식 음성을 함께 찾지 못했습니다 — 메뉴 31에서 두 억양을 모두 준비하세요 "
+             "(Piper 음성 내려받기 또는 Windows 영어 음성). 한 목소리로 만들려면 "
+             "--single-voice 를 쓰세요.")
+        raise SystemExit(1)
     accents = (voice_accent(voice), voice_accent(voice2))
     if pair_engine == engine and accents in (("US", "GB"), ("GB", "US")):
         return voice, voice2, engine

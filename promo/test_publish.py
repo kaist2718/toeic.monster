@@ -278,7 +278,8 @@ class WeeklyWizardTest(unittest.TestCase):
         self.videos = [self.root / f"v{i}.mp4" for i in range(3)]
         for i, video in enumerate(self.videos):
             video.write_bytes(f"video{i}".encode())
-            video.with_suffix(".json").write_text(json.dumps({"kind": "frequency", "items": [
+            video.with_suffix(".json").write_text(json.dumps({"kind": "frequency",
+                "voices": ["en_US-amy-medium", "en_GB-alan-medium"], "items": [
                 {"term": f"word{i}", "meaning": "뜻", "example": "Example.",
                  "translation": "예문."}]}), encoding="utf-8")
         self.cfg = {"youtube": {"enabled": True}}
@@ -365,7 +366,8 @@ class QuickTenScheduleTest(unittest.TestCase):
         self.videos = [Path(self.tmp.name) / f"v{i}.mp4" for i in range(10)]
         for i, video in enumerate(self.videos):
             video.write_bytes(f"video{i}".encode())
-            video.with_suffix(".json").write_text(json.dumps({"kind": "frequency", "items": [
+            video.with_suffix(".json").write_text(json.dumps({"kind": "frequency",
+                "voices": ["en_US-amy-medium", "en_GB-alan-medium"], "items": [
                 {"term": f"word{i}", "meaning": "뜻", "example": "Example.",
                  "translation": "예문."}]}), encoding="utf-8")
         self.cfg = {"youtube": {"enabled": True}}
@@ -416,12 +418,22 @@ class QuickTenScheduleTest(unittest.TestCase):
                             for call in upload.call_args_list))
         confirm.assert_called_once()
 
+    def test_videos_without_both_accents_are_skipped(self):
+        self.videos[0].with_suffix(".json").write_text(json.dumps({
+            "kind": "frequency", "voices": ["en_US-amy-medium"], "items": [
+                {"term": "word0", "meaning": "뜻", "example": "Example.",
+                 "translation": "예문."}]}), encoding="utf-8")
+        upload, _ = self.run_quick(count=2, videos=self.videos[:2])
+        self.assertEqual(upload.call_count, 1, "한쪽 억양만 있는 영상은 예약하지 않아야 합니다")
+        self.assertEqual(upload.call_args.args[2], self.videos[1])
+
     def test_newest_first_and_count_limit(self):
         videos = []
         for i in range(25):
             video = Path(self.tmp.name) / f"many{i}.mp4"
             video.write_bytes(f"many{i}".encode())
-            video.with_suffix(".json").write_text(json.dumps({"kind": "frequency", "items": [
+            video.with_suffix(".json").write_text(json.dumps({"kind": "frequency",
+                "voices": ["en_US-amy-medium", "en_GB-alan-medium"], "items": [
                 {"term": f"w{i}", "meaning": "뜻", "example": "Example.",
                  "translation": "예문."}]}), encoding="utf-8")
             videos.append(video)
@@ -432,7 +444,8 @@ class QuickTenScheduleTest(unittest.TestCase):
 
     def test_duplicate_titles_are_skipped(self):
         # 다른 영상이어도 제목이 같으면 피드에서 구분되지 않으므로 한 배치에 한 번만 올립니다.
-        self.videos[1].with_suffix(".json").write_text(json.dumps({"kind": "frequency", "items": [
+        self.videos[1].with_suffix(".json").write_text(json.dumps({"kind": "frequency",
+            "voices": ["en_US-amy-medium", "en_GB-alan-medium"], "items": [
             {"term": "word0", "meaning": "뜻", "example": "Example.",
              "translation": "예문."}]}), encoding="utf-8")
         upload, _ = self.run_quick()
@@ -461,7 +474,8 @@ class QuickTenScheduleTest(unittest.TestCase):
         self.run_quick(posted=lambda _v: {"yt": {}})[0].assert_not_called()
 
     def test_broken_items_are_skipped_by_quality_gate(self):
-        self.videos[0].with_suffix(".json").write_text(json.dumps({"kind": "grammar", "items": [
+        self.videos[0].with_suffix(".json").write_text(json.dumps({"kind": "grammar",
+            "voices": ["en_US-amy-medium", "en_GB-alan-medium"], "items": [
             {"term": "q", "question": "빈칸?", "example": "He ____ home.", "meaning": "went",
              "options": ["went", "went", "go", "goes"], "translation": "과거형"}]}),
             encoding="utf-8")
@@ -678,6 +692,16 @@ class VariedLookTest(unittest.TestCase):
                 self.assertEqual({publish.voice_accent(look["voice"]),
                                   publish.voice_accent(look["voice2"])}, {"US", "GB"})
 
+    def test_us_uk_voice_pairs_change_for_each_video(self):
+        with mock.patch.object(publish, "list_windows_voices", return_value=self.WINDOWS_VOICES), \
+                mock.patch.object(publish, "list_piper_voices", return_value=[]):
+            pairs = [publish.us_uk_voice_pair("windows", i)[:2] for i in range(4)]
+            self.assertEqual(len(set(pairs)), 4,
+                             "영상마다 미국식·영국식 목소리가 함께 바뀌어야 합니다")
+            for us, gb in pairs:
+                self.assertEqual({publish.voice_accent(us), publish.voice_accent(gb)},
+                                 {"US", "GB"})
+
     def test_build_shorts_command_applies_per_video_look(self):
         cfg = {"promo": {"default_theme": "blue", "default_pattern": "auto",
                          "default_style": "classic", "default_tts": True,
@@ -782,6 +806,15 @@ class EnglishOnlyTtsTest(unittest.TestCase):
             self.assertEqual(shorts.enforce_us_uk("us", "us", False, "piper"),
                              ("us", "gb", "piper"))
 
+    def test_missing_us_uk_pair_stops_generation(self):
+        import make_shorts as shorts
+        with mock.patch.object(shorts, "us_uk_voice_pair", return_value=("", "", "windows")), \
+                mock.patch.object(shorts, "fail") as fail_mock:
+            with self.assertRaises(SystemExit):
+                shorts.enforce_us_uk("Microsoft Zira Desktop", "Microsoft David Desktop",
+                                     False, "windows")
+        fail_mock.assert_called_once()
+
     def test_audio_reads_each_english_voice_once_without_korean(self):
         import make_shorts as shorts
         spoken = []
@@ -803,6 +836,44 @@ class EnglishOnlyTtsTest(unittest.TestCase):
             shorts.build_audio("word", "Example sentence.", voices, 6, Path(td), 0)
         self.assertEqual(spoken, [voices[0]] * 2 + [voices[1]] * 2)
         self.assertFalse(any("Heami" in voice for voice in spoken))
+
+
+class AccentVoiceSupplyTest(unittest.TestCase):
+    """메뉴 31 — 영상마다 목소리를 바꾸려면 미국식·영국식 음성이 각각 2개 이상 필요합니다."""
+
+    ONE_EACH = [("Microsoft Zira Desktop", "en-US", "Female"),
+                ("Microsoft Hazel Desktop", "en-GB", "Female")]
+    TWO_EACH = ONE_EACH + [("Microsoft David Desktop", "en-US", "Male"),
+                           ("Microsoft George Desktop", "en-GB", "Male")]
+
+    def check(self, voices):
+        with mock.patch.object(publish, "list_windows_voices", return_value=voices), \
+                mock.patch.object(publish, "warn") as warn_mock, \
+                mock.patch.object(publish, "ok") as ok_mock, \
+                mock.patch.object(publish, "log"):
+            result = publish.check_accent_voice_supply("windows")
+        return result, warn_mock, ok_mock
+
+    def test_warns_when_each_accent_has_only_one_voice(self):
+        result, warn_mock, ok_mock = self.check(self.ONE_EACH)
+        self.assertFalse(result)
+        ok_mock.assert_not_called()
+        self.assertIn("2개 이상", warn_mock.call_args.args[0])
+
+    def test_passes_when_each_accent_has_two_voices(self):
+        result, warn_mock, ok_mock = self.check(self.TWO_EACH)
+        self.assertTrue(result)
+        warn_mock.assert_not_called()
+        ok_mock.assert_called_once()
+
+    def test_missing_accent_is_reported_before_menu_32(self):
+        result, warn_mock, _ = self.check(self.ONE_EACH[:1])
+        self.assertFalse(result)
+        self.assertIn("영국식", warn_mock.call_args.args[0])
+
+    def test_counts_reflect_current_engine(self):
+        with mock.patch.object(publish, "list_windows_voices", return_value=self.TWO_EACH):
+            self.assertEqual(publish.accent_voice_counts("windows"), (2, 2))
 
 
 class ScheduleParseZTest(unittest.TestCase):

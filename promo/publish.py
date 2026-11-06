@@ -3788,6 +3788,17 @@ def voice_accent(name: str) -> str:
     return ""
 
 
+def us_uk_accents(saved: dict | None) -> list[str]:
+    """영상 메타에 기록된 목소리의 영어 억양 — ["GB", "US"] 처럼 정렬해 돌려줍니다."""
+    voices = [str(v) for v in ((saved or {}).get("voices") or [])]
+    return sorted({voice_accent(v) for v in voices if voice_accent(v)})
+
+
+def missing_us_uk(saved: dict | None) -> bool:
+    """미국식·영국식이 한 영상에 함께 있지 않으면 True — 업로드 전 필수 조건입니다."""
+    return not {"US", "GB"} <= set(us_uk_accents(saved))
+
+
 def _accent_voices(engine: str) -> tuple[list[str], list[str]]:
     """엔진에서 쓸 수 있는 (미국식 목소리, 영국식 목소리) 목록."""
     if normalize_tts_engine(engine) == "piper":
@@ -3803,21 +3814,62 @@ def us_uk_voice_pair(engine: str = "auto", index: int = 0) -> tuple[str, str, st
     """미국식 1회 + 영국식 1회 목소리 쌍 — (미국식, 영국식, 실제 엔진).
 
     요청 엔진에 두 억양이 모두 없으면 Windows 내장 → Piper 순서로 찾습니다.
+    index 로 미국식×영국식 조합을 순서대로 돌려, 영상마다 두 목소리가 함께 바뀝니다.
     찾지 못하면 ("", "", 요청 엔진) 을 돌려줍니다.
     """
     requested = resolve_tts_engine(engine, "")
     for candidate in (requested, "windows", "piper"):
         us, gb = _accent_voices(candidate)
         if us and gb:
-            return (us[index % len(us)],
-                    gb[(index + index // len(us)) % len(gb)],
-                    candidate)
+            # 모든 조합을 한 번씩 쓰고 다시 처음으로 — 이웃한 영상은 항상 다른 조합입니다.
+            step = int(index) % (len(us) * len(gb))
+            return us[step % len(us)], gb[step // len(us)], candidate
     return "", "", requested
 
 
 # 영상마다 배경색을 자동으로 조금씩 돌리는 색상 회전(도).
 # 테마가 같아도(예: blue) 영상마다 다른 색감이 나므로 10편이 서로 구분됩니다.
 LOOK_HUE_STEPS = (0, 18, -18, 36, -36, 54, -54, 72, -72, 90)
+
+
+# 영상마다 목소리 조합을 바꾸려면 같은 억양 음성이 최소 2개씩 필요합니다.
+MIN_ACCENT_VOICES = 2
+
+
+def accent_voice_counts(engine: str) -> tuple[int, int]:
+    """엔진에서 쓸 수 있는 (미국식, 영국식) 음성 개수 — 메뉴 31 상태 표시용."""
+    us, gb = _accent_voices(resolve_tts_engine(engine, ""))
+    return len(us), len(gb)
+
+
+def check_accent_voice_supply(engine: str) -> bool:
+    """미국식·영국식 음성이 각각 2개 이상 있는지 점검하고, 부족하면 경고합니다.
+
+    1개씩만 있어도 낭독은 되지만(두 억양이 한 영상에 들어감) 모든 영상이 같은
+    목소리 쌍이 되므로, 영상마다 목소리를 바꾸려면 각각 2개 이상이 필요합니다.
+    메뉴 31(TTS 설정)에서 현재 엔진 기준으로 확인합니다.
+    """
+    effective = resolve_tts_engine(engine, "")
+    us, gb = _accent_voices(effective)
+    log(f"  목소리 여유: 미국식 {len(us)}개 · 영국식 {len(gb)}개 "
+        f"→ 조합 {len(us) * len(gb)}가지")
+    hint = ("메뉴 31 에서 Piper 음성(en_US·en_GB)을 추가로 내려받으세요."
+            if effective == "piper" else
+            "Windows 설정 → 시간 및 언어 → 음성에서 영어(미국)·영어(영국) 음성을 추가하세요.")
+    missing = [name for name, voices in (("미국식", us), ("영국식", gb)) if not voices]
+    if missing:
+        warn(f"{'·'.join(missing)} 음성이 없습니다 — 미국식·영국식이 한 영상에 함께 들어가야 "
+             f"하므로 메뉴 32 제작이 중단됩니다. {hint}")
+        return False
+    if len(us) < MIN_ACCENT_VOICES or len(gb) < MIN_ACCENT_VOICES:
+        short = [f"{name} {len(voices)}개" for name, voices in (("미국식", us), ("영국식", gb))
+                 if len(voices) < MIN_ACCENT_VOICES]
+        warn(f"{' · '.join(short)} — 영상마다 목소리가 바뀌려면 미국식·영국식 음성이 "
+             f"각각 {MIN_ACCENT_VOICES}개 이상 필요합니다(지금은 모든 영상이 같은 목소리 쌍). {hint}")
+        return False
+    ok(f"미국식·영국식 음성 {len(us)}·{len(gb)}개 — 영상마다 목소리 조합이 바뀝니다"
+       f"(조합 {len(us) * len(gb)}가지)")
+    return True
 
 
 def varied_looks(cfg: dict, count: int, tts: bool | None = None) -> list[dict]:
@@ -3837,6 +3889,11 @@ def varied_looks(cfg: dict, count: int, tts: bool | None = None) -> list[dict]:
     ordered = ([default_theme] if default_theme in themes else []) + rest
     random.shuffle(patterns)
     tts_on = bool(promo.get("default_tts", False)) if tts is None else bool(tts)
+    # 이미 만든 영상 수만큼 목소리 조합을 돌려, 다음 배치도 같은 목소리로 시작하지 않게 합니다.
+    try:
+        voice_offset = len(list(SHORTS_DIR.glob("*.mp4")))
+    except OSError:
+        voice_offset = 0
     looks: list[dict] = []
     for index in range(count):
         look = {"theme": ordered[index % len(ordered)],
@@ -3844,7 +3901,7 @@ def varied_looks(cfg: dict, count: int, tts: bool | None = None) -> list[dict]:
                 "hue": LOOK_HUE_STEPS[index % len(LOOK_HUE_STEPS)],
                 "style": str(promo.get("default_style", "classic")).lower()}
         if tts_on:
-            us, gb, engine = us_uk_voice_pair(tts_engine_of(cfg), index)
+            us, gb, engine = us_uk_voice_pair(tts_engine_of(cfg), voice_offset + index)
             if us and gb:
                 look.update(tts=True, engine=engine, voice=us, voice2=gb)
             else:
@@ -4494,7 +4551,8 @@ def quick_ten_schedule_menu(cfg: dict, count: int = 10, *,
 
     폴더의 영상 수십 개를 눈으로 고르지 않도록 게시 가능한 영상만 최신순으로 자동
     선택하고, 요약(3편 + 총 개수)만 보여 줍니다. 날짜·시각도 묻지 않고 내일부터
-    08:00·08:15 로 예약합니다. 이미 올렸거나 문항·규격이 맞지 않는 영상은 빠집니다.
+    08:00·08:15 로 예약합니다. 이미 올렸거나 문항·규격이 맞지 않는 영상은 빠지며,
+    미국식·영국식 음성이 한 영상에 함께 기록되지 않은 영상도 예약하지 않습니다.
     """
     count = max(1, min(10, int(count)))
     if not cfg.get("youtube", {}).get("enabled", True):
@@ -4522,6 +4580,9 @@ def quick_ten_schedule_menu(cfg: dict, count: int = 10, *,
             saved = load_video_meta(video)
             if not saved or not saved.get("items"):
                 raise ValueError("영상 메타가 없거나 비어 있습니다")
+            # 미국식·영국식이 한 영상에 모두 들어간 것만 올립니다 — 한쪽 억양만 있으면 제외합니다.
+            if missing_us_uk(saved):
+                raise ValueError("미국식+영국식 음성이 함께 있지 않습니다")
             # 검토 없이 예약해도 되도록 문항 자체를 자동 점검합니다(보기 4개·정답 1개·해설).
             kind_name = str(saved.get("kind") or "")
             if kind_name in KIND_SPECS or kind_name == "paraphrase":
@@ -4732,6 +4793,11 @@ def weekly_wizard_menu(cfg: dict) -> None:
         if not saved or not saved.get("items"):
             warn("영상 메타가 없거나 비어 있어 검토할 수 없습니다. 이 영상은 제외합니다.")
             continue
+        accents = us_uk_accents(saved)
+        if not {"US", "GB"} <= set(accents):
+            warn("미국식·영국식 음성이 함께 기록되지 않아 예약 대상에서 제외합니다 — "
+                 + ("음성 정보 없음" if not accents else "+".join(accents)))
+            continue
         args = argparse.Namespace(video=str(video), unit=None, title=None, desc=None,
                                   platforms="yt", dry_run=True, youtube_privacy=None,
                                   allow_repeat=False)
@@ -4739,6 +4805,7 @@ def weekly_wizard_menu(cfg: dict) -> None:
         info = probe_video_info(video)
         log(f"제목: {meta['title']}")
         log(f"영상: {relative_display(video)} · {info['width']}x{info['height']} · {info['duration']:.1f}초")
+        log(f"음성: {'+'.join(accents)}")
         log("설명·문제·정답:\n" + meta["desc"])
         log("해시태그: " + meta["hashtags"])
         if ask_yes_no("이 영상을 기본 플레이어로 열까요?", True):
@@ -6314,6 +6381,9 @@ def tts_voice_menu(cfg: dict) -> dict:
         f"{(' + ' + voice_label(str(promo.get('default_voice2', '') or ''), current_engine)) if promo.get('default_voice2') else ''}")
     log(f"  설치 상태: piper-tts {'설치됨' if piper_available() else '미설치'} · "
         f"내려받은 로컬 음성 {len(list_piper_voices())}개 · Windows 내장 음성 {len(list_windows_voices())}개")
+    us_count, gb_count = accent_voice_counts(current_engine)
+    log(f"  영상별 목소리 교체: 미국식 {us_count}개 · 영국식 {gb_count}개 "
+        f"→ 조합 {us_count * gb_count}가지 (각각 {MIN_ACCENT_VOICES}개 이상 권장)")
     if list_piper_voices():
         female, male, unknown = gender_counts(list_piper_voices())
         log(f"  성별 분류: 여성 {female} · 남성 {male}"
@@ -6322,6 +6392,9 @@ def tts_voice_menu(cfg: dict) -> dict:
     tts_settings_flow(cfg, full=True)
     save_config(cfg)
     ok(f"TTS 설정을 저장했습니다: {CONFIG_FILE}")
+    # 내려받기·목소리 변경 뒤 상태를 다시 점검 — 부족하면 다음 제작 전에 알립니다.
+    log("\n🔎 영상별 목소리 교체 점검")
+    check_accent_voice_supply(tts_engine_of(cfg))
     return cfg
 
 
@@ -7167,6 +7240,9 @@ def interactive_menu(initial: str | None = None) -> None:
             auto_plan_menu(cfg)
             continue
         if action == "32":
+            # 제작 전에 목소리 여유를 먼저 점검 — 미국식·영국식 음성이 각각 2개 미만이면 알립니다.
+            log("\n🔎 제작 전 목소리 점검")
+            check_accent_voice_supply(tts_engine_of(cfg))
             mode = choose_option(
                 "쇼츠 마법사",
                 [("vary", "10편 새로 제작 → 품질 검증 → 자동 예약 — 3문제·배경/색상/무늬/목소리 모두 다르게 (권장)"),
